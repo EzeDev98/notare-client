@@ -1,0 +1,22 @@
+@layer components {
+  /*
+   * The standard clip technique. Each declaration matters:
+   *   position/width/height/overflow  collapse it to an invisible 1px box
+   *   clip-path                       hide the remaining pixel
+   *   white-space: nowrap             stop a long string wrapping into a
+   *                                   1px column, which some browsers then
+   *                                   expand the layout to fit
+   *   border-width: 0                 a border would still paint
+   */
+  .ds-visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}

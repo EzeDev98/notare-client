@@ -29,7 +29,22 @@
         }
       })();
     </script>
-    <meta charset="UTF-8" />
+    <!--
+      viewport-fit=cover is what makes env(safe-area-inset-*) return real values.
+      Without it those functions silently return 0 and the bottom nav sits under
+      the iPhone home indicator with its lowest pixels untappable.
+
+      interactive-widget=resizes-content asks the browser to shrink the viewport
+      when the on-screen keyboard opens, rather than scrolling the page under it —
+      which keeps 100dvh honest while typing.
+
+      NO maximum-scale or user-scalable=no. Both disable pinch-zoom and are a
+      direct accessibility failure for anyone who needs to magnify.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>notare-client</title>

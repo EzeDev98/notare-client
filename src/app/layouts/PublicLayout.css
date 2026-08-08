@@ -1,0 +1,40 @@
+@layer components {
+  .public-shell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-block-size: 100dvh;
+
+    /*
+     * Padding rather than centring alone. When the mobile keyboard opens, dvh
+     * shrinks and a perfectly centred panel can end up taller than the visible
+     * area with its top cropped off — taking the heading, and often the first
+     * field, with it. Padding plus a scrollable overflow means the panel moves
+     * instead of being clipped.
+     */
+    padding: var(--space-6) var(--space-4);
+    padding-block-end: max(var(--space-6), env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
+
+  .public-shell__panel {
+    inline-size: 100%;
+    /* Narrow measure: a form is scanned, not read. Full-width fields on a
+     * wide screen make the eye travel between label and input. */
+    max-inline-size: var(--measure-narrow);
+  }
+
+  @media (min-width: 640px) {
+    .public-shell__panel {
+      padding: var(--space-8);
+      background-color: var(--color-surface);
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  /* No panel chrome on mobile: at 375px a bordered card inside a padded
+   * viewport wastes horizontal space the form needs, and the surface reads as
+   * the page anyway. */
+}

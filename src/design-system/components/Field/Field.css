@@ -1,0 +1,54 @@
+@layer components {
+  .ds-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .ds-field__label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+  }
+
+  .ds-field__hint {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    /* --color-text-secondary at 4.59:1, NOT --color-text-disabled at 2.41.
+     * A hint is text the user is meant to read. */
+    color: var(--color-text-secondary);
+  }
+
+  .ds-field__error {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-danger);
+  }
+
+  /* The shared control surface for inputs and textareas. */
+  .ds-control {
+    inline-size: 100%;
+    padding: var(--space-2) var(--space-3);
+    background-color: var(--color-surface);
+    /* border-strong, at 3.44:1 — WCAG 1.4.11 requires 3:1 for the boundary of
+     * a control, since it is what tells you where to click. */
+    border: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    transition: border-color var(--transition-fast);
+  }
+
+  .ds-control::placeholder {
+    color: var(--color-text-disabled);
+  }
+
+  .ds-control[aria-invalid='true'] {
+    border-color: var(--color-danger);
+  }
+
+  .ds-control:disabled {
+    background-color: var(--color-surface-sunken);
+    color: var(--color-text-disabled);
+    cursor: not-allowed;
+  }
+}

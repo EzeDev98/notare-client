@@ -1,0 +1,213 @@
+@layer components {
+  /*
+   * Breakpoint literals are repeated in every @media below.
+   *
+   * They CANNOT reference --breakpoint-md / --breakpoint-lg: custom properties
+   * resolve after media queries are evaluated, so the query silently never
+   * matches — no error, the block just does nothing. The tokens exist for
+   * JavaScript that needs the same numbers. Keep them in step by hand.
+   *
+   *   640px   bottom bar -> icon rail
+   *   1024px  icon rail  -> sidebar with labels
+   */
+
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    /* dvh tracks the VISIBLE viewport as mobile browser chrome expands and
+     * contracts. vh is pinned to the largest possible viewport, which puts the
+     * bottom bar below the fold. */
+    min-block-size: 100dvh;
+  }
+
+  .app-shell__skip {
+    position: absolute;
+    inset-inline-start: var(--space-4);
+    /* Off-screen, not display:none — hidden elements are not focusable, which
+     * would defeat the entire purpose. */
+    inset-block-start: -100%;
+    z-index: var(--z-sticky);
+
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--color-surface);
+    border: var(--border-width) solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  .app-shell__skip:focus-visible {
+    inset-block-start: var(--space-4);
+  }
+
+  /* ---- Nav ------------------------------------------------------------- */
+
+  .app-shell__nav {
+    /* Bottom bar on mobile: nav is first in the DOM, last visually. */
+    order: 1;
+
+    position: sticky;
+    inset-block-end: 0;
+    z-index: var(--z-sticky);
+
+    background-color: var(--color-surface);
+    border-block-start: var(--border-width) solid var(--color-border);
+
+    /*
+     * The iPhone home indicator. Without this the bar's bottom row of pixels
+     * is untappable — and env() returns 0 unless index.html sets
+     * viewport-fit=cover, so this line looks correct and does nothing without
+     * that meta tag.
+     */
+    padding-block-end: env(safe-area-inset-bottom);
+  }
+
+  .app-shell__nav-list {
+    display: flex;
+    justify-content: space-around;
+    margin: 0;
+    padding: 0;
+  }
+
+  .app-shell__nav-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+
+    /*
+     * 44px, not the Button's 40px. This is a genuinely viewport-shaped
+     * decision, which is why 2D deferred it here: a fingertip has far less
+     * precision than a cursor, and a nav is hit constantly.
+     */
+    min-block-size: 44px;
+    min-inline-size: 44px;
+    padding: var(--space-2) var(--space-3);
+
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-size: var(--font-size-xs);
+    transition: color var(--transition-fast);
+  }
+
+  .app-shell__nav-link:hover {
+    color: var(--color-text);
+  }
+
+  /*
+   * Styling the ATTRIBUTE NavLink sets, not a class we set separately. What is
+   * announced to a screen reader and what is highlighted come from the same
+   * source and cannot disagree.
+   *
+   * Colour is not the only signal (§36): the icon fills in as well, so the
+   * active item is identifiable without perceiving hue.
+   */
+  .app-shell__nav-link[aria-current='page'] {
+    color: var(--color-accent);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .app-shell__nav-icon svg {
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+  }
+
+  .app-shell__nav-link[aria-current='page'] .app-shell__nav-icon svg {
+    fill: var(--color-accent-subtle);
+  }
+
+  /* ---- Main ------------------------------------------------------------ */
+
+  .app-shell__main {
+    flex: 1;
+    /* min-block-size: 0 lets a flex child shrink below its content size, which
+     * is what allows THIS element to scroll rather than the page. Without it a
+     * long note scrolls the whole shell and takes the nav with it. */
+    min-block-size: 0;
+    overflow-y: auto;
+  }
+
+  /* ---- 640px+ : icon rail --------------------------------------------- */
+
+  @media (min-width: 640px) {
+    .app-shell {
+      flex-direction: row;
+    }
+
+    .app-shell__nav {
+      order: 0; /* back to the left, matching DOM order */
+      inline-size: 56px;
+      flex-shrink: 0;
+
+      /* Sticky top rather than bottom, and full height. */
+      position: sticky;
+      inset-block: 0;
+      block-size: 100dvh;
+
+      border-block-start: none;
+      border-inline-end: var(--border-width) solid var(--color-border);
+      padding-block: var(--space-4);
+      padding-block-end: max(var(--space-4), env(safe-area-inset-bottom));
+    }
+
+    .app-shell__nav-list {
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: var(--space-2);
+    }
+
+    /*
+     * Labels hidden but PRESENT — the same clip technique as VisuallyHidden,
+     * not display:none. The link's accessible name must survive; an icon-only
+     * link with no text is announced as nothing at all.
+     */
+    .app-shell__nav-label {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  /* ---- 1024px+ : sidebar with labels ---------------------------------- */
+
+  @media (min-width: 1024px) {
+    .app-shell__nav {
+      inline-size: 240px;
+      padding-inline: var(--space-3);
+    }
+
+    .app-shell__nav-list {
+      gap: var(--space-1);
+    }
+
+    .app-shell__nav-link {
+      /* Icon beside label, left-aligned — a row, not a tile. */
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: var(--space-3);
+      inline-size: 100%;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+    }
+
+    .app-shell__nav-link:hover {
+      background-color: var(--color-accent-faint);
+    }
+
+    .app-shell__nav-link[aria-current='page'] {
+      background-color: var(--color-accent-subtle);
+    }
+
+    /* Labels back. Undoing the clip, not re-declaring the layout. */
+    .app-shell__nav-label {
+      position: static;
+      inline-size: auto;
+      block-size: auto;
+      clip-path: none;
+    }
+  }
+}

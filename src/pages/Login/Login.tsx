@@ -1,4 +1,19 @@
-/** Placeholder. The real form, validation and auth flow arrive in Step 4B. */
+import { Button } from '@/design-system/components/Button/Button';
+import { TextField } from '@/design-system/components/TextField/TextField';
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
+
+/** Placeholder. Real validation and the auth flow arrive in Step 4B. */
 export function LoginPage() {
-  return <h1>Login</h1>;
+  useDocumentTitle('Sign in');
+
+  return (
+    <>
+      <h1>Sign in</h1>
+      <div style={{ display: 'grid', gap: 'var(--space-4)', marginBlockStart: 'var(--space-6)' }}>
+        <TextField label="Username or email" autoComplete="username" />
+        <TextField label="Password" type="password" autoComplete="current-password" />
+        <Button variant="primary">Sign in</Button>
+      </div>
+    </>
+  );
 }
