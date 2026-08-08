@@ -40,6 +40,22 @@ export default defineConfig(({ mode }) => {
       // engine (getBoundingClientRect returns zeros) and no IndexedDB or Web
       // Locks — Steps 7 and 8 will need fake-indexeddb and a locks stub.
       environment: 'jsdom',
+
+      /*
+       * An ABSOLUTE base URL under test, unlike the relative "/api/v1" the dev
+       * proxy uses (1D).
+       *
+       * Node's fetch has no document to resolve a relative URL against — it
+       * throws before a request is ever made, and before MSW could intercept
+       * it. A browser resolves against location; Node has no location.
+       *
+       * Nothing here reaches a real server: MSW intercepts everything, and
+       * onUnhandledRequest is set to error so an unmatched path fails loudly
+       * rather than escaping to the network.
+       */
+      env: {
+        VITE_API_BASE_URL: 'http://localhost:2001/api/v1',
+      },
       globals: false,
       setupFiles: ['./tests/setup.ts'],
       css: false,

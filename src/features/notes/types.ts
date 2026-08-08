@@ -1,0 +1,93 @@
+import type { ServerDateTime } from '@/lib/http/types';
+
+/**
+ * The note domain's wire types, mirroring the server's DTOs.
+ */
+
+/** A single note, in full. */
+export interface NoteResponse {
+  id: number;
+  title: string | null;
+  content: string | null;
+  pinned: boolean;
+  archived: boolean;
+
+  /**
+   * The optimistic-locking token. ECHOED BACK, NEVER INCREMENTED.
+   *
+   * The server compares what you send against what it holds and rejects a
+   * mismatch with 409. Sending version + 1 conflicts exactly as a stale one
+   * does — the client is not participating in the counting, it is quoting.
+   */
+  version: number;
+
+  createdAt: ServerDateTime;
+  updatedAt: ServerDateTime;
+  ownerId: number;
+  lastModifiedBy: number | null;
+}
+
+/** A note as it appears in a list — no full content. */
+export interface NoteSummaryResponse {
+  id: number;
+  title: string | null;
+  contentPreview: string | null;
+  pinned: boolean;
+  archived: boolean;
+  version: number;
+  updatedAt: ServerDateTime;
+}
+
+/** A trashed note: the ordinary summary plus when it was trashed (B4). */
+export interface TrashedNoteResponse {
+  note: NoteSummaryResponse;
+
+  /**
+   * NOT the basis for a countdown. Nothing on the server purges trashed notes
+   * — SyncRetentionJob touches the sync tables only — so a UI promising
+   * "deleted in 30 days" would be lying.
+   */
+  deletedAt: ServerDateTime | null;
+}
+
+export interface CreateNoteRequest {
+  title?: string;
+  content?: string;
+}
+
+/**
+ * Full replacement (PUT). Both fields REQUIRED, and null CLEARS.
+ *
+ * Structurally different from AutoSaveNoteRequest below, and that is the whole
+ * point: required-and-nullable versus optional means passing one where the
+ * other is expected does not compile.
+ *
+ * The architecture doc proposed branding these to prevent the mix-up. A brand
+ * turned out to be unnecessary — the semantic difference IS a type difference,
+ * and a type difference that reflects reality beats one that merely asserts
+ * it. Confusing the two wipes a note, so the compiler doing this for free is
+ * worth more than the ceremony.
+ */
+export interface UpdateNoteRequest {
+  title: string | null;
+  content: string | null;
+  version: number;
+}
+
+/**
+ * Partial update (PATCH) — auto-save.
+ *
+ * An OMITTED field means "leave it alone". To CLEAR a field, send an empty
+ * string, not null.
+ *
+ * exactOptionalPropertyTypes (1B) is doing real work here: `title?: string`
+ * permits absence but NOT an explicit undefined, so `{ title: undefined }`
+ * fails to compile. Without that flag the two would be interchangeable, and
+ * "I am not sending a title" would look identical to "I am sending an
+ * undefined title".
+ */
+export interface AutoSaveNoteRequest {
+  title?: string;
+  content?: string;
+  version: number;
+}

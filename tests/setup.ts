@@ -1,27 +1,47 @@
 /**
  * Runs once before every test file.
- *
- * The /vitest entry point registers jest-dom's matchers with Vitest's expect
- * AND augments its types, which is what makes toBeInTheDocument() both work
- * and typecheck. Importing '@testing-library/jest-dom' without the suffix
- * registers against Jest's global expect and silently does nothing here.
  */
 import '@testing-library/jest-dom/vitest';
 
 import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import { afterAll, afterEach, beforeAll } from 'vitest';
+
+import { server } from './msw/server';
 
 /*
- * Unmounts anything render() mounted, after every test.
+ * onUnhandledRequest: 'error' is what makes the mock server trustworthy.
  *
- * RTL does this automatically ONLY when Vitest runs with globals: true, by
- * detecting a global afterEach. We chose globals: false in 1F so that
- * describe/it/expect are imported explicitly — which means this hook has to be
- * registered by hand.
+ * The default lets an unmatched request through to the REAL network, so a
+ * typo'd path quietly tries to reach a server that is not running and the test
+ * fails with a confusing connection error. Failing loudly turns that into
+ * "no handler for GET /api/v1/nots".
+ */
+beforeAll(() => {
+  server.listen({ onUnhandledRequest: 'error' });
+});
+
+/*
+ * Removes per-test overrides while keeping the defaults.
  *
- * Without it, every render in a file accumulates in the same document. Queries
- * then fail with "found multiple elements" — and worse, a test can pass by
- * matching an element a PREVIOUS test rendered, which is a false green that
- * survives deleting the code under test.
+ * Without this, a test that stubs a 500 leaves that 500 in place for every
+ * test after it — order-dependent failures, which are the worst kind to debug
+ * because the failing test is not the broken one.
+ */
+afterEach(() => {
+  server.resetHandlers();
+});
+
+afterAll(() => {
+  server.close();
+});
+
+/*
+ * Unmounts anything render() mounted.
+ *
+ * RTL registers this automatically only when Vitest runs with globals: true.
+ * We chose globals: false in 1F so describe/it/expect are imported explicitly,
+ * which means registering by hand. Without it, renders accumulate in one
+ * document — and a test can pass by matching an element a PREVIOUS test
+ * rendered, a false green that survives deleting the code under test.
  */
 afterEach(cleanup);
