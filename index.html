@@ -1,6 +1,34 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      /*
+       * Runs BEFORE first paint. Deliberately blocking and deliberately inline —
+       * that is the whole point.
+       *
+       * Without it: browser paints (light) -> downloads JS -> runs React -> sets
+       * the theme. On a slow connection that is half a second of white in a dark
+       * room. No amount of React fixes it, because React runs after paint by
+       * construction.
+       *
+       * DUPLICATES the key and attribute from src/lib/theme/theme.ts. It cannot
+       * import them — modules load after paint. Change one, change both.
+       */
+      (function () {
+        try {
+          var stored = localStorage.getItem('notare.theme');
+          var theme =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

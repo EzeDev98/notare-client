@@ -1,0 +1,32 @@
+/*
+ * The one global stylesheet. Imported once, by main.tsx.
+ *
+ * The @layer statement below declares PRECEDENCE, and it is the reason
+ * one-CSS-file-per-page (§33) scales.
+ *
+ * Without it, ties are broken by order in the bundle — which follows import
+ * order, which follows the route tree. A page's styles could be overridden by
+ * a design-system component's depending on which route happened to be imported
+ * first, and that would change every time a route was added.
+ *
+ * With it, later layers beat earlier ones regardless of source order OR
+ * specificity. A page can override a Button with a single class, no
+ * !important, no specificity war.
+ *
+ * Order, weakest to strongest:
+ *   reset       browser defaults removed
+ *   tokens      custom properties
+ *   base        element defaults (body, h1, p)
+ *   components  design-system primitives
+ *   pages       per-page styles
+ *   utilities   deliberate one-off overrides, last resort
+ *
+ * A @layer STATEMENT is allowed before @import; ordinary rules are not.
+ */
+@layer reset, tokens, base, components, pages, utilities;
+
+@import './tokens/reset.css';
+@import './tokens/typography.css';
+@import './tokens/colors.css';
+@import './tokens/layout.css';
+@import './tokens/dark.css';

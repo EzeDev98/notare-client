@@ -1,0 +1,86 @@
+@layer tokens {
+  :root {
+    /*
+     * SPACING — 4px base, in rem so it scales with the user's font size.
+     * Named by step, not by pixel value: --space-4 stays correct if the base
+     * ever changes, --space-16px does not.
+     *
+     * Non-linear at the top. Nobody needs the difference between 52px and
+     * 56px, and offering it means two developers pick differently.
+     */
+    --space-1: 0.25rem; /* 4  — icon gaps */
+    --space-2: 0.5rem; /* 8  — inside a control */
+    --space-3: 0.75rem; /* 12 */
+    --space-4: 1rem; /* 16 — the default gap */
+    --space-5: 1.25rem; /* 20 */
+    --space-6: 1.5rem; /* 24 — between groups */
+    --space-8: 2rem; /* 32 — section spacing */
+    --space-12: 3rem; /* 48 — page rhythm */
+    --space-16: 4rem; /* 64 */
+
+    /*
+     * RADII — restrained (§56: no giant rounded cards). Notare is paper, not
+     * a mobile game.
+     */
+    --radius-sm: 4px;
+    --radius-md: 6px; /* buttons, inputs — the default */
+    --radius-lg: 10px; /* modals, sheets */
+    --radius-full: 9999px;
+
+    --border-width: 1px;
+
+    /*
+     * SHADOWS — two, both barely there. §31 asks for layering through spacing,
+     * typography and subtle contrast; a border does most of it. These are for
+     * things genuinely FLOATING, where a border alone does not say "above".
+     *
+     * Two layers each: a tight dark line for the edge, a wide soft one for the
+     * ambient cast. One layer reads as a smudge.
+     */
+    --shadow-sm: 0 1px 2px rgb(41 37 36 / 0.06), 0 1px 3px rgb(41 37 36 / 0.04);
+    --shadow-md: 0 2px 4px rgb(41 37 36 / 0.06), 0 8px 24px rgb(41 37 36 / 0.08);
+
+    /*
+     * TRANSITIONS. Fast enough to feel like response rather than animation —
+     * past roughly 200ms an interface starts feeling sluggish rather than
+     * smooth. 2A's prefers-reduced-motion block neutralises all of these
+     * globally, so nothing here needs to remember.
+     */
+    --transition-fast: 120ms ease;
+    --transition-base: 180ms ease;
+
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+
+    /*
+     * Z-INDEX as a scale, so nothing ever needs `z-index: 9999`. #root has
+     * isolation: isolate (2A), so these compete only with each other and
+     * never with a third-party widget.
+     */
+    --z-base: 0;
+    --z-sticky: 10; /* pinned toolbars */
+    --z-dropdown: 100;
+    --z-overlay: 1000; /* modal backdrop */
+    --z-modal: 1010;
+    --z-toast: 1100; /* above a modal — a session-expired message must
+                         * reach the user even mid-dialog */
+
+    /*
+     * BREAKPOINTS.
+     *
+     * WARNING: these CANNOT be used in a media query. Custom properties are
+     * resolved after media queries are evaluated, so
+     * `@media (min-width: var(--breakpoint-md))` silently NEVER MATCHES —
+     * no error, the block just does nothing.
+     *
+     * Values are therefore hardcoded at every @media use site, and these
+     * tokens exist for JavaScript that needs the same numbers
+     * (matchMedia, responsive hooks). Keep the two in step by hand.
+     *
+     *   640px   mobile  -> tablet    bottom nav gives way to a sidebar
+     *   1024px  tablet  -> desktop   list and editor sit side by side
+     */
+    --breakpoint-md: 640px;
+    --breakpoint-lg: 1024px;
+  }
+}

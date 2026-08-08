@@ -1,0 +1,137 @@
+@layer tokens {
+  /*
+   * PRIMITIVES — values, not jobs. Nothing outside this file should reference
+   * these directly. They exist so the semantic layer below has something to
+   * point at, and so 2C can repoint it for dark mode.
+   *
+   * Every ratio below is measured against --warm-50 (#FAFAF9), the app
+   * background. AA body text needs 4.5:1; large text and non-text UI
+   * boundaries need 3:1.
+   */
+  :root {
+    /* Warm neutral ramp — stone, not slate. Slate reads cold and clinical;
+     * this is a notebook. */
+    --warm-0: #ffffff;
+    --warm-50: #fafaf9;
+    --warm-200: #e7e5e4; /* 1.20 — dividers only */
+    --warm-400: #a8a29e; /* 2.41 — NOT readable text */
+    --warm-500: #8c8681; /* 3.44 — control boundaries */
+    --warm-600: #78716c; /* 4.59 — readable secondary */
+    --warm-900: #292524; /* 14.52 — primary */
+
+    /* Lavender. Split by job because one value cannot do both:
+     * soft is decorative (3.55 — clears 3:1 for non-text),
+     * base is interactive (4.82 as text, 5.03 under white). */
+    --lavender-pale: #f6f3f9;
+    --lavender-soft-bg: #f0edf5;
+    --lavender-soft: #8b7eaa;
+    --lavender-base: #75698f;
+    --lavender-strong: #665a80;
+
+    /* Status. Deliberately no green — see the note on --color-accent below. */
+    --red-base: #b3261e; /* 6.26 on bg, 6.54 under white */
+    --amber-base: #92500a; /* 5.96 on bg, 6.22 under white */
+  }
+
+  /*
+   * SEMANTIC LAYER — jobs, not values. THIS is what components reference.
+   *
+   * A component that writes a hex value or a --warm-* primitive has already
+   * broken dark mode, because 2C redefines only the block below.
+   */
+  :root {
+    /* Surfaces, back to front. The app background is warm; surfaces sitting on
+     * it are white. That difference is small on purpose — §31 wants layering
+     * from spacing and subtle contrast, not from heavy shadows. */
+    --color-bg: var(--warm-50);
+    --color-surface: var(--warm-0);
+    --color-surface-sunken: var(--warm-50);
+
+    /* Text. TWO readable tiers, not three. Primary is 14.52 and the AA floor
+     * is 4.5, which leaves room for exactly one intermediate value — and
+     * --warm-600 already occupies it. Any third tier light enough to look
+     * different is too light to read. */
+    --color-text: var(--warm-900);
+    --color-text-secondary: var(--warm-600);
+
+    /* 2.41:1. NEVER for text a user is expected to read — this is for a
+     * disabled control's label, where "you cannot interact with this" is the
+     * message and legibility is secondary. It was called --color-text-muted;
+     * renamed because "muted" reads as permission and gets used for
+     * timestamps. Use --color-text-secondary for anything readable. */
+    --color-text-disabled: var(--warm-400);
+
+    /* Inverted text, for coloured fills. Valid on --color-accent (5.03) and
+     * on the status colours. NOT on --color-accent-soft (3.71 — fails). */
+    --color-text-on-accent: var(--warm-0);
+
+    /* Borders. Two, and the distinction is regulatory rather than aesthetic:
+     * a divider is decorative and may be faint, but the boundary of a control
+     * is what tells you where to click, and WCAG 1.4.11 requires 3:1 for it. */
+    --color-border: var(--warm-200);
+    --color-border-strong: var(--warm-500);
+
+    /* Accent.
+     *
+     * --color-accent          interactive: links, primary fills, active nav
+     * --color-accent-soft     decorative: identity, non-text boundaries
+     * --color-accent-subtle   selected rows, hovered list items
+     * --color-accent-faint    the quietest tint, for large calm areas
+     *
+     * There is no --color-success. A saved note is the expected outcome and
+     * does not earn a colour (§38); it gets secondary-weight text. Colour is
+     * reserved for things that are worth interrupting someone over. */
+    --color-accent: var(--lavender-base);
+    --color-accent-hover: var(--lavender-strong);
+    --color-accent-soft: var(--lavender-soft);
+    --color-accent-subtle: var(--lavender-soft-bg);
+    --color-accent-faint: var(--lavender-pale);
+
+    /* Status. Never the ONLY signal (§36) — always paired with text or an
+     * icon, because roughly 1 in 12 men cannot rely on hue. */
+    --color-danger: var(--red-base);
+    --color-attention: var(--amber-base);
+
+    /* Focus. --color-accent at 4.82 against the background, comfortably past
+     * the 3:1 a focus indicator needs. */
+    --color-focus: var(--color-accent);
+  }
+
+  /*
+   * Tells the browser which form-control and scrollbar styling to use. Without
+   * it, a light app in a dark-mode OS gets dark native scrollbars and dark
+   * autofill backgrounds on white inputs. 2C makes this respond to the theme.
+   */
+  :root {
+    color-scheme: light;
+  }
+}
+
+@layer base {
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  /*
+   * Replaces the browser default deliberately (2A left outlines alone rather
+   * than removing them, precisely so this could be a designed replacement
+   * instead of nothing).
+   *
+   * :focus-visible, not :focus — the browser's heuristic shows the ring for
+   * keyboard navigation and hides it for mouse clicks, which is the behaviour
+   * everyone wants and used to hand-roll badly.
+   *
+   * outline-offset is what makes ONE ring work everywhere: flush against a
+   * filled button, the outline sits on the button's own colour and disappears.
+   * A 2px gap separates it from whatever it surrounds.
+   */
+  :focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  a {
+    color: var(--color-accent);
+  }
+}

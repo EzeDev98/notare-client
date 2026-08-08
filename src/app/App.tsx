@@ -1,14 +1,19 @@
 import { RouterProvider } from 'react-router';
+
+import { ThemeProvider } from '@/app/providers/ThemeProvider';
 import { router } from '@/app/router';
 
 /**
- * The composition root.
+ * The composition root. Providers wrap RouterProvider and accumulate here as
+ * later steps add them — auth, query client, sync.
  *
- * Nothing but wiring lives here — no layout, no state, no data. Providers
- * (auth, theme, query client, sync) get added around RouterProvider as later
- * steps introduce them, which is exactly why this file stays this small: it is
- * the one place that knows what the application is ASSEMBLED from.
+ * ThemeProvider is outermost: an error boundary rendering inside the router
+ * should still be themed.
  */
 export function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <ThemeProvider>
+      <RouterProvider router={router} />
+    </ThemeProvider>
+  );
 }

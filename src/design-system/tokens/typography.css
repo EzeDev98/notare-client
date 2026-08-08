@@ -1,0 +1,124 @@
+@layer tokens {
+  :root {
+    /*
+     * SYSTEM FONT STACK (§29). No web font, deliberately: a downloaded font
+     * costs a network round trip before text is readable, and either flashes
+     * or blocks. The system stack renders instantly and makes the app feel
+     * native on each platform — which is exactly the "gets out of the way"
+     * quality §27 is after.
+     *
+     * Falls through: Apple's SF, then Windows' Segoe, then Android's Roboto,
+     * then generics.
+     */
+    --font-family-sans:
+      -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+      sans-serif;
+
+    --font-family-mono:
+      ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+
+    /*
+     * TYPE SCALE, in rem so it scales with the user's browser setting.
+     * Restrained ratio — roughly 1.2 between steps at the top, tighter at the
+     * bottom where precision matters more than drama.
+     */
+    --font-size-xs: 0.75rem; /* 12px — timestamps, counts */
+    --font-size-sm: 0.875rem; /* 14px — labels, secondary, buttons */
+    --font-size-base: 1rem; /* 16px — UI default */
+    --font-size-md: 1.0625rem; /* 17px — NOTE CONTENT. See below. */
+    --font-size-lg: 1.25rem; /* 20px — note titles, section headings */
+    --font-size-xl: 1.5rem; /* 24px — page headings */
+    --font-size-2xl: 1.875rem; /* 30px — display */
+
+    /*
+     * Note content is 17px, one step ABOVE the UI default. §29 says do not make
+     * body text small, and this is the text people read for an hour. The
+     * interface is 16px; the writing is bigger than the interface. That
+     * hierarchy is the point.
+     */
+
+    --line-height-tight: 1.2; /* large headings — tight so they read as one unit */
+    --line-height-snug: 1.35; /* small headings, note titles */
+    --line-height-normal: 1.5; /* UI text */
+    --line-height-relaxed: 1.7; /* PROSE. Long-form reading needs the air. */
+
+    /* Three weights only (§29). If something needs more emphasis than 600,
+     * the answer is size or space, not a heavier face. */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+
+    /*
+     * Large text at default tracking looks loose — a quirk of scaling a face
+     * designed for body copy. A fraction of an em back at display sizes only.
+     */
+    --tracking-tight: -0.011em;
+    --tracking-normal: 0;
+
+    /*
+     * MEASURE, in ch — the width of the "0" glyph, so this stays ~68
+     * characters at any font size or zoom level. Comfortable prose sits around
+     * 45–75 characters per line; past that the eye loses its place returning
+     * to the start of the next line.
+     */
+    --measure-prose: 68ch;
+    --measure-narrow: 48ch;
+  }
+}
+
+@layer base {
+  /*
+   * Element defaults. Every one of these is overridable by a component or page
+   * layer without a specificity fight — that is what the layer order buys.
+   */
+
+  body {
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+    font-weight: var(--font-weight-normal);
+
+    /* No colour or background here — 2B owns those. The page stays
+     * browser-default until then, on purpose. */
+  }
+
+  h1 {
+    font-size: var(--font-size-2xl);
+    line-height: var(--line-height-tight);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  h2 {
+    font-size: var(--font-size-xl);
+    line-height: var(--line-height-tight);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  h3 {
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-snug);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  h4,
+  h5,
+  h6 {
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-snug);
+    font-weight: var(--font-weight-medium);
+  }
+
+  small {
+    font-size: var(--font-size-sm);
+  }
+
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--font-family-mono);
+    font-size: 0.9em; /* em, not rem: monospace runs large next to its siblings */
+  }
+}
