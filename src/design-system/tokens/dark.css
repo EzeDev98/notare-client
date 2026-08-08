@@ -65,6 +65,9 @@
     --color-danger: #f87171; /* 6.32 */
     --color-attention: #fbbf24; /* 10.48 */
 
+    /* Dark text on the lighter red: 6.32:1. White would be 2.77:1. */
+    --color-text-on-danger: #1c1917;
+
     --color-focus: var(--color-accent);
 
     /*

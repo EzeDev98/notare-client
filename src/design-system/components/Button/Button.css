@@ -70,7 +70,7 @@
   /* DANGER — white on #B3261E is 6.54:1. */
   .ds-button[data-variant='danger'] {
     background-color: var(--color-danger);
-    color: var(--warm-0);
+    color: var(--color-text-on-danger);
   }
 
   .ds-button[data-variant='danger']:hover:not(:disabled) {

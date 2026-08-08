@@ -90,6 +90,18 @@
     /* Status. Never the ONLY signal (§36) — always paired with text or an
      * icon, because roughly 1 in 12 men cannot rely on hue. */
     --color-danger: var(--red-base);
+
+    /*
+     * Text sitting ON a danger fill. Its own token because the answer flips
+     * between themes: white on the light red (#B3261E) is 6.54:1, white on the
+     * dark theme's lighter red (#F87171) is 2.77:1 and unreadable.
+     *
+     * Button.css previously hardcoded var(--warm-0) here — a PRIMITIVE, which
+     * the dark theme does not redefine. So the fill lightened and the text
+     * stayed white. The component looked right in light mode and failed in
+     * dark, which is exactly the failure the semantic layer exists to prevent.
+     */
+    --color-text-on-danger: var(--warm-0);
     --color-attention: var(--amber-base);
 
     /* Focus. --color-accent at 4.82 against the background, comfortably past

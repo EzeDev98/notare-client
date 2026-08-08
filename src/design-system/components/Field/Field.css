@@ -39,7 +39,16 @@
   }
 
   .ds-control::placeholder {
-    color: var(--color-text-disabled);
+    /*
+     * --color-text-secondary (4.80 light / 6.01 dark), NOT
+     * --color-text-disabled (2.52 / 3.16).
+     *
+     * A placeholder is text a user reads, so it needs the 4.5:1 body-text
+     * threshold. It was on the disabled token — precisely the misuse that
+     * token was renamed to prevent, committed in the same step as the rename.
+     * Faint placeholders are near-universal and near-universally a failure.
+     */
+    color: var(--color-text-secondary);
   }
 
   .ds-control[aria-invalid='true'] {
