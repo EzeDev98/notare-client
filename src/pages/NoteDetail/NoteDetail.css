@@ -1,0 +1,85 @@
+@layer pages {
+  /*
+   * §30: reading a note should feel like a clean document, not a dashboard
+   * card. Everything here serves that — a capped measure, generous vertical
+   * space, restrained chrome, and no borders or shadows around the text
+   * itself.
+   */
+  .note-detail {
+    max-inline-size: var(--measure-prose);
+    margin-inline: auto;
+    padding: var(--space-6) var(--space-4) var(--space-16);
+  }
+
+  .note-detail__back {
+    font-size: var(--font-size-sm);
+  }
+
+  .note-detail__back a {
+    text-decoration: none;
+  }
+
+  .note-detail__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-block-start: var(--space-8);
+  }
+
+  .note-detail__title {
+    margin: 0;
+    /* Titles wrap rather than truncate here — unlike the list, where a
+     * consistent card height matters more than the full title. */
+    overflow-wrap: break-word;
+  }
+
+  .note-detail__actions {
+    flex-shrink: 0;
+  }
+
+  .note-detail__meta {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    margin-block: var(--space-3) 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+  }
+
+  .note-detail__badge {
+    padding: var(--space-1) var(--space-2);
+    background-color: var(--color-accent-subtle);
+    border-radius: var(--radius-sm);
+  }
+
+  .note-detail__content {
+    margin-block-start: var(--space-8);
+
+    /* The reading size and leading from 2A — one step above UI text, with the
+     * air long-form reading needs. */
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-relaxed);
+
+    /*
+     * pre-wrap preserves the newlines and runs of spaces the user typed, while
+     * still wrapping long lines. `pre` alone would not wrap and would force a
+     * horizontal scrollbar on any long paragraph.
+     */
+    white-space: pre-wrap;
+    /* A pasted URL with no spaces should wrap rather than widen the page. */
+    overflow-wrap: break-word;
+  }
+
+  .note-detail__muted {
+    color: var(--color-text-secondary);
+  }
+
+  .note-detail__centre {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-3);
+    padding-block: var(--space-16);
+    text-align: center;
+  }
+}

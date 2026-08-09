@@ -62,6 +62,7 @@ export default defineConfig(({ mode }) => {
        */
       env: {
         VITE_API_BASE_URL: 'http://localhost:2001/api/v1',
+        VITE_SERVER_TIME_ZONE: 'Africa/Lagos',
       },
       globals: false,
       setupFiles: ['./tests/setup.ts'],

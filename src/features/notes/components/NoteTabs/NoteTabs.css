@@ -1,0 +1,30 @@
+@layer components {
+  .note-tabs {
+    display: flex;
+    gap: var(--space-1);
+    margin-block-start: var(--space-4);
+    border-block-end: var(--border-width) solid var(--color-border);
+  }
+
+  .note-tabs__tab {
+    padding: var(--space-2) var(--space-3);
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-size: var(--font-size-sm);
+    /* Reserve the indicator's space so the row does not shift on selection. */
+    border-block-end: 2px solid transparent;
+    margin-block-end: -1px;
+  }
+
+  .note-tabs__tab:hover {
+    color: var(--color-text);
+  }
+
+  /* aria-current is what NavLink sets, so the announced state and the visible
+   * state come from one source and cannot diverge. */
+  .note-tabs__tab[aria-current='page'] {
+    color: var(--color-accent);
+    border-block-end-color: var(--color-accent);
+    font-weight: var(--font-weight-medium);
+  }
+}

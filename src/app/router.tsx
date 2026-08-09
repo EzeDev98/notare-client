@@ -71,6 +71,19 @@ const routes = [
             },
           },
           {
+            /*
+             * Registered BEFORE the collection route for readability only —
+             * React Router matches by specificity, not order, so 'notes/:noteId'
+             * and 'notes' cannot shadow each other. (MSW does not share that
+             * property, which is why tests/msw/handlers.ts is order-sensitive.)
+             */
+            path: 'notes/:noteId',
+            lazy: async () => {
+              const { NoteDetailPage } = await import('@/pages/NoteDetail/NoteDetail');
+              return { Component: NoteDetailPage };
+            },
+          },
+          {
             path: 'notes',
             lazy: async () => {
               const { NotesPage } = await import('@/pages/Notes/Notes');

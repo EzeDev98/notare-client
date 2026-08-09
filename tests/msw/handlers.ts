@@ -72,6 +72,10 @@ export const handlers = [
     );
   }),
 
+  http.post(`${BASE}/notes/:noteId/restore`, ({ params }) =>
+    HttpResponse.json(makeNote({ id: Number(params['noteId']) })),
+  ),
+
   http.post(`${BASE}/notes/:noteId/pin`, ({ params }) =>
     HttpResponse.json(makeNote({ id: Number(params['noteId']), pinned: true, version: 1 })),
   ),

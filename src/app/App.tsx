@@ -2,6 +2,7 @@ import { RouterProvider } from 'react-router';
 
 import { AuthProvider } from '@/app/providers/AuthProvider';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
+import { ToastProvider } from '@/app/providers/ToastProvider';
 import { router } from '@/app/router';
 
 /**
@@ -15,7 +16,9 @@ export function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   );

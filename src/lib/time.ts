@@ -1,3 +1,5 @@
+import { env } from '@/lib/config/env';
+
 /**
  * The one place server timestamps are interpreted (decision D8).
  *
@@ -67,17 +69,85 @@ export function formatInstantAbsolute(instant: string): string {
   );
 }
 
+/* ===========================================================================
+ * LocalDateTime — the zoneless kind, which is most of the API
+ * ======================================================================== */
+
+/**
+ * The offset, in minutes, that the server's zone was at a given instant.
+ *
+ * Computed through Intl rather than hardcoded, so DST is handled. Lagos has
+ * none today; a server that moves, or a zone that gains DST, would otherwise
+ * be wrong for half the year with nothing to indicate it.
+ */
+function serverOffsetMinutes(at: Date): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: env.serverTimeZone,
+    timeZoneName: 'longOffset',
+  }).formatToParts(at);
+
+  // "GMT+01:00", or plain "GMT" at zero offset.
+  const label = parts.find((part) => part.type === 'timeZoneName')?.value ?? 'GMT';
+  const match = /GMT([+-])(\d{2}):(\d{2})/.exec(label);
+  if (!match) return 0;
+
+  const sign = match[1] === '-' ? -1 : 1;
+  const hours = Number(match[2]);
+  const minutes = Number(match[3]);
+  return sign * (hours * 60 + minutes);
+}
+
+/**
+ * Turns a zoneless server timestamp into a real Date.
+ *
+ * "2026-08-08T10:00:00.000" means ten in the morning IN THE SERVER'S ZONE. The
+ * naive `new Date(value)` reads it as ten in the morning wherever the USER is
+ * — which agrees for someone in the same zone and is off by the offset for
+ * everyone else. That is the bug this exists to prevent, and it is invisible
+ * during development in Lagos.
+ *
+ * The offset is resolved twice: once against a provisional reading, then
+ * against the corrected one. A single pass picks the wrong side of a DST
+ * transition for timestamps within an hour of it.
+ */
+export function parseServerDateTime(value: string): Date | null {
+  // Appending Z reads the wall-clock digits AS IF they were UTC, giving a
+  // provisional instant to resolve the offset against.
+  const provisional = new Date(`${value}Z`);
+  if (Number.isNaN(provisional.getTime())) return null;
+
+  const firstPass = new Date(provisional.getTime() - serverOffsetMinutes(provisional) * 60_000);
+  const corrected = new Date(provisional.getTime() - serverOffsetMinutes(firstPass) * 60_000);
+  return corrected;
+}
+
+/** Relative time for a zoneless server timestamp. */
+export function formatServerDateTimeRelative(value: string, now: Date = new Date()): string {
+  const parsed = parseServerDateTime(value);
+  if (parsed === null) return value;
+  return formatInstantRelative(parsed.toISOString(), now);
+}
+
+/** Full date and time for a zoneless server timestamp. */
+export function formatServerDateTimeAbsolute(value: string): string {
+  const parsed = parseServerDateTime(value);
+  if (parsed === null) return value;
+  return formatInstantAbsolute(parsed.toISOString());
+}
+
 /*
- * COMING IN 5B — parsing LocalDateTime.
+ * NOT COVERED HERE, deliberately: the SYNC CURSOR.
  *
- * It is not simply `new Date(value + 'Z')`. That assumes the server's clock is
- * UTC, and the dev datasource is configured with serverTimezone=Africa/Lagos.
- * The honest options are: ask the backend to serialise Instant everywhere (the
- * real fix), or pick an assumed server zone and convert explicitly. Either way
- * it is a decision, not a helper — so it waits until there is a screen that
- * forces it.
+ * It is a LocalDateTime too, but it is not a timestamp to display — it is an
+ * opaque token the server hands us and expects back byte for byte. Parse one
+ * with the function above, re-serialise it, and you send UTC where the server
+ * expects its own wall clock: the cursor shifts by the offset and changes are
+ * permanently skipped. Step 8 stores it as a plain string and never brings it
+ * near this module.
  *
- * The rule that holds regardless: a SYNC CURSOR of this type is opaque. Parse
- * one into a Date and re-serialise it and you shift it by the local offset,
- * permanently skipping changes.
+ * BACKLOG — the proper fix is the server serialising Instant everywhere, which
+ * removes the guesswork entirely. It is bigger than it looks: entity field
+ * types change across every module, it needs a migration, AND it breaks the
+ * sync cursor, which Spring parses back as a LocalDateTime. Whoever picks it
+ * up should handle the cursor separately.
  */

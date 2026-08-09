@@ -33,6 +33,7 @@ function required(name: string, value: string | undefined): string {
 }
 
 const apiBaseUrl = required('VITE_API_BASE_URL', import.meta.env.VITE_API_BASE_URL);
+const serverTimeZone = required('VITE_SERVER_TIME_ZONE', import.meta.env.VITE_SERVER_TIME_ZONE);
 
 if (missing.length > 0) {
   // Thrown at MODULE LOAD, so the app refuses to start rather than starting
@@ -52,6 +53,13 @@ export const env = Object.freeze({
    * defensively in every request.
    */
   apiBaseUrl: apiBaseUrl.replace(/\/+$/, ''),
+
+  /**
+   * IANA zone the server's LocalDateTime values are expressed in. See
+   * lib/time.ts — required rather than defaulted, because a wrong default
+   * shifts every timestamp by hours with nothing to indicate it.
+   */
+  serverTimeZone,
 
   /** Vite's own build-time flags, re-exported so nothing else imports env directly. */
   isDev: import.meta.env.DEV,

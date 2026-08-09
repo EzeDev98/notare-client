@@ -1,0 +1,112 @@
+@layer components {
+  .note-card {
+    /* Containing block for the stretched link's ::after. */
+    position: relative;
+    background-color: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+    transition: border-color var(--transition-fast);
+  }
+
+  .note-card:hover {
+    border-color: var(--color-border-strong);
+  }
+
+  .note-card__link {
+    display: block;
+    padding: var(--space-4);
+    /* Room for the action, so a long title never runs underneath it. */
+    padding-inline-end: var(--space-16);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /*
+   * The stretched link: an absolutely positioned pseudo-element covering the
+   * whole card, making it all clickable — without nesting the button inside
+   * the anchor, which would be invalid HTML.
+   */
+  .note-card__link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .note-card__actions {
+    position: absolute;
+    inset-block-start: var(--space-2);
+    inset-inline-end: var(--space-2);
+    /* Above the stretched ::after, or the link would swallow the click. */
+    z-index: 1;
+
+    /*
+     * Hidden by OPACITY, not display: none. display would remove it from the
+     * tab order entirely — the same invisibility, but to keyboard users
+     * permanently rather than until they hover.
+     */
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+  }
+
+  .note-card:hover .note-card__actions,
+  /* :focus-within is what makes it reachable by Tab. Without it the action is
+   * keyboard-invisible, which is the usual failure of hover-revealed UI. */
+  .note-card:focus-within .note-card__actions {
+    opacity: 1;
+  }
+
+  /*
+   * Always visible where there is no hover. On touch, a hover-revealed control
+   * is simply an absent one.
+   */
+  @media (hover: none) {
+    .note-card__actions {
+      opacity: 1;
+    }
+  }
+
+  .note-card__title {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-snug);
+    /* Long titles truncate rather than pushing the card taller than its
+     * neighbours and breaking the list's rhythm. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .note-card__untitled {
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-normal);
+  }
+
+  .note-card__preview {
+    margin: var(--space-2) 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+
+    /* Two lines, then ellipsis. A preview that runs to five lines stops being
+     * a preview. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .note-card__meta {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    margin: var(--space-3) 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+  }
+
+  .note-card__badge {
+    padding: var(--space-1) var(--space-2);
+    background-color: var(--color-accent-subtle);
+    border-radius: var(--radius-sm);
+  }
+}
