@@ -82,7 +82,7 @@ export function RegisterPage() {
       lastName: form.lastName.trim(),
       username: form.username.trim(),
       email: form.email.trim(),
-      gender: form.gender as 'MALE' | 'FEMALE' | 'OTHER',
+      gender: form.gender as 'MALE' | 'FEMALE',
       password: form.password,
       confirmPassword: form.confirmPassword,
     });
@@ -167,7 +167,6 @@ export function RegisterPage() {
           <option value="">Select…</option>
           <option value="MALE">Male</option>
           <option value="FEMALE">Female</option>
-          <option value="OTHER">Other</option>
         </Select>
 
         <TextField

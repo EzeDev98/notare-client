@@ -94,7 +94,8 @@ export interface RegistrationRequest {
   lastName: string;
   username: string;
   email: string;
-  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  /* Mirrors com.notare.feature.user.enums.Gender exactly: two constants. */
+  gender: 'MALE' | 'FEMALE';
   password: string;
   confirmPassword: string;
 }
