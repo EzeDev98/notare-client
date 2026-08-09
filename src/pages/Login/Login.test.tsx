@@ -19,6 +19,8 @@ function renderApp(initialPath = '/login') {
   const router = createMemoryRouter(
     [
       { path: '/login', element: <LoginPage /> },
+      // 4F: an unverified account is routed here rather than shown a message.
+      { path: '/verify', element: <h1>Verify your account</h1> },
       {
         element: <RequireAuth />,
         children: [{ path: '/notes', element: <h1>Notes</h1> }],
@@ -112,7 +114,19 @@ describe('the login form', () => {
     await user.type(screen.getByLabelText(/password/i), 'Passw0rd');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(/verify your email/i);
+    /*
+     * ROUTED, not told. 4E showed a form-level message here; 4F sends them to
+     * the verification screen instead, carrying the identifier so they do not
+     * retype it.
+     *
+     * The difference matters: "please verify your email" is true but not
+     * actionable — the user is left on a screen that cannot help them. A 403
+     * from login is the one case where the server is telling us exactly what
+     * the user needs to do next, so we should do it.
+     */
+    expect(
+      await screen.findByRole('heading', { name: /verify your account/i }),
+    ).toBeInTheDocument();
   });
 });
 

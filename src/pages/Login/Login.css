@@ -13,6 +13,12 @@
     font-size: var(--font-size-sm);
   }
 
+  .login__alt {
+    margin-block-start: var(--space-6);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
+
   .login__notice {
     background-color: var(--color-accent-subtle);
     color: var(--color-text);

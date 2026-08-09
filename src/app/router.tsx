@@ -20,6 +20,33 @@ const routes = [
       // Eager: an unauthenticated visitor needs this immediately, and
       // code-splitting it adds a round trip before the first render.
       { path: 'login', element: <LoginPage /> },
+
+      /*
+       * Lazy, unlike login: these are visited once per account, so paying a
+       * round trip for them keeps the initial bundle smaller for the screen
+       * every returning user actually sees.
+       */
+      {
+        path: 'register',
+        lazy: async () => {
+          const { RegisterPage } = await import('@/pages/Register/Register');
+          return { Component: RegisterPage };
+        },
+      },
+      {
+        path: 'reset-password',
+        lazy: async () => {
+          const { ResetPasswordPage } = await import('@/pages/ResetPassword/ResetPassword');
+          return { Component: ResetPasswordPage };
+        },
+      },
+      {
+        path: 'verify',
+        lazy: async () => {
+          const { VerifyAccountPage } = await import('@/pages/VerifyAccount/VerifyAccount');
+          return { Component: VerifyAccountPage };
+        },
+      },
     ],
   },
 
@@ -36,6 +63,13 @@ const routes = [
         element: <AppLayout />,
         HydrateFallback: RouteFallback,
         children: [
+          {
+            path: 'account/sessions',
+            lazy: async () => {
+              const { SessionsPage } = await import('@/pages/Sessions/Sessions');
+              return { Component: SessionsPage };
+            },
+          },
           {
             path: 'notes',
             lazy: async () => {

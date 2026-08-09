@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { Button } from '@/design-system/components/Button/Button';
@@ -22,6 +22,12 @@ const DEFAULT_DESTINATION = '/notes';
  * sends users to https://evil.example with our own login page as the referrer.
  * One line now, and the habit costs nothing.
  */
+/** True when we arrived here straight after verifying an account. */
+function readVerified(state: unknown): boolean {
+  if (typeof state !== 'object' || state === null) return false;
+  return (state as { verified?: unknown }).verified === true;
+}
+
 function readDestination(state: unknown): string {
   if (typeof state !== 'object' || state === null) return DEFAULT_DESTINATION;
 
@@ -105,7 +111,13 @@ export function LoginPage() {
          * The verification screen arrives in 4F; until then this at least says
          * something true.
          */
-        setFormError('Please verify your email address before signing in.');
+        /*
+         * Now actionable. The account exists and the password was right — it
+         * is simply unverified, so send them where they can fix it, carrying
+         * the identifier so they do not retype it.
+         */
+        void navigate('/verify', { state: { identifier: usernameOrEmail.trim() } });
+        return;
       } else if (isOffline(error)) {
         setFormError('Cannot reach Notare. Check your connection and try again.');
       } else {
@@ -139,6 +151,12 @@ export function LoginPage() {
         managers offer to fill and save, and screen readers announce it as a
         form. All free, and all absent from a div.
       */}
+      {readVerified(location.state) ? (
+        <p className="login__notice" role="status">
+          Your account is verified. Sign in to continue.
+        </p>
+      ) : null}
+
       <form className="login__form" onSubmit={(event) => void handleSubmit(event)} noValidate>
         {formError !== null ? (
           // role="alert" so it is announced when it appears, rather than being
@@ -183,6 +201,14 @@ export function LoginPage() {
           Sign in
         </Button>
       </form>
+
+      <p className="login__alt">
+        <Link to="/reset-password">Forgot your password?</Link>
+      </p>
+
+      <p className="login__alt">
+        New to Notare? <Link to="/register">Create an account</Link>
+      </p>
     </>
   );
 }
