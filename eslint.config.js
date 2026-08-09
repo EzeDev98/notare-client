@@ -235,7 +235,20 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['@/lib/http', '@/lib/http/**', '@/lib/db', '@/lib/db/**'],
+              /*
+               * The CLIENT is forbidden, not the whole module.
+               *
+               * @/lib/http/errors exports type guards over error VALUES —
+               * isConflict, isUnauthorized, fieldErrors. A page catching an
+               * error and asking "was that a 401?" is precisely what §11 asks
+               * for, and banning it would force every page into either a
+               * generic catch or a pointless re-export of the same predicates
+               * through a feature module.
+               *
+               * What must stay out of a component is the ability to MAKE a
+               * request or touch the database.
+               */
+              group: ['@/lib/http/client', '@/lib/http/authHooks', '@/lib/db', '@/lib/db/**'],
               message:
                 'Components must not speak HTTP or touch the database. Use a hook from the relevant feature.',
             },

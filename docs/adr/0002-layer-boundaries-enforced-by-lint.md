@@ -35,3 +35,23 @@ architecture rather than style.
 - Cross-feature isolation stays a review concern.
 - Deep relative imports (`../../`) are banned outright, since they hide which
   layer they cross.
+
+## Amendment (Step 4E): narrowing the component rule
+
+The original rule banned `@/lib/http/**` from pages and components. That was
+too broad: `@/lib/http/errors` exports type guards over error VALUES —
+`isConflict`, `isUnauthorized`, `fieldErrors` — and a page catching an error
+and asking "was that a 401?" is exactly what the error model exists for.
+
+Banning it would have forced every page into either a generic `catch` or a
+pointless re-export of the same predicates through a feature module.
+
+Narrowed to `@/lib/http/client`, `@/lib/http/authHooks` and `@/lib/db/**`:
+what must stay out of a component is the ability to MAKE a request or touch
+the database, not the vocabulary for describing what came back.
+
+Note the pattern across three firings of these rules in Steps 3–4: twice the
+rule was right and the file was misplaced (a service test under `lib/`, an
+integration test named after the wrong module); once the rule itself was wrong.
+Each loosening should be a narrowing with a written reason, never a suppression
+comment — otherwise the rule decays into noise.

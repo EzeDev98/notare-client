@@ -3,6 +3,15 @@
  */
 import '@testing-library/jest-dom/vitest';
 
+/*
+ * jsdom has no IndexedDB — it implements the DOM, not the whole platform. This
+ * installs a spec-compliant implementation on the global, so the auth token
+ * store can be tested for real rather than behind a mock of itself.
+ *
+ * Step 7 needs the same shim for the notes database.
+ */
+import 'fake-indexeddb/auto';
+
 import { cleanup } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 

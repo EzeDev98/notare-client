@@ -1,0 +1,27 @@
+@layer pages {
+  .login__form {
+    display: grid;
+    gap: var(--space-5);
+    margin-block-start: var(--space-6);
+  }
+
+  .login__notice,
+  .login__error {
+    margin: 0;
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+  }
+
+  .login__notice {
+    background-color: var(--color-accent-subtle);
+    color: var(--color-text);
+  }
+
+  .login__error {
+    /* Text colour AND a border — never colour alone (§36). The message itself
+     * carries the meaning; the styling only reinforces it. */
+    border: var(--border-width) solid var(--color-danger);
+    color: var(--color-danger);
+  }
+}
