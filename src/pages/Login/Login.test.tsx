@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { LoginPage } from '@/pages/Login/Login';
-import { expectNoAxeViolations } from '../../../tests/a11y';
+import { expectNoAxeViolations } from '~/a11y';
 
 describe('LoginPage', () => {
   it('has no automatically detectable accessibility violations', async () => {

@@ -21,7 +21,8 @@
     /* Tells the TYPE CHECKER what "@/lib/http" means.
        Vite is told separately in vite.config.ts. */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "~/*": ["./tests/*"]
     },
 
     /* strict is eight flags. The four below are NOT in it. */

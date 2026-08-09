@@ -1,4 +1,4 @@
-import { http, HttpResponse } from 'msw';
+import { http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { noteService } from '@/features/notes/api/noteService';
@@ -10,25 +10,40 @@ import {
   isNotFound,
   isRetriable,
 } from '@/lib/http/errors';
-import {
-  bareConflict,
-  bootDefaultError,
-  noteConflict,
-  problemDetail,
-} from '../../../../tests/fixtures/errors';
-import { resetNoteFixtures } from '../../../../tests/fixtures/notes';
-import { server } from '../../../../tests/msw/server';
+import { bareConflict, bootDefaultError, noteConflict, problemDetail } from '~/fixtures/errors';
+import { resetNoteFixtures } from '~/fixtures/notes';
+import { server } from '~/msw/server';
 
 const BASE = 'http://localhost:2001/api/v1';
 
-/** Records what the service actually sent, for request-shape assertions. */
+/**
+ * Records what the service actually sent.
+ *
+ * The BODY is read at event time, not the Request object stored for later. A
+ * request body is a single-use stream, and by the time an assertion runs the
+ * MSW handler has already consumed it — clone() only helps if you clone before
+ * the read, which is here. Storing the request and cloning later gives
+ * "TypeError: unusable".
+ */
 let lastRequest: Request | undefined;
+let lastBody: unknown;
 
 beforeEach(() => {
   resetNoteFixtures();
   lastRequest = undefined;
+  lastBody = undefined;
   server.events.on('request:start', ({ request }) => {
     lastRequest = request;
+    // Clone NOW, while the stream is still unread, and read it eagerly.
+    const clone = request.clone();
+    void clone
+      .text()
+      .then((text) => {
+        lastBody = text === '' ? undefined : (JSON.parse(text) as unknown);
+      })
+      .catch(() => {
+        lastBody = undefined;
+      });
   });
 });
 
@@ -89,7 +104,7 @@ describe('auto-save', () => {
   it('sends only the fields being changed', async () => {
     await noteService.autoSaveNote(1, { title: 'New title', version: 3 });
 
-    const body = (await lastRequest?.clone().json()) as Record<string, unknown>;
+    const body = lastBody as Record<string, unknown>;
 
     // An omitted field means "leave it alone". Sending content here — even as
     // null — would clear the note body, because that is PUT's verb.
@@ -147,7 +162,7 @@ describe('writes', () => {
   it('sends both fields on a full update, where null clears', async () => {
     await noteService.updateNote(1, { title: 'Kept', content: null, version: 2 });
 
-    const body = (await lastRequest?.clone().json()) as Record<string, unknown>;
+    const body = lastBody as Record<string, unknown>;
 
     // Explicit null, not omission. The type requires both fields precisely so
     // this cannot happen by accident.

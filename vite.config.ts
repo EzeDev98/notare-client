@@ -28,6 +28,13 @@ export default defineConfig(({ mode }) => {
          * to load it from. Two programs, neither reads the other's config.
          */
         '@': fileURLToPath(new URL('./src', import.meta.url)),
+        /*
+         * Test-only helpers live outside src/, so @/ cannot reach them. Their
+         * own alias, rather than deep relative paths: 1C bans those because
+         * "../../../../tests/msw/server" hides which layer it crosses, and a
+         * test importing fixtures is crossing one every time.
+         */
+        '~': fileURLToPath(new URL('./tests', import.meta.url)),
       },
     },
 

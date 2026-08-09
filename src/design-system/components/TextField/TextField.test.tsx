@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { TextField } from '@/design-system/components/TextField/TextField';
-import { expectNoAxeViolations } from '../../../../tests/a11y';
+import { expectNoAxeViolations } from '~/a11y';
 
 describe('TextField', () => {
   it('associates an error with the input, so it is announced and not just seen', async () => {

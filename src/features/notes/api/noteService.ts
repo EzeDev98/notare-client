@@ -54,7 +54,7 @@ interface SearchOptions extends Cancellable {
 
 export const noteService = {
   /** The owner's notes. Archived excluded unless asked for. */
-  listNotes({ page, size, archived, sort, signal }: ListOptions = {}): Promise
+  listNotes({ page, size, archived, sort, signal }: ListOptions = {}): Promise<
     PagedResponse<NoteSummaryResponse>
   > {
     return httpClient.get<PagedResponse<NoteSummaryResponse>>(NOTES, {
@@ -73,9 +73,10 @@ export const noteService = {
    * percent-encodes them for transport. A search for "100%" finds notes
    * containing a percent sign rather than every note the user owns.
    */
-  searchNotes(query: string, { page, size, signal }: SearchOptions = {}): Promise
-    PagedResponse<NoteSummaryResponse>
-  > {
+  searchNotes(
+    query: string,
+    { page, size, signal }: SearchOptions = {},
+  ): Promise<PagedResponse<NoteSummaryResponse>> {
     return httpClient.get<PagedResponse<NoteSummaryResponse>>(`${NOTES}/search`, {
       query: { query, page, size },
       ...(signal ? { signal } : {}),
@@ -88,7 +89,7 @@ export const noteService = {
    * `deletedAt` supports "trashed 3 days ago" and NOT a countdown — nothing on
    * the server purges trashed notes.
    */
-  listTrash({ page, size, signal }: SearchOptions = {}): Promise
+  listTrash({ page, size, signal }: SearchOptions = {}): Promise<
     PagedResponse<TrashedNoteResponse>
   > {
     return httpClient.get<PagedResponse<TrashedNoteResponse>>(`${NOTES}/trash`, {
