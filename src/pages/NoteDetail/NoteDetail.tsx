@@ -1,5 +1,7 @@
 import { Link, useNavigate, useParams } from 'react-router';
 
+import { useAuth } from '@/app/providers/auth-context';
+import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
 import { useDeleteNote } from '@/features/notes/hooks/useDeleteNote';
 import { parseNoteId, useNote } from '@/features/notes/hooks/useNote';
 import { Button } from '@/design-system/components/Button/Button';
@@ -8,7 +10,24 @@ import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/li
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './NoteDetail.css';
 
+/**
+ * Hosts the editor for a loaded note.
+ *
+ * A separate component so that typing re-renders THIS and not the page around
+ * it — the header, the delete button and the error states have no reason to
+ * repaint per character.
+ *
+ * The key on the note id remounts the editor when the route changes to a
+ * different note. Without it, React reuses the component and the draft state
+ * from the previous note leaks into the next one.
+ */
 export function NoteDetailPage() {
+  const { state: authState } = useAuth();
+  const currentUserId =
+    authState.status === 'authenticated' || authState.status === 'refreshing'
+      ? authState.user.id
+      : null;
+
   const { noteId: noteIdParam } = useParams();
   const noteId = parseNoteId(noteIdParam);
 
@@ -75,10 +94,6 @@ export function NoteDetailPage() {
       {state.status === 'ready' ? (
         <>
           <header className="note-detail__header">
-            <h1 className="note-detail__title">
-              {title === '' ? <span className="note-detail__muted">Untitled</span> : title}
-            </h1>
-
             <div className="note-detail__actions">
               <Button
                 variant="ghost"
@@ -101,18 +116,26 @@ export function NoteDetailPage() {
           </p>
 
           {/*
-            Content as a TEXT NODE. React escapes it, so a note containing
-            <script> displays those characters rather than executing anything —
-            which is why nothing here reaches for dangerouslySetInnerHTML.
-
-            Newlines survive through white-space: pre-wrap in CSS rather than
-            through markup, so the text stays text.
+            The reading view from 5D is now the writing surface, inside the
+            same shell — same measure, same type scale, same error states.
+            Building the reading experience first meant judging the typography
+            without the save machinery confusing the question.
           */}
-          {state.note.content !== null && state.note.content.trim() !== '' ? (
-            <div className="note-detail__content">{state.note.content}</div>
-          ) : (
-            <p className="note-detail__muted">This note is empty.</p>
-          )}
+          {/*
+            THE KEY IS LOAD-BEARING, not a list-rendering habit.
+            
+            useNoteEditor passes `note` to useState, which uses it ONLY as a
+            seed — later values are ignored. Navigate from note 5 to note 9
+            without this component unmounting and the draft still holds note
+            5's text and version while pointing at note 9's id, and the next
+            auto-save writes one note's content into the other.
+            
+            Whether it unmounts otherwise depends on whether the fetch happens
+            to pass through a loading state, which is timing rather than
+            design. The key makes it structural: React discards the instance
+            and builds a fresh one.
+          */}
+          <NoteEditorHost key={state.note.id} note={state.note} currentUserId={currentUserId} />
         </>
       ) : null}
     </article>

@@ -3,6 +3,7 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
+import { AuthProvider } from '@/app/providers/AuthProvider';
 import { ToastProvider } from '@/app/providers/ToastProvider';
 import { parseNoteId } from '@/features/notes/hooks/useNote';
 import { NoteDetailPage } from '@/pages/NoteDetail/NoteDetail';
@@ -23,9 +24,11 @@ function renderDetail(path = '/notes/1') {
   );
 
   return render(
-    <ToastProvider>
-      <RouterProvider router={router} />
-    </ToastProvider>,
+    <AuthProvider>
+      <ToastProvider>
+        <RouterProvider router={router} />
+      </ToastProvider>
+    </AuthProvider>,
   );
 }
 
@@ -53,7 +56,7 @@ describe('parseNoteId', () => {
 describe('the note detail view', () => {
   it('has no automatically detectable accessibility violations', async () => {
     const { container } = renderDetail();
-    await screen.findByRole('heading', { name: /note 1/i });
+    await screen.findByDisplayValue(/note 1/i);
     await expectNoAxeViolations(container);
   });
 
@@ -66,17 +69,15 @@ describe('the note detail view', () => {
     renderDetail();
 
     /*
-     * normalizer: identity. getByText COLLAPSES whitespace by default —
-     * newlines become spaces before matching — so the default matcher can
-     * never see the line breaks this test is about.
+     * The field's VALUE, not rendered text. Since 6A the content lives in a
+     * textarea, and its value is what round-trips back to the server — so that
+     * is the thing worth asserting on.
      *
-     * The text arrives intact and CSS white-space: pre-wrap renders the
-     * breaks. Storing markup would have been the alternative, and a far worse
-     * one.
+     * (The old getByText assertion happened to keep passing here, because a
+     * textarea's value appears as its text content. Passing for a different
+     * reason than it was written for is not the same as passing.)
      */
-    expect(
-      await screen.findByText('one\ntwo\nthree', { normalizer: (text) => text }),
-    ).toBeInTheDocument();
+    expect(await screen.findByLabelText('Note content')).toHaveValue('one\ntwo\nthree');
   });
 
   it('renders angle brackets as text rather than markup', async () => {
@@ -87,7 +88,9 @@ describe('the note detail view', () => {
     );
     const { container } = renderDetail();
 
-    expect(await screen.findByText(/<script>alert\(1\)<\/script>/)).toBeInTheDocument();
+    // A textarea's value is text by construction — there is no parsing step
+    // for markup to survive, which is a stronger guarantee than escaping.
+    expect(await screen.findByLabelText('Note content')).toHaveValue('<script>alert(1)</script>');
     expect(container.querySelector('script')).toBeNull();
   });
 
@@ -124,7 +127,7 @@ describe('the note detail view', () => {
     expect(screen.getByText(/isn't available to you/i)).toBeInTheDocument();
   });
 
-  it('says so when a note has no content', async () => {
+  it('shows an empty writing surface for a note with no content', async () => {
     server.use(
       http.get(`${BASE}/notes/:noteId`, () =>
         HttpResponse.json(makeNote({ id: 1, title: 'Empty', content: null })),
@@ -132,6 +135,14 @@ describe('the note detail view', () => {
     );
     renderDetail();
 
-    expect(await screen.findByText(/this note is empty/i)).toBeInTheDocument();
+    /*
+     * An empty note is now an empty writing surface with a placeholder, not a
+     * sentence telling the user there is nothing here. In a read view "This
+     * note is empty" was information; in an editor it would be a label on the
+     * blank page they are about to write on.
+     */
+    const content = await screen.findByLabelText('Note content');
+    expect(content).toHaveValue('');
+    expect(content).toHaveAttribute('placeholder', 'Start writing…');
   });
 });

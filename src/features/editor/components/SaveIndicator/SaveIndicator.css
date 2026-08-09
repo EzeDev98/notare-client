@@ -1,0 +1,16 @@
+@layer components {
+  .save-indicator {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    /* Colour never carries the meaning alone (§36) — the words do. */
+  }
+
+  .save-indicator[data-tone='warn'] {
+    color: var(--color-attention);
+  }
+
+  .save-indicator[data-tone='danger'] {
+    color: var(--color-danger);
+  }
+}

@@ -23,9 +23,16 @@ export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
     <section className="notes">
       <header className="notes__header">
         <h1>{archived ? 'Archived' : 'Notes'}</h1>
-        <Link className="notes__search" to="/search">
-          Search
-        </Link>
+        <div className="notes__header-actions">
+          <Link className="notes__search" to="/search">
+            Search
+          </Link>
+          <Link to="/notes/new">
+            <Button variant="primary" size="sm">
+              New note
+            </Button>
+          </Link>
+        </div>
       </header>
 
       <NoteTabs />

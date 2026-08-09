@@ -1,0 +1,80 @@
+@layer components {
+  .conflict {
+    margin-block-start: var(--space-6);
+    padding: var(--space-5);
+    background-color: var(--color-surface);
+    /* A border, not a shadow — this is a region of the page, not a floating
+     * layer (§31). */
+    border: var(--border-width) solid var(--color-danger);
+    border-radius: var(--radius-lg);
+  }
+
+  .conflict--centre {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-3);
+    border-color: var(--color-border-strong);
+    text-align: center;
+  }
+
+  .conflict__heading {
+    margin: 0;
+    font-size: var(--font-size-lg);
+  }
+
+  .conflict__lead,
+  .conflict__note {
+    margin: var(--space-2) 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  .conflict__panes {
+    display: grid;
+    gap: var(--space-4);
+    margin-block-start: var(--space-5);
+  }
+
+  /* Side by side only when there is room to read both. At 375px two columns
+   * would be about 20 characters each, which is not a comparison. */
+  @media (min-width: 768px) {
+    .conflict__panes {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .conflict__pane {
+    padding: var(--space-4);
+    background-color: var(--color-surface-sunken);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .conflict__pane-title {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .conflict__title {
+    margin: var(--space-2) 0 0;
+    font-weight: var(--font-weight-medium);
+  }
+
+  .conflict__body {
+    margin-block-start: var(--space-3);
+    max-block-size: 18rem;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+  }
+
+  .conflict__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-block-start: var(--space-5);
+  }
+}

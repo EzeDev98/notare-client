@@ -34,7 +34,14 @@ describe('the trash', () => {
      * user acts on by not restoring something.
      */
     expect(screen.getByText(/until you delete them permanently/i)).toBeInTheDocument();
-    expect(screen.queryByText(/\d+ days/i)).not.toBeInTheDocument();
+    /*
+     * The absence of a FUTURE promise, not of any duration. "Trashed 4 days
+     * ago" is the label we want; "deleted in 30 days" is the lie — a countdown
+     * the server does not honour, which a user acts on by not restoring
+     * something.
+     */
+    expect(screen.queryByText(/deleted in/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\bin \d+ days?\b/i)).not.toBeInTheDocument();
   });
 
   it('requires a second click before deleting forever', async () => {

@@ -50,6 +50,7 @@ export function useNote(noteId: number | null) {
     }
 
     const controller = new AbortController();
+    console.log('[useNote] fetching', noteId);
     setState({ status: 'loading' });
 
     noteService

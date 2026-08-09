@@ -1,0 +1,62 @@
+@layer components {
+  /*
+   * §30: the note should read like a clean document. No borders, no boxes, no
+   * visible field chrome — the interface disappears and the text is the page.
+   */
+  .editor-surface__title,
+  .editor-surface__content {
+    inline-size: 100%;
+    background: transparent;
+    border: none;
+    padding: 0;
+    color: var(--color-text);
+    /* Fields do not inherit fonts (2A), and here that matters twice over. */
+    font-family: inherit;
+  }
+
+  .editor-surface__title {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .editor-surface__content {
+    margin-block-start: var(--space-6);
+
+    /* The reading size and leading from 2A — the same values the read view
+     * used, so switching between them is not a visual jump. */
+    font-size: var(--font-size-md);
+    line-height: var(--line-height-relaxed);
+
+    /* Height is set by JS; this stops the browser's own resize handle from
+     * fighting it. */
+    resize: none;
+    overflow-y: hidden;
+    min-block-size: 60vh;
+  }
+
+  .editor-surface__title::placeholder,
+  .editor-surface__content::placeholder {
+    /* Secondary, not disabled — a placeholder is text the user reads. */
+    color: var(--color-text-secondary);
+  }
+
+  /*
+   * The focus ring is suppressed HERE and only here.
+   *
+   * 2A deliberately kept browser outlines and 2B replaced them with a designed
+   * ring, and this is the one justified exception: a 2px lavender box around
+   * the entire writing area, permanently, while someone writes for an hour is
+   * exactly the "interface competing with the content" §27 rules out.
+   *
+   * The trade is real — a keyboard user loses the indicator on these two
+   * fields. It is acceptable only because focus here is unambiguous: the
+   * caret is visible and blinking, which is a stronger focus signal than a
+   * ring. Nowhere else in the app gets this treatment.
+   */
+  .editor-surface__title:focus-visible,
+  .editor-surface__content:focus-visible {
+    outline: none;
+  }
+}
