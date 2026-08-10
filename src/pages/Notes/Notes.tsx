@@ -2,22 +2,15 @@ import { Link } from 'react-router';
 
 import { NoteCard } from '@/features/notes/components/NoteCard/NoteCard';
 import { NoteTabs } from '@/features/notes/components/NoteTabs/NoteTabs';
-import { useDeleteNote } from '@/features/notes/hooks/useDeleteNote';
-import { useNoteActions } from '@/features/notes/hooks/useNoteActions';
 import { useNotes } from '@/features/notes/hooks/useNotes';
 import { Button } from '@/design-system/components/Button/Button';
-import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Notes.css';
 
 export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
   useDocumentTitle(archived ? 'Archived' : 'Notes');
 
-  const { state, loadingMore, loadMore, reload, removeOptimistically, applyUpdate } = useNotes({
-    archived,
-  });
-  const deleteNote = useDeleteNote({ onRemove: removeOptimistically });
-  const actions = useNoteActions({ onUpdated: applyUpdate, onRemoved: removeOptimistically });
+  const { notes, refreshing, refreshError, refresh } = useNotes({ archived });
 
   return (
     <section className="notes">
@@ -38,30 +31,27 @@ export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
       <NoteTabs />
 
       {/*
-        §37: loading, empty and error are three different answers to "why is
-        there nothing here". Collapsing them into one spinner-or-blank leaves
-        the user unable to tell a slow network from an empty account.
+        A BANNER, not a screen. Whatever is in local storage stays visible —
+        the notes are readable offline and the failure is an aside. Before
+        Step 7 this was an error state that replaced everything.
       */}
-
-      {state.status === 'loading' ? (
-        <div className="notes__centre">
-          <Spinner label="Loading your notes" />
-        </div>
-      ) : null}
-
-      {state.status === 'error' ? (
-        <div className="notes__centre" role="alert">
-          <p>{state.message}</p>
-          <Button variant="secondary" onClick={reload}>
+      {refreshError !== null ? (
+        <p className="notes__offline" role="status">
+          {refreshError}{' '}
+          <button className="notes__retry" type="button" onClick={refresh}>
             Try again
-          </Button>
-        </div>
+          </button>
+        </p>
       ) : null}
 
-      {state.status === 'ready' && state.notes.length === 0 ? (
+      {/*
+        `notes === undefined` means Dexie has not answered yet — a few
+        milliseconds, and rendering a spinner for it would flash on every
+        mount. `notes.length === 0` is a genuinely empty account. Conflating
+        the two shows an empty state before the query has run.
+      */}
+      {notes !== undefined && notes.length === 0 && !refreshing ? (
         <div className="notes__centre">
-          {/* Says what the screen is FOR and offers the action that fills it.
-              "No notes" alone tells the user what they can already see. */}
           <h2 className="notes__empty-title">Nothing here yet</h2>
           <p className="notes__empty-body">
             Your notes will appear here. Start with a thought, a list, or whatever is on your mind.
@@ -72,47 +62,12 @@ export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
         </div>
       ) : null}
 
-      {state.status === 'ready' && state.notes.length > 0 ? (
-        <>
-          <ul className="notes__list" role="list">
-            {state.notes.map((note) => (
-              <NoteCard
-                key={note.id}
-                note={note}
-                onDelete={(noteId, title) => void deleteNote(noteId, title)}
-                onTogglePin={(target) => void actions.setPinned(target)}
-                onToggleArchive={(target) =>
-                  void (archived ? actions.unarchive(target) : actions.archive(target))
-                }
-              />
-            ))}
-          </ul>
-
-          {/*
-            A polite live region announcing the count after each load.
-            Appending twenty rows is obvious visually and completely silent to
-            a screen reader — the user presses a button and, as far as they can
-            tell, nothing happens.
-          */}
-          <p className="notes__count" role="status">
-            Showing {state.notes.length} of {state.total}
-          </p>
-
-          {state.hasNext ? (
-            <div className="notes__more">
-              {/*
-                An explicit button, not infinite scroll. Infinite scroll gives
-                focus nowhere to land, puts anything below the list permanently
-                out of a keyboard user's reach, and fires unpredictably with a
-                screen reader. A button is reachable, keeps focus where the
-                user put it, and reads as an ordinary control.
-              */}
-              <Button variant="secondary" loading={loadingMore} onClick={() => void loadMore()}>
-                Load more
-              </Button>
-            </div>
-          ) : null}
-        </>
+      {notes !== undefined && notes.length > 0 ? (
+        <ul className="notes__list" role="list">
+          {notes.map((note) => (
+            <NoteCard key={note.localId} note={note} />
+          ))}
+        </ul>
       ) : null}
     </section>
   );

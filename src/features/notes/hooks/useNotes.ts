@@ -1,220 +1,120 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { useCallback, useEffect, useState } from 'react';
 
+import { useAuth } from '@/app/providers/auth-context';
 import { noteService } from '@/features/notes/api/noteService';
-import type { NoteSummaryResponse } from '@/features/notes/types';
+import { toView, type NoteView } from '@/features/notes/local/noteMappers';
+import { noteRepository } from '@/features/notes/local/noteRepository';
 import { isAborted } from '@/lib/http/errors';
 
-const PAGE_SIZE = 20;
-
-export type NotesState =
-  | { status: 'loading' }
-  | {
-      status: 'ready';
-      notes: NoteSummaryResponse[];
-      hasNext: boolean;
-      total: number;
-    }
-  | { status: 'error'; message: string };
+const PAGE_SIZE = 100;
 
 /**
- * The owner's notes, accumulated across pages.
+ * The owner's notes, read from LOCAL STORAGE.
  *
- * OFFSET PAGINATION IS UNSTABLE HERE, and it is worth understanding rather
- * than assuming it works. The list is ordered by updatedAt DESC, so editing a
- * note while paging moves it to the top and shifts everything after it:
+ * This is decision D1 landing. The UI no longer waits on the network: Dexie is
+ * the source of truth, and the fetch below is a background process that writes
+ * into it. The two halves do not know about each other — the UI does not await
+ * the network, the fetch does not touch React state — and they communicate
+ * only through the database.
  *
- *     notes:            E  D  C  B  A
- *     page 0 (size 2):  E  D
- *       ← user edits B, B jumps to the top
- *     notes now:        B  E  D  C  A
- *     page 1:           D  C           <- D repeated, E SKIPPED
+ * WHAT THIS RETIRES:
  *
- * The duplicate is visible. The skip is not — the user simply never sees E
- * again and has no reason to suspect it exists.
+ *   Offset pagination instability (5B). The list pages over a complete local
+ *   set, so a note edited mid-paging can no longer shift the window and
+ *   silently skip another.
  *
- * NOT FIXED, for sequencing reasons: decision D2 moves this read path onto
- * Dexie in Step 7, where sync pulls everything and the list pages over a
- * complete local set. Offset instability stops existing, so keyset pagination
- * built now would be work Step 7 deletes. The dedupe below removes the visible
- * half cheaply.
+ *   Empty screens on failure. If the fetch fails and Dexie has rows, the user
+ *   reads their notes. The error is a banner, not the screen.
  *
- * (Ties are already handled server-side — B5 routes the list finder through
- * withStableOrder, so equal updatedAt values cannot reorder between pages.)
+ * ownerId comes from auth context rather than a prop, unlike the editor's
+ * currentUserId (6E). That one was decorative — one adjective in a heading.
+ * This is the query's predicate: every read is scoped by owner, so the
+ * coupling is the query's actual shape rather than incidental.
  */
-export function useNotes({ archived = false }: { archived?: boolean } = {}) {
-  const [state, setState] = useState<NotesState>({ status: 'loading' });
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [reloadToken, setReloadToken] = useState(0);
+export interface NotesState {
+  /** Undefined while Dexie is still answering — NOT the same as empty. */
+  notes: NoteView[] | undefined;
+  /** A background refresh is in flight. Content may already be on screen. */
+  refreshing: boolean;
+  /** The last refresh failed. Local rows are still shown. */
+  refreshError: string | null;
+  refresh: () => void;
+}
 
-  /*
-   * Incremented whenever the list RESETS (filter change or reload). A
-   * "load more" response captures the generation it started in and discards
-   * itself if that has moved on.
-   *
-   * AbortController cancels the request; this guards the DECISION. An abort
-   * that arrives after the response has already resolved would otherwise
-   * append archived notes onto the unarchived list.
-   */
-  const generationRef = useRef(0);
+export function useNotes({ archived = false }: { archived?: boolean } = {}): NotesState {
+  const { state: authState } = useAuth();
+  const ownerId =
+    authState.status === 'authenticated' || authState.status === 'refreshing'
+      ? authState.user.id
+      : null;
 
-  /** Next page to request. A ref, so loadMore does not need to be recreated. */
-  const nextPageRef = useRef(1);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState(0);
 
-  /*
-   * Synchronous re-entry guard. setLoadingMore(true) does not take effect
-   * until the next render, so two fast clicks both observe false and both
-   * fire — requesting the same page twice and appending it twice.
-   */
-  const inFlightRef = useRef(false);
-
-  const reload = useCallback(() => {
-    setReloadToken((n) => n + 1);
+  const refresh = useCallback(() => {
+    setRefreshToken((n) => n + 1);
   }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    generationRef.current += 1;
-    nextPageRef.current = 1;
-    inFlightRef.current = false;
+  /*
+   * THE READ. Subscribes to a query, not a value.
+   *
+   * Dexie records which tables and ranges this touched and re-runs it whenever
+   * anything writes to them — including another tab. A note saved elsewhere
+   * appears here with no code connecting the two, which is the capability that
+   * justified choosing Dexie over a thin IndexedDB wrapper (D3).
+   *
+   * The dependency array works like useEffect's: the query re-runs when these
+   * change, and the subscription is torn down on unmount.
+   */
+  const rows = useLiveQuery(async () => {
+    if (ownerId === null) return [];
+    return archived ? noteRepository.listArchived(ownerId) : noteRepository.listActive(ownerId);
+  }, [ownerId, archived]);
 
-    setState({ status: 'loading' });
-    setLoadingMore(false);
+  /*
+   * THE REFRESH. Writes into Dexie and returns nothing to React.
+   *
+   * Note what it does NOT do: set the notes into state. There is one source of
+   * truth and this is not it. The write lands in Dexie, useLiveQuery notices,
+   * and the list re-renders — the same path a write from another tab takes.
+   */
+  useEffect(() => {
+    if (ownerId === null) return;
+
+    const controller = new AbortController();
+    setRefreshing(true);
 
     noteService
       .listNotes({ page: 0, size: PAGE_SIZE, archived, signal: controller.signal })
-      .then((page) => {
-        setState({
-          status: 'ready',
-          notes: page.content,
-          hasNext: page.hasNext,
-          total: page.totalElements,
-        });
+      .then(async (page) => {
+        await noteRepository.upsertSummaries(page.content);
+        setRefreshError(null);
       })
       .catch((error: unknown) => {
-        // Expected: the effect cleaned up, or a newer request superseded this.
-        // Rendering an error would flash a failure during ordinary navigation.
+        // Expected on unmount or when a newer refresh supersedes this one.
         if (isAborted(error)) return;
-        setState({ status: 'error', message: 'Could not load your notes.' });
+        /*
+         * A message, not an empty screen. Whatever is in Dexie stays on
+         * display — offline, from cache, and correct. This inversion is most
+         * of what "offline-first" means in practice.
+         */
+        setRefreshError('Could not reach Notare. Showing notes saved on this device.');
+      })
+      .finally(() => {
+        setRefreshing(false);
       });
 
     return () => {
       controller.abort();
     };
-  }, [archived, reloadToken]);
+  }, [ownerId, archived, refreshToken]);
 
-  const loadMore = useCallback(async () => {
-    if (inFlightRef.current) return;
-    inFlightRef.current = true;
-
-    const generation = generationRef.current;
-    const page = nextPageRef.current;
-
-    setLoadingMore(true);
-    try {
-      const result = await noteService.listNotes({ page, size: PAGE_SIZE, archived });
-
-      // The filter changed or the list reloaded while this was in flight.
-      // Appending now would mix two different lists together.
-      if (generation !== generationRef.current) return;
-
-      nextPageRef.current = page + 1;
-
-      setState((current) => {
-        if (current.status !== 'ready') return current;
-
-        /*
-         * DEDUPE BY ID. See the note above: a note edited between pages
-         * reappears in the next one. This removes the visible symptom; the
-         * skipped note it implies is not recoverable here and is why Step 7
-         * exists.
-         */
-        const seen = new Set(current.notes.map((note) => note.id));
-        const appended = result.content.filter((note) => !seen.has(note.id));
-
-        return {
-          status: 'ready',
-          notes: [...current.notes, ...appended],
-          hasNext: result.hasNext,
-          total: result.totalElements,
-        };
-      });
-    } catch (error: unknown) {
-      if (isAborted(error)) return;
-      // The already-loaded notes stay on screen. Replacing a working list with
-      // an error because page 3 failed would be a worse outcome than the
-      // failure itself.
-      setState((current) => (current.status === 'ready' ? current : current));
-    } finally {
-      inFlightRef.current = false;
-      setLoadingMore(false);
-    }
-  }, [archived]);
-
-  /**
-   * Removes a note from the list immediately and returns how to put it back.
-   *
-   * OPTIMISTIC: the row disappears before the server has confirmed anything,
-   * because a delete that waits for a round trip feels broken on a slow
-   * connection.
-   *
-   * The restore closure reinserts at the ORIGINAL INDEX, not at the top.
-   * Putting it back somewhere else would silently reorder the user's list as a
-   * side effect of an action they cancelled — which is a strange thing for
-   * "undo" to do.
-   */
-  const removeOptimistically = useCallback((noteId: number): (() => void) => {
-    let removed: { note: NoteSummaryResponse; index: number } | null = null;
-
-    setState((current) => {
-      if (current.status !== 'ready') return current;
-
-      const index = current.notes.findIndex((note) => note.id === noteId);
-      if (index === -1) return current;
-
-      const note = current.notes[index];
-      if (!note) return current;
-
-      removed = { note, index };
-      return {
-        ...current,
-        notes: current.notes.filter((candidate) => candidate.id !== noteId),
-        total: Math.max(0, current.total - 1),
-      };
-    });
-
-    return () => {
-      const snapshot = removed;
-      if (!snapshot) return;
-
-      setState((current) => {
-        if (current.status !== 'ready') return current;
-        // Already back — an undo raced with a reload, and inserting again
-        // would duplicate it.
-        if (current.notes.some((note) => note.id === noteId)) return current;
-
-        const notes = [...current.notes];
-        notes.splice(Math.min(snapshot.index, notes.length), 0, snapshot.note);
-        return { ...current, notes, total: current.total + 1 };
-      });
-    };
-  }, []);
-
-  /**
-   * Merges changed fields into one row.
-   *
-   * The B5 obligation lives here: pin and archive bump @Version, so the
-   * version this list holds has to move with them or the next edit sends a
-   * stale one.
-   */
-  const applyUpdate = useCallback((noteId: number, changes: Partial<NoteSummaryResponse>) => {
-    setState((current) => {
-      if (current.status !== 'ready') return current;
-      return {
-        ...current,
-        notes: current.notes.map((note) => (note.id === noteId ? { ...note, ...changes } : note)),
-      };
-    });
-  }, []);
-
-  return { state, loadingMore, loadMore, reload, removeOptimistically, applyUpdate };
+  return {
+    notes: rows?.map(toView),
+    refreshing,
+    refreshError,
+    refresh,
+  };
 }

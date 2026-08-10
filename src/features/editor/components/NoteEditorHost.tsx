@@ -5,11 +5,11 @@ import { EditorSurface } from '@/features/editor/components/EditorSurface/Editor
 import { SaveIndicator } from '@/features/editor/components/SaveIndicator/SaveIndicator';
 import { useEditorShortcuts } from '@/features/editor/hooks/useEditorShortcuts';
 import { useNoteEditor } from '@/features/editor/hooks/useNoteEditor';
-import type { NoteResponse } from '@/features/notes/types';
+import type { NoteRow } from '@/features/notes/local/noteRow';
 
 interface NoteEditorHostProps {
-  /** Null for a note that does not exist yet. */
-  note: NoteResponse | null;
+  /** The local row. Exists before any server has seen this note. */
+  row: NoteRow;
   /**
    * Used ONLY to word the conflict heading — "on another device" versus "by
    * someone else". A prop rather than useAuth, so the editor is testable
@@ -23,29 +23,27 @@ function countWords(text: string): number {
   return trimmed === '' ? 0 : trimmed.split(/\s+/).length;
 }
 
-export function NoteEditorHost({ note, currentUserId }: NoteEditorHostProps) {
-  const editor = useNoteEditor(note);
+export function NoteEditorHost({ row, currentUserId }: NoteEditorHostProps) {
+  const editor = useNoteEditor(row);
 
   useEditorShortcuts({ onSave: editor.flush });
 
-  const createdId = editor.state.noteId;
+  const serverId = editor.row.serverId;
 
   /*
-   * Once a new note has an id, correct the URL — WITHOUT navigating.
+   * Correct the URL once a new note has a server id — WITHOUT navigating.
    *
-   * navigate('/notes/42', { replace: true }) would be the obvious call and
-   * would remount this component, because 6D keys the host on note id. Every
-   * character typed since the POST went out would be discarded.
-   *
-   * history.replaceState changes the address without a navigation: React
-   * Router listens for popstate, not replaceState. The URL becomes correct and
-   * reloadable; the draft survives.
+   * navigate() would remount this component (the key on localId is stable, but
+   * the route change unmounts the page), discarding nothing now that Dexie
+   * holds the draft — but still causing a visible flicker. replaceState
+   * updates the address without a navigation: React Router listens for
+   * popstate, not replaceState.
    */
   useEffect(() => {
-    if (note === null && createdId !== null && window.location.pathname === '/notes/new') {
-      window.history.replaceState(null, '', `/notes/${String(createdId)}`);
+    if (serverId !== null && window.location.pathname.startsWith('/notes/local/')) {
+      window.history.replaceState(null, '', `/notes/${String(serverId)}`);
     }
-  }, [note, createdId]);
+  }, [serverId]);
 
   if (editor.saveState.status === 'conflict') {
     return (
@@ -53,7 +51,7 @@ export function NoteEditorHost({ note, currentUserId }: NoteEditorHostProps) {
         <SaveIndicator state={editor.saveState} />
         <ConflictPanel
           conflict={editor.conflict}
-          mine={editor.state.draft}
+          mine={{ title: editor.row.title, content: editor.row.content }}
           byAnotherDevice={
             currentUserId !== null &&
             editor.conflict.status === 'ready' &&
@@ -67,14 +65,12 @@ export function NoteEditorHost({ note, currentUserId }: NoteEditorHostProps) {
     );
   }
 
-  const words = countWords(editor.state.draft.content);
+  const words = countWords(editor.row.content);
 
   return (
     <>
       <div className="note-detail__status">
         <SaveIndicator state={editor.saveState} />
-        {/* Quiet, and absent until there is something to count — a "0 words"
-            label on a blank page is chrome with nothing to say. */}
         {words > 0 ? (
           <p className="note-detail__words">
             {words} {words === 1 ? 'word' : 'words'}
@@ -83,8 +79,8 @@ export function NoteEditorHost({ note, currentUserId }: NoteEditorHostProps) {
       </div>
 
       <EditorSurface
-        title={editor.state.draft.title}
-        content={editor.state.draft.content}
+        title={editor.row.title}
+        content={editor.row.content}
         onTitleChange={(value) => {
           editor.setDraft({ title: value });
           editor.markEdited();
@@ -93,9 +89,6 @@ export function NoteEditorHost({ note, currentUserId }: NoteEditorHostProps) {
           editor.setDraft({ content: value });
           editor.markEdited();
         }}
-        // Blur flushes: clicking away is a strong signal a thought is
-        // finished, and 1.2 more seconds of "Unsaved changes" reads as the app
-        // not keeping up.
         onBlur={() => {
           void editor.flush();
         }}
