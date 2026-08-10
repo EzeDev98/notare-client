@@ -103,9 +103,32 @@ export function useNoteEditor(initialRow: NoteRow) {
             title: current.title,
             content: current.content,
           });
-          // The row keeps its localId and clientId — same note, now with a
-          // server id. Everything referencing it stays valid.
-          await noteRepository.put(fromNoteResponse(created, current));
+
+          /*
+           * RE-READ BEFORE WRITING — the same guard the update branch below
+           * has, and its absence here was a live data-loss bug.
+           *
+           * A POST is slow and the user keeps typing. fromNoteResponse marks
+           * the row CLEAN and carries the server's echo of the OLDER text, so
+           * writing it wholesale did two things at once: overwrote the newer
+           * local content, and cleared `dirty` so nothing would ever push it.
+           * Everything typed during the round trip disappeared on the next
+           * render, silently.
+           *
+           * The row keeps its localId and clientId either way — same note, now
+           * with a server id, so every reference to it stays valid.
+           */
+          const latest = (await noteRepository.getByLocalId(localId)) ?? current;
+          const textUnchanged =
+            latest.title === current.title && latest.content === current.content;
+
+          await noteRepository.put({
+            ...fromNoteResponse(created, latest),
+            title: latest.title,
+            content: latest.content,
+            dirty: textUnchanged ? 0 : 1,
+            syncState: textUnchanged ? 'synced' : 'pending',
+          });
         })();
 
         try {

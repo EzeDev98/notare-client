@@ -15,6 +15,7 @@ import 'fake-indexeddb/auto';
 import { cleanup } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 
+import { resetDatabase } from './harness';
 import { server } from './msw/server';
 
 /*
@@ -54,3 +55,15 @@ afterAll(() => {
  * rendered, a false green that survives deleting the code under test.
  */
 afterEach(cleanup);
+
+/*
+ * Empties Dexie between tests.
+ *
+ * fake-indexeddb lives as long as the module, not the test. Since 7C the list
+ * renders from the database rather than from a response, so a leaked row is
+ * not a stale mock — it is a note appearing in a test that never created one,
+ * and the resulting green is meaningless.
+ */
+afterEach(async () => {
+  await resetDatabase();
+});

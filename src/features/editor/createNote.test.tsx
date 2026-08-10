@@ -4,10 +4,10 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
-import { AuthProvider } from '@/app/providers/AuthProvider';
 import { ToastProvider } from '@/app/providers/ToastProvider';
 import { NewNotePage } from '@/pages/NewNote/NewNote';
 import { makeNote } from '~/fixtures/notes';
+import { SignedIn } from '~/harness';
 import { server } from '~/msw/server';
 
 const BASE = 'http://localhost:2001/api/v1';
@@ -17,11 +17,11 @@ function renderNew() {
     initialEntries: ['/notes/new'],
   });
   return render(
-    <AuthProvider>
+    <SignedIn>
       <ToastProvider>
         <RouterProvider router={router} />
       </ToastProvider>
-    </AuthProvider>,
+    </SignedIn>,
   );
 }
 

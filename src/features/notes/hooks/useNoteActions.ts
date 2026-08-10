@@ -2,113 +2,121 @@ import { useCallback } from 'react';
 
 import { useToast } from '@/app/providers/toast-context';
 import { noteService } from '@/features/notes/api/noteService';
-import type { NoteSummaryResponse } from '@/features/notes/types';
-
-interface NoteActionHandlers {
-  /**
-   * Applies a partial update to whatever holds this note.
-   *
-   * A PATCH shape rather than a whole note, because the caller holds
-   * NoteSummaryResponse (no content) while the server returns NoteResponse
-   * (with it). Passing the full note would force a lossy cast at every call
-   * site; passing the fields that changed does not.
-   *
-   * REQUIRED, not optional — this is the B5 obligation. Pin and archive bump
-   * @Version, so a list still showing version 3 after a pin returned version 4
-   * will send 3 on the next edit and get a 409 for an edit that conflicts with
-   * nothing.
-   */
-  onUpdated: (noteId: number, changes: Partial<NoteSummaryResponse>) => void;
-  /** Removes the note from view, returning how to put it back. */
-  onRemoved: (noteId: number) => () => void;
-}
+import { flag, type NoteView } from '@/features/notes/local/noteMappers';
+import { noteRepository } from '@/features/notes/local/noteRepository';
 
 /**
- * Pin and archive.
+ * Pin and archive, LOCAL-FIRST.
  *
- * Optimism is asymmetric here, on purpose:
+ * The shape of this hook changed completely in 7D, and the deletion is the
+ * interesting part: it used to take `onUpdated` and `onRemoved` callbacks so
+ * the caller could patch its own copy of the list. Both are gone.
  *
- *   PIN keeps the note in the list, so the toggle flips immediately and the
- *   server response only corrects the version. Waiting for a round trip to
- *   show a checkbox change feels broken.
+ * WHY THEY COULD GO. Before 7C the list lived in React state, so a mutation
+ * had to be told where to write. Now the list is a useLiveQuery over Dexie:
+ * write the row and every subscriber re-renders, including other tabs. The
+ * callbacks were plumbing around the absence of a database, and once there is
+ * one they are not simplification, they are duplication — a second source of
+ * truth that can disagree with the first.
  *
- *   ARCHIVE removes it from the list, so it uses the same
- *   remove-then-confirm-then-offer-undo shape as delete — the note has left,
- *   and the user needs a way back.
+ * WHAT THIS BUYS. Pin and archive now work OFFLINE. The local write is the
+ * real one; the request is an attempt to tell the server about it. If it
+ * fails, or if the note has no serverId because it was created offline, the
+ * row simply stays dirty and Step 8's push finds it in listDirty().
+ *
+ * WHAT IS STILL MISSING. Nothing retries. A failed pin is dirty and correct
+ * locally, but nothing carries it to the server until Step 8 exists. That is
+ * a known gap, not an oversight — see the Review notes for 7D.
  */
-export function useNoteActions({ onUpdated, onRemoved }: NoteActionHandlers) {
+export function useNoteActions() {
   const toast = useToast();
 
-  const setPinned = useCallback(
-    async (note: NoteSummaryResponse) => {
+  const togglePin = useCallback(
+    async (note: NoteView) => {
       const next = !note.pinned;
 
-      // Optimistic flip. A pinned note does NOT jump to the top — re-sorting
-      // under the cursor means the thing you just clicked leaps away. The
-      // order is right on the next load.
-      onUpdated(note.id, { pinned: next });
+      /*
+       * The local write IS the optimistic update. There is no separate
+       * "optimistic" concept any more — the UI renders Dexie, so writing to
+       * Dexie is how the screen changes. A rollback path is not needed either:
+       * if the request fails the row is already correct, just unsynced.
+       */
+      await noteRepository.applyLocalEdit(note.localId, { pinned: flag(next) });
+
+      // Read back the stamp the write just set, so the ack can tell whether
+      // anything moved while the request was in flight.
+      const written = await noteRepository.getByLocalId(note.localId);
+      if (!written) return;
+
+      // No serverId means the note has never been created on the server. There
+      // is nothing to PATCH; the row is dirty and Step 8 will create it.
+      if (written.serverId === null) return;
 
       try {
-        const updated = await noteService.setPinned(note.id, next);
-        // Adopt the server's version. This is the line that stops the next
-        // edit 409ing.
-        onUpdated(note.id, {
-          pinned: updated.pinned,
-          version: updated.version,
-          updatedAt: updated.updatedAt,
-        });
+        const updated = await noteService.setPinned(written.serverId, next);
+        await noteRepository.applyServerAck(
+          note.localId,
+          { version: updated.version, updatedAt: updated.updatedAt },
+          written.localUpdatedAt,
+        );
       } catch {
-        onUpdated(note.id, { pinned: note.pinned });
-        toast.show({ message: next ? 'Could not pin that note.' : 'Could not unpin that note.' });
+        /*
+         * Deliberately quiet. The user's intent is recorded locally and
+         * visible on screen; a toast saying "could not pin" would be telling
+         * them something failed when from their point of view it worked. The
+         * unsynced state is communicated by the note's own "Unsaved" badge,
+         * which is the honest place for it (§38 — do not overuse toasts).
+         */
       }
     },
-    [onUpdated, toast],
+    // toast is not a dependency: the happy and failure paths no longer raise
+    // one. Kept in scope because archive below still does.
+    [],
   );
 
-  const archive = useCallback(
-    async (note: NoteSummaryResponse) => {
-      const restore = onRemoved(note.id);
+  const setArchived = useCallback(
+    async (note: NoteView, archived: boolean) => {
+      await noteRepository.applyLocalEdit(note.localId, { archived: flag(archived) });
 
-      try {
-        await noteService.setArchived(note.id, true);
-      } catch {
-        restore();
-        toast.show({ message: 'Could not archive that note.' });
-        return;
-      }
+      const written = await noteRepository.getByLocalId(note.localId);
+      if (!written) return;
 
+      /*
+       * Archive DOES get a toast, and pin does not, because archive removes
+       * the note from the list the user is looking at. Something left the
+       * screen, so there has to be a way back. Pin changes a badge in place —
+       * the feedback is the badge.
+       */
       toast.show({
-        message: 'Note archived.',
+        message: archived ? 'Note archived.' : 'Note moved back to your notes.',
         action: {
           label: 'Undo',
           onAction: () => {
-            restore();
             toast.dismiss();
-            void noteService.setArchived(note.id, false).catch(() => {
-              toast.show({ message: 'Could not unarchive that note.' });
-            });
+            // Undo is a local write like any other, so it is instant and works
+            // offline. No request is issued here; the reconciliation below
+            // will have left the row dirty either way.
+            void noteRepository.applyLocalEdit(note.localId, { archived: flag(!archived) });
           },
         },
       });
-    },
-    [onRemoved, toast],
-  );
 
-  const unarchive = useCallback(
-    async (note: NoteSummaryResponse) => {
-      const restore = onRemoved(note.id);
+      if (written.serverId === null) return;
 
       try {
-        await noteService.setArchived(note.id, false);
+        const updated = await noteService.setArchived(written.serverId, archived);
+        await noteRepository.applyServerAck(
+          note.localId,
+          { version: updated.version, updatedAt: updated.updatedAt },
+          written.localUpdatedAt,
+        );
       } catch {
-        restore();
-        toast.show({ message: 'Could not unarchive that note.' });
-        return;
+        // Same reasoning as pin: the local state is right, it is merely
+        // unsent.
       }
-      toast.show({ message: 'Note moved back to your notes.' });
     },
-    [onRemoved, toast],
+    [toast],
   );
 
-  return { setPinned, archive, unarchive };
+  return { togglePin, setArchived };
 }

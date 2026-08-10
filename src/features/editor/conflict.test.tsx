@@ -4,11 +4,11 @@ import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
-import { AuthProvider } from '@/app/providers/AuthProvider';
 import { ToastProvider } from '@/app/providers/ToastProvider';
 import { NoteDetailPage } from '@/pages/NoteDetail/NoteDetail';
 import { makeNote } from '~/fixtures/notes';
 import { bareConflict, noteConflict } from '~/fixtures/errors';
+import { SignedIn } from '~/harness';
 import { server } from '~/msw/server';
 
 const BASE = 'http://localhost:2001/api/v1';
@@ -34,11 +34,11 @@ function renderEditor() {
     { initialEntries: ['/notes/1'] },
   );
   return render(
-    <AuthProvider>
+    <SignedIn>
       <ToastProvider>
         <RouterProvider router={router} />
       </ToastProvider>
-    </AuthProvider>,
+    </SignedIn>,
   );
 }
 

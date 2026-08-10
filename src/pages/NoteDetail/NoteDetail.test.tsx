@@ -3,13 +3,13 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
-import { AuthProvider } from '@/app/providers/AuthProvider';
 import { ToastProvider } from '@/app/providers/ToastProvider';
 import { parseNoteId } from '@/features/notes/hooks/useNote';
 import { NoteDetailPage } from '@/pages/NoteDetail/NoteDetail';
 import { expectNoAxeViolations } from '~/a11y';
 import { makeNote } from '~/fixtures/notes';
 import { problemDetail } from '~/fixtures/errors';
+import { SignedIn } from '~/harness';
 import { server } from '~/msw/server';
 
 const BASE = 'http://localhost:2001/api/v1';
@@ -24,11 +24,11 @@ function renderDetail(path = '/notes/1') {
   );
 
   return render(
-    <AuthProvider>
+    <SignedIn>
       <ToastProvider>
         <RouterProvider router={router} />
       </ToastProvider>
-    </AuthProvider>,
+    </SignedIn>,
   );
 }
 

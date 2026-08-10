@@ -2,65 +2,72 @@ import { useCallback } from 'react';
 
 import { useToast } from '@/app/providers/toast-context';
 import { noteService } from '@/features/notes/api/noteService';
-
-interface DeleteHandlers {
-  /**
-   * Called before the request, to remove the note from view. Returns how to
-   * put it back.
-   *
-   * The two callers differ ONLY here: the list drops a row and reinserts it at
-   * its original index; the detail view navigates away and navigates back.
-   * Everything else — request order, toast wording, undo, failure handling —
-   * is identical, which is what makes this worth one hook rather than two
-   * copies that drift.
-   */
-  onRemove: (noteId: number) => () => void;
-}
+import type { NoteView } from '@/features/notes/local/noteMappers';
+import { noteRepository } from '@/features/notes/local/noteRepository';
 
 /**
  * Moves a note to the trash, with an undo.
  *
- * The order matters: remove from view FIRST, then call the server. Waiting for
- * the round trip makes a delete feel broken on a slow connection, and the
- * operation is recoverable either way.
+ * The `onRemove` callback is gone for the same reason it went from
+ * useNoteActions: the list is a live query, so setting `deleted` on the row
+ * removes the note from every view that filters on it. The old hook's most
+ * delicate behaviour — "reinsert at the original index on undo" — is now a
+ * property of the sort order rather than code, because the row never left the
+ * table and localUpdatedAt is deliberately not restamped by setDeleted.
  *
- * If the DELETE fails, the note comes back. If the RESTORE fails, it is still
- * in the trash — B4's listing means a missed or failed undo is never data
- * loss, which is what makes the 8-second toast acceptable rather than reckless.
+ * ORDER: local write first, request second. That was already true, but it used
+ * to be a UX choice with a rollback behind it. Now it is the architecture —
+ * the local write is the operation, and the request only informs the server.
  */
-export function useDeleteNote({ onRemove }: DeleteHandlers) {
+export function useDeleteNote() {
   const toast = useToast();
 
   return useCallback(
-    async (noteId: number, title: string | null) => {
-      const restore = onRemove(noteId);
-      const label = title?.trim() ?? '';
+    async (note: NoteView) => {
+      const label = note.title.trim();
 
-      try {
-        await noteService.softDeleteNote(noteId);
-      } catch {
-        restore();
-        toast.show({ message: 'Could not move that note to the trash.' });
-        return;
-      }
+      await noteRepository.setDeleted(note.localId, true);
+
+      const written = await noteRepository.getByLocalId(note.localId);
 
       toast.show({
         message: label === '' ? 'Note moved to trash.' : `“${label}” moved to trash.`,
         action: {
           label: 'Undo',
           onAction: () => {
-            // Restore the view first: undo should feel as instant as the
-            // delete it is reversing.
-            restore();
             toast.dismiss();
-
-            void noteService.restoreNote(noteId).catch(() => {
-              toast.show({ message: 'Could not restore that note. It is still in your trash.' });
+            void noteRepository.setDeleted(note.localId, false).then(async () => {
+              if (written?.serverId == null) return;
+              // Best-effort. If it fails the row is un-deleted locally and
+              // dirty, which Step 8 reconciles.
+              await noteService.restoreNote(written.serverId).catch(() => undefined);
             });
           },
         },
       });
+
+      if (written?.serverId == null) {
+        /*
+         * Never created on the server, so there is nothing to soft-delete
+         * there. The row is a local tombstone; Step 8 decides whether it is
+         * pushed as a delete or simply dropped, since the server has never
+         * heard of this note.
+         */
+        return;
+      }
+
+      try {
+        await noteService.softDeleteNote(written.serverId);
+        await noteRepository.applyServerAck(
+          note.localId,
+          { version: note.version, updatedAt: note.updatedAt },
+          written.localUpdatedAt,
+        );
+      } catch {
+        // The note is in the local trash and dirty. It is not lost, and the
+        // user's action stands — telling them it failed would be misleading.
+      }
     },
-    [onRemove, toast],
+    [toast],
   );
 }

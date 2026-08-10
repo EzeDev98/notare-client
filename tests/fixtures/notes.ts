@@ -1,3 +1,4 @@
+import type { NoteRow } from '@/features/notes/local/noteRow';
 import type { NoteResponse, NoteSummaryResponse } from '@/features/notes/types';
 import type { PagedResponse } from '@/lib/http/types';
 
@@ -27,6 +28,40 @@ export function makeNote(overrides: Partial<NoteResponse> = {}): NoteResponse {
     updatedAt: '2026-08-01T09:00:00.000',
     ownerId: 1,
     lastModifiedBy: 1,
+    ...overrides,
+  };
+}
+
+/**
+ * A LOCAL row, which is what the editor and the list now take.
+ *
+ * Separate from makeNote because they are separate types on purpose: a row
+ * carries localId, dirty and syncState, which the server has never heard of.
+ * A test that wants "a note the server holds" builds a NoteResponse; a test
+ * that wants "a note on this device" builds a row.
+ */
+export function makeRow(overrides: Partial<NoteRow> = {}): NoteRow {
+  const serverId = overrides.serverId ?? nextId++;
+  const localId = overrides.localId ?? `local-${String(serverId)}`;
+
+  return {
+    localId,
+    serverId,
+    clientId: localId,
+    title: `Note ${String(serverId)}`,
+    content: 'Body text.',
+    pinned: 0,
+    archived: 0,
+    deleted: 0,
+    version: 0,
+    createdAt: '2026-08-01T09:00:00.000',
+    updatedAt: '2026-08-01T09:00:00.000',
+    deletedAt: null,
+    ownerId: 1,
+    lastModifiedBy: 1,
+    dirty: 0,
+    syncState: 'synced',
+    localUpdatedAt: 1_754_038_800_000,
     ...overrides,
   };
 }

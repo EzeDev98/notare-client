@@ -1,93 +1,128 @@
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { renderHook, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { createMemoryRouter, RouterProvider } from 'react-router';
 
 import { ToastProvider } from '@/app/providers/ToastProvider';
-import { NotesPage } from '@/pages/Notes/Notes';
-import { makeNote, makeNoteSummary, makePage } from '~/fixtures/notes';
+import { useNoteActions } from '@/features/notes/hooks/useNoteActions';
+import { toView } from '@/features/notes/local/noteMappers';
+import { noteRepository } from '@/features/notes/local/noteRepository';
+import { makeNote, makeRow } from '~/fixtures/notes';
+import { seedNotes } from '~/harness';
 import { server } from '~/msw/server';
 
 const BASE = 'http://localhost:2001/api/v1';
 
-function renderNotes() {
-  const router = createMemoryRouter([{ path: '/notes', element: <NotesPage /> }], {
-    initialEntries: ['/notes'],
-  });
-  return render(
-    <ToastProvider>
-      <RouterProvider router={router} />
-    </ToastProvider>,
-  );
+/**
+ * Tested against DEXIE, not against callbacks.
+ *
+ * The previous version of this file asserted that onUpdated fired with the
+ * right patch — it tested the plumbing that 7D deleted. What matters now is
+ * what ends up in the row, because the row is what the UI renders.
+ */
+function renderActions() {
+  return renderHook(() => useNoteActions(), { wrapper: ToastProvider });
 }
 
 describe('pinning', () => {
-  it('flips immediately and adopts the version the server returns', async () => {
+  it('writes the pin locally before the server is asked', async () => {
+    const row = makeRow({ serverId: 1, pinned: 0 });
+    await seedNotes(row);
+
+    let requested = false;
     server.use(
-      http.get(`${BASE}/notes`, () =>
-        HttpResponse.json(makePage([makeNoteSummary({ id: 1, version: 3, pinned: false })])),
-      ),
+      http.post(`${BASE}/notes/:noteId/pin`, async () => {
+        requested = true;
+        // Slow enough that a test asserting "local first" would fail if the
+        // write waited for it.
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        return HttpResponse.json(makeNote({ id: 1, pinned: true, version: 5 }));
+      }),
+    );
+
+    const { result } = renderActions();
+    const promise = result.current.togglePin(toView(row));
+
+    await waitFor(async () => {
+      const stored = await noteRepository.getByLocalId(row.localId);
+      expect(stored?.pinned).toBe(1);
+    });
+
+    await promise;
+    expect(requested).toBe(true);
+  });
+
+  it('adopts the version the server returns, so the next edit is not stale', async () => {
+    const row = makeRow({ serverId: 1, pinned: 0, version: 3 });
+    await seedNotes(row);
+
+    server.use(
       http.post(`${BASE}/notes/:noteId/pin`, () =>
-        // The server bumps @Version on a pin (B5).
         HttpResponse.json(makeNote({ id: 1, pinned: true, version: 4 })),
       ),
     );
 
-    const user = userEvent.setup();
-    renderNotes();
+    const { result } = renderActions();
+    await result.current.togglePin(toView(row));
 
-    await user.click(await screen.findByRole('button', { name: /^pin note 1$/i }));
-
-    /*
-     * The button flips to "Unpin", which is the visible half. The invisible
-     * half is the version: the row now holds 4, not 3.
-     *
-     * Without that, opening this note and saving would send version 3 and get
-     * a 409 for an edit in conflict with nothing — the exact failure B5's
-     * "every note response must update the stored version" warns about.
-     */
-    expect(await screen.findByRole('button', { name: /^unpin note 1$/i })).toBeInTheDocument();
+    const stored = await noteRepository.getByLocalId(row.localId);
+    // Version adopted AND the row marked clean — nothing changed locally
+    // while the request was in flight.
+    expect(stored?.version).toBe(4);
+    expect(stored?.dirty).toBe(0);
   });
 
-  it('reverts when the server refuses', async () => {
+  it('keeps the pin and stays dirty when the server refuses', async () => {
+    /*
+     * THE BEHAVIOUR CHANGE OF 7D. This used to revert and raise a toast. The
+     * user's intent is now recorded locally and survives the failure — Step 8
+     * pushes it later. Reverting would discard an instruction the user gave.
+     */
+    const row = makeRow({ serverId: 1, pinned: 0 });
+    await seedNotes(row);
+
     server.use(
-      http.get(`${BASE}/notes`, () =>
-        HttpResponse.json(makePage([makeNoteSummary({ id: 1, pinned: false })])),
-      ),
       http.post(`${BASE}/notes/:noteId/pin`, () => new HttpResponse(null, { status: 500 })),
     );
 
-    const user = userEvent.setup();
-    renderNotes();
+    const { result } = renderActions();
+    await result.current.togglePin(toView(row));
 
-    await user.click(await screen.findByRole('button', { name: /^pin note 1$/i }));
+    const stored = await noteRepository.getByLocalId(row.localId);
+    expect(stored?.pinned).toBe(1);
+    expect(stored?.dirty).toBe(1);
+  });
 
-    // Optimism has to be reversible, or the UI quietly disagrees with the
-    // server until the next reload.
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /^pin note 1$/i })).toBeInTheDocument();
-    });
+  it('pins a note that has never reached the server', async () => {
+    // No serverId, so there is nothing to PATCH. MSW would error on an
+    // unhandled request, which is what proves none was made.
+    const row = makeRow({ serverId: null, pinned: 0 });
+    await seedNotes(row);
+
+    const { result } = renderActions();
+    await result.current.togglePin(toView(row));
+
+    const stored = await noteRepository.getByLocalId(row.localId);
+    expect(stored?.pinned).toBe(1);
+    expect(stored?.dirty).toBe(1);
   });
 });
 
 describe('archiving', () => {
-  it('removes the note from the list and offers an undo', async () => {
+  it('sets archived locally and reports the server version', async () => {
+    const row = makeRow({ serverId: 1, archived: 0, version: 2 });
+    await seedNotes(row);
+
     server.use(
-      http.get(`${BASE}/notes`, () =>
-        HttpResponse.json(makePage([makeNoteSummary({ id: 1 }), makeNoteSummary({ id: 2 })])),
+      http.post(`${BASE}/notes/:noteId/archive`, () =>
+        HttpResponse.json(makeNote({ id: 1, archived: true, version: 3 })),
       ),
-      http.post(`${BASE}/notes/:noteId/archive`, () => HttpResponse.json(makeNote({ id: 1 }))),
     );
 
-    const user = userEvent.setup();
-    renderNotes();
+    const { result } = renderActions();
+    await result.current.setArchived(toView(row), true);
 
-    await user.click(await screen.findByRole('button', { name: /^archive note 1$/i }));
-
-    await waitFor(() => {
-      expect(screen.queryByRole('link', { name: /note 1/i })).not.toBeInTheDocument();
-    });
-    expect(await screen.findByRole('button', { name: /undo/i })).toBeInTheDocument();
+    const stored = await noteRepository.getByLocalId(row.localId);
+    expect(stored?.archived).toBe(1);
+    expect(stored?.version).toBe(3);
   });
 });

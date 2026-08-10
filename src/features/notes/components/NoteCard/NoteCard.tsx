@@ -1,8 +1,27 @@
 import { Link } from 'react-router';
 
+import { Button } from '@/design-system/components/Button/Button';
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
 import './NoteCard.css';
+
+export interface NoteCardActions {
+  onTogglePin: (note: NoteView) => void;
+  onToggleArchive: (note: NoteView) => void;
+  onDelete: (note: NoteView) => void;
+}
+
+interface NoteCardProps {
+  note: NoteView;
+  /**
+   * Omitted where the row is not ours to mutate — search results, for now.
+   *
+   * OPTIONAL rather than three no-op callbacks: passing `() => undefined`
+   * renders buttons that silently do nothing, which is worse than not
+   * rendering them. Absence of the prop is absence of the affordance.
+   */
+  actions?: NoteCardActions;
+}
 
 /**
  * One note in the list.
@@ -10,13 +29,10 @@ import './NoteCard.css';
  * Takes a NoteView — a row as the UI wants it — rather than a wire type. The
  * difference that matters: `serverId` may be null for a note created offline,
  * and routing uses `localId`, which exists from the moment the note does.
- *
- * Actions moved out for now. 7D rebuilds them against the local store, where
- * pin and archive become a Dexie write plus a queued operation rather than a
- * request with an optimistic update.
  */
-export function NoteCard({ note }: { note: NoteView }) {
+export function NoteCard({ note, actions }: NoteCardProps) {
   const title = note.title.trim();
+  const label = title === '' ? 'Untitled' : title;
 
   return (
     <li className="note-card">
@@ -52,6 +68,54 @@ export function NoteCard({ note }: { note: NoteView }) {
           )}
         </p>
       </Link>
+
+      {/*
+        OUTSIDE the Link, not inside it. A <button> nested in an <a> is invalid
+        HTML, and browsers recover from it unpredictably — the click may
+        navigate instead of firing the handler. The card is a link; the actions
+        sit beside it.
+
+        Every label names the note. A screen-reader user tabbing a list of
+        twenty notes otherwise hears "Pin, Archive, Delete" twenty times with
+        nothing distinguishing them (§36).
+      */}
+      {actions ? (
+        <div className="note-card__actions">
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-pressed={note.pinned}
+            aria-label={note.pinned ? `Unpin ${label}` : `Pin ${label}`}
+            onClick={() => {
+              actions.onTogglePin(note);
+            }}
+          >
+            {note.pinned ? 'Unpin' : 'Pin'}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={note.archived ? `Unarchive ${label}` : `Archive ${label}`}
+            onClick={() => {
+              actions.onToggleArchive(note);
+            }}
+          >
+            {note.archived ? 'Unarchive' : 'Archive'}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`Delete ${label}`}
+            onClick={() => {
+              actions.onDelete(note);
+            }}
+          >
+            Delete
+          </Button>
+        </div>
+      ) : null}
     </li>
   );
 }

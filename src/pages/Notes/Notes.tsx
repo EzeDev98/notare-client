@@ -1,7 +1,11 @@
 import { Link } from 'react-router';
 
+import type { NoteView } from '@/features/notes/local/noteMappers';
+
 import { NoteCard } from '@/features/notes/components/NoteCard/NoteCard';
 import { NoteTabs } from '@/features/notes/components/NoteTabs/NoteTabs';
+import { useDeleteNote } from '@/features/notes/hooks/useDeleteNote';
+import { useNoteActions } from '@/features/notes/hooks/useNoteActions';
 import { useNotes } from '@/features/notes/hooks/useNotes';
 import { Button } from '@/design-system/components/Button/Button';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
@@ -11,6 +15,20 @@ export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
   useDocumentTitle(archived ? 'Archived' : 'Notes');
 
   const { notes, refreshing, refreshError, refresh } = useNotes({ archived });
+
+  /*
+   * The hooks take no callbacks now. Both write to Dexie, and `notes` above is
+   * a live query over the same table — the list updates because the data
+   * changed, not because this component was told to update it.
+   */
+  const { togglePin, setArchived } = useNoteActions();
+  const deleteNote = useDeleteNote();
+
+  const actions = {
+    onTogglePin: (note: NoteView) => void togglePin(note),
+    onToggleArchive: (note: NoteView) => void setArchived(note, !note.archived),
+    onDelete: (note: NoteView) => void deleteNote(note),
+  };
 
   return (
     <section className="notes">
@@ -65,7 +83,7 @@ export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
       {notes !== undefined && notes.length > 0 ? (
         <ul className="notes__list" role="list">
           {notes.map((note) => (
-            <NoteCard key={note.localId} note={note} />
+            <NoteCard key={note.localId} note={note} actions={actions} />
           ))}
         </ul>
       ) : null}

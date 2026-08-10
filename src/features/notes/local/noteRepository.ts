@@ -3,6 +3,7 @@ import { flag, fromNoteResponse, fromNoteSummary } from '@/features/notes/local/
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import { META_KEYS } from '@/features/notes/local/metaRow';
 import type { NoteResponse, NoteSummaryResponse } from '@/features/notes/types';
+import type { ServerDateTime } from '@/lib/http/types';
 
 /**
  * Every query and write against the local notes table.
@@ -134,6 +135,51 @@ export const noteRepository = {
         dirty: 1,
         syncState: 'pending',
         localUpdatedAt: Date.now(),
+      });
+    });
+  },
+
+  /**
+   * Records that the server accepted a local change.
+   *
+   * THE GUARD IS THE WHOLE POINT. Between the local write and the server's
+   * reply the user may have edited again, and clearing `dirty` unconditionally
+   * would mark those newer edits as saved — they would never be pushed, and
+   * the loss is silent and permanent.
+   *
+   * `expectedLocalUpdatedAt` is the stamp the row carried when the request went
+   * out. If it still matches, nothing happened while we waited and the row is
+   * genuinely clean. If it does not, we take the server's version (needed, or
+   * the next write 409s) and LEAVE the row dirty for Step 8 to push.
+   *
+   * This is the same optimistic-concurrency idea as the server's @Version,
+   * applied in the other direction: a token read before the write, compared
+   * after it, to detect that someone else moved underneath you.
+   */
+  applyServerAck(
+    localId: string,
+    ack: { version: number | null; updatedAt: ServerDateTime | null; serverId?: number },
+    expectedLocalUpdatedAt: number,
+  ): Promise<void> {
+    return db.transaction('rw', db.notes, async () => {
+      const existing = await db.notes.get(localId);
+      if (!existing) return;
+
+      const unchanged = existing.localUpdatedAt === expectedLocalUpdatedAt;
+
+      await db.notes.put({
+        ...existing,
+        serverId: ack.serverId ?? existing.serverId,
+        version: ack.version,
+        updatedAt: ack.updatedAt,
+        dirty: unchanged ? 0 : 1,
+        syncState: unchanged ? 'synced' : 'pending',
+        /*
+         * localUpdatedAt is NOT restamped. It orders the list, and a pin
+         * should not shuffle a note to the top of it — and on the changed
+         * branch, restamping would destroy the very evidence the next ack
+         * needs to compare against.
+         */
       });
     });
   },

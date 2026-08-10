@@ -1,93 +1,82 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { renderHook } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
-import { createMemoryRouter, RouterProvider } from 'react-router';
 
 import { ToastProvider } from '@/app/providers/ToastProvider';
-import { NotesPage } from '@/pages/Notes/Notes';
-import { makeNoteSummary, makePage } from '~/fixtures/notes';
+import { useDeleteNote } from '@/features/notes/hooks/useDeleteNote';
+import { toView } from '@/features/notes/local/noteMappers';
+import { noteRepository } from '@/features/notes/local/noteRepository';
+import { makeRow } from '~/fixtures/notes';
+import { seedNotes } from '~/harness';
 import { server } from '~/msw/server';
 
 const BASE = 'http://localhost:2001/api/v1';
 
-function renderNotes() {
-  server.use(
-    http.get(`${BASE}/notes`, () =>
-      HttpResponse.json(makePage([makeNoteSummary({ id: 1 }), makeNoteSummary({ id: 2 })])),
-    ),
-  );
-
-  const router = createMemoryRouter([{ path: '/notes', element: <NotesPage /> }], {
-    initialEntries: ['/notes'],
-  });
-
-  return render(
-    <ToastProvider>
-      <RouterProvider router={router} />
-    </ToastProvider>,
-  );
+function renderDelete() {
+  return renderHook(() => useDeleteNote(), { wrapper: ToastProvider });
 }
 
 describe('deleting a note', () => {
-  it('removes the row immediately and offers an undo', async () => {
-    const user = userEvent.setup();
-    renderNotes();
+  it('marks the row deleted so every live query drops it', async () => {
+    const row = makeRow({ serverId: 1, title: 'Groceries' });
+    await seedNotes(row);
 
-    await screen.findByRole('link', { name: /note 1/i });
-    await user.click(screen.getByRole('button', { name: /move note 1 to trash/i }));
+    server.use(http.delete(`${BASE}/notes/:noteId`, () => new HttpResponse(null, { status: 204 })));
 
-    // Optimistic: gone before the server confirms, because waiting for a round
-    // trip makes a delete feel broken on a slow connection.
-    await waitFor(() => {
-      expect(screen.queryByRole('link', { name: /note 1/i })).not.toBeInTheDocument();
-    });
-    expect(await screen.findByRole('button', { name: /undo/i })).toBeInTheDocument();
+    const { result } = renderDelete();
+    await result.current(toView(row));
+
+    const stored = await noteRepository.getByLocalId(row.localId);
+    // Soft, not hard. The row survives so the trash can list it and an undo
+    // is a local write rather than a re-fetch.
+    expect(stored?.deleted).toBe(1);
+    expect(stored).toBeDefined();
   });
 
-  it('puts the note back at its original position on undo', async () => {
-    const user = userEvent.setup();
-    renderNotes();
+  it('keeps the note in the local trash when the request fails', async () => {
+    const row = makeRow({ serverId: 1 });
+    await seedNotes(row);
 
-    await screen.findByRole('link', { name: /note 1/i });
-    await user.click(screen.getByRole('button', { name: /move note 1 to trash/i }));
-    await user.click(await screen.findByRole('button', { name: /undo/i }));
-
-    /*
-     * FIRST, not appended at the end. Reinserting elsewhere would silently
-     * reorder the user's list as a side effect of an action they cancelled.
-     */
-    /*
-     * Scoped to the LIST, not the whole page. Querying every link made this
-     * break when 5E added a "Search" link to the header — the assertion was
-     * about ordering within the list and happened to be phrased as ordering
-     * within the document.
-     */
-    const list = await screen.findByRole('list');
-    const links = within(list).getAllByRole('link');
-    expect(links[0]).toHaveAccessibleName(/note 1/i);
-  });
-
-  it('restores the row when the delete fails', async () => {
     server.use(http.delete(`${BASE}/notes/:noteId`, () => new HttpResponse(null, { status: 500 })));
 
-    const user = userEvent.setup();
-    renderNotes();
+    const { result } = renderDelete();
+    await result.current(toView(row));
 
-    await screen.findByRole('link', { name: /note 1/i });
-    await user.click(screen.getByRole('button', { name: /move note 1 to trash/i }));
-
-    // Optimism has to be reversible, or a failed request silently loses a row
-    // until the next reload.
-    expect(await screen.findByRole('link', { name: /note 1/i })).toBeInTheDocument();
+    const stored = await noteRepository.getByLocalId(row.localId);
+    // The user's action stands. It is unsynced, not undone.
+    expect(stored?.deleted).toBe(1);
+    expect(stored?.dirty).toBe(1);
   });
 
-  it('names the note in the delete button, not just "Delete"', async () => {
-    renderNotes();
-    await screen.findByRole('link', { name: /note 1/i });
+  it('deletes a note the server has never seen without calling it', async () => {
+    const row = makeRow({ serverId: null });
+    await seedNotes(row);
 
-    // Twenty buttons all announcing "Delete" is useless when navigating by
-    // button — the same word twenty times with no way to tell them apart.
-    expect(screen.getByRole('button', { name: /move note 2 to trash/i })).toBeInTheDocument();
+    const { result } = renderDelete();
+    await result.current(toView(row));
+
+    const stored = await noteRepository.getByLocalId(row.localId);
+    expect(stored?.deleted).toBe(1);
+  });
+
+  it('leaves the row in place for the trash to list', async () => {
+    /*
+     * The old hook reinserted the row at a remembered index on undo. That
+     * bookkeeping is gone — the row never leaves the table, so undo is one
+     * flag write and the live queries do the rest.
+     *
+     * NOTE: setDeleted does restamp localUpdatedAt, so a deleted-then-undone
+     * note returns to the TOP of the list rather than its original position.
+     * Whether that is right is a 7E question.
+     */
+    const row = makeRow({ serverId: null, localUpdatedAt: 1_000 });
+    await seedNotes(row);
+
+    const { result } = renderDelete();
+    await result.current(toView(row));
+
+    const stored = await noteRepository.getByLocalId(row.localId);
+    expect(stored?.deleted).toBe(1);
+    expect(stored?.localId).toBe(row.localId);
   });
 });

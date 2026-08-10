@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
 import { NoteCard } from '@/features/notes/components/NoteCard/NoteCard';
-import { useDeleteNote } from '@/features/notes/hooks/useDeleteNote';
+import { viewFromSummary } from '@/features/notes/local/noteMappers';
 import { useNoteSearch } from '@/features/notes/hooks/useNoteSearch';
 import { Button } from '@/design-system/components/Button/Button';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
@@ -47,9 +47,16 @@ export function SearchPage() {
     });
   }, [debouncedTerm, setSearchParams]);
 
-  // Deleting from search results: the note leaves this list, and undo is a
-  // no-op here because the results will not be re-fetched.
-  const deleteNote = useDeleteNote({ onRemove: () => () => undefined });
+  /*
+   * NO ACTIONS on search results, and this is a deliberate downgrade from
+   * Step 5.
+   *
+   * Search still queries the server (7G decides whether it moves local), so a
+   * result is a summary with no row behind it. Pin, archive or delete from
+   * here would have nothing local to write to and nothing live to re-render —
+   * the row would sit there showing a stale state until the user navigated
+   * away. Opening the note is the honest affordance.
+   */
 
   const visible =
     state.status === 'ready' ? state.results : state.status === 'searching' ? state.previous : [];
@@ -106,16 +113,7 @@ export function SearchPage() {
       {visible.length > 0 ? (
         <ul className="search__list" role="list">
           {visible.map((note) => (
-            <NoteCard
-              key={note.id}
-              note={note}
-              onDelete={(noteId, title) => void deleteNote(noteId, title)}
-              // Search results are not a list we own — pin and archive from
-              // here would leave the row showing a stale state with nothing to
-              // refresh it. Open the note instead.
-              onTogglePin={() => undefined}
-              onToggleArchive={() => undefined}
-            />
+            <NoteCard key={note.id} note={viewFromSummary(note)} />
           ))}
         </ul>
       ) : null}

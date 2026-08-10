@@ -1,12 +1,24 @@
 import { Button } from '@/design-system/components/Button/Button';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import type { ConflictState } from '@/features/editor/hooks/useConflict';
-import type { Draft } from '@/features/editor/hooks/useNoteDraft';
 import './ConflictPanel.css';
+
+/**
+ * The user's unsaved side of a conflict.
+ *
+ * Declared HERE rather than imported, because 7C deleted useNoteDraft — the
+ * draft now lives in Dexie and the editor reads it from the row. This panel
+ * needs the two fields it displays and nothing else, so a local type is
+ * honest: it no longer depends on how the draft is held, only on what it is.
+ */
+interface ConflictSide {
+  title: string;
+  content: string;
+}
 
 interface ConflictPanelProps {
   conflict: ConflictState;
-  mine: Draft;
+  mine: ConflictSide;
   /** True when the other edit came from this user on another device. */
   byAnotherDevice: boolean;
   onKeepMine: () => void;
