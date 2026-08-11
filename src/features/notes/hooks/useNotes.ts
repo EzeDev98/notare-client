@@ -89,7 +89,7 @@ export function useNotes({ archived = false }: { archived?: boolean } = {}): Not
     noteService
       .listNotes({ page: 0, size: PAGE_SIZE, archived, signal: controller.signal })
       .then(async (page) => {
-        await noteRepository.upsertSummaries(page.content);
+        await noteRepository.upsertSummaries(page.content, ownerId);
         setRefreshError(null);
       })
       .catch((error: unknown) => {

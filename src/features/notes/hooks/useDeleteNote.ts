@@ -11,9 +11,20 @@ import { noteRepository } from '@/features/notes/local/noteRepository';
  * The `onRemove` callback is gone for the same reason it went from
  * useNoteActions: the list is a live query, so setting `deleted` on the row
  * removes the note from every view that filters on it. The old hook's most
- * delicate behaviour — "reinsert at the original index on undo" — is now a
- * property of the sort order rather than code, because the row never left the
- * table and localUpdatedAt is deliberately not restamped by setDeleted.
+ * delicate behaviour — "reinsert at the original index on undo" — is gone with
+ * it, because the row never leaves the table.
+ *
+ * 7E SETTLES THE STAMP. setDeleted DOES restamp localUpdatedAt (an earlier
+ * version of this comment claimed otherwise), so a note deleted and then undone
+ * comes back at the TOP of the list rather than where it was. That is
+ * deliberate, and the alternative is worse: applyServerAck's guard compares the
+ * stamp taken before a request against the row after it, and a mutation that
+ * does not move the stamp is a mutation the guard cannot see — a delete
+ * acknowledged after an undo would mark the undone row clean and it would never
+ * be pushed. The list order is the cheaper thing to give up, and "the note you
+ * just touched is at the top" is defensible on its own terms. The trash orders
+ * by the same stamp, which is exactly what that screen wants: most recently
+ * trashed first.
  *
  * ORDER: local write first, request second. That was already true, but it used
  * to be a UX choice with a rollback behind it. Now it is the architecture —

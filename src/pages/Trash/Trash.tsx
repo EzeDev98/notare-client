@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { NoteTabs } from '@/features/notes/components/NoteTabs/NoteTabs';
 import { useTrash } from '@/features/notes/hooks/useTrash';
 import { Button } from '@/design-system/components/Button/Button';
-import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { formatServerDateTimeRelative } from '@/lib/time';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Trash.css';
@@ -11,8 +10,14 @@ import './Trash.css';
 export function TrashPage() {
   useDocumentTitle('Trash');
 
-  const { state, reload, restore, deleteForever } = useTrash();
-  const [confirmingId, setConfirmingId] = useState<number | null>(null);
+  const { notes, refreshing, refreshError, refresh, restore, deleteForever } = useTrash();
+
+  /*
+   * Confirmation is keyed by localId, not by server id. A note trashed while
+   * offline has no server id, and the previous `number | null` could not
+   * address it — the delete-forever confirmation simply would not open.
+   */
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   return (
     <section className="trash">
@@ -26,41 +31,54 @@ export function TrashPage() {
       */}
       <p className="trash__lead">Notes stay here until you delete them permanently.</p>
 
-      {state.status === 'loading' ? (
-        <div className="trash__centre">
-          <Spinner label="Loading your trash" />
-        </div>
-      ) : null}
-
-      {state.status === 'error' ? (
-        <div className="trash__centre" role="alert">
-          <p>{state.message}</p>
-          <Button variant="secondary" onClick={reload}>
+      {/*
+        A BANNER, not a screen (the same inversion as the notes list). What is
+        in the local bin stays readable, and a failed refresh is an aside.
+      */}
+      {refreshError !== null ? (
+        <p className="trash__offline" role="status">
+          {refreshError}{' '}
+          <button className="trash__retry" type="button" onClick={refresh}>
             Try again
-          </Button>
-        </div>
+          </button>
+        </p>
       ) : null}
 
-      {state.status === 'ready' && state.notes.length === 0 ? (
+      {/*
+        `notes === undefined` is Dexie not having answered yet — milliseconds,
+        and a spinner for it flashes on every mount. An empty ARRAY is a
+        genuinely empty bin. Conflating them shows "your trash is empty" before
+        the query has run.
+      */}
+      {notes !== undefined && notes.length === 0 && !refreshing ? (
         <div className="trash__centre">
           <p>Your trash is empty.</p>
         </div>
       ) : null}
 
-      {state.status === 'ready' && state.notes.length > 0 ? (
+      {notes !== undefined && notes.length > 0 ? (
         <ul className="trash__list" role="list">
-          {state.notes.map(({ note, deletedAt }) => {
-            const title = note.title?.trim() ?? '';
+          {notes.map((note) => {
+            const title = note.title.trim();
             const label = title === '' ? 'Untitled' : title;
 
             return (
-              <li className="trash__item" key={note.id}>
+              <li className="trash__item" key={note.localId}>
                 <div>
                   {/* No link: a trashed note has no detail view to open. */}
                   <p className="trash__title">{label}</p>
-                  {deletedAt !== null ? (
-                    <p className="trash__meta">Trashed {formatServerDateTimeRelative(deletedAt)}</p>
-                  ) : null}
+                  {note.deletedAt !== null ? (
+                    <p className="trash__meta">
+                      Trashed {formatServerDateTimeRelative(note.deletedAt)}
+                    </p>
+                  ) : (
+                    /*
+                      No server timestamp yet, which is the normal state for a
+                      note trashed offline. Saying so beats inventing a time
+                      from a clock the server never agreed with.
+                    */
+                    <p className="trash__meta">Trashed on this device</p>
+                  )}
                 </div>
 
                 <div className="trash__actions">
@@ -68,12 +86,12 @@ export function TrashPage() {
                     variant="secondary"
                     size="sm"
                     aria-label={`Restore ${label}`}
-                    onClick={() => void restore(note.id)}
+                    onClick={() => void restore(note)}
                   >
                     Restore
                   </Button>
 
-                  {confirmingId === note.id ? (
+                  {confirmingId === note.localId ? (
                     <>
                       {/*
                         The wording IS the confirmation. "Confirm" would be
@@ -85,7 +103,7 @@ export function TrashPage() {
                         size="sm"
                         onClick={() => {
                           setConfirmingId(null);
-                          void deleteForever(note.id);
+                          void deleteForever(note);
                         }}
                       >
                         Delete forever
@@ -106,7 +124,7 @@ export function TrashPage() {
                       size="sm"
                       aria-label={`Permanently delete ${label}`}
                       onClick={() => {
-                        setConfirmingId(note.id);
+                        setConfirmingId(note.localId);
                       }}
                     >
                       Delete

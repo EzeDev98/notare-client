@@ -126,9 +126,54 @@ describe('applying server state', () => {
     const local = fromNoteResponse(makeNote({ id: 3, title: 'my rename' }));
     await db.notes.put({ ...local, dirty: 1 });
 
-    await noteRepository.upsertSummaries([makeNoteSummary({ id: 3, title: 'server title' })]);
+    await noteRepository.upsertSummaries([makeNoteSummary({ id: 3, title: 'server title' })], 1);
 
     expect((await noteRepository.getByServerId(3))?.title).toBe('my rename');
+  });
+
+  it('stamps the owner on rows a list page inserts', async () => {
+    /*
+     * 7E. A summary has no ownerId, and the mapper used to fall back to null
+     * when there was no existing row. Every read is scoped by owner through
+     * the [ownerId+deleted+archived] index, so a null-owned row is invisible —
+     * on a fresh device the fetch succeeded and the list stayed empty forever.
+     */
+    await noteRepository.upsertSummaries([makeNoteSummary({ id: 30 })], 7);
+
+    expect((await noteRepository.getByServerId(30))?.ownerId).toBe(7);
+    expect(await noteRepository.listActive(7)).toHaveLength(1);
+  });
+
+  it('marks a trash page as deleted and keeps it out of the notes list', async () => {
+    await noteRepository.upsertTrashedNotes(
+      [{ note: makeNoteSummary({ id: 31 }), deletedAt: '2026-08-05T14:00:00.000' }],
+      7,
+    );
+
+    const stored = await noteRepository.getByServerId(31);
+    expect(stored?.deleted).toBe(1);
+    expect(stored?.deletedAt).toBe('2026-08-05T14:00:00.000');
+
+    // One table, two queries. The trash is a filter, not a second store.
+    expect(await noteRepository.listActive(7)).toHaveLength(0);
+    expect(await noteRepository.listTrashed(7)).toHaveLength(1);
+  });
+
+  it('does not re-trash a note the user has just restored', async () => {
+    /*
+     * The restore wrote locally and left the row dirty. A trash page fetched
+     * before that write must not land on top of it and put the note back in
+     * the bin in front of the user.
+     */
+    const local = fromNoteResponse(makeNote({ id: 32 }));
+    await db.notes.put({ ...local, ownerId: 7, deleted: 0, dirty: 1 });
+
+    await noteRepository.upsertTrashedNotes(
+      [{ note: makeNoteSummary({ id: 32 }), deletedAt: '2026-08-05T14:00:00.000' }],
+      7,
+    );
+
+    expect((await noteRepository.getByServerId(32))?.deleted).toBe(0);
   });
 });
 

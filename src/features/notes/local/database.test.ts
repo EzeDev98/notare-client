@@ -110,7 +110,7 @@ describe('mapping', () => {
 
   it('does not blank content when a list summary updates a row', () => {
     const existing = fromNoteResponse(makeNote({ id: 4, content: 'the whole note' }));
-    const merged = fromNoteSummary(makeNoteSummary({ id: 4, title: 'Renamed' }), existing);
+    const merged = fromNoteSummary(makeNoteSummary({ id: 4, title: 'Renamed' }), 1, existing);
 
     /*
      * A summary carries no content. Overwriting with '' would empty every note

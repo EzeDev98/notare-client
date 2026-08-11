@@ -1,5 +1,9 @@
 import type { NoteRow } from '@/features/notes/local/noteRow';
-import type { NoteResponse, NoteSummaryResponse } from '@/features/notes/types';
+import type {
+  NoteResponse,
+  NoteSummaryResponse,
+  TrashedNoteResponse,
+} from '@/features/notes/types';
 
 /**
  * The single translation point between wire types and row types.
@@ -105,7 +109,11 @@ export function fromNoteResponse(note: NoteResponse, existing?: NoteRow): NoteRo
  * Overwriting it with '' would empty every note the moment a list load
  * touched it — a data-loss bug that looks like the list working perfectly.
  */
-export function fromNoteSummary(summary: NoteSummaryResponse, existing?: NoteRow): NoteRow {
+export function fromNoteSummary(
+  summary: NoteSummaryResponse,
+  ownerId: number | null,
+  existing?: NoteRow,
+): NoteRow {
   return {
     localId: existing?.localId ?? newLocalId(),
     serverId: summary.id,
@@ -119,11 +127,47 @@ export function fromNoteSummary(summary: NoteSummaryResponse, existing?: NoteRow
     createdAt: existing?.createdAt ?? null,
     updatedAt: summary.updatedAt,
     deletedAt: null,
-    ownerId: existing?.ownerId ?? null,
+    /*
+     * THE OWNER COMES FROM THE CALLER, not from the summary — NoteSummaryResponse
+     * has no ownerId field, and the previous `existing?.ownerId ?? null` was a
+     * defect (7E): on a device with an empty database every row inserted by a
+     * list refresh got ownerId null, and listActive(ownerId) — which queries the
+     * [ownerId+deleted+archived] index — could never match it. A successful
+     * fetch, rows in Dexie, and a permanently empty screen.
+     *
+     * The caller does know: it asked the server for THIS user's notes, so the
+     * response is scoped by definition. Passing it makes that scoping explicit
+     * instead of hoping a row already existed.
+     */
+    ownerId: existing?.ownerId ?? ownerId,
     lastModifiedBy: existing?.lastModifiedBy ?? null,
     dirty: existing?.dirty ?? 0,
     syncState: existing?.syncState ?? 'synced',
     localUpdatedAt: Date.now(),
+  };
+}
+
+/**
+ * A trashed note from GET /notes/trash.
+ *
+ * Built ON TOP of fromNoteSummary rather than beside it, because a trashed note
+ * IS a summary — plus two facts the summary cannot carry. Duplicating the
+ * fifteen fields would mean the next change to a note's local shape has two
+ * places to remember and one of them will be missed.
+ *
+ * `deleted: 1` is the point: the same row the notes list uses, flagged, so the
+ * trash is a QUERY over one table rather than a second table that has to be
+ * kept consistent with the first. Restoring is one flag write.
+ */
+export function fromTrashedNote(
+  trashed: TrashedNoteResponse,
+  ownerId: number | null,
+  existing?: NoteRow,
+): NoteRow {
+  return {
+    ...fromNoteSummary(trashed.note, ownerId, existing),
+    deleted: 1,
+    deletedAt: trashed.deletedAt,
   };
 }
 
@@ -143,6 +187,16 @@ export interface NoteView {
   archived: boolean;
   version: number | null;
   updatedAt: string | null;
+  /**
+   * When the SERVER recorded the trashing, or null.
+   *
+   * Null does not mean "not trashed" — `archived`/`deleted` say that. It means
+   * the server has not told us when, which is the normal state for a note
+   * trashed on this device while offline. The trash screen renders a timestamp
+   * only when there is one rather than inventing a local approximation, because
+   * a local clock and the server's are not the same clock.
+   */
+  deletedAt: string | null;
   /** True when there are local edits the server has not accepted. */
   unsaved: boolean;
 }
@@ -170,6 +224,7 @@ export function viewFromSummary(summary: NoteSummaryResponse): NoteView {
     archived: summary.archived,
     version: summary.version,
     updatedAt: summary.updatedAt,
+    deletedAt: null,
     // A server result is by definition what the server holds.
     unsaved: false,
   };
@@ -191,6 +246,7 @@ export function toView(row: NoteRow): NoteView {
     archived: row.archived === 1,
     version: row.version,
     updatedAt: row.updatedAt,
+    deletedAt: row.deletedAt,
     unsaved: row.dirty === 1,
   };
 }

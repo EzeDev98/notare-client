@@ -1,8 +1,17 @@
 import { db } from '@/features/notes/local/database';
-import { flag, fromNoteResponse, fromNoteSummary } from '@/features/notes/local/noteMappers';
+import {
+  flag,
+  fromNoteResponse,
+  fromNoteSummary,
+  fromTrashedNote,
+} from '@/features/notes/local/noteMappers';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import { META_KEYS } from '@/features/notes/local/metaRow';
-import type { NoteResponse, NoteSummaryResponse } from '@/features/notes/types';
+import type {
+  NoteResponse,
+  NoteSummaryResponse,
+  TrashedNoteResponse,
+} from '@/features/notes/types';
 import type { ServerDateTime } from '@/lib/http/types';
 
 /**
@@ -40,6 +49,20 @@ function byPinnedThenRecent(a: NoteRow, b: NoteRow): number {
   return b.localUpdatedAt - a.localUpdatedAt;
 }
 
+/**
+ * Most recently touched first, IGNORING pinned.
+ *
+ * The trash uses this rather than byPinnedThenRecent. Pinning is an
+ * organisation of the notes you are working with, and a bin is not that — a
+ * pinned note floating above the top of the trash tells the user nothing and
+ * pushes the thing they just deleted, which is what they came to look at, down
+ * the list. Since setDeleted restamps localUpdatedAt, "most recent" here means
+ * "most recently trashed", which is the order this screen wants.
+ */
+function byRecent(a: NoteRow, b: NoteRow): number {
+  return b.localUpdatedAt - a.localUpdatedAt;
+}
+
 export const noteRepository = {
   /** The main list: mine, not trashed, not archived. */
   async listActive(ownerId: number): Promise<NoteRow[]> {
@@ -71,7 +94,7 @@ export const noteRepository = {
         [ownerId, 1, 1],
       ])
       .toArray();
-    return rows.sort(byPinnedThenRecent);
+    return rows.sort(byRecent);
   },
 
   getByLocalId(localId: string): Promise<NoteRow | undefined> {
@@ -175,10 +198,16 @@ export const noteRepository = {
         dirty: unchanged ? 0 : 1,
         syncState: unchanged ? 'synced' : 'pending',
         /*
-         * localUpdatedAt is NOT restamped. It orders the list, and a pin
-         * should not shuffle a note to the top of it — and on the changed
-         * branch, restamping would destroy the very evidence the next ack
-         * needs to compare against.
+         * localUpdatedAt is NOT restamped HERE. An acknowledgement is not a
+         * local change — the server agreeing with us is not the user doing
+         * something — and on the changed branch, restamping would destroy the
+         * very evidence the next ack needs to compare against.
+         *
+         * The local write that preceded this one DID restamp, which 7E settled
+         * deliberately: every local mutation must move the stamp or this guard
+         * cannot see it. The cost is that pinning, archiving and deleting all
+         * reorder the list, which is a smaller price than a silently unsent
+         * write.
          */
       });
     });
@@ -237,7 +266,7 @@ export const noteRepository = {
    * window where the list is half-old and half-new — which useLiveQuery would
    * happily render.
    */
-  upsertSummaries(summaries: NoteSummaryResponse[]): Promise<void> {
+  upsertSummaries(summaries: NoteSummaryResponse[], ownerId: number | null): Promise<void> {
     return db.transaction('rw', db.notes, async () => {
       for (const summary of summaries) {
         const existing = await db.notes.where('serverId').equals(summary.id).first();
@@ -247,7 +276,40 @@ export const noteRepository = {
         // version on a row with unsent edits would lose them.
         if (existing?.dirty === 1) continue;
 
-        await db.notes.put(fromNoteSummary(summary, existing));
+        await db.notes.put(fromNoteSummary(summary, ownerId, existing));
+      }
+    });
+  },
+
+  /**
+   * Applies a page of the server's trash.
+   *
+   * Same shape as upsertSummaries and deliberately a SEPARATE method rather
+   * than a flag on it: the two write opposite values for `deleted`, and a
+   * boolean parameter at the call site would read as configuration when it is
+   * actually the difference between "this note is in your notes" and "this note
+   * is in your bin".
+   *
+   * Dirty rows are skipped for a sharper reason than in the notes list. A row
+   * is dirty here mainly because the user just RESTORED it and the server has
+   * not been told yet; letting a trash page that was fetched before that write
+   * land on top would put the note straight back in the bin in front of them.
+   *
+   * WHAT THIS DOES NOT DO: remove local rows the server no longer lists as
+   * trashed. A note restored or permanently deleted on another device stays in
+   * this device's bin until something tells us otherwise. Reconciling absence
+   * needs tombstones and a cursor, which is Step 8's pull — inventing a weaker
+   * version here (delete anything not in the page) would wrongly evict every
+   * note beyond the first page.
+   */
+  upsertTrashedNotes(trashed: TrashedNoteResponse[], ownerId: number | null): Promise<void> {
+    return db.transaction('rw', db.notes, async () => {
+      for (const entry of trashed) {
+        const existing = await db.notes.where('serverId').equals(entry.note.id).first();
+
+        if (existing?.dirty === 1) continue;
+
+        await db.notes.put(fromTrashedNote(entry, ownerId, existing));
       }
     });
   },

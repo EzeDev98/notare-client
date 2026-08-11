@@ -7,11 +7,24 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { ToastProvider } from '@/app/providers/ToastProvider';
 import { NotesPage } from '@/pages/Notes/Notes';
 import { expectNoAxeViolations } from '~/a11y';
-import { makeRow } from '~/fixtures/notes';
+import { makePage, makeRow } from '~/fixtures/notes';
 import { seedNotes, SignedIn, TEST_USER } from '~/harness';
 import { server } from '~/msw/server';
 
 const BASE = 'http://localhost:2001/api/v1';
+
+/**
+ * The server has nothing beyond what this test seeded.
+ *
+ * Needed since 7E. The default handler returns notes 1 and 2, and until 7E the
+ * rows it inserted carried ownerId null — invisible to a query scoped by owner,
+ * so a test could assert an empty list while two notes sat in the database. Now
+ * the refresh inserts them correctly, which means a test about ONE note has to
+ * say so rather than relying on the other being swallowed.
+ */
+function serverHasNoNotes() {
+  server.use(http.get(`${BASE}/notes`, () => HttpResponse.json(makePage([]))));
+}
 
 /**
  * The list renders from DEXIE, so these tests seed the database.
@@ -25,9 +38,12 @@ const BASE = 'http://localhost:2001/api/v1';
  * they were written to catch.
  */
 function renderNotes({ archived = false } = {}) {
-  const router = createMemoryRouter([{ path: '/notes', element: <NotesPage archived={archived} /> }], {
-    initialEntries: ['/notes'],
-  });
+  const router = createMemoryRouter(
+    [{ path: '/notes', element: <NotesPage archived={archived} /> }],
+    {
+      initialEntries: ['/notes'],
+    },
+  );
 
   return render(
     <SignedIn>
@@ -64,7 +80,12 @@ describe('the notes list', () => {
     // The reason NoteView carries localId at all: this note has no server id
     // and still has to be openable.
     await seedNotes(
-      makeRow({ serverId: null, localId: 'local-abc', title: 'Drafted offline', ownerId: TEST_USER.id }),
+      makeRow({
+        serverId: null,
+        localId: 'local-abc',
+        title: 'Drafted offline',
+        ownerId: TEST_USER.id,
+      }),
     );
     renderNotes();
 
@@ -73,7 +94,19 @@ describe('the notes list', () => {
   });
 
   it('shows an empty state that offers the action which fills it', async () => {
-    server.use(http.get(`${BASE}/notes`, () => HttpResponse.json({ content: [], page: 0, size: 100, totalElements: 0, totalPages: 0, hasNext: false, hasPrevious: false })));
+    server.use(
+      http.get(`${BASE}/notes`, () =>
+        HttpResponse.json({
+          content: [],
+          page: 0,
+          size: 100,
+          totalElements: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrevious: false,
+        }),
+      ),
+    );
     renderNotes();
 
     // "No notes" alone tells the user what they can already see.
@@ -108,7 +141,9 @@ describe('the notes list', () => {
 
     // The server never answers. The pin must still land, because the local
     // write is the operation.
-    server.use(http.patch(`${BASE}/notes/:noteId/pin`, () => new HttpResponse(null, { status: 500 })));
+    server.use(
+      http.patch(`${BASE}/notes/:noteId/pin`, () => new HttpResponse(null, { status: 500 })),
+    );
 
     const user = userEvent.setup();
     renderNotes();
@@ -120,6 +155,7 @@ describe('the notes list', () => {
   });
 
   it('moves a note to the trash and offers an undo', async () => {
+    serverHasNoNotes();
     await seedNotes(makeRow({ serverId: 1, title: 'Note 1', ownerId: TEST_USER.id }));
 
     const user = userEvent.setup();
@@ -137,6 +173,7 @@ describe('the notes list', () => {
   });
 
   it('archiving removes the note from the main list', async () => {
+    serverHasNoNotes();
     await seedNotes(makeRow({ serverId: 1, title: 'Note 1', ownerId: TEST_USER.id }));
 
     const user = userEvent.setup();

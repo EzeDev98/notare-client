@@ -90,6 +90,35 @@ const routes = [
               return { Component: NotesPage };
             },
           },
+
+          /*
+           * 7E. NoteTabs has linked to both of these since Step 5 and both
+           * rendered the 404 page, because the route tree was never told they
+           * existed — the pages' own tests mounted them in a memory router, so
+           * nothing failed. A test that builds its own routes proves the page
+           * works, not that the app can reach it.
+           */
+          {
+            path: 'archived',
+            lazy: async () => {
+              const { NotesPage } = await import('@/pages/Notes/Notes');
+              /*
+               * A route cannot pass props to a `Component`, so the prop is
+               * bound here. The wrapper is created ONCE, when lazy resolves and
+               * the router caches the result — not per render, which would give
+               * React a new component type each time and remount the page on
+               * every state change.
+               */
+              return { Component: () => <NotesPage archived /> };
+            },
+          },
+          {
+            path: 'trash',
+            lazy: async () => {
+              const { TrashPage } = await import('@/pages/Trash/Trash');
+              return { Component: TrashPage };
+            },
+          },
         ],
       },
     ],
