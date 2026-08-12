@@ -22,11 +22,17 @@ import { noteRepository } from '@/features/notes/local/noteRepository';
  * WHAT THIS BUYS. Pin and archive now work OFFLINE. The local write is the
  * real one; the request is an attempt to tell the server about it. If it
  * fails, or if the note has no serverId because it was created offline, the
- * row simply stays dirty and Step 8's push finds it in listDirty().
+ * row simply stays dirty.
  *
- * WHAT IS STILL MISSING. Nothing retries. A failed pin is dirty and correct
- * locally, but nothing carries it to the server until Step 8 exists. That is
- * a known gap, not an oversight — see the Review notes for 7D.
+ * NOT Step 8's outbox (ADR-006). The server's SyncOperationType deliberately
+ * excludes pin and archive — nobody queues one for later, by design on the
+ * server, not by omission here. A failed pin is retried by calling THIS
+ * SAME endpoint again on reconnection, which is 8F's job, not the batch
+ * push's.
+ *
+ * WHAT IS STILL MISSING. Nothing retries yet. A failed pin is dirty and
+ * correct locally, but nothing calls setPinned again until 8F exists. That is
+ * a known gap, not an oversight — see ADR-006.
  */
 export function useNoteActions() {
   const toast = useToast();
@@ -48,8 +54,18 @@ export function useNoteActions() {
       const written = await noteRepository.getByLocalId(note.localId);
       if (!written) return;
 
-      // No serverId means the note has never been created on the server. There
-      // is nothing to PATCH; the row is dirty and Step 8 will create it.
+      /*
+       * No serverId means the note has never been created on the server.
+       * There is nothing to PATCH.
+       *
+       * OPEN EDGE CASE, flagged for 8A rather than resolved here:
+       * SyncOperationRequest's CREATE carries only title/content, so a note
+       * pinned entirely offline before its first sync has nowhere to carry
+       * that flag through CREATE either. Left as-is is a silent data loss on
+       * first sync, not merely a delay. 8A needs to either add the flags to
+       * CREATE's payload or have 8F re-send this pin once the row gets a
+       * serverId — deciding which is 8A's job, not this hook's.
+       */
       if (written.serverId === null) return;
 
       try {

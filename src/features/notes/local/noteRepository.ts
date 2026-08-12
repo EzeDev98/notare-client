@@ -7,6 +7,7 @@ import {
 } from '@/features/notes/local/noteMappers';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import { META_KEYS } from '@/features/notes/local/metaRow';
+import type { OutboxRow } from '@/features/notes/local/outboxRow';
 import type {
   NoteResponse,
   NoteSummaryResponse,
@@ -268,7 +269,22 @@ export const noteRepository = {
     });
   },
 
-  /** Rows with local edits the server has not accepted. Step 8's push reads this. */
+  /**
+   * Rows with local edits the server has not accepted.
+   *
+   * NOT simply "what Step 8's push reads" (ADR-006). `dirty` is one bit
+   * covering two different obligations: an unsent title/content
+   * edit-or-create, which the outbox (8A-8C) owns, and an unsent
+   * pin/archive/restore, which 8F's reconnect retry owns instead — the
+   * server's SyncOperationType has no room for the latter, deliberately.
+   *
+   * This method cannot yet tell the two apart, because nothing about a row
+   * currently records WHICH kind of change made it dirty — only that
+   * something did. 8A's schema needs to answer that before this method's
+   * callers can safely split into "push these" and "retry-call these".
+   * Do not build 8A's push against this method as-is; it will pick up rows
+   * that were never meant to reach the outbox at all.
+   */
   listDirty(): Promise<NoteRow[]> {
     return db.notes.where('dirty').equals(1).toArray();
   },
@@ -376,6 +392,30 @@ export const noteRepository = {
 
   async clear(): Promise<void> {
     await db.notes.clear();
+  },
+};
+
+/**
+ * Read access to the outbox. (8A)
+ *
+ * READ-ONLY, deliberately. Writing into the outbox on every future edit —
+ * generating operationIds, deciding CREATE vs UPDATE, coalescing repeated
+ * edits to the same note into one queued operation — is "the operation queue
+ * model," which is 8B's job by name in the roadmap, not a schema step's. What
+ * exists here is enough to observe what the version-2 migration seeded and to
+ * write 8A's own tests against it.
+ */
+export const outboxRepository = {
+  list(): Promise<OutboxRow[]> {
+    return db.outbox.orderBy('id').toArray();
+  },
+
+  listForNote(localId: string): Promise<OutboxRow[]> {
+    return db.outbox.where('localId').equals(localId).sortBy('id');
+  },
+
+  count(): Promise<number> {
+    return db.outbox.count();
   },
 };
 

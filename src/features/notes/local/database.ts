@@ -2,6 +2,7 @@ import Dexie, { type EntityTable } from 'dexie';
 
 import type { MetaRow } from '@/features/notes/local/metaRow';
 import type { NoteRow } from '@/features/notes/local/noteRow';
+import type { OutboxRow } from '@/features/notes/local/outboxRow';
 
 /**
  * The local database.
@@ -28,9 +29,17 @@ import type { NoteRow } from '@/features/notes/local/noteRow';
 export class NotareDatabase extends Dexie {
   notes!: EntityTable<NoteRow, 'localId'>;
   meta!: EntityTable<MetaRow, 'key'>;
+  outbox!: EntityTable<OutboxRow, 'id'>;
 
-  constructor() {
-    super('notare');
+  /**
+   * `name` defaults to 'notare' for the real app. The parameter exists for
+   * database.test.ts (8A), which needs to open a database with ONLY version 1
+   * present, seed it, then reopen it as THIS class — running Dexie's actual
+   * upgrade function against real data, on a name isolated from the shared
+   * `db` singleton every other test file uses.
+   */
+  constructor(name = 'notare') {
+    super(name);
 
     /*
      * VERSION 1.
@@ -39,10 +48,9 @@ export class NotareDatabase extends Dexie {
      * so every field is persisted regardless. This declares which fields can
      * be QUERIED, and everything else requires a full scan.
      *
-     * `outbox` is deliberately absent. Step 8 adds it in version 2, so the
-     * upgrade path gets exercised against real local data rather than being
-     * theoretical. A migration you have actually run is worth more than a
-     * table sitting empty for a step.
+     * `outbox` was deliberately absent from this version. See version 2 below
+     * for why, and for the migration that exercises it against real data
+     * rather than an empty table.
      */
     this.version(1).stores({
       /*
@@ -77,6 +85,98 @@ export class NotareDatabase extends Dexie {
      * block breaks exactly those users — the ones you cannot see and will not
      * hear from.
      */
+
+    /*
+     * VERSION 2 (8A). Adds `outbox` — one row per queued CREATE, UPDATE, or
+     * DELETE, in the exact shape `SyncOperationRequest` accepts (ADR-006).
+     *
+     * `&operationId` is UNIQUE: the idempotency key must never collide, and a
+     * bug that generated the same key twice should fail loudly here rather
+     * than silently drop one of the two operations at push time.
+     *
+     * `localId` is indexed, not unique — a note can have more than one queued
+     * operation (CREATE then UPDATE), and a lookup by note needs to find all
+     * of them. NOT indexed for ordering: `id`, the auto-increment primary key,
+     * IS the order, for free, because it is assigned in insertion order. An
+     * index on `queuedAt` would be redundant with what `id` already gives.
+     *
+     * WHAT THE UPGRADE FUNCTION DOES, and — as important — what it does NOT
+     * do. It seeds `outbox` from whatever v1 rows are already dirty when a
+     * returning user's browser runs this migration, which is the "exercised
+     * against real data" this table was held back from v1 to get.
+     *
+     * It can only classify TWO of the cases with certainty from v1 data
+     * alone:
+     *
+     *   - dirty AND serverId is null: the note has NEVER reached the server,
+     *     by any path. Regardless of what made it dirty most recently, a
+     *     CREATE is unconditionally correct — it is the only way this note
+     *     reaches the server at all.
+     *   - dirty AND deleted: setDeleted(true) is the only local write that
+     *     sets `deleted`, and DELETE is a real SyncOperationType, so this is
+     *     a DELETE.
+     *
+     * A THIRD case — dirty, has a serverId, not deleted — is left OUT
+     * entirely, on purpose. It is genuinely ambiguous with v1 data: `dirty`
+     * has always meant "something changed," for a title/content edit AND for
+     * a pin/archive/restore alike (ADR-006), and v1 never recorded which.
+     * Guessing UPDATE here would risk sending an unrelated title/content
+     * snapshot under a possibly-stale `version` for a note the user only
+     * pinned — manufacturing a conflict nobody caused. Guessing "nothing" is
+     * safe: these rows are exactly as unresolved after this migration as
+     * they were before it, still dirty, still visible via the note's own
+     * Unsaved state, and eligible to be swept up correctly the next time
+     * they are actually edited through 8B's write path — which is where the
+     * general going-forward fix belongs, not a one-time migration.
+     */
+    this.version(2)
+      .stores({
+        outbox: '++id, &operationId, localId',
+      })
+      .upgrade(async (tx) => {
+        const notes = await tx.table<NoteRow, string>('notes').where('dirty').equals(1).toArray();
+        const now = Date.now();
+
+        const seeded: OutboxRow[] = [];
+
+        for (const note of notes) {
+          if (note.serverId === null) {
+            seeded.push({
+              operationId: crypto.randomUUID(),
+              type: 'CREATE',
+              localId: note.localId,
+              clientId: note.clientId,
+              noteId: null,
+              title: note.title,
+              content: note.content,
+              version: null,
+              queuedAt: now,
+            });
+            continue;
+          }
+
+          if (note.deleted === 1) {
+            seeded.push({
+              operationId: crypto.randomUUID(),
+              type: 'DELETE',
+              localId: note.localId,
+              clientId: null,
+              noteId: note.serverId,
+              title: null,
+              content: null,
+              version: null,
+              queuedAt: now,
+            });
+          }
+
+          // The ambiguous third case: intentionally not seeded. See the
+          // comment above `this.version(2)`.
+        }
+
+        if (seeded.length > 0) {
+          await tx.table<OutboxRow, number>('outbox').bulkAdd(seeded);
+        }
+      });
   }
 }
 

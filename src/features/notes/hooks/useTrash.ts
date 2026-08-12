@@ -94,7 +94,12 @@ export function useTrash(): TrashStateValue {
    *
    * Clearing the flag is the operation; the request only informs the server. It
    * therefore works offline, and a failure needs no rollback — the row is
-   * already correct, merely unsent, and listDirty() will find it in Step 8.
+   * already correct, merely unsent.
+   *
+   * NOT Step 8's outbox (ADR-006). Restore is excluded from
+   * SyncOperationType by the same deliberate server decision as pin and
+   * archive. A failed restore is retried by calling restoreNote again on
+   * reconnection — 8F's job, not the batch push's.
    */
   const restore = useCallback(
     async (note: NoteView) => {
