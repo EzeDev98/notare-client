@@ -10,8 +10,13 @@ import { LoginPage } from '@/pages/Login/Login';
 /**
  * The route tree, as DATA. `satisfies` checks the shape without widening, so a
  * typo in a property name is an error while the literal keeps its precise type.
+ *
+ * Exported (not just the router built from it) so router.test.tsx can mount
+ * the REAL tree in a memory router. D1 survived as long as it did because
+ * every page's own test built its own throwaway route — proving the page
+ * works, not that the app can reach it.
  */
-const routes = [
+export const routes = [
   {
     element: <PublicLayout />,
     errorElement: <RouteError />,
@@ -72,11 +77,20 @@ const routes = [
           },
           {
             /*
-             * Registered BEFORE the collection route for readability only —
-             * React Router matches by specificity, not order, so 'notes/:noteId'
-             * and 'notes' cannot shadow each other. (MSW does not share that
-             * property, which is why tests/msw/handlers.ts is order-sensitive.)
+             * 7D. Registered before 'notes/:noteId' for readability only —
+             * React Router ranks a static segment ('new') above a dynamic one
+             * (':noteId') regardless of array order, so this cannot be
+             * shadowed. The bug was never route order; it was that this path
+             * had no route object at all, so ':noteId' was the only thing
+             * that could match and 'new' was captured as an id.
              */
+            path: 'notes/new',
+            lazy: async () => {
+              const { NewNotePage } = await import('@/pages/NewNote/NewNote');
+              return { Component: NewNotePage };
+            },
+          },
+          {
             path: 'notes/:noteId',
             lazy: async () => {
               const { NoteDetailPage } = await import('@/pages/NoteDetail/NoteDetail');
@@ -92,11 +106,8 @@ const routes = [
           },
 
           /*
-           * 7E. NoteTabs has linked to both of these since Step 5 and both
-           * rendered the 404 page, because the route tree was never told they
-           * existed — the pages' own tests mounted them in a memory router, so
-           * nothing failed. A test that builds its own routes proves the page
-           * works, not that the app can reach it.
+           * NoteTabs has linked to both of these since Step 5. Fixed in 7D
+           * (b10fdce).
            */
           {
             path: 'archived',
@@ -117,6 +128,15 @@ const routes = [
             lazy: async () => {
               const { TrashPage } = await import('@/pages/Trash/Trash');
               return { Component: TrashPage };
+            },
+          },
+          {
+            // 7D. Same defect as 'archived'/'trash': the page and its own
+            // test existed since Step 5; nothing in the real tree pointed to it.
+            path: 'search',
+            lazy: async () => {
+              const { SearchPage } = await import('@/pages/Search/Search');
+              return { Component: SearchPage };
             },
           },
         ],

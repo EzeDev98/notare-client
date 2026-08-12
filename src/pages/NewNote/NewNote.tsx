@@ -8,6 +8,8 @@ import { noteRepository } from '@/features/notes/local/noteRepository';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 
+import './NewNote.css';
+
 /**
  * A new note.
  *
@@ -56,8 +58,8 @@ export function NewNotePage() {
 
   if (!row) {
     return (
-      <article className="note-detail">
-        <div className="note-detail__centre">
+      <article className="new-note">
+        <div className="new-note__centre">
           <Spinner label="Preparing a new note" />
         </div>
       </article>
@@ -65,7 +67,7 @@ export function NewNotePage() {
   }
 
   return (
-    <article className="note-detail">
+    <article className="new-note">
       <NoteEditorHost key={row.localId} row={row} currentUserId={currentUserId} />
     </article>
   );

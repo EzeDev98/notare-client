@@ -201,35 +201,6 @@ export interface NoteView {
   unsaved: boolean;
 }
 
-/**
- * A server summary rendered as a NoteView, WITHOUT a local row.
- *
- * This exists only for search, which is still server-only, and it is the
- * seam where that shows. The `localId` is synthetic — there is no row in
- * Dexie behind it — so it is safe as a React key and as nothing else. Nothing
- * may write to it, which is why search results are rendered without actions.
- *
- * 7G removes this function by settling whether search reads locally. Until
- * then it is better to have the compromise named and contained in one place
- * than spread through the search page as casts.
- */
-export function viewFromSummary(summary: NoteSummaryResponse): NoteView {
-  return {
-    localId: `server-${String(summary.id)}`,
-    serverId: summary.id,
-    title: summary.title ?? '',
-    // Summaries carry no content, and the card renders a preview from it.
-    content: '',
-    pinned: summary.pinned,
-    archived: summary.archived,
-    version: summary.version,
-    updatedAt: summary.updatedAt,
-    deletedAt: null,
-    // A server result is by definition what the server holds.
-    unsaved: false,
-  };
-}
-
 export function toView(row: NoteRow): NoteView {
   return {
     localId: row.localId,

@@ -1,97 +1,56 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 
-import { noteService } from '@/features/notes/api/noteService';
-import type { NoteSummaryResponse } from '@/features/notes/types';
-import { isAborted } from '@/lib/http/errors';
-
-const PAGE_SIZE = 20;
+import { useAuth } from '@/app/providers/auth-context';
+import { toView, type NoteView } from '@/features/notes/local/noteMappers';
+import { noteRepository } from '@/features/notes/local/noteRepository';
 
 export type SearchState =
-  /** No term yet — prompt rather than an empty result set. */
   | { status: 'idle' }
-  | { status: 'searching'; previous: NoteSummaryResponse[] }
-  | { status: 'ready'; results: NoteSummaryResponse[]; total: number; term: string }
-  | { status: 'error'; message: string };
+  | { status: 'loading' }
+  | { status: 'ready'; results: NoteView[]; total: number; term: string };
 
 /**
- * Searches notes for an already-debounced term.
+ * Searches notes locally. (7G)
  *
- * DEBOUNCE AND ORDERING ARE DIFFERENT PROBLEMS, and this hook only solves the
- * second. Debouncing (the caller's job) reduces how MANY requests are made;
- * nothing about it guarantees they RETURN in order.
+ * The previous version of this hook was almost entirely about a problem that
+ * no longer exists: a term typed, a request sent, and a SECOND term typed
+ * before the first request returned. That required an AbortController and a
+ * generation counter, because two network responses can come back in either
+ * order.
  *
- * Type "no", pause, type "te" and two requests exist. If "no" is slow and
- * "note" is fast, the results for "no" land last and the screen shows results
- * that do not match what is in the box.
+ * A Dexie query has no "in flight" to race. `useLiveQuery` re-runs
+ * synchronously against the local table and there is nothing to arrive out of
+ * order — the machinery that guarded against it is gone because the failure
+ * mode it guarded against is gone, not because it was simplified.
  *
- * Two mechanisms, and both are needed:
- *
- *   AbortController — cancels the outstanding request when a new term
- *   arrives. Handles most cases and CANNOT handle all of them: abort() on a
- *   promise that has already resolved does nothing, so there is a window where
- *   the stale response is already queued.
- *
- *   Generation counter — captured when the request starts, checked when it
- *   returns. Closes that window by discarding the result rather than trying to
- *   prevent it.
- *
- * Step 6's auto-save faces the same race in a harder form: there, a stale
- * response does not merely show wrong results, it overwrites the user's text.
+ * `status: 'loading'` is the one state worth keeping distinct from 'ready':
+ * dexie-react-hooks keeps returning the PREVIOUS result while a query
+ * re-runs, so it only ever shows `undefined` before the very first query for
+ * this hook instance resolves — which happens when a term arrives already in
+ * the URL (a shared or bookmarked `/search?q=...` link) rather than typed.
  */
-export function useNoteSearch(term: string) {
-  const [state, setState] = useState<SearchState>({ status: 'idle' });
-  const generationRef = useRef(0);
+export function useNoteSearch(term: string): SearchState {
+  const { state: authState } = useAuth();
+  const ownerId =
+    authState.status === 'authenticated' || authState.status === 'refreshing'
+      ? authState.user.id
+      : null;
 
-  useEffect(() => {
-    const trimmed = term.trim();
+  const trimmed = term.trim();
 
-    if (trimmed === '') {
-      /*
-       * No request for an empty term. The server treats a blank `query` as
-       * "match everything" for notes — technically valid, and dumping the
-       * entire note list into a search screen is not what an empty search box
-       * means.
-       */
-      setState({ status: 'idle' });
-      return;
-    }
+  const rows = useLiveQuery(async () => {
+    if (ownerId === null || trimmed === '') return [];
+    return noteRepository.search(trimmed, ownerId);
+  }, [ownerId, trimmed]);
 
-    const controller = new AbortController();
-    generationRef.current += 1;
-    const generation = generationRef.current;
+  if (trimmed === '') {
+    return { status: 'idle' };
+  }
 
-    // Keeps the previous results visible. Clearing to a spinner on every
-    // keystroke makes the screen strobe, and the old results are still
-    // relevant to what is being typed.
-    setState((current) => ({
-      status: 'searching',
-      previous: current.status === 'ready' ? current.results : [],
-    }));
+  if (rows === undefined) {
+    return { status: 'loading' };
+  }
 
-    noteService
-      .searchNotes(trimmed, { page: 0, size: PAGE_SIZE, signal: controller.signal })
-      .then((page) => {
-        // The term moved on while this was in flight. The abort below may not
-        // have caught it — a resolved promise cannot be un-resolved.
-        if (generation !== generationRef.current) return;
-
-        setState({
-          status: 'ready',
-          results: page.content,
-          total: page.totalElements,
-          term: trimmed,
-        });
-      })
-      .catch((error: unknown) => {
-        if (generation !== generationRef.current) return;
-        if (isAborted(error)) return;
-        setState({ status: 'error', message: 'Could not search your notes.' });
-      });
-
-    return () => {
-      controller.abort();
-    };
-  }, [term]);
-
-  return state;
+  const results = rows.map(toView);
+  return { status: 'ready', results, total: results.length, term: trimmed };
 }

@@ -1,15 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
 import { ToastProvider } from '@/app/providers/ToastProvider';
 import { SearchPage } from '@/pages/Search/Search';
-import { makeNoteSummary, makePage } from '~/fixtures/notes';
-import { server } from '~/msw/server';
-
-const BASE = 'http://localhost:2001/api/v1';
+import { makeRow } from '~/fixtures/notes';
+import { SignedIn, resetDatabase, seedNotes } from '~/harness';
 
 function renderSearch(path = '/search') {
   const router = createMemoryRouter(
@@ -21,114 +18,49 @@ function renderSearch(path = '/search') {
   );
 
   return render(
-    <ToastProvider>
-      <RouterProvider router={router} />
-    </ToastProvider>,
+    <SignedIn>
+      <ToastProvider>
+        <RouterProvider router={router} />
+      </ToastProvider>
+    </SignedIn>,
   );
 }
 
 describe('searching', () => {
   it('prompts rather than listing everything before a term is entered', async () => {
-    let requested = false;
-    server.use(
-      http.get(`${BASE}/notes/search`, () => {
-        requested = true;
-        return HttpResponse.json(makePage([]));
-      }),
-    );
+    await resetDatabase();
+    await seedNotes(makeRow({ title: 'Meeting notes' }));
 
     renderSearch();
     await screen.findByRole('heading', { name: /search/i });
 
-    /*
-     * No request for an empty term. The server treats a blank `query` as
-     * "match everything" for notes, so a naive implementation would dump the
-     * whole note list into a search screen the user has not used yet.
-     */
-    expect(requested).toBe(false);
     expect(screen.getByText(/search across the titles/i)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /meeting notes/i })).not.toBeInTheDocument();
   });
 
   it('runs a search from a term in the URL', async () => {
-    server.use(
-      http.get(`${BASE}/notes/search`, () =>
-        HttpResponse.json(makePage([makeNoteSummary({ id: 1, title: 'Meeting notes' })])),
-      ),
-    );
+    await resetDatabase();
+    await seedNotes(makeRow({ title: 'Meeting notes' }));
 
-    // Why the URL carries the term: ?q= is worth sharing, bookmarking and
-    // going back to, unlike a page number.
     renderSearch('/search?q=meeting');
 
     expect(await screen.findByRole('link', { name: /meeting notes/i })).toBeInTheDocument();
   });
 
-  it('makes one request for a burst of typing', async () => {
-    let requests = 0;
-    server.use(
-      http.get(`${BASE}/notes/search`, () => {
-        requests += 1;
-        return HttpResponse.json(makePage([makeNoteSummary({ id: 1, title: 'Meeting notes' })]));
-      }),
-    );
+  it('matches on content as well as title', async () => {
+    await resetDatabase();
+    await seedNotes(makeRow({ title: 'Groceries', content: 'discuss budget in the meeting' }));
 
     const user = userEvent.setup();
     renderSearch();
 
     await user.type(await screen.findByLabelText(/search your notes/i), 'meeting');
-    await screen.findByRole('link', { name: /meeting notes/i });
-
-    // Seven characters, one request. Without the debounce this is seven.
-    expect(requests).toBe(1);
-  });
-
-  it('ignores a slow response for a term the user has moved past', async () => {
-    /*
-     * THE TEST THIS SUBSECTION EXISTS FOR.
-     *
-     * Debouncing reduces how many requests happen; it does nothing about the
-     * order they return in. A slow "no" landing after a fast "note" would show
-     * results that do not match what is in the box.
-     *
-     * AbortController handles most of this and cannot handle all of it — a
-     * promise that has already resolved cannot be un-resolved — which is why
-     * the hook also carries a generation counter.
-     */
-    server.use(
-      http.get(`${BASE}/notes/search`, async ({ request }) => {
-        const term = new URL(request.url).searchParams.get('query') ?? '';
-
-        if (term === 'slow') {
-          await new Promise((resolve) => setTimeout(resolve, 300));
-          return HttpResponse.json(makePage([makeNoteSummary({ id: 99, title: 'Stale result' })]));
-        }
-        return HttpResponse.json(makePage([makeNoteSummary({ id: 1, title: 'Fresh result' })]));
-      }),
-    );
-
-    const user = userEvent.setup();
-    renderSearch();
-
-    const field = await screen.findByLabelText(/search your notes/i);
-    await user.type(field, 'slow');
-    await user.clear(field);
-    await user.type(field, 'fast');
-
-    expect(await screen.findByRole('link', { name: /fresh result/i })).toBeInTheDocument();
-
-    // Give the slow response time to arrive and be discarded.
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    expect(screen.queryByRole('link', { name: /stale result/i })).not.toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /groceries/i })).toBeInTheDocument();
   });
 
   it('reports the result count for a screen reader', async () => {
-    server.use(
-      http.get(`${BASE}/notes/search`, () =>
-        HttpResponse.json(
-          makePage([makeNoteSummary({ id: 1, title: 'Meeting notes' })], { totalElements: 1 }),
-        ),
-      ),
-    );
+    await resetDatabase();
+    await seedNotes(makeRow({ title: 'Meeting notes' }));
 
     const user = userEvent.setup();
     renderSearch();
@@ -141,7 +73,7 @@ describe('searching', () => {
   });
 
   it('says nothing matched, without pretending the search failed', async () => {
-    server.use(http.get(`${BASE}/notes/search`, () => HttpResponse.json(makePage([]))));
+    await resetDatabase();
 
     const user = userEvent.setup();
     renderSearch();
@@ -150,5 +82,37 @@ describe('searching', () => {
 
     expect(await screen.findByText(/no notes match/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /clear search/i })).toBeInTheDocument();
+  });
+
+  it('offers real actions, since a result is now a real local row', async () => {
+    await resetDatabase();
+    await seedNotes(makeRow({ title: 'Meeting notes', pinned: 0 }));
+
+    const user = userEvent.setup();
+    renderSearch();
+
+    await user.type(await screen.findByLabelText(/search your notes/i), 'meeting');
+
+    const pinButton = await screen.findByRole('button', { name: /pin meeting notes/i });
+    await user.click(pinButton);
+
+    expect(await screen.findByRole('button', { name: /unpin meeting notes/i })).toBeInTheDocument();
+  });
+
+  it('drops a result from the list once it is deleted from here', async () => {
+    await resetDatabase();
+    await seedNotes(makeRow({ title: 'Meeting notes' }));
+
+    const user = userEvent.setup();
+    renderSearch();
+
+    await user.type(await screen.findByLabelText(/search your notes/i), 'meeting');
+    await screen.findByRole('link', { name: /meeting notes/i });
+
+    await user.click(screen.getByRole('button', { name: /delete meeting notes/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('link', { name: /meeting notes/i })).not.toBeInTheDocument();
+    });
   });
 });

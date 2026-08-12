@@ -63,6 +63,26 @@ function byRecent(a: NoteRow, b: NoteRow): number {
   return b.localUpdatedAt - a.localUpdatedAt;
 }
 
+/**
+ * Ranks a title match above a content-only match, then falls back to recency.
+ *
+ * `needle` is already lower-cased by the caller — done once per search
+ * rather than once per comparison.
+ *
+ * Content-only results are not excluded, but a note whose TITLE contains the
+ * term is what a user typing a word is almost always looking for, and burying
+ * it under a dozen notes that merely mention the word in passing would make
+ * the ranking feel broken even though every result is technically correct.
+ */
+function bySearchRank(needle: string) {
+  return (a: NoteRow, b: NoteRow): number => {
+    const aTitleMatch = a.title.toLowerCase().includes(needle);
+    const bTitleMatch = b.title.toLowerCase().includes(needle);
+    if (aTitleMatch !== bTitleMatch) return aTitleMatch ? -1 : 1;
+    return b.localUpdatedAt - a.localUpdatedAt;
+  };
+}
+
 export const noteRepository = {
   /** The main list: mine, not trashed, not archived. */
   async listActive(ownerId: number): Promise<NoteRow[]> {
@@ -95,6 +115,41 @@ export const noteRepository = {
       ])
       .toArray();
     return rows.sort(byRecent);
+  },
+
+  /**
+   * Searches title and content, locally. (7G)
+   *
+   * A SUBSTRING SCAN, not an inverted index. This is one person's own notes,
+   * not a search engine over a shared corpus — the realistic dataset size
+   * does not justify tokenisation, index maintenance on every keystroke, and
+   * a second copy of every note's words. If someone's note count ever makes
+   * this slow, that is the moment to build an index, not before.
+   *
+   * SCOPE matches what the server endpoint searched: not deleted, archived or
+   * not — the same `anyOf` shape `listTrashed` already uses for "both
+   * archived states", here for the opposite pair.
+   *
+   * `.filter()` runs the scan in JS after the index narrows to this owner's
+   * non-deleted notes — there is no way to index "contains", so the index's
+   * job here is only to avoid scanning every OTHER user's notes too.
+   */
+  async search(term: string, ownerId: number): Promise<NoteRow[]> {
+    const needle = term.trim().toLowerCase();
+    if (needle === '') return [];
+
+    const rows = await db.notes
+      .where('[ownerId+deleted+archived]')
+      .anyOf([
+        [ownerId, 0, 0],
+        [ownerId, 0, 1],
+      ])
+      .filter(
+        (row) => row.title.toLowerCase().includes(needle) || row.content.toLowerCase().includes(needle),
+      )
+      .toArray();
+
+    return rows.sort(bySearchRank(needle));
   },
 
   getByLocalId(localId: string): Promise<NoteRow | undefined> {

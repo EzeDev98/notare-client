@@ -46,6 +46,58 @@ describe('listing', () => {
   });
 });
 
+describe('searching', () => {
+  it('matches title or content, case-insensitively', async () => {
+    await db.notes.bulkPut([
+      { ...createLocalNote(1, { title: 'Meeting notes', content: 'agenda' }) },
+      { ...createLocalNote(1, { title: 'Groceries', content: 'discussed the MEETING room' }) },
+      { ...createLocalNote(1, { title: 'Unrelated', content: 'nothing here' }) },
+    ]);
+
+    await expect(noteRepository.search('meeting', 1).then(titles)).resolves.toEqual(
+      expect.arrayContaining(['Meeting notes', 'Groceries']),
+    );
+  });
+
+  it('ranks a title match above a content-only match', async () => {
+    await db.notes.bulkPut([
+      { ...createLocalNote(1, { title: 'Old but has meeting in the title', content: '' }),
+        localUpdatedAt: 1_000 },
+      { ...createLocalNote(1, { title: 'Recent', content: 'mentions meeting in passing' }),
+        localUpdatedAt: 5_000 },
+    ]);
+
+    const results = await noteRepository.search('meeting', 1);
+    expect(results[0]?.title).toBe('Old but has meeting in the title');
+  });
+
+  it('excludes another owner, and excludes trashed notes', async () => {
+    await db.notes.bulkPut([
+      { ...createLocalNote(1, { title: 'mine, meeting' }) },
+      { ...createLocalNote(2, { title: 'someone else, meeting' }) },
+      { ...createLocalNote(1, { title: 'trashed meeting' }), deleted: 1 },
+    ]);
+
+    await expect(noteRepository.search('meeting', 1).then(titles)).resolves.toEqual([
+      'mine, meeting',
+    ]);
+  });
+
+  it('includes archived notes — archiving from search must not hide the result', async () => {
+    await db.notes.bulkPut([{ ...createLocalNote(1, { title: 'archived meeting' }), archived: 1 }]);
+
+    await expect(noteRepository.search('meeting', 1).then(titles)).resolves.toEqual([
+      'archived meeting',
+    ]);
+  });
+
+  it('returns nothing for a blank term rather than the whole list', async () => {
+    await db.notes.bulkPut([{ ...createLocalNote(1, { title: 'anything' }) }]);
+
+    await expect(noteRepository.search('   ', 1)).resolves.toEqual([]);
+  });
+});
+
 describe('local edits', () => {
   it('marks a row dirty so the sync engine will push it', async () => {
     const row = createLocalNote(1, { title: 'draft' });
