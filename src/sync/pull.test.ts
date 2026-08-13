@@ -93,6 +93,7 @@ describe('pullChanges — merging changed notes', () => {
       serverId: 11,
       localId: 'local-11',
       dirty: 1,
+      syncState: 'pending',
       version: 0,
       title: 'My unsent edit',
     });

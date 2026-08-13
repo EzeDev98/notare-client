@@ -103,6 +103,23 @@ export const noteRepository = {
   },
 
   /**
+   * Rows a push (8C) or a pull (8D) has flagged as a genuine conflict — a
+   * dirty local edit the server has moved past. `syncState` is indexed on
+   * its own (schema v1), so this is a direct index lookup, not a scan; the
+   * `ownerId` filter runs in memory the same way `search`'s does, since
+   * there is no `[ownerId+syncState]` compound index and a user's conflict
+   * count is never going to be the thing that makes this slow.
+   *
+   * Ordered by `byRecent`, same as the trash and for the same reason: a
+   * conflict is something that just happened, not something to organise —
+   * pinned floating to the top would bury the one that needs attention.
+   */
+  async listConflicted(ownerId: number): Promise<NoteRow[]> {
+    const rows = await db.notes.where('syncState').equals('conflict').toArray();
+    return rows.filter((row) => row.ownerId === ownerId).sort(byRecent);
+  },
+
+  /**
    * The trash. Both archived states, because a note can be archived AND
    * trashed — they are orthogonal flags (Step 1's decision), so filtering on
    * one would hide half the bin.

@@ -1,0 +1,99 @@
+@layer pages {
+  .conflicts {
+    max-inline-size: var(--measure-prose);
+    margin-inline: auto;
+    padding: var(--space-8) var(--space-4);
+  }
+
+  .conflicts__lead {
+    margin-block-start: var(--space-2);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  .conflicts__list {
+    display: grid;
+    gap: var(--space-6);
+    margin-block-start: var(--space-6);
+    padding: 0;
+  }
+
+  .conflicts__item {
+    padding: var(--space-5);
+    background-color: var(--color-surface);
+    /* A border, not a shadow — matches ConflictPanel: this is a region of
+     * the page, not a floating layer (§31). */
+    border: var(--border-width) solid var(--color-danger);
+    border-radius: var(--radius-lg);
+  }
+
+  .conflicts__item-heading {
+    margin: 0;
+    font-size: var(--font-size-lg);
+  }
+
+  .conflicts__panes {
+    display: grid;
+    gap: var(--space-4);
+    margin-block-start: var(--space-4);
+  }
+
+  /* Side by side only when there is room to read both — same breakpoint and
+   * reasoning as ConflictPanel: at 375px two columns is about 20 characters
+   * each, which is not a comparison. */
+  @media (min-width: 768px) {
+    .conflicts__panes {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  .conflicts__pane {
+    padding: var(--space-4);
+    background-color: var(--color-surface-sunken);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .conflicts__pane-title {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .conflicts__title {
+    margin: var(--space-2) 0 0;
+    font-weight: var(--font-weight-medium);
+  }
+
+  .conflicts__body {
+    margin-block-start: var(--space-3);
+    max-block-size: 14rem;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+  }
+
+  .conflicts__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-block-start: var(--space-5);
+  }
+
+  .conflicts__note {
+    margin: var(--space-3) 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+  }
+
+  .conflicts__centre {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-3);
+    padding-block: var(--space-16);
+    text-align: center;
+    color: var(--color-text-secondary);
+  }
+}

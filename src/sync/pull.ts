@@ -41,7 +41,10 @@ async function run(ownerId: number | null): Promise<void> {
   for (;;) {
     let response;
     try {
-      response = await syncService.pull({ since, page, size: PAGE_SIZE });
+      response =
+        since === undefined
+          ? await syncService.pull({ page, size: PAGE_SIZE })
+          : await syncService.pull({ since, page, size: PAGE_SIZE });
     } catch (error) {
       // Same reasoning as push.ts: nothing in this run reached local
       // storage that the stored cursor doesn't already account for, so the

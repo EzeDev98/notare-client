@@ -23,6 +23,7 @@ const AUTHENTICATED_PATHS: Array<{ path: string; expectedTitle: string }> = [
   { path: '/archived', expectedTitle: 'Archived · Notare' },
   { path: '/trash', expectedTitle: 'Trash · Notare' },
   { path: '/search', expectedTitle: 'Search · Notare' },
+  { path: '/conflicts', expectedTitle: 'Conflicts · Notare' },
   { path: '/account/sessions', expectedTitle: 'Sessions · Notare' },
 ];
 

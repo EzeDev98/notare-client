@@ -139,6 +139,16 @@ export const routes = [
               return { Component: SearchPage };
             },
           },
+          {
+            // 8E. Cold-start conflicts (a push or a pull marking a note
+            // 'conflict' with nobody looking at it) had nowhere to go until
+            // this route existed — see the gap analysis, D-series.
+            path: 'conflicts',
+            lazy: async () => {
+              const { ConflictsPage } = await import('@/pages/Conflicts/Conflicts');
+              return { Component: ConflictsPage };
+            },
+          },
         ],
       },
     ],
