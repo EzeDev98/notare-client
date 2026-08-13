@@ -117,6 +117,42 @@
     fill: var(--color-accent-subtle);
   }
 
+  /* ---- Conflict banner -------------------------------------------------- */
+
+  .app-shell__conflict-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    /*
+     * --color-danger-subtle / --color-text-on-danger don't exist as tokens
+     * (colors.css only defines --color-danger, and --color-text-on-danger
+     * is for text ON a solid danger FILL, which this banner isn't). Same
+     * background token .trash__offline already uses for an aside banner,
+     * with a danger-coloured border doing the emphasis instead — matching
+     * ConflictPanel's own choice of a border over a filled background (§31:
+     * this is a region of the page, not an alert chip).
+     */
+    color: var(--color-text);
+    background-color: var(--color-accent-subtle);
+    border-block-end: var(--border-width) solid var(--color-danger);
+  }
+
+  .app-shell__conflict-banner p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+  }
+
+  .app-shell__conflict-link {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-danger);
+    text-decoration: underline;
+    white-space: nowrap;
+  }
+
   /* ---- Main ------------------------------------------------------------ */
 
   .app-shell__main {

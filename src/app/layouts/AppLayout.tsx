@@ -4,6 +4,7 @@ import { navItems } from '@/app/layouts/navItems';
 import { RouteFocus } from '@/app/RouteFocus';
 import { useAuth } from '@/app/providers/auth-context';
 import { useSync } from '@/sync/useSync';
+import { useConflictCount } from '@/sync/useConflicts';
 import './AppLayout.css';
 
 /**
@@ -42,9 +43,35 @@ export function AppLayout() {
 
   useSync(ownerId);
 
+  /*
+   * 8E. A count, not the full list — this mounts on EVERY authenticated
+   * route, and pulling in useConflicts' resolution API (and re-rendering on
+   * every field of every conflicted note) here just to know whether a
+   * banner should show would be wasted work on every screen that isn't
+   * /conflicts.
+   */
+  const conflictCount = useConflictCount(ownerId);
+
   return (
     <div className="app-shell">
       <RouteFocus targetId="main" />
+
+      {conflictCount > 0 ? (
+        /*
+         * role="alert": a conflict is exactly the interruption ConflictPanel
+         * already treats as one (§38) — announced immediately, not queued
+         * behind whatever a screen reader happens to be reading.
+         */
+        <div className="app-shell__conflict-banner" role="alert">
+          <p>
+            {conflictCount} {conflictCount === 1 ? 'note has' : 'notes have'} a conflict that
+            needs your attention.
+          </p>
+          <NavLink className="app-shell__conflict-link" to="/conflicts">
+            Review
+          </NavLink>
+        </div>
+      ) : null}
       {/*
         Visually hidden until focused, then the first thing a keyboard user
         reaches. Without it they tab through the whole nav on every page before
