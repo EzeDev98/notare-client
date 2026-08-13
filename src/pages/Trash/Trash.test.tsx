@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
 import { ToastProvider } from '@/app/providers/ToastProvider';
-import { noteRepository } from '@/features/notes/local/noteRepository';
+import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import { TrashPage } from '@/pages/Trash/Trash';
 import { makeNoteSummary, makePage, makeRow } from '~/fixtures/notes';
 import { SignedIn, seedNotes } from '~/harness';
@@ -157,8 +157,27 @@ describe('the trash', () => {
     await waitFor(async () => {
       const stored = await noteRepository.getByLocalId(row.localId);
       expect(stored?.deleted).toBe(0);
-      // Unsent, not lost: Step 8's push finds it through listDirty().
+      // Unsent, not lost — but NOT via Step 8's outbox (ADR-006): restore is
+      // excluded from it by the server's own contract. 8F's reconnect retry
+      // is what eventually calls restoreNote again, not a batch push.
       expect(stored?.dirty).toBe(1);
+    });
+  });
+
+  it('cancels a queued DELETE when a note is restored before that delete ever reached the server (8B)', async () => {
+    server.use(http.post(`${BASE}/notes/:noteId/restore`, () => HttpResponse.error()));
+
+    const row = makeRow({ serverId: 9, title: 'Note 9', deleted: 1 });
+    await seedNotes(row);
+    await outboxRepository.enqueueDelete({ localId: row.localId, noteId: 9 });
+
+    const user = userEvent.setup();
+    renderTrash();
+
+    await user.click(await screen.findByRole('button', { name: /restore note 9/i }));
+
+    await waitFor(async () => {
+      await expect(outboxRepository.listForNote(row.localId)).resolves.toEqual([]);
     });
   });
 

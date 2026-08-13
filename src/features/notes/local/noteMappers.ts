@@ -67,6 +67,7 @@ export function createLocalNote(
     dirty: 1,
     syncState: 'pending',
     localUpdatedAt: Date.now(),
+    conflictNote: null,
   };
 }
 
@@ -100,6 +101,10 @@ export function fromNoteResponse(note: NoteResponse, existing?: NoteRow): NoteRo
     dirty: 0,
     syncState: 'synced',
     localUpdatedAt: Date.now(),
+    // A row reaching this function is, by definition, one the server just
+    // gave us cleanly — any earlier conflict this row carried is resolved by
+    // that fact alone, so it must not linger and be shown as still-open.
+    conflictNote: null,
   };
 }
 
@@ -144,6 +149,7 @@ export function fromNoteSummary(
     dirty: existing?.dirty ?? 0,
     syncState: existing?.syncState ?? 'synced',
     localUpdatedAt: Date.now(),
+    conflictNote: existing?.conflictNote ?? null,
   };
 }
 

@@ -5,7 +5,7 @@ import { useAuth } from '@/app/providers/auth-context';
 import { useToast } from '@/app/providers/toast-context';
 import { noteService } from '@/features/notes/api/noteService';
 import { toView, type NoteView } from '@/features/notes/local/noteMappers';
-import { noteRepository } from '@/features/notes/local/noteRepository';
+import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import { isAborted } from '@/lib/http/errors';
 
 const PAGE_SIZE = 100;
@@ -100,10 +100,17 @@ export function useTrash(): TrashStateValue {
    * SyncOperationType by the same deliberate server decision as pin and
    * archive. A failed restore is retried by calling restoreNote again on
    * reconnection — 8F's job, not the batch push's.
+   *
+   * IT DOES TOUCH THE OUTBOX ONCE, though (8B): if this note has a queued
+   * DELETE from an offline trash that never reached the server, restoring it
+   * must cancel that DELETE — otherwise a later push would trash a note the
+   * user explicitly brought back. That is queue hygiene, not restore joining
+   * the outbox.
    */
   const restore = useCallback(
     async (note: NoteView) => {
       await noteRepository.setDeleted(note.localId, false);
+      await outboxRepository.cancelPendingDelete(note.localId);
 
       const written = await noteRepository.getByLocalId(note.localId);
       if (!written) return;

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
 import { ToastProvider } from '@/app/providers/ToastProvider';
+import { outboxRepository } from '@/features/notes/local/noteRepository';
 import { NewNotePage } from '@/pages/NewNote/NewNote';
 import { makeNote } from '~/fixtures/notes';
 import { SignedIn } from '~/harness';
@@ -104,4 +105,25 @@ describe('creating a note', () => {
     // each holding half of what they wrote.
     expect(creates).toBe(1);
   }, 20_000);
+
+  it('queues a CREATE when the connection is genuinely gone (8B)', async () => {
+    server.use(http.post(`${BASE}/notes`, () => HttpResponse.error()));
+
+    const user = userEvent.setup();
+    renderNew();
+
+    const content = await screen.findByLabelText('Note content');
+    await user.click(content);
+    await user.paste('written with no connection');
+
+    await waitFor(
+      async () => {
+        const outbox = await outboxRepository.list();
+        expect(outbox).toHaveLength(1);
+        expect(outbox[0]).toMatchObject({ type: 'CREATE', noteId: null });
+        expect(outbox[0]?.content).toContain('written with no connection');
+      },
+      { timeout: 4_000 },
+    );
+  }, 10_000);
 });

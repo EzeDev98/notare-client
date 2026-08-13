@@ -6,7 +6,7 @@ import { useConflict } from '@/features/editor/hooks/useConflict';
 import { hasPendingWork, initialSaveState, saveReducer } from '@/features/editor/saveState';
 import { noteService } from '@/features/notes/api/noteService';
 import { fromNoteResponse } from '@/features/notes/local/noteMappers';
-import { noteRepository } from '@/features/notes/local/noteRepository';
+import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import { isConflict, isOffline } from '@/lib/http/errors';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
@@ -129,6 +129,16 @@ export function useNoteEditor(initialRow: NoteRow) {
             dirty: textUnchanged ? 0 : 1,
             syncState: textUnchanged ? 'synced' : 'pending',
           });
+
+          /*
+           * 8B: drop a queued CREATE for this note if one exists.
+           *
+           * It would exist if an earlier offline attempt already enqueued
+           * one and THIS attempt is a reconnect retry that just succeeded
+           * directly. Leaving it would mean 8C creates the SAME note a
+           * second time once the outbox is drained.
+           */
+          await outboxRepository.clearForNote(localId);
         })();
 
         try {
@@ -171,6 +181,11 @@ export function useNoteEditor(initialRow: NoteRow) {
           dirty: textUnchanged ? 0 : 1,
           syncState: textUnchanged ? 'synced' : 'pending',
         });
+
+        // 8B: same reasoning as the CREATE branch above — a direct success
+        // retires whatever this note had queued, since the outbox's copy is
+        // now either applied already or superseded by what was just sent.
+        await outboxRepository.clearForNote(localId);
       }
 
       dispatch({ type: 'SAVE_SUCCEEDED' });
@@ -179,10 +194,38 @@ export function useNoteEditor(initialRow: NoteRow) {
         dispatch({ type: 'CONFLICT_DETECTED' });
       } else if (isOffline(error)) {
         /*
-         * The row stays dirty and stays in the database. This is where
-         * offline-first pays: the work is safe, and Step 8's outbox will push
-         * it when the connection returns.
+         * The row stays dirty and stays in the database. That was already
+         * true before 8B — this is where offline-first pays.
+         *
+         * WHAT 8B ADDS: the attempt is now recorded in the outbox, so this
+         * note no longer depends on THIS EDITOR STAYING OPEN to ever reach
+         * the server. 8C's batch push can pick it up from a cold start —
+         * the app reopened, or a different note's editor open instead.
+         *
+         * Read the freshest row rather than `current`: the fetch fails close
+         * to instantly, but a coalesced re-queue should always carry
+         * whatever is newest, the same discipline the success path already
+         * applies just above.
          */
+        const latest = (await noteRepository.getByLocalId(localId)) ?? current;
+
+        if (current.serverId === null) {
+          await outboxRepository.enqueueCreate({
+            localId,
+            clientId: latest.clientId,
+            title: latest.title,
+            content: latest.content,
+          });
+        } else {
+          await outboxRepository.enqueueUpdate({
+            localId,
+            noteId: current.serverId,
+            version: current.version,
+            title: latest.title,
+            content: latest.content,
+          });
+        }
+
         dispatch({ type: 'WENT_OFFLINE' });
       } else {
         dispatch({ type: 'SAVE_FAILED', retryable: true });
@@ -213,6 +256,16 @@ export function useNoteEditor(initialRow: NoteRow) {
   }, [online, scheduler]);
 
   const conflict = useConflict(row.serverId, saveState.status === 'conflict');
+
+  /*
+   * KNOWN GAP (8B), not fixed here: none of the three resolutions below clear
+   * a stale outbox entry queued before the conflict was detected. In
+   * practice this is harmless rather than silent — 8C would submit the old
+   * queued version, the server would report CONFLICT again (it is genuinely
+   * stale), and the user sees another round of this same panel rather than
+   * losing anything. Left for whoever builds 8C to decide whether that retry
+   * is worth avoiding.
+   */
 
   /** KEEP MINE — a deliberate overwrite. Local text stays; version is swapped. */
   const keepMine = useCallback(() => {

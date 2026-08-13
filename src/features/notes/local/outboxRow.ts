@@ -21,6 +21,13 @@
  * arrive before its CREATE). Ordering is not a field on this type; it is the
  * table's insertion order, which `id` (Dexie's auto-increment) preserves for
  * free. Nothing here should ever sort by anything else.
+ *
+ * That said, at any given MOMENT this table holds at most one row per note
+ * (8B, enforced by `outboxRepository`'s enqueue methods) — the sequence
+ * above describes what accumulates over the note's whole offline lifetime as
+ * rows are pushed and removed, not concurrent rows sitting here at once.
+ * Repeated offline edits before anything is pushed coalesce into the single
+ * pending row rather than piling up.
  */
 export interface OutboxRow {
   /** Auto-increment. Absent until Dexie assigns it on insert. */

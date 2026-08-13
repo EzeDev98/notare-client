@@ -2,12 +2,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { db } from '@/features/notes/local/database';
 import { createLocalNote, fromNoteResponse } from '@/features/notes/local/noteMappers';
-import { metaRepository, noteRepository } from '@/features/notes/local/noteRepository';
+import { metaRepository, noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import { makeNote, makeNoteSummary } from '~/fixtures/notes';
 
 beforeEach(async () => {
   await db.notes.clear();
   await db.meta.clear();
+  await db.outbox.clear();
 });
 
 describe('listing', () => {
@@ -264,6 +265,175 @@ describe('meta', () => {
     // Byte for byte. Parsing it into a Date and back would convert to UTC,
     // shifting the cursor by the local offset and skipping changes forever.
     await expect(metaRepository.getSyncCursor()).resolves.toBe('2026-08-08T10:15:30.123');
+  });
+});
+
+describe('the outbox (8B)', () => {
+  const note = { localId: 'local-1', clientId: 'client-1', title: 'Draft', content: 'Body' };
+
+  describe('enqueueCreate', () => {
+    it('queues one CREATE', async () => {
+      await outboxRepository.enqueueCreate(note);
+
+      const rows = await outboxRepository.listForNote(note.localId);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        type: 'CREATE',
+        localId: note.localId,
+        clientId: note.clientId,
+        title: 'Draft',
+        noteId: null,
+      });
+    });
+
+    it('coalesces a second call into the SAME row rather than appending', async () => {
+      await outboxRepository.enqueueCreate(note);
+      const [first] = await outboxRepository.listForNote(note.localId);
+
+      await outboxRepository.enqueueCreate({ ...note, title: 'Revised', content: 'New body' });
+
+      const rows = await outboxRepository.listForNote(note.localId);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.id).toBe(first!.id);
+      expect(rows[0]).toMatchObject({ title: 'Revised', content: 'New body' });
+      expect(rows[0]!.operationId).toBe(first!.operationId);
+    });
+  });
+
+  describe('enqueueUpdate', () => {
+    const update = { localId: 'local-2', noteId: 7, version: 3, title: 'Edited', content: 'Body' };
+
+    it('queues one UPDATE, carrying the base version', async () => {
+      await outboxRepository.enqueueUpdate(update);
+
+      const rows = await outboxRepository.listForNote(update.localId);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ type: 'UPDATE', noteId: 7, version: 3 });
+    });
+
+    it('coalesces repeated offline edits into the same row', async () => {
+      await outboxRepository.enqueueUpdate(update);
+      const [first] = await outboxRepository.listForNote(update.localId);
+
+      await outboxRepository.enqueueUpdate({ ...update, title: 'Edited again' });
+
+      const rows = await outboxRepository.listForNote(update.localId);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.id).toBe(first!.id);
+      expect(rows[0]!.title).toBe('Edited again');
+    });
+  });
+
+  describe('enqueueDelete', () => {
+    it('queues a DELETE', async () => {
+      await outboxRepository.enqueueDelete({ localId: 'local-3', noteId: 9 });
+
+      const rows = await outboxRepository.listForNote('local-3');
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ type: 'DELETE', noteId: 9, title: null, content: null });
+    });
+
+    it('discards a queued UPDATE for the same note — the final state is deleted, content no longer matters', async () => {
+      await outboxRepository.enqueueUpdate({
+        localId: 'local-4',
+        noteId: 9,
+        version: 1,
+        title: 'x',
+        content: 'y',
+      });
+
+      await outboxRepository.enqueueDelete({ localId: 'local-4', noteId: 9 });
+
+      const rows = await outboxRepository.listForNote('local-4');
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.type).toBe('DELETE');
+    });
+  });
+
+  describe('discardPendingCreate', () => {
+    it('drops a queued CREATE', async () => {
+      await outboxRepository.enqueueCreate(note);
+
+      await outboxRepository.discardPendingCreate(note.localId);
+
+      await expect(outboxRepository.listForNote(note.localId)).resolves.toEqual([]);
+    });
+
+    it('leaves a queued UPDATE alone — it is not a CREATE', async () => {
+      await outboxRepository.enqueueUpdate({
+        localId: 'local-5',
+        noteId: 1,
+        version: 1,
+        title: 'x',
+        content: 'y',
+      });
+
+      await outboxRepository.discardPendingCreate('local-5');
+
+      await expect(outboxRepository.listForNote('local-5')).resolves.toHaveLength(1);
+    });
+  });
+
+  describe('cancelPendingDelete', () => {
+    it('drops a queued DELETE — a restore before the push must undo it', async () => {
+      await outboxRepository.enqueueDelete({ localId: 'local-6', noteId: 1 });
+
+      await outboxRepository.cancelPendingDelete('local-6');
+
+      await expect(outboxRepository.listForNote('local-6')).resolves.toEqual([]);
+    });
+
+    it('leaves a queued CREATE or UPDATE alone — neither is a DELETE', async () => {
+      await outboxRepository.enqueueCreate(note);
+
+      await outboxRepository.cancelPendingDelete(note.localId);
+
+      await expect(outboxRepository.listForNote(note.localId)).resolves.toHaveLength(1);
+    });
+  });
+
+  describe('clearForNote', () => {
+    it('drops whatever is queued, regardless of type', async () => {
+      await outboxRepository.enqueueCreate(note);
+
+      await outboxRepository.clearForNote(note.localId);
+
+      await expect(outboxRepository.listForNote(note.localId)).resolves.toEqual([]);
+    });
+  });
+
+  describe('applyServerAck', () => {
+    it('clears a queued operation once the server has acked directly, even though nothing pushed it', async () => {
+      const row = { ...fromNoteResponse(makeNote({ id: 4 })), dirty: 1 as const };
+      await db.notes.put(row);
+      await outboxRepository.enqueueUpdate({
+        localId: row.localId,
+        noteId: 4,
+        version: row.version,
+        title: row.title,
+        content: row.content,
+      });
+
+      await noteRepository.applyServerAck(
+        row.localId,
+        { version: (row.version ?? 0) + 1, updatedAt: row.updatedAt },
+        row.localUpdatedAt,
+      );
+
+      await expect(outboxRepository.listForNote(row.localId)).resolves.toEqual([]);
+    });
+  });
+
+  it('never holds more than one row per note across a create-then-edit-then-delete lifecycle', async () => {
+    const localId = 'local-lifecycle';
+
+    await outboxRepository.enqueueCreate({ localId, clientId: 'c1', title: 'v1', content: '' });
+    await outboxRepository.enqueueCreate({ localId, clientId: 'c1', title: 'v2', content: '' });
+    await outboxRepository.enqueueDelete({ localId, noteId: 42 });
+
+    const rows = await outboxRepository.listForNote(localId);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.type).toBe('DELETE');
   });
 });
 

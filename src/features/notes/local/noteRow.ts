@@ -1,3 +1,4 @@
+import type { NoteResponse } from '@/features/notes/types';
 import type { ServerDateTime } from '@/lib/http/types';
 
 /*
@@ -115,4 +116,18 @@ export interface NoteRow {
    * number because it is ours and never round-trips.
    */
   localUpdatedAt: number;
+
+  /**
+   * The server's copy of this note, captured when a push (8C) came back
+   * CONFLICT.
+   *
+   * Null except while `syncState === 'conflict'`. This is deliberately the
+   * FULL note, not a version number — the same reasoning the architecture
+   * doc gives for the server returning it on the wire in the first place:
+   * with only a version, showing the user what changed means a follow-up
+   * fetch per conflict. 8E (not built yet) is what actually surfaces this;
+   * 8C's job is only to not lose it between the push that discovered the
+   * conflict and the screen that will eventually show it.
+   */
+  conflictNote: NoteResponse | null;
 }

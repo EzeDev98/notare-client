@@ -2,6 +2,8 @@ import { NavLink, Outlet } from 'react-router';
 
 import { navItems } from '@/app/layouts/navItems';
 import { RouteFocus } from '@/app/RouteFocus';
+import { useAuth } from '@/app/providers/auth-context';
+import { useSync } from '@/sync/useSync';
 import './AppLayout.css';
 
 /**
@@ -20,6 +22,26 @@ import './AppLayout.css';
  * STEP 4D wraps this route's element in <RequireAuth>.
  */
 export function AppLayout() {
+  /*
+   * Here, not in AuthProvider: this component only ever mounts for an
+   * authenticated session (RequireAuth wraps its route), so "the shell
+   * mounted" already means "we have a session worth syncing for" — no
+   * separate check needed. It also naturally stops on logout: the shell
+   * unmounts, the effect's cleanup runs, and there is no dangling listener
+   * trying to sync with no session behind it.
+   *
+   * ownerId comes from auth context the same way useNotes reads it (7A) —
+   * pull.ts needs it the moment a brand-new row is written, not whenever a
+   * later screen happens to ask.
+   */
+  const { state: authState } = useAuth();
+  const ownerId =
+    authState.status === 'authenticated' || authState.status === 'refreshing'
+      ? authState.user.id
+      : null;
+
+  useSync(ownerId);
+
   return (
     <div className="app-shell">
       <RouteFocus targetId="main" />

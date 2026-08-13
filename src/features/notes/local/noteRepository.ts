@@ -240,7 +240,7 @@ export const noteRepository = {
     ack: { version: number | null; updatedAt: ServerDateTime | null; serverId?: number },
     expectedLocalUpdatedAt: number,
   ): Promise<void> {
-    return db.transaction('rw', db.notes, async () => {
+    return db.transaction('rw', db.notes, db.outbox, async () => {
       const existing = await db.notes.get(localId);
       if (!existing) return;
 
@@ -253,6 +253,10 @@ export const noteRepository = {
         updatedAt: ack.updatedAt,
         dirty: unchanged ? 0 : 1,
         syncState: unchanged ? 'synced' : 'pending',
+        // The server just acknowledged this row, cleanly or not — either way
+        // a PREVIOUS conflict (8C) is stale the moment a new ack lands, the
+        // same reasoning fromNoteResponse uses.
+        conflictNote: null,
         /*
          * localUpdatedAt is NOT restamped HERE. An acknowledgement is not a
          * local change — the server agreeing with us is not the user doing
@@ -266,6 +270,88 @@ export const noteRepository = {
          * write.
          */
       });
+
+      /*
+       * 8B: any queued outbox operation for this note is now stale,
+       * regardless of `unchanged`. Either the row is fully clean (the
+       * queued copy is obsolete), or it isn't (newer edits exist, and
+       * WHATEVER queued content this held is now behind them) — either way,
+       * pushing it later would risk overwriting a newer state with an older
+       * one, or creating the same note twice. A future offline failure
+       * enqueues fresh, from the current row.
+       */
+      await db.outbox.where('localId').equals(localId).delete();
+    });
+  },
+
+  /**
+   * Records that the server accepted a queued DELETE (8C).
+   *
+   * Separate from applyServerAck rather than a shared method with a DELETE
+   * branch: a DELETE's APPLIED result carries no `note` (there is nothing
+   * left on the server to describe), so there is no version or updatedAt to
+   * adopt — only the same staleness guard, for the same reason. If the row
+   * changed since the request went out (the note was restored while the
+   * DELETE was in flight, racing past `cancelPendingDelete`), the row is left
+   * exactly as dirty as it already was rather than being marked synced for a
+   * delete that no longer reflects local reality.
+   */
+  applyDeleteAck(localId: string, expectedLocalUpdatedAt: number): Promise<void> {
+    return db.transaction('rw', db.notes, db.outbox, async () => {
+      const existing = await db.notes.get(localId);
+      if (existing) {
+        const unchanged = existing.localUpdatedAt === expectedLocalUpdatedAt;
+        await db.notes.put({
+          ...existing,
+          dirty: unchanged ? 0 : existing.dirty,
+          syncState: unchanged ? 'synced' : existing.syncState,
+        });
+      }
+
+      await db.outbox.where('localId').equals(localId).delete();
+    });
+  },
+
+  /**
+   * Records a CONFLICT from a push (8C).
+   *
+   * Per the architecture doc's contract: "keep the local copy" — so, unlike
+   * every other push outcome, the outbox row for this note is left in place
+   * by the CALLER (push.ts), not cleared here. This method only stamps the
+   * note itself: `syncState: 'conflict'` and the server's copy attached, so
+   * 8E has something to show without a follow-up fetch.
+   *
+   * dirty and localUpdatedAt are untouched — the user's local edit is still
+   * exactly as unsent as it was a moment ago; a conflict is news about the
+   * SERVER's state, not a local change.
+   */
+  markConflict(localId: string, theirs: NoteResponse): Promise<void> {
+    return db.transaction('rw', db.notes, async () => {
+      const existing = await db.notes.get(localId);
+      if (!existing) return;
+
+      await db.notes.put({ ...existing, syncState: 'conflict', conflictNote: theirs });
+    });
+  },
+
+  /**
+   * Records an INVALID result from a push (8C).
+   *
+   * "Do not retry" (architecture doc) means the outbox row is gone — the
+   * CALLER (push.ts) removes it, same as every other terminal outcome. This
+   * method's job is narrower and just as important: `content` and `title`
+   * are NOT touched. The operation was rejected, not the user's text, and
+   * "never silently discard the user's text" is the one line in the spec
+   * this method exists to honour. The row stays dirty and visible as
+   * Unsaved; syncState: 'invalid' is what lets a future screen tell "still
+   * saving" apart from "this one needs a human".
+   */
+  markInvalid(localId: string): Promise<void> {
+    return db.transaction('rw', db.notes, async () => {
+      const existing = await db.notes.get(localId);
+      if (!existing) return;
+
+      await db.notes.put({ ...existing, syncState: 'invalid' });
     });
   },
 
@@ -396,14 +482,20 @@ export const noteRepository = {
 };
 
 /**
- * Read access to the outbox. (8A)
+ * The outbox: read access from 8A, write access from 8B.
  *
- * READ-ONLY, deliberately. Writing into the outbox on every future edit —
- * generating operationIds, deciding CREATE vs UPDATE, coalescing repeated
- * edits to the same note into one queued operation — is "the operation queue
- * model," which is 8B's job by name in the roadmap, not a schema step's. What
- * exists here is enough to observe what the version-2 migration seeded and to
- * write 8A's own tests against it.
+ * THE INVARIANT EVERY WRITE METHOD HERE MAINTAINS: at most one row per
+ * `localId` at any time. The table holds only UNPUSHED operations — a row is
+ * removed the moment it is no longer needed, whether because it was applied
+ * (8C, later), superseded by a newer local change, or made moot by a direct
+ * call succeeding without ever needing the queue. Two rows for the same note
+ * would mean the second one's `version` is stale the instant the first is
+ * applied, manufacturing a conflict nobody caused — see ADR-006 for the case
+ * this was designed to avoid.
+ *
+ * ONLY CREATE, UPDATE, DELETE are enqueueABLE. Pin, archive, and restore stay
+ * off this table entirely, by the same server contract ADR-006 documents —
+ * there is no `enqueuePin`, and there should never be one.
  */
 export const outboxRepository = {
   list(): Promise<OutboxRow[]> {
@@ -416,6 +508,172 @@ export const outboxRepository = {
 
   count(): Promise<number> {
     return db.outbox.count();
+  },
+
+  /**
+   * Queues a CREATE, or updates the content of one already queued.
+   *
+   * Called when a save attempt for a note with no serverId fails offline.
+   * If this note already has a queued CREATE — a previous offline attempt,
+   * or the user kept typing before this attempt's fetch even failed — its
+   * title/content are overwritten IN PLACE, same row, same operationId. A
+   * second row would violate the one-row invariant for no benefit: only the
+   * latest content will ever be worth sending.
+   */
+  enqueueCreate(note: {
+    localId: string;
+    clientId: string;
+    title: string;
+    content: string;
+  }): Promise<void> {
+    return db.transaction('rw', db.outbox, async () => {
+      const existing = await db.outbox.where('localId').equals(note.localId).first();
+
+      if (existing?.type === 'CREATE') {
+        await db.outbox.update(existing.id, { title: note.title, content: note.content });
+        return;
+      }
+
+      // Anything else queued (should not normally occur — defensive, not
+      // expected) is superseded: this note has never reached the server, so
+      // a CREATE is the only operation that can possibly be correct for it.
+      if (existing) {
+        await db.outbox.delete(existing.id);
+      }
+
+      await db.outbox.add({
+        operationId: crypto.randomUUID(),
+        type: 'CREATE',
+        localId: note.localId,
+        clientId: note.clientId,
+        noteId: null,
+        title: note.title,
+        content: note.content,
+        version: null,
+        queuedAt: Date.now(),
+      });
+    });
+  },
+
+  /**
+   * Queues an UPDATE, or updates the content of one already queued.
+   *
+   * `version` is the LOCAL row's last-server-acknowledged version, which does
+   * not change between coalesced edits (it only moves on an ack) — so
+   * repeated calls for the same unsent stretch of edits pass the same value
+   * every time, and overwriting it on each call is harmless because it is
+   * always identical.
+   */
+  enqueueUpdate(note: {
+    localId: string;
+    noteId: number;
+    version: number | null;
+    title: string;
+    content: string;
+  }): Promise<void> {
+    return db.transaction('rw', db.outbox, async () => {
+      const existing = await db.outbox.where('localId').equals(note.localId).first();
+
+      if (existing?.type === 'UPDATE') {
+        await db.outbox.update(existing.id, { title: note.title, content: note.content });
+        return;
+      }
+
+      /*
+       * A queued CREATE existing here would mean applyServerAck's cleanup
+       * (8B) did not run for a note that nonetheless now has a serverId —
+       * should not happen, but if it does, UPDATE is what current reality
+       * calls for, not the stale CREATE.
+       */
+      if (existing) {
+        await db.outbox.delete(existing.id);
+      }
+
+      await db.outbox.add({
+        operationId: crypto.randomUUID(),
+        type: 'UPDATE',
+        localId: note.localId,
+        clientId: null,
+        noteId: note.noteId,
+        title: note.title,
+        content: note.content,
+        version: note.version,
+        queuedAt: Date.now(),
+      });
+    });
+  },
+
+  /**
+   * Queues a DELETE, discarding whatever was queued before.
+   *
+   * ONLY for a note the server already knows about (`noteId` is required and
+   * non-null) — a note trashed before ever syncing has nothing to delete on
+   * the server; see `discardPendingCreate` for that case instead, which
+   * `useDeleteNote` calls on its own early-return branch.
+   *
+   * A previously queued UPDATE is dropped rather than kept: the note's final
+   * state is "deleted," and content it once had does not matter for a
+   * soft-delete. A previously queued CREATE should not be possible here —
+   * that would mean `noteId` was already known before the note existed on
+   * the server — but is handled the same defensive way as the other two
+   * methods, for the same reason.
+   */
+  enqueueDelete(note: { localId: string; noteId: number }): Promise<void> {
+    return db.transaction('rw', db.outbox, async () => {
+      const existing = await db.outbox.where('localId').equals(note.localId).first();
+      if (existing) {
+        await db.outbox.delete(existing.id);
+      }
+
+      await db.outbox.add({
+        operationId: crypto.randomUUID(),
+        type: 'DELETE',
+        localId: note.localId,
+        clientId: null,
+        noteId: note.noteId,
+        title: null,
+        content: null,
+        version: null,
+        queuedAt: Date.now(),
+      });
+    });
+  },
+
+  /**
+   * Drops a queued CREATE for a note trashed before it ever reached the
+   * server. Called from `useDeleteNote`'s early return for `serverId ===
+   * null` — nothing this note ever queues can be told to a server that has
+   * never heard of it, including a CREATE queued by an earlier failed save.
+   */
+  async discardPendingCreate(localId: string): Promise<void> {
+    const existing = await db.outbox.where('localId').equals(localId).first();
+    if (existing?.type === 'CREATE') {
+      await db.outbox.delete(existing.id);
+    }
+  },
+
+  /**
+   * Cancels a queued DELETE. Called from `restore` (both the trash screen's
+   * and the delete toast's Undo) — a note restored before its DELETE ever
+   * reached the server must not have that DELETE applied later regardless;
+   * the user's restore already reversed the intent it represented.
+   */
+  async cancelPendingDelete(localId: string): Promise<void> {
+    const existing = await db.outbox.where('localId').equals(localId).first();
+    if (existing?.type === 'DELETE') {
+      await db.outbox.delete(existing.id);
+    }
+  },
+
+  /**
+   * Drops any queued operation for a note once a DIRECT call has already
+   * told the server what it needed to know. Called from the editor's
+   * create/update success paths and from `applyServerAck` — see the comment
+   * there for why this runs unconditionally, not only when the row ends up
+   * clean.
+   */
+  async clearForNote(localId: string): Promise<void> {
+    await db.outbox.where('localId').equals(localId).delete();
   },
 };
 

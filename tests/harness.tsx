@@ -70,4 +70,9 @@ export async function seedNotes(...rows: NoteRow[]): Promise<void> {
 export async function resetDatabase(): Promise<void> {
   await db.notes.clear();
   await db.meta.clear();
+  // 8A added this table after resetDatabase was written; a leaked outbox row
+  // is the same class of false-green risk the comment on setup.ts's afterEach
+  // already names for db.notes — a queued operation appearing in a test that
+  // never queued one.
+  await db.outbox.clear();
 }
