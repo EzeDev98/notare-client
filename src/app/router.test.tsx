@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
 import { routes } from '@/app/router';
+import { QueryProvider } from '@/app/providers/QueryProvider';
 import { ToastProvider } from '@/app/providers/ToastProvider';
 import { SignedIn, resetDatabase } from '~/harness';
 
@@ -24,6 +25,11 @@ const AUTHENTICATED_PATHS: Array<{ path: string; expectedTitle: string }> = [
   { path: '/trash', expectedTitle: 'Trash · Notare' },
   { path: '/search', expectedTitle: 'Search · Notare' },
   { path: '/conflicts', expectedTitle: 'Conflicts · Notare' },
+  // '/shared/:noteId' is deliberately absent from this list, same as
+  // '/notes/:noteId' already was — both are dynamic routes that need a real
+  // id and seeded (or mocked) data to resolve to anything but a not-found
+  // state; this list only covers the static paths.
+  { path: '/shared', expectedTitle: 'Shared with me · Notare' },
   { path: '/account/sessions', expectedTitle: 'Sessions · Notare' },
 ];
 
@@ -31,9 +37,11 @@ function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
   return render(
     <SignedIn>
-      <ToastProvider>
-        <RouterProvider router={router} />
-      </ToastProvider>
+      <QueryProvider>
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
+      </QueryProvider>
     </SignedIn>,
   );
 }

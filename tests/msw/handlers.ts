@@ -1,6 +1,8 @@
 import { http, HttpResponse } from 'msw';
 
 import { makeNote, makeNoteSummary, makePage } from '../fixtures/notes';
+import { makeSharedNoteSummary } from '../fixtures/sharedNotes';
+import { makeCollaboration, makeUserSummary } from '../fixtures/collaboration';
 
 /**
  * Default handlers: the HAPPY PATH only. Failure cases are per-test overrides
@@ -88,108 +90,93 @@ export const handlers = [
   http.delete(`${BASE}/notes/:noteId/permanent`, () => new HttpResponse(null, { status: 204 })),
 
   http.delete(`${BASE}/notes/:noteId`, () => new HttpResponse(null, { status: 204 })),
-// ---- shared notes (recipient side) -------------------------------------
+
+  // ---- shared notes (recipient side) -------------------------------------
 
   http.get(`${BASE}/shared-notes`, () => HttpResponse.json(makePage([makeSharedNoteSummary()]))),
 
   // Returns the OWNER's NoteResponse shape — there is no
-
   // SharedNoteDetailResponse yet (sharedNoteService.ts's doc comment).
-
   http.get(`${BASE}/shared-notes/:noteId`, ({ params }) =>
-
     HttpResponse.json(makeNote({ id: Number(params['noteId']), ownerId: 2 })),
-
   ),
 
   http.put(`${BASE}/shared-notes/:noteId`, async ({ params, request }) => {
+    const body = (await request.json()) as {
+      title: string | null;
+      content: string | null;
+      version: number;
+    };
+    return HttpResponse.json(
+      makeNote({ id: Number(params['noteId']), ownerId: 2, ...body, version: body.version + 1 }),
+    );
+  }),
+// ---- user search ----------------------------------------------------
+
+  http.get(`${BASE}/user/search`, ({ request }) => {
+
+    const q = new URL(request.url).searchParams.get('q') ?? '';
+
+    // Blank query -> empty page, matching the real server (this is other
+
+    // people's data, not a browse-everyone endpoint).
+
+    return HttpResponse.json(makePage(q === '' ? [] : [makeUserSummary()]));
+
+  }),
+
+  // ---- collaborations ---------------------------------------------------
+
+  http.get(`${BASE}/collaborations/sent`, () => HttpResponse.json(makePage([makeCollaboration()]))),
+
+  http.get(`${BASE}/collaborations/received`, () =>
+
+    HttpResponse.json(makePage([makeCollaboration({ status: 'PENDING' })])),
+
+  ),
+
+  http.post(`${BASE}/collaborations`, async ({ request }) => {
 
     const body = (await request.json()) as {
 
-      title: string | null;
+      noteId: number;
 
-      content: string | null;
+      collaboratorId: number;
 
-      version: number;
+      permission: 'READ' | 'WRITE';
 
     };
 
     return HttpResponse.json(
 
-      makeNote({ id: Number(params['noteId']), ownerId: 2, ...body, version: body.version + 1 }),
+      makeCollaboration({
+
+        noteId: body.noteId,
+
+        collaborator: makeUserSummary({ id: body.collaboratorId }),
+
+        permission: body.permission,
+
+        status: 'PENDING',
+
+      }),
 
     );
 
   }),
-// ---- shared notes (recipient side) -------------------------------------
 
-  http.get(`${BASE}/shared-notes`, () => HttpResponse.json(makePage([makeSharedNoteSummary()]))),
+  http.post(`${BASE}/collaborations/:id/accept`, ({ params }) =>
 
-
-
-  // Returns the OWNER's NoteResponse shape — there is no
-
-  // SharedNoteDetailResponse yet (sharedNoteService.ts's doc comment).
-
-  http.get(`${BASE}/shared-notes/:noteId`, ({ params }) =>
-
-    HttpResponse.json(makeNote({ id: Number(params['noteId']), ownerId: 2 })),
+    HttpResponse.json(makeCollaboration({ id: Number(params['id']), status: 'ACCEPTED' })),
 
   ),
 
+  http.post(`${BASE}/collaborations/:id/reject`, ({ params }) =>
 
-
-  http.put(`${BASE}/shared-notes/:noteId`, async ({ params, request }) => {
-
-    const body = (await request.json()) as {
-
-      title: string | null;
-
-      content: string | null;
-
-      version: number;
-
-    };
-
-    return HttpResponse.json(
-
-      makeNote({ id: Number(params['noteId']), ownerId: 2, ...body, version: body.version + 1 }),
-
-    );
-
-  }),
-// ---- shared notes (recipient side) -------------------------------------
-
-  http.get(`${BASE}/shared-notes`, () => HttpResponse.json(makePage([makeSharedNoteSummary()]))),
-
-  // Returns the OWNER's NoteResponse shape — there is no
-
-  // SharedNoteDetailResponse yet (sharedNoteService.ts's doc comment).
-
-  http.get(`${BASE}/shared-notes/:noteId`, ({ params }) =>
-
-    HttpResponse.json(makeNote({ id: Number(params['noteId']), ownerId: 2 })),
+    HttpResponse.json(makeCollaboration({ id: Number(params['id']), status: 'REJECTED' })),
 
   ),
 
-  http.put(`${BASE}/shared-notes/:noteId`, async ({ params, request }) => {
-
-    const body = (await request.json()) as {
-
-      title: string | null;
-
-      content: string | null;
-
-      version: number;
-
-    };
-
-    return HttpResponse.json(
-
-      makeNote({ id: Number(params['noteId']), ownerId: 2, ...body, version: body.version + 1 }),
-
-    );
-
-  }),
+  http.delete(`${BASE}/collaborations/:id`, () => new HttpResponse(null, { status: 204 })),
 
 ];

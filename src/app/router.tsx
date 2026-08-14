@@ -149,6 +149,24 @@ export const routes = [
               return { Component: ConflictsPage };
             },
           },
+          {
+            // 9B. 'shared/:id' before 'shared' would change nothing here —
+            // React Router ranks the static segment above the dynamic one
+            // regardless of order — but registered in this sequence for the
+            // same readability reason 'notes/new' precedes 'notes/:noteId'.
+            path: 'shared',
+            lazy: async () => {
+              const { SharedNotesPage } = await import('@/pages/SharedNotes/SharedNotes');
+              return { Component: SharedNotesPage };
+            },
+          },
+          {
+            path: 'shared/:noteId',
+            lazy: async () => {
+              const { SharedNotePage } = await import('@/pages/SharedNote/SharedNote');
+              return { Component: SharedNotePage };
+            },
+          },
         ],
       },
     ],

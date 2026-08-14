@@ -51,7 +51,7 @@ export const sharedNoteService = {
    * something to work around client-side). Do not render this as a precise
    * total — NOTARE-CLIENT-ARCHITECTURE.md §2.4 says so explicitly.
    */
-  listSharedNotes({ page, size, signal }: ListOptions = {}): Promise
+  listSharedNotes({ page, size, signal }: ListOptions = {}): Promise<
     PagedResponse<SharedNoteSummaryResponse>
   > {
     return httpClient.get<PagedResponse<SharedNoteSummaryResponse>>(SHARED_NOTES, {

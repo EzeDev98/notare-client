@@ -10,11 +10,11 @@ import { noteRepository } from '@/features/notes/local/noteRepository';
  * needed exactly that.
  *
  * This one stays here because `AppLayout.tsx` is its only caller, and
- * `AppLayout` sits outside `src/pages/**` / `src/features/*/components/**`
- * — the globs the "components must not drive the sync engine" rule
- * actually restricts — so importing `sync/` directly from the shell is
- * still the correct layer for it, same as `useSync`/`useSyncStatus`
- * already are.
+ * `AppLayout` sits outside the globs the "components must not drive the
+ * sync engine" lint rule actually restricts (`src/pages` and each
+ * feature's own `components` directory) — so importing `sync/` directly
+ * from the shell is still the correct layer for it, same as
+ * `useSync`/`useSyncStatus` already are.
  */
 export function useConflictCount(ownerId: number | null): number {
   const count = useLiveQuery(async () => {
