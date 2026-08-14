@@ -1,6 +1,6 @@
 import { useAuth } from '@/app/providers/auth-context';
 import { Button } from '@/design-system/components/Button/Button';
-import { useConflicts } from '@/sync/useConflicts';
+import { useConflicts } from '@/features/notes/hooks/useConflicts';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Conflicts.css';
 
@@ -27,7 +27,7 @@ export function ConflictsPage() {
       ? authState.user.id
       : null;
 
-  const { conflicts, keepMine, useTheirs, keepBoth } = useConflicts(ownerId);
+  const { conflicts, keepMine, takeTheirs, keepBoth } = useConflicts(ownerId);
 
   return (
     <section className="conflicts">
@@ -83,7 +83,7 @@ export function ConflictsPage() {
                   <Button variant="secondary" onClick={() => void keepMine(note.localId)}>
                     Keep mine
                   </Button>
-                  <Button variant="secondary" onClick={() => void useTheirs(note.localId)}>
+                  <Button variant="secondary" onClick={() => void takeTheirs(note.localId)}>
                     Use theirs
                   </Button>
                 </div>
