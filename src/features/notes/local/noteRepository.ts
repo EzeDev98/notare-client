@@ -13,6 +13,7 @@ import type {
   NoteSummaryResponse,
   TrashedNoteResponse,
 } from '@/features/notes/types';
+import { notifyLocalMutation } from '@/sync/mutationSignal';
 import type { ServerDateTime } from '@/lib/http/types';
 
 /**
@@ -100,23 +101,6 @@ export const noteRepository = {
       .equals([ownerId, 0, 1])
       .toArray();
     return rows.sort(byPinnedThenRecent);
-  },
-
-  /**
-   * Rows a push (8C) or a pull (8D) has flagged as a genuine conflict — a
-   * dirty local edit the server has moved past. `syncState` is indexed on
-   * its own (schema v1), so this is a direct index lookup, not a scan; the
-   * `ownerId` filter runs in memory the same way `search`'s does, since
-   * there is no `[ownerId+syncState]` compound index and a user's conflict
-   * count is never going to be the thing that makes this slow.
-   *
-   * Ordered by `byRecent`, same as the trash and for the same reason: a
-   * conflict is something that just happened, not something to organise —
-   * pinned floating to the top would bury the one that needs attention.
-   */
-  async listConflicted(ownerId: number): Promise<NoteRow[]> {
-    const rows = await db.notes.where('syncState').equals('conflict').toArray();
-    return rows.filter((row) => row.ownerId === ownerId).sort(byRecent);
   },
 
   /**
@@ -554,13 +538,13 @@ export const outboxRepository = {
    * second row would violate the one-row invariant for no benefit: only the
    * latest content will ever be worth sending.
    */
-  enqueueCreate(note: {
+  async enqueueCreate(note: {
     localId: string;
     clientId: string;
     title: string;
     content: string;
   }): Promise<void> {
-    return db.transaction('rw', db.outbox, async () => {
+    await db.transaction('rw', db.outbox, async () => {
       const existing = await db.outbox.where('localId').equals(note.localId).first();
 
       if (existing?.type === 'CREATE') {
@@ -587,6 +571,13 @@ export const outboxRepository = {
         queuedAt: Date.now(),
       });
     });
+
+    // Outside the transaction, deliberately: a listener (engine.ts's
+    // debounced trigger) that reacts synchronously must never be able to
+    // extend the transaction it fires from — Dexie closes a transaction the
+    // moment control leaves it awaiting something the transaction didn't
+    // start (Step 7's own callout on this exact surprise).
+    notifyLocalMutation();
   },
 
   /**
@@ -598,14 +589,14 @@ export const outboxRepository = {
    * every time, and overwriting it on each call is harmless because it is
    * always identical.
    */
-  enqueueUpdate(note: {
+  async enqueueUpdate(note: {
     localId: string;
     noteId: number;
     version: number | null;
     title: string;
     content: string;
   }): Promise<void> {
-    return db.transaction('rw', db.outbox, async () => {
+    await db.transaction('rw', db.outbox, async () => {
       const existing = await db.outbox.where('localId').equals(note.localId).first();
 
       if (existing?.type === 'UPDATE') {
@@ -635,6 +626,8 @@ export const outboxRepository = {
         queuedAt: Date.now(),
       });
     });
+
+    notifyLocalMutation();
   },
 
   /**
@@ -652,8 +645,8 @@ export const outboxRepository = {
    * the server — but is handled the same defensive way as the other two
    * methods, for the same reason.
    */
-  enqueueDelete(note: { localId: string; noteId: number }): Promise<void> {
-    return db.transaction('rw', db.outbox, async () => {
+  async enqueueDelete(note: { localId: string; noteId: number }): Promise<void> {
+    await db.transaction('rw', db.outbox, async () => {
       const existing = await db.outbox.where('localId').equals(note.localId).first();
       if (existing) {
         await db.outbox.delete(existing.id);
@@ -671,6 +664,8 @@ export const outboxRepository = {
         queuedAt: Date.now(),
       });
     });
+
+    notifyLocalMutation();
   },
 
   /**

@@ -5,6 +5,7 @@ import { RouteFocus } from '@/app/RouteFocus';
 import { useAuth } from '@/app/providers/auth-context';
 import { useSync } from '@/sync/useSync';
 import { useConflictCount } from '@/sync/useConflicts';
+import { useSyncStatus } from '@/sync/useSyncStatus';
 import './AppLayout.css';
 
 /**
@@ -52,9 +53,42 @@ export function AppLayout() {
    */
   const conflictCount = useConflictCount(ownerId);
 
+  /*
+   * 8F. Same restraint the conflict banner and SaveIndicator both already
+   * use: 'idle' (the resting state — last run succeeded, nothing pending)
+   * shows NOTHING. A permanent "Synced" pill on every screen is chrome
+   * competing with content for a fact nobody asked about; 'syncing' /
+   * 'offline' / 'error' are the only states worth a line of text.
+   */
+  const syncStatus = useSyncStatus();
+  const syncMessage =
+    syncStatus.status === 'syncing'
+      ? { label: 'Syncing…', tone: 'quiet' as const }
+      : syncStatus.status === 'offline'
+        ? { label: "Offline — you're working locally", tone: 'warn' as const }
+        : syncStatus.status === 'error'
+          ? { label: 'Sync trouble — retrying', tone: 'danger' as const }
+          : null;
+
   return (
     <div className="app-shell">
       <RouteFocus targetId="main" />
+
+      {syncMessage ? (
+        <p className="app-shell__sync-status" aria-hidden="true" data-tone={syncMessage.tone}>
+          {syncMessage.label}
+        </p>
+      ) : null}
+      {/*
+        Always rendered so the region exists before it has content — same
+        reasoning SaveIndicator.tsx gives for its own live region: a region
+        added at the same moment as its text is frequently not announced.
+        Only 'offline' and 'error' interrupt; 'syncing' is routine progress,
+        exactly as SaveIndicator treats its own 'saving'.
+      */}
+      <p className="ds-visually-hidden" role="status">
+        {syncMessage && syncStatus.status !== 'syncing' ? syncMessage.label : ''}
+      </p>
 
       {conflictCount > 0 ? (
         /*

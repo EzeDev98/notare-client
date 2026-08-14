@@ -53,7 +53,16 @@ describe('resolveKeepMine', () => {
 
     const resolved = await noteRepository.getByLocalId('local-30');
     expect(resolved?.title).toBe('My title');
-    expect(resolved?.version).toBe(5);
+    /*
+     * NOT theirs.version (5). resolveKeepMine sets that as an intermediate
+     * step so the requeued push isn't stale against it, but requeue() awaits
+     * pushOutbox() immediately — by the time this line runs, the push has
+     * already completed and applyServerAck has adopted whatever version the
+     * (mocked) server actually returned, which acceptAnyPush() fixes at 9.
+     * Asserting 5 here would be checking a value this row held only for the
+     * instant between two awaits inside resolveKeepMine, never once it returns.
+     */
+    expect(resolved?.version).toBe(9);
     expect(resolved?.conflictNote).toBeNull();
     // Requeued and immediately pushed by the APPLIED handler above, so the
     // outbox should have drained rather than sitting on the row we queued.
@@ -127,7 +136,10 @@ describe('resolveKeepBoth', () => {
     const resolved = await noteRepository.getByLocalId('local-50');
     expect(resolved?.content).toBe('Server body\n\n--- Your version ---\n\nMy body');
     expect(resolved?.title).toBe('Server title / My title');
-    expect(resolved?.version).toBe(2);
+    // Same reasoning as resolveKeepMine's test: requeue() awaits the push,
+    // and acceptAnyPush() fixes the applied version at 9 regardless of what
+    // was sent — not theirs.version (2), which is only an intermediate value.
+    expect(resolved?.version).toBe(9);
     expect(resolved?.conflictNote).toBeNull();
   });
 

@@ -2,6 +2,7 @@ import { metaRepository } from '@/features/notes/local/noteRepository';
 import { isOffline } from '@/lib/http/errors';
 import { evictTombstone, reconcileFromSync } from '@/sync/reconcile';
 import { syncService } from '@/sync/syncService';
+import { markTransportFailure } from '@/sync/transportFailure';
 
 const PAGE_SIZE = 100;
 
@@ -49,7 +50,10 @@ async function run(ownerId: number | null): Promise<void> {
       // Same reasoning as push.ts: nothing in this run reached local
       // storage that the stored cursor doesn't already account for, so the
       // honest move is to stop and let the next trigger retry from here.
-      if (isOffline(error)) return;
+      if (isOffline(error)) {
+        markTransportFailure();
+        return;
+      }
       throw error;
     }
 

@@ -3,6 +3,7 @@ import type { NoteRow } from '@/features/notes/local/noteRow';
 import type { OutboxRow } from '@/features/notes/local/outboxRow';
 import { isOffline } from '@/lib/http/errors';
 import { syncService } from '@/sync/syncService';
+import { markTransportFailure } from '@/sync/transportFailure';
 import type { SyncOperationRequest } from '@/sync/types';
 
 /** The server's own limit (architecture doc §2.3). */
@@ -113,7 +114,10 @@ async function run(): Promise<void> {
        * everything still queued for the next trigger — not to keep going
        * and risk sending chunk 3 while chunk 2 is unaccounted for.
        */
-      if (isOffline(error)) return;
+      if (isOffline(error)) {
+        markTransportFailure();
+        return;
+      }
       throw error;
     }
 

@@ -117,6 +117,25 @@
     fill: var(--color-accent-subtle);
   }
 
+  /* ---- Sync status (8F) -------------------------------------------------- */
+
+  .app-shell__sync-status {
+    margin: 0;
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    /* Same rule SaveIndicator.css states outright: colour never carries the
+     * meaning alone (§36) — the words do. */
+  }
+
+  .app-shell__sync-status[data-tone='warn'] {
+    color: var(--color-attention);
+  }
+
+  .app-shell__sync-status[data-tone='danger'] {
+    color: var(--color-danger);
+  }
+
   /* ---- Conflict banner -------------------------------------------------- */
 
   .app-shell__conflict-banner {
