@@ -1,0 +1,28 @@
+@layer pages {
+  /* Fills the main content area exactly — .app-shell__main is the only
+     scroll container (AppLayout.css's own rule), so centring here needs
+     the full available height, not just this element's own content
+     height. */
+  .notes-landing {
+    min-block-size: 100%;
+  }
+
+  .notes-landing--centre {
+    display: grid;
+    place-items: center;
+    justify-items: center;
+    gap: var(--space-2);
+    padding: var(--space-8);
+    text-align: center;
+  }
+
+  .notes-landing__title {
+    margin: 0;
+    color: var(--color-text);
+  }
+
+  .notes-landing__body {
+    margin: 0;
+    color: var(--color-text-secondary);
+  }
+}

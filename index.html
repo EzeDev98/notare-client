@@ -45,9 +45,22 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>notare-client</title>
+    <!--
+      Step 11 (11A), final asset. The actual product logo (a supplied
+      image, not generated here) — padded to a 168x168 square with its
+      own sampled background cream, then resized down for each of these.
+      favicon-32/16 are genuine downscales of a small source (168px), not
+      upscales, so they stay reasonably crisp; icon-512 is an UPSCALE from
+      that same 168px source and is correspondingly softer than a true
+      512px master would be — worth revisiting if a higher-resolution
+      export of the logo ever exists.
+    -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#FAFAF9" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <title>Notare</title>
   </head>
   <body>
     <div id="root"></div>

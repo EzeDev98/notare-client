@@ -1,0 +1,25 @@
+@layer components {
+  .update-banner {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 100;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    /* Safe-area aware — the same reasoning index.html's viewport-fit=cover
+       comment gives for the bottom nav: this sits at the very bottom of
+       the screen too, on mobile. */
+    padding-bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+    background-color: var(--color-surface);
+    border-block-start: var(--border-width) solid var(--color-border);
+    box-shadow: var(--shadow-md, 0 -2px 8px rgb(0 0 0 / 0.08));
+  }
+
+  .update-banner__text {
+    font-size: var(--font-size-sm);
+  }
+}

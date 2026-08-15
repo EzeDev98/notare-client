@@ -9,6 +9,7 @@ import {
   validatePassword,
 } from '@/features/auth/validation';
 import { Button } from '@/design-system/components/Button/Button';
+import { PasswordField } from '@/design-system/components/PasswordField/PasswordField';
 import { TextField } from '@/design-system/components/TextField/TextField';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './ResetPassword.css';
@@ -171,9 +172,8 @@ export function ResetPasswordPage() {
             </p>
           ) : null}
 
-          <TextField
+          <PasswordField
             label="New password"
-            type="password"
             autoComplete="new-password"
             hint="At least 8 characters, with an uppercase letter, a lowercase letter and a digit."
             value={password}
@@ -184,9 +184,8 @@ export function ResetPasswordPage() {
             }}
           />
 
-          <TextField
+          <PasswordField
             label="Confirm new password"
-            type="password"
             autoComplete="new-password"
             value={confirmation}
             error={errors['confirmation']}

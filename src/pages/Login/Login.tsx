@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { Button } from '@/design-system/components/Button/Button';
+import { PasswordField } from '@/design-system/components/PasswordField/PasswordField';
 import { TextField } from '@/design-system/components/TextField/TextField';
 import { fieldErrors, isForbidden, isOffline, isUnauthorized } from '@/lib/http/errors';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
@@ -180,9 +181,8 @@ export function LoginPage() {
           }}
         />
 
-        <TextField
+        <PasswordField
           label="Password"
-          type="password"
           autoComplete="current-password"
           value={password}
           error={errors['password'] || undefined}
@@ -202,13 +202,15 @@ export function LoginPage() {
         </Button>
       </form>
 
-      <p className="login__alt">
-        <Link to="/reset-password">Forgot your password?</Link>
-      </p>
+      <div className="login__links">
+        <p>
+          <Link to="/reset-password">Forgot your password?</Link>
+        </p>
 
-      <p className="login__alt">
-        New to Notare? <Link to="/register">Create an account</Link>
-      </p>
+        <p>
+          New to Notare? <Link to="/register">Create an account</Link>
+        </p>
+      </div>
     </>
   );
 }

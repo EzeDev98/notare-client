@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from '@/app/App';
+import { registerServiceWorker } from '@/pwa/registerServiceWorker';
 import '@/design-system/global.css';
 
 const rootElement = document.getElementById('root');
@@ -16,6 +17,10 @@ const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error('Root element #root not found in index.html.');
 }
+
+// Step 11. Fire-and-forget at startup — see registerServiceWorker.ts's own
+// doc comment for what this does and does not block on.
+registerServiceWorker();
 
 createRoot(rootElement).render(
   <StrictMode>

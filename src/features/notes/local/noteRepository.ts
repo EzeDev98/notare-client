@@ -415,7 +415,8 @@ export const noteRepository = {
        * Matched by serverId only.
        *
        * clientId matching belongs to the SYNC pull, not here: NoteResponse has
-       * no clientId field — only SyncNoteResponse carries it. Step 8 adds a
+       * no clientId field — only the pull response's SyncChangedEntry wrapper
+       * carries it (types.ts). Step 8 adds a
        * separate path that can match on it, and comparing against a stringified
        * server id here would be a lookup that never matches anything.
        */

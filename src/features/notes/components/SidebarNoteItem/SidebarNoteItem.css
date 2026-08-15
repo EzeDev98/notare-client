@@ -1,0 +1,32 @@
+@layer components {
+  .sidebar-note-item__link {
+    display: block;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sidebar-note-item__link:hover {
+    background-color: var(--color-accent-faint);
+    color: var(--color-text);
+  }
+
+  /* Same attribute-driven pattern as .app-shell__nav-link — NavLink sets
+     aria-current="page" itself, so what's announced and what's highlighted
+     can't drift apart. */
+  .sidebar-note-item__link[aria-current='page'] {
+    background-color: var(--color-accent-subtle);
+    color: var(--color-text);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .sidebar-note-item__untitled {
+    color: var(--color-text-secondary);
+    font-style: italic;
+  }
+}

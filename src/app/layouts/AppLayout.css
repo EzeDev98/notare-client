@@ -62,11 +62,31 @@
     padding-block-end: env(safe-area-inset-bottom);
   }
 
-  .app-shell__nav-list {
+  /*
+   * COMPACT NAV — the original four-item nav (Notes/Voice/Notifications/
+   * Account), unchanged. Governs the mobile bottom bar and tablet icon
+   * rail; hidden at the >=1024px sidebar breakpoint, where
+   * .app-shell__sidebar takes over (see AppLayout.tsx's own top comment
+   * on why: no room for a live note list at those sizes).
+   */
+  .app-shell__compact-nav {
     display: flex;
     justify-content: space-around;
     margin: 0;
     padding: 0;
+  }
+
+  /* Hidden below the sidebar breakpoint — see AppLayout.tsx's own comment
+     on why the icon rail and mobile bottom bar are both too cramped for
+     a wordmark. */
+  .app-shell__brand {
+    display: none;
+  }
+
+  /* Hidden below the sidebar breakpoint, alongside the brand — nothing to
+     show until there's room for the note list this contains. */
+  .app-shell__sidebar {
+    display: none;
   }
 
   .app-shell__nav-link {
@@ -168,7 +188,6 @@
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     color: var(--color-danger);
-    text-decoration: underline;
     white-space: nowrap;
   }
 
@@ -206,7 +225,7 @@
       padding-block-end: max(var(--space-4), env(safe-area-inset-bottom));
     }
 
-    .app-shell__nav-list {
+    .app-shell__compact-nav {
       flex-direction: column;
       justify-content: flex-start;
       gap: var(--space-2);
@@ -233,10 +252,95 @@
     .app-shell__nav {
       inline-size: 240px;
       padding-inline: var(--space-3);
+      /* The sidebar is now one column: brand, then either the compact nav
+         (hidden below) or the sidebar (new note / list / bottom nav),
+         filling the remaining height so the bottom nav can pin to the
+         bottom via the note list's flex:1 below. */
+      display: flex;
+      flex-direction: column;
     }
 
-    .app-shell__nav-list {
+    .app-shell__brand {
+      display: flex;
+      padding: var(--space-3) var(--space-2) var(--space-5);
+    }
+
+    /* The four-item compact nav is mobile/tablet only — see this file's
+       own top comment on .app-shell__compact-nav. */
+    .app-shell__compact-nav {
+      display: none;
+    }
+
+    .app-shell__sidebar {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      /* Lets the note list below shrink and scroll instead of the whole
+         sidebar overflowing the viewport — same reasoning as
+         .app-shell__main's own min-block-size: 0. */
+      min-block-size: 0;
+    }
+
+    .app-shell__new-note {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      flex-shrink: 0;
+
+      padding: var(--space-2) var(--space-3);
+      margin-block-end: var(--space-3);
+      border-radius: var(--radius-md);
+
+      background-color: var(--color-accent);
+      color: var(--color-text-on-accent);
+      text-decoration: none;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .app-shell__new-note:hover {
+      background-color: var(--color-accent-hover);
+    }
+
+    .app-shell__new-note svg {
+      inline-size: 1.25rem;
+      block-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    /* THE scroll container for the note list — flex:1 claims whatever
+       space the new-note button and bottom nav don't need, and
+       overflow-y is what makes a long list scroll internally rather than
+       pushing Voice/Notifications/Account off the bottom of the screen. */
+    .app-shell__note-list {
+      display: grid;
+      align-content: start;
+      gap: 2px;
+      flex: 1;
+      min-block-size: 0;
+      overflow-y: auto;
+      margin: 0 calc(-1 * var(--space-2)) 0 0;
+      padding: 0 var(--space-2) 0 0;
+    }
+
+    .app-shell__note-list-empty {
+      flex: 1;
+      margin: 0;
+      padding: var(--space-2) var(--space-3);
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-sm);
+    }
+
+    /* Pinned to the bottom for free: it's the last flex child in a column
+       after .app-shell__note-list's flex:1 has already claimed the
+       available space above it. */
+    .app-shell__bottom-nav {
+      flex-shrink: 0;
+      display: grid;
       gap: var(--space-1);
+      margin: 0;
+      padding-block-start: var(--space-3);
+      border-block-start: var(--border-width) solid var(--color-border);
     }
 
     .app-shell__nav-link {

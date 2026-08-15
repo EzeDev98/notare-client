@@ -93,7 +93,6 @@ describe('registration', () => {
       lastName: 'User',
       username: 'testuser',
       email: 'test@example.com',
-      gender: 'MALE',
       password: 'Passw0rd',
       confirmPassword: 'Passw0rd',
     });
@@ -120,7 +119,6 @@ describe('registration', () => {
         lastName: 'U',
         username: 'ab',
         email: 'test@example.com',
-        gender: 'MALE',
         password: 'weak',
         confirmPassword: 'weak',
       })

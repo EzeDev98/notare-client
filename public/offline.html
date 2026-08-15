@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>You're offline · Notare</title>
+    <script>
+      /*
+       * Same inline, blocking, pre-paint theme script as index.html —
+       * duplicated on purpose, for the same reason index.html's own copy
+       * gives: this file is precached and served standalone by the
+       * service worker's navigation fallback, so it never goes through
+       * main.tsx and cannot import the shared theme module.
+       */
+      (function () {
+        try {
+          var stored = localStorage.getItem('notare.theme');
+          var theme =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
+    <style>
+      :root[data-theme='light'] {
+        --bg: #ffffff;
+        --fg: #1a1a1a;
+        --muted: #6b6b6b;
+      }
+      :root[data-theme='dark'] {
+        --bg: #16181c;
+        --fg: #f2f2f2;
+        --muted: #9a9a9a;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+        background-color: var(--bg);
+        color: var(--fg);
+        font-family:
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          sans-serif;
+        text-align: center;
+      }
+      main {
+        max-width: 32rem;
+      }
+      h1 {
+        font-size: 1.25rem;
+        margin: 0 0 0.5rem;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+      button {
+        margin-top: 1.5rem;
+        padding: 0.6rem 1.25rem;
+        font-size: 0.9375rem;
+        font-weight: 500;
+        color: #fff;
+        background-color: #2563eb;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>You're offline</h1>
+      <p>
+        This page hasn't been saved for offline use yet. Notes you've already
+        opened are still available — go back and pick one, or try again once
+        you're back online.
+      </p>
+      <button type="button" onclick="window.location.reload()">Try again</button>
+    </main>
+  </body>
+</html>

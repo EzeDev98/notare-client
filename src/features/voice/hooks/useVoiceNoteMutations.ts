@@ -22,7 +22,18 @@ export function useUploadVoiceNote() {
 
   return useMutation({
     mutationFn: ({ file, noteId, durationSeconds, onProgress }: UploadVariables) =>
-      voiceService.uploadVoiceNote(file, { noteId, durationSeconds, onProgress }),
+      voiceService.uploadVoiceNote(file, {
+        // Conditionally spread, not passed straight through — this repo's
+        // tsconfig has exactOptionalPropertyTypes on, so an object literal
+        // with `noteId: undefined` does not satisfy a target typed
+        // `noteId?: number` (that means "omit the key, or give a real
+        // number" — never an explicit undefined). Same pattern every
+        // other optional-signal call in this codebase already uses
+        // (voiceService.ts's own `...(signal ? { signal } : {})`).
+        ...(noteId !== undefined ? { noteId } : {}),
+        ...(durationSeconds !== undefined ? { durationSeconds } : {}),
+        ...(onProgress !== undefined ? { onProgress } : {}),
+      }),
     onSuccess: (created) => {
       void queryClient.invalidateQueries({ queryKey: voiceKeys.all });
       if (created.noteId !== null) {

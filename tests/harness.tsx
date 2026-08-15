@@ -28,7 +28,6 @@ export const TEST_USER: CurrentUser = {
   firstName: 'Test',
   lastName: 'User',
   email: 'test@example.com',
-  gender: 'FEMALE',
   createdAt: '2026-08-01T09:00:00.000',
 };
 

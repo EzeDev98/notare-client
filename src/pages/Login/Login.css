@@ -13,10 +13,31 @@
     font-size: var(--font-size-sm);
   }
 
-  .login__alt {
+  /*
+   * A single container for both auxiliary links, not two independent
+   * `<p>` elements relying on margin collapse for spacing between them —
+   * that only worked by accident (the reset's `p { margin: 0 }` plus one
+   * paragraph's own margin-block-start collapsing against the other's
+   * unset margin-block-end) and gave no control over the gap. flex + gap
+   * is explicit either way.
+   *
+   * Centred, matching the full-width button directly above — two links
+   * stuck to the left edge under a centred, full-width CTA read as
+   * misaligned rather than as a deliberate secondary-actions group.
+   */
+  .login__links {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
     margin-block-start: var(--space-6);
+    text-align: center;
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
+  }
+
+  .login__links p {
+    margin: 0;
   }
 
   .login__notice {

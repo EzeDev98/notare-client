@@ -69,14 +69,30 @@ export interface SyncBatchResponse {
 }
 
 /**
- * One note as GET /sync's `changed[]` returns it: `NoteResponse` plus the
- * client-generated id that lets an offline-created note recognise itself
- * arriving through a pull instead of being inserted as a duplicate (2.3).
+ * One entry of GET /sync's `changed[]`.
  *
- * `null` for any note that was never created offline — `Note.clientId` is
- * nullable on the server for exactly that case (architecture doc §2.3).
+ * A NESTED wrapper — `{ note, clientId }` — NOT `NoteResponse` merged flat
+ * with a `clientId` field. This was wrong here until a live login broke
+ * on it: the type previously read `interface SyncNoteResponse extends
+ * NoteResponse { clientId }`, which typechecks fine but describes a shape
+ * the server never actually sends. The real response nests exactly the
+ * way `SyncOperationResult` above already does for the SAME two fields —
+ * `push.ts`'s handling of `result.note`/`result.clientId` as siblings was
+ * the pattern this should have matched from the start.
+ *
+ * Symptom this produced: `reconcile.ts` read `note.id` on what was
+ * actually the wrapper object, got `undefined` (the real id lives at
+ * `.note.id`), and passed that straight into a Dexie `.equals()` lookup —
+ * "Invalid key provided" on every pull, i.e. immediately after login.
  */
-export interface SyncNoteResponse extends NoteResponse {
+export interface SyncChangedEntry {
+  note: NoteResponse;
+  /**
+   * The client-generated id that lets an offline-created note recognise
+   * itself arriving through a pull instead of being inserted as a
+   * duplicate (architecture doc §2.3). `null` for any note that was never
+   * created offline.
+   */
   clientId: string | null;
 }
 
@@ -91,7 +107,7 @@ export interface SyncNoteResponse extends NoteResponse {
  * free").
  */
 export interface SyncPullResponse {
-  changed: SyncNoteResponse[];
+  changed: SyncChangedEntry[];
   deletedIds: number[];
   nextCursor: string;
   hasMore: boolean;

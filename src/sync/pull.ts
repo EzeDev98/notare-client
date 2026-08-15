@@ -57,8 +57,11 @@ async function run(ownerId: number | null): Promise<void> {
       throw error;
     }
 
-    for (const note of response.changed) {
-      await reconcileFromSync(note, ownerId);
+    // Each entry is the WRAPPER shape `{ note, clientId }` — see
+    // SyncChangedEntry's own doc comment (types.ts) for why this is not
+    // called `note` here despite `response.changed`'s name.
+    for (const entry of response.changed) {
+      await reconcileFromSync(entry, ownerId);
     }
 
     for (const deletedId of response.deletedIds) {

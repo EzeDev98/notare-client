@@ -2,7 +2,7 @@ import { db } from '@/features/notes/local/database';
 import { fromNoteResponse } from '@/features/notes/local/noteMappers';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
-import type { SyncNoteResponse } from '@/sync/types';
+import type { SyncChangedEntry } from '@/sync/types';
 
 /**
  * What happened to one row of a sync pull.
@@ -16,12 +16,17 @@ export type ReconcileOutcome = 'inserted' | 'updated' | 'conflict' | 'skipped';
 /**
  * Merges one note from `GET /sync`'s `changed[]` into local storage.
  *
+ * Takes the WRAPPER entry (`{ note, clientId }`, per types.ts's own doc
+ * comment on `SyncChangedEntry`), not a flat merged object — destructured
+ * immediately below so the rest of this function reads `note.id` etc.
+ * against the actual `NoteResponse`, not the wrapper.
+ *
  * MATCHED BY serverId FIRST, THEN clientId — same order and same reasoning
  * as `noteRepository.upsertFromServer`, plus the case that is new here: a
  * note THIS DEVICE created offline, arriving back through a pull that beat
  * our own push's ack (or whose ack was lost and hasn't been retried yet).
- * Matching on serverId alone would insert it a second time — `note.clientId`
- * is the identity WE minted, the server only echoes it, and it's the only
+ * Matching on serverId alone would insert it a second time — `clientId` is
+ * the identity WE minted, the server only echoes it, and it's the only
  * thing still tying the two together before this row has a serverId at all.
  *
  * ONE TRANSACTION per note, not one for the whole page — same reasoning as
@@ -39,13 +44,15 @@ export type ReconcileOutcome = 'inserted' | 'updated' | 'conflict' | 'skipped';
  * moment a pull runs, not only after the next push round-trip.
  */
 export function reconcileFromSync(
-  note: SyncNoteResponse,
+  entry: SyncChangedEntry,
   ownerId: number | null,
 ): Promise<ReconcileOutcome> {
+  const { note, clientId } = entry;
+
   return db.transaction('rw', db.notes, async () => {
     const existing =
       (await noteRepository.getByServerId(note.id)) ??
-      (note.clientId ? await noteRepository.getByClientId(note.clientId) : undefined);
+      (clientId ? await noteRepository.getByClientId(clientId) : undefined);
 
     if (!existing) {
       const row: NoteRow = fromNoteResponse(note);
@@ -54,7 +61,7 @@ export function reconcileFromSync(
       // one. Reuse the server's instead when it sent one, or a note this
       // device created offline gets a second, disconnected local identity
       // the moment its own push ack arrives and tries to match by serverId.
-      if (note.clientId) row.clientId = note.clientId;
+      if (clientId) row.clientId = clientId;
       row.ownerId = ownerId;
       await noteRepository.put(row);
       return 'inserted';

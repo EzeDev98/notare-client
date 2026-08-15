@@ -18,7 +18,6 @@ export interface CurrentUser {
   firstName: string;
   lastName: string;
   email: string;
-  gender: string;
   createdAt: ServerDateTime;
 }
 
@@ -94,8 +93,6 @@ export interface RegistrationRequest {
   lastName: string;
   username: string;
   email: string;
-  /* Mirrors com.notare.feature.user.enums.Gender exactly: two constants. */
-  gender: 'MALE' | 'FEMALE';
   password: string;
   confirmPassword: string;
 }

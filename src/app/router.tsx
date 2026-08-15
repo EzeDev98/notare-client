@@ -77,8 +77,8 @@ export const routes = [
           {
             path: 'notes',
             lazy: async () => {
-              const { NotesPage } = await import('@/pages/Notes/Notes');
-              return { Component: NotesPage };
+              const { NotesLandingPage } = await import('@/pages/NotesLanding/NotesLanding');
+              return { Component: NotesLandingPage };
             },
           },
           {

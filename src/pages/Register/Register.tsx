@@ -10,7 +10,7 @@ import {
   validateUsername,
 } from '@/features/auth/validation';
 import { Button } from '@/design-system/components/Button/Button';
-import { Select } from '@/design-system/components/Select/Select';
+import { PasswordField } from '@/design-system/components/PasswordField/PasswordField';
 import { TextField } from '@/design-system/components/TextField/TextField';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Register.css';
@@ -28,7 +28,6 @@ export function RegisterPage() {
     lastName: '',
     username: '',
     email: '',
-    gender: '',
     password: '',
     confirmPassword: '',
   });
@@ -69,7 +68,6 @@ export function RegisterPage() {
       lastName: validateRequiredName(form.lastName, 'Last name'),
       username: validateUsername(form.username),
       email: validateEmail(form.email),
-      gender: form.gender === '' ? 'Please select a gender.' : undefined,
       password: validatePassword(form.password),
       confirmPassword: validateConfirmation(form.password, form.confirmPassword),
     };
@@ -82,7 +80,6 @@ export function RegisterPage() {
       lastName: form.lastName.trim(),
       username: form.username.trim(),
       email: form.email.trim(),
-      gender: form.gender as 'MALE' | 'FEMALE',
       password: form.password,
       confirmPassword: form.confirmPassword,
     });
@@ -154,24 +151,8 @@ export function RegisterPage() {
           }}
         />
 
-        <Select
-          label="Gender"
-          value={form.gender}
-          error={errorFor('gender')}
-          onChange={(event) => {
-            update('gender', event.target.value);
-          }}
-        >
-          {/* Empty first option so nothing is preselected — a defaulted value
-              is one the user never chose but appears to have. */}
-          <option value="">Select…</option>
-          <option value="MALE">Male</option>
-          <option value="FEMALE">Female</option>
-        </Select>
-
-        <TextField
+        <PasswordField
           label="Password"
-          type="password"
           // new-password, not current-password: this is what makes a password
           // manager offer to GENERATE one rather than fill an existing one.
           autoComplete="new-password"
@@ -183,9 +164,8 @@ export function RegisterPage() {
           }}
         />
 
-        <TextField
+        <PasswordField
           label="Confirm password"
-          type="password"
           autoComplete="new-password"
           value={form.confirmPassword}
           error={errorFor('confirmPassword')}

@@ -35,7 +35,11 @@ function pullOnce(page: {
 
 describe('pullChanges — merging changed notes', () => {
   it('inserts a note with no local row', async () => {
-    pullOnce({ changed: [{ ...makeNote({ id: 7, version: 0 }), clientId: null }] });
+    // The wrapper shape GET /sync actually sends — { note, clientId }, NOT
+    // note fields spread flat with clientId alongside them. Getting this
+    // fixture wrong is exactly what let the real bug (reconcile.ts reading
+    // `note.id` off the wrapper instead of `.note.id`) ship unnoticed.
+    pullOnce({ changed: [{ note: makeNote({ id: 7, version: 0 }), clientId: null }] });
 
     await pullChanges(1);
 
@@ -48,7 +52,7 @@ describe('pullChanges — merging changed notes', () => {
 
   it('reuses the server-echoed clientId instead of minting a new local identity', async () => {
     pullOnce({
-      changed: [{ ...makeNote({ id: 8, version: 0 }), clientId: 'client-offline-1' }],
+      changed: [{ note: makeNote({ id: 8, version: 0 }), clientId: 'client-offline-1' }],
     });
 
     await pullChanges(1);
@@ -62,7 +66,7 @@ describe('pullChanges — merging changed notes', () => {
     await noteRepository.put(row);
 
     pullOnce({
-      changed: [{ ...makeNote({ id: 9, version: 0 }), clientId: 'client-x' }],
+      changed: [{ note: makeNote({ id: 9, version: 0 }), clientId: 'client-x' }],
     });
 
     await pullChanges(1);
@@ -78,7 +82,7 @@ describe('pullChanges — merging changed notes', () => {
     await noteRepository.put(row);
 
     pullOnce({
-      changed: [{ ...makeNote({ id: 10, version: 1, title: 'New' }), clientId: null }],
+      changed: [{ note: makeNote({ id: 10, version: 1, title: 'New' }), clientId: null }],
     });
 
     await pullChanges(1);
@@ -100,7 +104,7 @@ describe('pullChanges — merging changed notes', () => {
     await noteRepository.put(row);
 
     pullOnce({
-      changed: [{ ...makeNote({ id: 11, version: 0, title: 'Same as before' }), clientId: null }],
+      changed: [{ note: makeNote({ id: 11, version: 0, title: 'Same as before' }), clientId: null }],
     });
 
     await pullChanges(1);
@@ -121,7 +125,7 @@ describe('pullChanges — merging changed notes', () => {
     });
     await noteRepository.put(row);
 
-    const theirs = { ...makeNote({ id: 12, version: 3, title: 'Someone else edited' }), clientId: null };
+    const theirs = { note: makeNote({ id: 12, version: 3, title: 'Someone else edited' }), clientId: null };
     pullOnce({ changed: [theirs] });
 
     await pullChanges(1);

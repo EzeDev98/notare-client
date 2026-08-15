@@ -10,7 +10,6 @@ const user: CurrentUser = {
   firstName: 'Test',
   lastName: 'User',
   email: 'test@example.com',
-  gender: 'MALE',
   createdAt: '2026-01-01T09:00:00.000',
 };
 

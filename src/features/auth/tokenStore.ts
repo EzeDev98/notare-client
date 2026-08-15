@@ -1,3 +1,5 @@
+import { relayAuthTokenToServiceWorker } from '@/pwa/authTokenRelay';
+
 /**
  * Where tokens live. Three storage decisions, three different answers.
  *
@@ -55,6 +57,14 @@ export function getAccessToken(): string | null {
 export function setAccessToken(token: string, expiresInMs: number): void {
   accessToken = token;
   accessTokenExpiresAt = Date.now() + expiresInMs;
+  /*
+   * Relayed as the FULL header value (`Bearer <token>`), not the bare
+   * token — httpAuth.ts's own `headerFor` does this same prefixing for
+   * every other request, and sw.js sets whatever it receives directly as
+   * the Authorization header without knowing the scheme. One place
+   * decides the format; sw.js stays agnostic to it.
+   */
+  relayAuthTokenToServiceWorker(`Bearer ${token}`);
 }
 
 /**
@@ -73,6 +83,9 @@ export function isAccessTokenExpiring(skewMs = 30_000): boolean {
 export function clearAccessToken(): void {
   accessToken = null;
   accessTokenExpiresAt = null;
+  // So a stale/invalidated token never rides along on a voice-stream
+  // request made after logout or a terminal refresh failure.
+  relayAuthTokenToServiceWorker(null);
 }
 
 /* ---------------------------------------------------------------------------

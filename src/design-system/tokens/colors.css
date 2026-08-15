@@ -145,5 +145,6 @@
 
   a {
     color: var(--color-accent);
+    text-decoration: none;
   }
 }

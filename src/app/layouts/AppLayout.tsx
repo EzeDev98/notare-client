@@ -1,12 +1,71 @@
-import { NavLink, Outlet } from 'react-router';
+import { Link, NavLink, Outlet } from 'react-router';
 
-import { navItems } from '@/app/layouts/navItems';
+import { navItems, type NavItem } from '@/app/layouts/navItems';
 import { RouteFocus } from '@/app/RouteFocus';
 import { useAuth } from '@/app/providers/auth-context';
+import { SidebarNoteItem } from '@/features/notes/components/SidebarNoteItem/SidebarNoteItem';
+import { useNotes } from '@/features/notes/hooks/useNotes';
 import { useSync } from '@/sync/useSync';
 import { useConflictCount } from '@/sync/useConflicts';
 import { useSyncStatus } from '@/sync/useSyncStatus';
+import { Logo } from '@/design-system/components/Logo/Logo';
 import './AppLayout.css';
+
+/*
+ * Archived and Trash, DESKTOP SIDEBAR ONLY — defined here rather than in
+ * navItems.tsx, same reasoning as bottomNavItems below: navItems.tsx
+ * drives the <1024px compact nav and stays exactly as it already was, so
+ * mobile/tablet are untouched (this file's own top comment on why those
+ * breakpoints keep the original four items rather than growing to six).
+ */
+const desktopOnlyItems: NavItem[] = [
+  {
+    to: '/archived',
+    label: 'Archived',
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <rect x="3" y="4" width="18" height="5" rx="1.5" />
+        <path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9" />
+        <path d="M10 13h4" />
+      </svg>
+    ),
+  },
+  {
+    to: '/trash',
+    label: 'Trash',
+    icon: (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M4 7h16" />
+        <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+        <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
+        <path d="M10 11v6M14 11v6" />
+      </svg>
+    ),
+  },
+];
+
+// Everything BUT Notes, plus Archived/Trash — the desktop sidebar's bottom
+// group. Derived here rather than edited into navItems.tsx: navItems
+// itself stays untouched and still exactly matches what the compact nav
+// below renders, so there is no second four-item list to keep in sync by
+// hand, and mobile/tablet cannot silently grow past four icons.
+const bottomNavItems = [...desktopOnlyItems, ...navItems.filter((item) => item.to !== '/notes')];
 
 /**
  * The authenticated application shell.
@@ -22,6 +81,20 @@ import './AppLayout.css';
  * on every orientation change until the listener fires.
  *
  * STEP 4D wraps this route's element in <RequireAuth>.
+ *
+ * THE SIDEBAR NOTE LIST (desktop only). At >=1024px, "Notes" no longer
+ * exists as a nav destination — the sidebar itself lists every note live,
+ * with a "New note" entry pinned at the top, and Archived/Trash/Voice/
+ * Notifications/Account pinned at the bottom below the scrollable list.
+ *
+ * ONLY at >=1024px. A live, scrollable note list cannot fit in a 56px
+ * icon rail or a mobile bottom bar without redesigning those layouts
+ * outright — so <1024px keeps the ORIGINAL four-item nav (Notes/Voice/
+ * Notifications/Account) completely unchanged, via
+ * `.app-shell__compact-nav`. The underlying routes (`/notes`, `/archived`,
+ * `/trash`) are untouched too and still fully reachable by direct URL —
+ * nothing about them was removed, only which nav links point where at
+ * the one breakpoint that now shows the notes inline instead.
  */
 export function AppLayout() {
   /*
@@ -69,6 +142,12 @@ export function AppLayout() {
         : syncStatus.status === 'error'
           ? { label: 'Sync trouble — retrying', tone: 'danger' as const }
           : null;
+
+  // Same hook, same query the "Notes" list already used (archived: false
+  // by default) — the sidebar list and NotesLandingPage read the same
+  // live Dexie query, so there is exactly one source of truth for "what
+  // are my notes" and the two never disagree.
+  const { notes } = useNotes();
 
   return (
     <div className="app-shell">
@@ -127,7 +206,26 @@ export function AppLayout() {
         reaching the sidebar only AFTER the entire page.
       */}
       <nav className="app-shell__nav" aria-label="Main">
-        <ul className="app-shell__nav-list" role="list">
+        {/*
+          Only actually visible at the >=1024px sidebar breakpoint
+          (AppLayout.css) — the icon rail and mobile bottom bar are both
+          too cramped for a wordmark, and the nav items themselves already
+          carry enough identity at those sizes. display:none below
+          1024px, same media-query-only approach the rest of this
+          three-layouts-in-one-DOM shell already uses (this file's own
+          top comment).
+        */}
+        <div className="app-shell__brand" aria-hidden="true">
+          <Logo withWordmark />
+        </div>
+
+        {/*
+          COMPACT NAV — <1024px only. The original four items, completely
+          unchanged, so the mobile bottom bar and tablet icon rail behave
+          exactly as they did before this file's own top comment describes
+          why: no room for a note list at those sizes.
+        */}
+        <ul className="app-shell__compact-nav" role="list">
           {navItems.map((item) => (
             <li key={item.to}>
               {/*
@@ -142,6 +240,54 @@ export function AppLayout() {
             </li>
           ))}
         </ul>
+
+        {/* DESKTOP SIDEBAR — >=1024px only. See this file's own top comment. */}
+        <div className="app-shell__sidebar">
+          <Link to="/notes/new" className="app-shell__new-note">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            <span>New note</span>
+          </Link>
+
+          {/*
+            `notes` is `undefined` for one instant before Dexie's first
+            answer (useNotes' own doc comment on why that is distinct from
+            an empty array) — rendering nothing for that instant rather
+            than an empty-state message avoids a flash of "no notes" on
+            every single authenticated page load.
+          */}
+          {notes && notes.length > 0 ? (
+            <ul className="app-shell__note-list" role="list">
+              {notes.map((note) => (
+                <SidebarNoteItem key={note.localId} note={note} />
+              ))}
+            </ul>
+          ) : null}
+
+          {notes && notes.length === 0 ? (
+            <p className="app-shell__note-list-empty">No notes yet.</p>
+          ) : null}
+
+          <ul className="app-shell__bottom-nav" role="list">
+            {bottomNavItems.map((item) => (
+              <li key={item.to}>
+                <NavLink to={item.to} className="app-shell__nav-link">
+                  <span className="app-shell__nav-icon">{item.icon}</span>
+                  <span className="app-shell__nav-label">{item.label}</span>
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+        </div>
       </nav>
 
       {/* The ONLY scroll container. A page-level scroll would drift the
