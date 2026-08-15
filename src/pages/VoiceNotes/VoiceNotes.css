@@ -1,0 +1,30 @@
+@layer pages {
+  .voice-notes {
+    max-inline-size: var(--measure-prose);
+    margin-inline: auto;
+    padding: var(--space-8) var(--space-4);
+  }
+
+  .voice-notes__list {
+    display: grid;
+    gap: var(--space-2);
+    margin-block-start: var(--space-6);
+    padding: 0;
+  }
+
+  .voice-notes__pager {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-3);
+    margin-block-start: var(--space-6);
+  }
+
+  .voice-notes__centre {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-3);
+    padding-block: var(--space-16);
+    text-align: center;
+    color: var(--color-text-secondary);
+  }
+}

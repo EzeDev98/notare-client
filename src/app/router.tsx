@@ -131,11 +131,6 @@ export const routes = [
             },
           },
           {
-            // 9C, master-brief lettering ("User search and the invite
-            // flow"). Static segment after a static parent, registered
-            // here for the same readability convention as 'notes/new'
-            // before 'notes/:noteId' — no shadowing risk regardless of
-            // order since both are literal paths.
             path: 'collaborations/invite',
             lazy: async () => {
               const { InviteCollaboratorPage } = await import(
@@ -145,14 +140,28 @@ export const routes = [
             },
           },
           {
-            // 9F. "Notifications: client-composed wording, unknown-type
-            // fallback, unread count polling, mark-read" — architecture
-            // doc §4.2 names the route and its actions verbatim: "list,
-            // unread filter, mark read, mark all, delete".
             path: 'notifications',
             lazy: async () => {
               const { NotificationsPage } = await import('@/pages/Notifications/Notifications');
               return { Component: NotificationsPage };
+            },
+          },
+          {
+            // Step 10. Registered before 'voice/:voiceNoteId' for
+            // readability only, same convention as 'notes/new' before
+            // 'notes/:noteId' — React Router ranks the static route
+            // regardless of array order.
+            path: 'voice',
+            lazy: async () => {
+              const { VoiceNotesPage } = await import('@/pages/VoiceNotes/VoiceNotes');
+              return { Component: VoiceNotesPage };
+            },
+          },
+          {
+            path: 'voice/:voiceNoteId',
+            lazy: async () => {
+              const { VoiceDetailPage } = await import('@/pages/VoiceDetail/VoiceDetail');
+              return { Component: VoiceDetailPage };
             },
           },
         ],

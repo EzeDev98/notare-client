@@ -1,0 +1,39 @@
+@layer components {
+  .voice-note-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .voice-note-card__link {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+    min-inline-size: 0;
+    flex: 1 1 auto;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .voice-note-card__link:hover .voice-note-card__duration {
+    color: var(--color-accent);
+  }
+
+  .voice-note-card__duration {
+    font-variant-numeric: tabular-nums;
+    font-weight: var(--font-weight-medium);
+  }
+
+  .voice-note-card__meta {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

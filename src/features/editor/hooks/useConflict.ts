@@ -35,7 +35,6 @@ export function useConflict(noteId: number | null, active: boolean): ConflictSta
     }
 
     const controller = new AbortController();
-    console.log('[useConflict] fetching', noteId);
     setState({ status: 'loading' });
 
     noteService

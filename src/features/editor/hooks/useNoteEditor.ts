@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useCallback, useEffect, useReducer, useRef } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import { useAutoSaveScheduler } from '@/features/editor/hooks/useAutoSaveScheduler';
 import { useConflict } from '@/features/editor/hooks/useConflict';
@@ -10,6 +10,18 @@ import { noteRepository, outboxRepository } from '@/features/notes/local/noteRep
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import { isConflict, isOffline } from '@/lib/http/errors';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
+
+/**
+ * See `draftOverride`'s own doc comment below for what this is for.
+ * `version` is optional: present only when the write that set the override
+ * (conflict resolution) also knows the new version synchronously; absent
+ * for a plain typing edit, which never changes the version at all.
+ */
+interface DraftOverride {
+  title: string;
+  content: string;
+  version?: number | null;
+}
 
 /**
  * The editor, with LOCAL STORAGE as the source of truth.
@@ -48,16 +60,78 @@ export function useNoteEditor(initialRow: NoteRow) {
    * The fallback to initialRow covers the first render before Dexie answers,
    * so the editor never flashes empty.
    */
-  const row =
+  const liveRow =
     useLiveQuery(async () => noteRepository.getByLocalId(localId), [localId]) ?? initialRow;
+
+  /*
+   * THE OPTIMISTIC OVERRIDE.
+   *
+   * `liveRow` above is honest but SLOW: a keystroke's write goes through
+   * `db.notes.put`, an actual IndexedDB transaction, and `useLiveQuery` only
+   * re-emits once that transaction's change event fires — one or more
+   * event-loop ticks later, never in the same render pass as the keystroke
+   * that caused it.
+   *
+   * `EditorSurface`'s title/content are CONTROLLED, bound directly to
+   * whatever `row` this hook returns. Every `setDraft` call dispatches
+   * `EDITED`, which re-renders `NoteEditorHost` immediately — and if `row`
+   * at that render is still `liveRow` (unchanged, because Dexie hasn't
+   * caught up), React resets the controlled input's DOM value back to that
+   * stale prop, undoing what was just typed. Type fast enough and every
+   * keystroke lands on a freshly-reverted field: each character is the
+   * entire visible content for a moment, and only whichever one the
+   * debounced save happens to fire on ever reaches the server. This was the
+   * actual cause behind four failing tests that looked unrelated
+   * (conflict.test.tsx, editorRaces.test.tsx, keepBoth.test.tsx,
+   * offlineEdit.test.tsx) — all of them either render the controlled
+   * surface and race it, or read `rowRef.current` synchronously right
+   * after `setDraft` and see the pre-edit row because the live query has
+   * not resolved yet.
+   *
+   * The fix is NOT 6E's state/ref mirror (deleted for exactly the "two
+   * sources of truth kept in sync by hand" reason its own comment above
+   * gives). This is narrower: an override that exists ONLY between "the
+   * user just typed something" and "Dexie caught up with it", cleared the
+   * moment `liveRow` matches it. Cross-tab and initial-load behaviour is
+   * untouched — this never overrides `liveRow` with anything the CURRENT
+   * tab did not just type.
+   */
+  const [draftOverride, setDraftOverride] = useState<DraftOverride | null>(null);
+
+  useEffect(() => {
+    if (
+      draftOverride !== null &&
+      liveRow.title === draftOverride.title &&
+      liveRow.content === draftOverride.content &&
+      (draftOverride.version === undefined || liveRow.version === draftOverride.version)
+    ) {
+      setDraftOverride(null);
+    }
+  }, [liveRow, draftOverride]);
+
+  const row =
+    draftOverride === null
+      ? liveRow
+      : {
+          ...liveRow,
+          title: draftOverride.title,
+          content: draftOverride.content,
+          version: draftOverride.version === undefined ? liveRow.version : draftOverride.version,
+          // Forced, not read from liveRow: `save()`'s "nothing to send"
+          // check reads this synchronously via `rowRef`, and liveRow's
+          // `dirty` is exactly as stale as its title/content are while an
+          // override is active.
+          dirty: 1 as const,
+        };
 
   /*
    * A ref for the save path only.
    *
    * Unlike 6E's mirror, this is never a second source of truth: it is refreshed
-   * from the live query result, and nothing writes to it directly. The
-   * scheduler needs a synchronous read at timer-fire time, and awaiting Dexie
-   * inside the timer would be a second round trip for data already in hand.
+   * from the live query result (plus the override above), and nothing writes to
+   * it directly. The scheduler needs a synchronous read at timer-fire time, and
+   * awaiting Dexie inside the timer would be a second round trip for data
+   * already in hand.
    */
   const rowRef = useRef(row);
   rowRef.current = row;
@@ -80,8 +154,28 @@ export function useNoteEditor(initialRow: NoteRow) {
    */
   const setDraft = useCallback(
     (changes: { title?: string; content?: string }) => {
+      // Synchronous first — see draftOverride's own doc comment above.
+      // Reads rowRef, not `row`/`liveRow` directly, so a second setDraft
+      // call before Dexie catches up still merges onto the FIRST call's
+      // override rather than the stale pre-edit row.
+      const next = {
+        title: changes.title ?? rowRef.current.title,
+        content: changes.content ?? rowRef.current.content,
+      };
+      setDraftOverride(next);
       void noteRepository.applyLocalEdit(localId, changes);
       dispatch({ type: 'EDITED' });
+
+      /*
+       * Keeps an already-queued outbox row current with every further
+       * edit — a no-op when nothing is queued (the common case). See
+       * `syncQueuedContent`'s own doc comment for why this runs
+       * UNCONDITIONALLY rather than gated on `saveState.status ===
+       * 'offline'`: that gate looks right but races the same dispatch
+       * that put the row there in the first place. Checking the outbox
+       * table directly has no such window.
+       */
+      void outboxRepository.syncQueuedContent(localId, next.title, next.content);
     },
     [localId],
   );
@@ -206,23 +300,34 @@ export function useNoteEditor(initialRow: NoteRow) {
          * to instantly, but a coalesced re-queue should always carry
          * whatever is newest, the same discipline the success path already
          * applies just above.
+         *
+         * `current` (not a fresh Dexie read) is what actually carries the
+         * newest text now that `rowRef` includes the optimistic override —
+         * before this fix, a second offline edit arriving while the first
+         * save() was still in flight could read a Dexie row one keystroke
+         * behind the override, coalesce against THAT, and leave the freshly
+         * typed tail stranded outside the queued row.
          */
         const latest = (await noteRepository.getByLocalId(localId)) ?? current;
+        const newestTitle =
+          latest.localUpdatedAt >= current.localUpdatedAt ? latest.title : current.title;
+        const newestContent =
+          latest.localUpdatedAt >= current.localUpdatedAt ? latest.content : current.content;
 
         if (current.serverId === null) {
           await outboxRepository.enqueueCreate({
             localId,
             clientId: latest.clientId,
-            title: latest.title,
-            content: latest.content,
+            title: newestTitle,
+            content: newestContent,
           });
         } else {
           await outboxRepository.enqueueUpdate({
             localId,
             noteId: current.serverId,
             version: current.version,
-            title: latest.title,
-            content: latest.content,
+            title: newestTitle,
+            content: newestContent,
           });
         }
 
@@ -270,8 +375,19 @@ export function useNoteEditor(initialRow: NoteRow) {
   /** KEEP MINE — a deliberate overwrite. Local text stays; version is swapped. */
   const keepMine = useCallback(() => {
     if (conflict.status !== 'ready') return;
+    const mine = rowRef.current;
+    /*
+     * An override with the version filled in, NOT a clear to null. Title
+     * and content are already right in `mine`, but `version` is the whole
+     * point of this action — and clearing to `null` would fall back to
+     * `liveRow.version`, which is still the OLD version until the write
+     * below resolves. Read synchronously (`result.current.row.version`)
+     * before Dexie catches up, that would show the stale version despite
+     * having just "kept mine."
+     */
+    setDraftOverride({ title: mine.title, content: mine.content, version: conflict.theirs.version });
     void noteRepository
-      .put({ ...rowRef.current, version: conflict.theirs.version, dirty: 1 })
+      .put({ ...mine, version: conflict.theirs.version, dirty: 1 })
       .then(() => {
         dispatch({ type: 'CONFLICT_RESOLVED' });
         return scheduler.flush();
@@ -281,7 +397,21 @@ export function useNoteEditor(initialRow: NoteRow) {
   /** USE THEIRS — discard the local draft. */
   const useTheirs = useCallback(() => {
     if (conflict.status !== 'ready') return;
-    void noteRepository.put(fromNoteResponse(conflict.theirs, rowRef.current)).then(() => {
+    const theirs = conflict.theirs;
+    /*
+     * An override carrying THEIRS content/version, not a clear to null.
+     * Clearing to null falls back to `liveRow`, which still holds the
+     * discarded local draft until the write below resolves — for exactly
+     * one render, "use theirs" would still show mine. Same normalisation
+     * `fromNoteResponse` applies (`?? ''`), so this matches what the write
+     * is about to persist.
+     */
+    setDraftOverride({
+      title: theirs.title ?? '',
+      content: theirs.content ?? '',
+      version: theirs.version,
+    });
+    void noteRepository.put(fromNoteResponse(theirs, rowRef.current)).then(() => {
       dispatch({ type: 'CONFLICT_RESOLVED' });
     });
   }, [conflict]);
@@ -311,11 +441,20 @@ export function useNoteEditor(initialRow: NoteRow) {
         ? mine.title
         : `${theirTitle} / ${mine.title}`;
 
+    const finalTitle = mergedTitle.slice(0, 255);
+    const finalContent = mergedContent.slice(0, 20_000);
+
+    // Same reasoning as `useTheirs`: the merged text AND the adopted
+    // version are both new, so the pre-merge override must not survive to
+    // shadow either one — `row.version` needs to read 7 (or whatever
+    // theirs.version is) the instant this returns, not after Dexie's
+    // write resolves.
+    setDraftOverride({ title: finalTitle, content: finalContent, version: theirs.version });
     void noteRepository
       .put({
         ...mine,
-        title: mergedTitle.slice(0, 255),
-        content: mergedContent.slice(0, 20_000),
+        title: finalTitle,
+        content: finalContent,
         version: theirs.version,
         dirty: 1,
         syncState: 'pending',

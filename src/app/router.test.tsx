@@ -14,15 +14,16 @@ const AUTHENTICATED_PATHS: Array<{ path: string; expectedTitle: string }> = [
   { path: '/trash', expectedTitle: 'Trash · Notare' },
   { path: '/search', expectedTitle: 'Search · Notare' },
   { path: '/conflicts', expectedTitle: 'Conflicts · Notare' },
-  // '/shared/:noteId' and '/notes/:noteId/share' are deliberately absent
-  // from this list, same as '/notes/:noteId' already was — all are
-  // dynamic routes that need a real id and seeded (or mocked) data to
-  // resolve to anything but a not-found state; this list only covers the
-  // static paths.
+  // '/shared/:noteId', '/notes/:noteId/share' and '/voice/:voiceNoteId' are
+  // deliberately absent from this list, same as '/notes/:noteId' already
+  // was — all are dynamic routes that need a real id and seeded (or
+  // mocked) data to resolve to anything but a not-found state; this list
+  // only covers the static paths.
   { path: '/shared', expectedTitle: 'Shared with me · Notare' },
   { path: '/collaborations', expectedTitle: 'Collaborations · Notare' },
   { path: '/collaborations/invite', expectedTitle: 'Find people · Notare' },
   { path: '/notifications', expectedTitle: 'Notifications · Notare' },
+  { path: '/voice', expectedTitle: 'Voice notes · Notare' },
   { path: '/account/sessions', expectedTitle: 'Sessions · Notare' },
 ];
 

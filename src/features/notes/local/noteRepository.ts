@@ -704,6 +704,32 @@ export const outboxRepository = {
   async clearForNote(localId: string): Promise<void> {
     await db.outbox.where('localId').equals(localId).delete();
   },
+
+  /**
+   * Keeps an ALREADY-QUEUED row's title/content current as further local
+   * edits happen — a no-op if nothing is queued for this note.
+   *
+   * Called from `setDraft` on EVERY edit, unconditionally, rather than
+   * gated on `saveState.status === 'offline'`. That gate looks right but
+   * has a real race: `dispatch({ type: 'WENT_OFFLINE' })` and the write
+   * this method's caller reacts to both come from the SAME `save()` catch
+   * block, but the outbox write (in that catch block) completes and
+   * becomes queryable BEFORE React processes the dispatch and updates
+   * `saveStateRef.current` on the next render. A second edit landing in
+   * that window would read a still-stale 'saving' status, skip the
+   * intended direct re-enqueue, and fall back to the scheduler's normal
+   * debounced retry — usually harmless (it reaches the same outbox row a
+   * moment later), but a needless dependency on render timing for
+   * something a plain existence check on the outbox table answers
+   * directly, with no window at all.
+   */
+  async syncQueuedContent(localId: string, title: string, content: string): Promise<void> {
+    await db.transaction('rw', db.outbox, async () => {
+      const existing = await db.outbox.where('localId').equals(localId).first();
+      if (!existing) return;
+      await db.outbox.update(existing.id, { title, content });
+    });
+  },
 };
 
 /** The sync cursor and other single values. Opaque to everything but Step 8. */

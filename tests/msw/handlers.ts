@@ -5,6 +5,7 @@ import { makeSharedNoteSummary } from '../fixtures/sharedNotes';
 import { makeCollaboration, makeUserSummary } from '../fixtures/collaboration';
 import { makeShare } from '../fixtures/shares';
 import { makeNotification } from '../fixtures/notifications';
+import { makeTranscription, makeVoiceNote } from '../fixtures/voice';
 
 /**
  * Default handlers: the HAPPY PATH only. Failure cases are per-test overrides
@@ -131,8 +132,9 @@ export const handlers = [
     HttpResponse.json(makePage([makeCollaboration({ status: 'PENDING' })])),
   ),
 
-  // ONLY collaboratorId — see types.ts's corrected doc comment on
-  // CreateCollaborationRequest. A collaboration is not scoped to a note.
+  // ONLY collaboratorId — see collaboration/types.ts's corrected doc
+  // comment on CreateCollaborationRequest. A collaboration is not scoped
+  // to a note.
   http.post(`${BASE}/collaborations`, async ({ request }) => {
     const body = (await request.json()) as { collaboratorId: number };
     return HttpResponse.json(
@@ -200,4 +202,57 @@ export const handlers = [
   http.post(`${BASE}/notifications/read-all`, () => HttpResponse.json({ markedCount: 1 })),
 
   http.delete(`${BASE}/notifications/:id`, () => new HttpResponse(null, { status: 204 })),
+
+  // ---- voice notes & transcription ----------------------------------------
+
+  // Literal sub-path before /voice-notes/:voiceNoteId, same ordering
+  // discipline as /notes/search above.
+  http.get(`${BASE}/voice-notes/by-note/:noteId`, ({ params }) =>
+    HttpResponse.json([makeVoiceNote({ noteId: Number(params['noteId']) })]),
+  ),
+
+  http.get(`${BASE}/voice-notes`, () => HttpResponse.json(makePage([makeVoiceNote()]))),
+
+  // Upload goes through raw XHR (voiceService.ts's own doc comment), not
+  // httpClient — but it is still an ordinary multipart POST as far as MSW
+  // is concerned.
+  http.post(`${BASE}/voice-notes`, ({ request }) => {
+    const url = new URL(request.url);
+    const noteId = url.searchParams.get('noteId');
+    const durationSeconds = url.searchParams.get('durationSeconds');
+    return HttpResponse.json(
+      makeVoiceNote({
+        noteId: noteId !== null ? Number(noteId) : null,
+        durationSeconds: durationSeconds !== null ? Number(durationSeconds) : null,
+      }),
+      { status: 201 },
+    );
+  }),
+
+  http.get(`${BASE}/voice-notes/:voiceNoteId`, ({ params }) =>
+    HttpResponse.json(makeVoiceNote({ id: Number(params['voiceNoteId']) })),
+  ),
+
+  http.get(`${BASE}/voice-notes/:voiceNoteId/download`, () =>
+    // A minimal, real audio/webm-ish blob is unnecessary for tests that
+    // only assert an object URL was created — an arbitrary byte payload
+    // is enough.
+    new HttpResponse(new Blob([new Uint8Array([0, 1, 2, 3])]), {
+      status: 200,
+      headers: { 'content-type': 'audio/webm' },
+    }),
+  ),
+
+  http.delete(`${BASE}/voice-notes/:voiceNoteId`, () => new HttpResponse(null, { status: 204 })),
+
+  http.post(`${BASE}/voice-notes/:voiceNoteId/transcription`, ({ params }) =>
+    HttpResponse.json(
+      makeTranscription({ voiceNoteId: Number(params['voiceNoteId']), status: 'PENDING' }),
+      { status: 202 },
+    ),
+  ),
+
+  http.get(`${BASE}/voice-notes/:voiceNoteId/transcription`, ({ params }) =>
+    HttpResponse.json(makeTranscription({ voiceNoteId: Number(params['voiceNoteId']) })),
+  ),
 ];

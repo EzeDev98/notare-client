@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 /** Quiet period before saving. */
 const DEBOUNCE_MS = 1_200;
@@ -160,5 +160,26 @@ export function useAutoSaveScheduler({ save, canSchedule, hasPendingWork }: Sche
     };
   }, [flush, clearTimer, run]);
 
-  return { schedule, flush };
+  /*
+   * MEMOIZED, not a fresh object literal. `schedule` and `flush` are each
+   * individually stable (`useCallback` with stable deps), but returning
+   * `{ schedule, flush }` bare gives every CALLER a NEW object identity on
+   * every render regardless — and `useNoteEditor`'s reconnect effect
+   * depends on this object (`[online, scheduler]`). An unmemoized return
+   * value means that effect's cleanup+effect pair reruns on EVERY render,
+   * not just when `online` actually changes — and since `hasPendingWork()`
+   * reads true immediately after any edit, that effect was calling
+   * `scheduler.flush()` on every single render following a keystroke,
+   * bypassing the whole debounce this file exists to provide.
+   *
+   * This was ALWAYS true, but masked: `save()`'s "nothing to send" check
+   * read a `rowRef.current.dirty` that stayed stale at 0 until Dexie's
+   * live query caught up (a separate bug, fixed in useNoteEditor.ts's
+   * `draftOverride`), so the erroneous immediate flush silently no-op'd.
+   * Fixing that bug correctly made `dirty` reflect `1` the instant an edit
+   * happens — which is what turned this dormant bug into an actual
+   * premature save, firing well before the intended debounce or explicit
+   * blur/flush ever got a chance to run.
+   */
+  return useMemo(() => ({ schedule, flush }), [schedule, flush]);
 }
