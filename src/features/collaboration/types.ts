@@ -42,18 +42,27 @@ export interface UserSummaryResponse {
  * server does not flag it per-row, because the same row IS both an owner's
  * sent invite and a collaborator's received one simultaneously.
  *
- * Field set INFERRED from the endpoint contract, not a confirmed DTO listing
- * — `owner`/`collaborator` nested as UserSummaryResponse follows the
- * server's established "nest, don't flatten" convention (NOTARE-SERVER.md
- * §3.6, already confirmed for SharedNoteSummaryResponse).
+ * NO `noteId`, NO `noteTitle`, NO `permission` — a collaboration is a
+ * relationship between two people, not a grant on a note.
+ * NOTARE-SERVER.md §8 is explicit: "`Collaboration` models the
+ * relationship, not a person: `ownerId`, `collaboratorId`, `status`,
+ * `UNIQUE(owner_id, collaborator_id)`, `lastModifiedBy`" — no note-related
+ * column exists on the entity at all. NOTARE-CLIENT-ARCHITECTURE.md §2.4
+ * confirms the UI consequence: "the share flow is therefore two-stage:
+ * you invite someone, they accept, *then* you can share notes with them" —
+ * sharing a specific note happens later, via a completely separate
+ * resource (`features/sharing`, `/notes/{noteId}/shares`).
+ *
+ * PREVIOUSLY WRONG in this file: earlier versions carried `noteId`,
+ * `noteTitle`, and `permission` here, which don't exist on the server's
+ * response and would have forced an invite flow that picks a note before
+ * inviting someone — backwards from the documented two-stage design.
+ * Corrected before building the invite page (9C) on top of it.
  */
 export interface CollaborationResponse {
   id: number;
-  noteId: number;
-  noteTitle: string;
   owner: UserSummaryResponse;
   collaborator: UserSummaryResponse;
-  permission: 'READ' | 'WRITE';
   status: CollaborationStatus;
   createdAt: ServerDateTime;
 }
@@ -64,9 +73,12 @@ export interface CollaborationResponse {
  * invites themselves onto their own note as a collaborator, so that
  * asymmetry is baked into the request shape rather than validated after
  * the fact.
+ *
+ * ONLY `collaboratorId` — NOTARE-SERVER.md §13's endpoint table is
+ * explicit: "POST | /collaborations | 201 + Location | body:
+ * collaboratorId". No `noteId`, no `permission`; see `CollaborationResponse`
+ * above for why.
  */
 export interface CreateCollaborationRequest {
-  noteId: number;
   collaboratorId: number;
-  permission: 'READ' | 'WRITE';
 }

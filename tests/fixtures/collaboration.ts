@@ -21,11 +21,8 @@ export function makeCollaboration(
   const id = overrides.id ?? nextCollaborationId++;
   return {
     id,
-    noteId: 5,
-    noteTitle: 'Note 5',
     owner: makeUserSummary({ id: 1, username: 'owner' }),
     collaborator: makeUserSummary({ id: 2, username: 'collaborator' }),
-    permission: 'READ',
     status: 'PENDING',
     createdAt: '2026-08-10T09:00:00.000',
     ...overrides,

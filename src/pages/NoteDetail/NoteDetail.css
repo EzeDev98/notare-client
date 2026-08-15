@@ -1,10 +1,4 @@
 @layer pages {
-  /*
-   * §30: reading a note should feel like a clean document, not a dashboard
-   * card. Everything here serves that — a capped measure, generous vertical
-   * space, restrained chrome, and no borders or shadows around the text
-   * itself.
-   */
   .note-detail {
     max-inline-size: var(--measure-prose);
     margin-inline: auto;
@@ -12,11 +6,18 @@
   }
 
   .note-detail__back {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     font-size: var(--font-size-sm);
   }
 
   .note-detail__back a {
     text-decoration: none;
+  }
+
+  .note-detail__share-link {
+    color: var(--color-accent);
   }
 
   .note-detail__header {
@@ -29,8 +30,6 @@
 
   .note-detail__title {
     margin: 0;
-    /* Titles wrap rather than truncate here — unlike the list, where a
-     * consistent card height matters more than the full title. */
     overflow-wrap: break-word;
   }
 
@@ -55,19 +54,9 @@
 
   .note-detail__content {
     margin-block-start: var(--space-8);
-
-    /* The reading size and leading from 2A — one step above UI text, with the
-     * air long-form reading needs. */
     font-size: var(--font-size-md);
     line-height: var(--line-height-relaxed);
-
-    /*
-     * pre-wrap preserves the newlines and runs of spaces the user typed, while
-     * still wrapping long lines. `pre` alone would not wrap and would force a
-     * horizontal scrollbar on any long paragraph.
-     */
     white-space: pre-wrap;
-    /* A pasted URL with no spaces should wrap rather than widen the page. */
     overflow-wrap: break-word;
   }
 

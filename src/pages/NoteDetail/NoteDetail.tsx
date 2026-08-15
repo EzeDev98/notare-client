@@ -25,6 +25,16 @@ export function NoteDetailPage() {
     <article className="note-detail">
       <nav className="note-detail__back">
         <Link to="/notes">← All notes</Link>
+        {/*
+          serverId, not localId — sharing is a grant on the SERVER's note
+          row (features/sharing's whole surface is /notes/{noteId}/shares),
+          so a note that has never synced has nothing to point this at yet.
+        */}
+        {state.status === 'ready' && state.row.serverId !== null ? (
+          <Link className="note-detail__share-link" to={`/notes/${String(state.row.serverId)}/share`}>
+            Share
+          </Link>
+        ) : null}
       </nav>
 
       {state.status === 'loading' ? (

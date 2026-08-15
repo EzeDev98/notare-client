@@ -6,7 +6,9 @@ import type { UserSummaryResponse } from '@/features/collaboration/types';
 import './CollaboratorPicker.css';
 
 interface CollaboratorPickerProps {
-  /** Excluded from results — used to filter out people already invited on this note. */
+  /** Excluded from results — used to filter out people already invited (a
+   * collaboration is a person-to-person relationship, not scoped to any
+   * one note — types.ts's own doc comment on `CollaborationResponse`). */
   excludeIds?: number[];
   onSelect: (user: UserSummaryResponse) => void;
 }

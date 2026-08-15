@@ -7,30 +7,13 @@ import { RouteError } from '@/app/RouteError';
 import { RouteFallback } from '@/app/RouteFallback';
 import { LoginPage } from '@/pages/Login/Login';
 
-/**
- * The route tree, as DATA. `satisfies` checks the shape without widening, so a
- * typo in a property name is an error while the literal keeps its precise type.
- *
- * Exported (not just the router built from it) so router.test.tsx can mount
- * the REAL tree in a memory router. D1 survived as long as it did because
- * every page's own test built its own throwaway route — proving the page
- * works, not that the app can reach it.
- */
 export const routes = [
   {
     element: <PublicLayout />,
     errorElement: <RouteError />,
     children: [
       { index: true, element: <Navigate to="/notes" replace /> },
-      // Eager: an unauthenticated visitor needs this immediately, and
-      // code-splitting it adds a round trip before the first render.
       { path: 'login', element: <LoginPage /> },
-
-      /*
-       * Lazy, unlike login: these are visited once per account, so paying a
-       * round trip for them keeps the initial bundle smaller for the screen
-       * every returning user actually sees.
-       */
       {
         path: 'register',
         lazy: async () => {
@@ -56,11 +39,6 @@ export const routes = [
   },
 
   {
-    /*
-     * The 4D seam, now filled. RequireAuth wraps the layout, so every child
-     * route — present and future — is protected by placement rather than by a
-     * check somebody has to remember to add.
-     */
     element: <RequireAuth />,
     errorElement: <RouteError />,
     children: [
@@ -76,14 +54,6 @@ export const routes = [
             },
           },
           {
-            /*
-             * 7D. Registered before 'notes/:noteId' for readability only —
-             * React Router ranks a static segment ('new') above a dynamic one
-             * (':noteId') regardless of array order, so this cannot be
-             * shadowed. The bug was never route order; it was that this path
-             * had no route object at all, so ':noteId' was the only thing
-             * that could match and 'new' was captured as an id.
-             */
             path: 'notes/new',
             lazy: async () => {
               const { NewNotePage } = await import('@/pages/NewNote/NewNote');
@@ -98,28 +68,23 @@ export const routes = [
             },
           },
           {
+            path: 'notes/:noteId/share',
+            lazy: async () => {
+              const { ShareNotePage } = await import('@/pages/ShareNote/ShareNote');
+              return { Component: ShareNotePage };
+            },
+          },
+          {
             path: 'notes',
             lazy: async () => {
               const { NotesPage } = await import('@/pages/Notes/Notes');
               return { Component: NotesPage };
             },
           },
-
-          /*
-           * NoteTabs has linked to both of these since Step 5. Fixed in 7D
-           * (b10fdce).
-           */
           {
             path: 'archived',
             lazy: async () => {
               const { NotesPage } = await import('@/pages/Notes/Notes');
-              /*
-               * A route cannot pass props to a `Component`, so the prop is
-               * bound here. The wrapper is created ONCE, when lazy resolves and
-               * the router caches the result — not per render, which would give
-               * React a new component type each time and remount the page on
-               * every state change.
-               */
               return { Component: () => <NotesPage archived /> };
             },
           },
@@ -131,8 +96,6 @@ export const routes = [
             },
           },
           {
-            // 7D. Same defect as 'archived'/'trash': the page and its own
-            // test existed since Step 5; nothing in the real tree pointed to it.
             path: 'search',
             lazy: async () => {
               const { SearchPage } = await import('@/pages/Search/Search');
@@ -140,9 +103,6 @@ export const routes = [
             },
           },
           {
-            // 8E. Cold-start conflicts (a push or a pull marking a note
-            // 'conflict' with nobody looking at it) had nowhere to go until
-            // this route existed — see the gap analysis, D-series.
             path: 'conflicts',
             lazy: async () => {
               const { ConflictsPage } = await import('@/pages/Conflicts/Conflicts');
@@ -150,10 +110,6 @@ export const routes = [
             },
           },
           {
-            // 9B. 'shared/:id' before 'shared' would change nothing here —
-            // React Router ranks the static segment above the dynamic one
-            // regardless of order — but registered in this sequence for the
-            // same readability reason 'notes/new' precedes 'notes/:noteId'.
             path: 'shared',
             lazy: async () => {
               const { SharedNotesPage } = await import('@/pages/SharedNotes/SharedNotes');
@@ -167,14 +123,44 @@ export const routes = [
               return { Component: SharedNotePage };
             },
           },
+          {
+            path: 'collaborations',
+            lazy: async () => {
+              const { InvitationsPage } = await import('@/pages/Invitations/Invitations');
+              return { Component: InvitationsPage };
+            },
+          },
+          {
+            // 9C, master-brief lettering ("User search and the invite
+            // flow"). Static segment after a static parent, registered
+            // here for the same readability convention as 'notes/new'
+            // before 'notes/:noteId' — no shadowing risk regardless of
+            // order since both are literal paths.
+            path: 'collaborations/invite',
+            lazy: async () => {
+              const { InviteCollaboratorPage } = await import(
+                '@/pages/InviteCollaborator/InviteCollaborator'
+              );
+              return { Component: InviteCollaboratorPage };
+            },
+          },
+          {
+            // 9F. "Notifications: client-composed wording, unknown-type
+            // fallback, unread count polling, mark-read" — architecture
+            // doc §4.2 names the route and its actions verbatim: "list,
+            // unread filter, mark read, mark all, delete".
+            path: 'notifications',
+            lazy: async () => {
+              const { NotificationsPage } = await import('@/pages/Notifications/Notifications');
+              return { Component: NotificationsPage };
+            },
+          },
         ],
       },
     ],
   },
 
   {
-    // Outside both layouts, so an unknown URL does not imply a session by
-    // rendering the authenticated shell around itself.
     path: '*',
     lazy: async () => {
       const { NotFoundPage } = await import('@/pages/NotFound/NotFound');

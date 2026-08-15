@@ -3,6 +3,8 @@ import { http, HttpResponse } from 'msw';
 import { makeNote, makeNoteSummary, makePage } from '../fixtures/notes';
 import { makeSharedNoteSummary } from '../fixtures/sharedNotes';
 import { makeCollaboration, makeUserSummary } from '../fixtures/collaboration';
+import { makeShare } from '../fixtures/shares';
+import { makeNotification } from '../fixtures/notifications';
 
 /**
  * Default handlers: the HAPPY PATH only. Failure cases are per-test overrides
@@ -111,18 +113,14 @@ export const handlers = [
       makeNote({ id: Number(params['noteId']), ownerId: 2, ...body, version: body.version + 1 }),
     );
   }),
-// ---- user search ----------------------------------------------------
+
+  // ---- user search ----------------------------------------------------
 
   http.get(`${BASE}/user/search`, ({ request }) => {
-
     const q = new URL(request.url).searchParams.get('q') ?? '';
-
     // Blank query -> empty page, matching the real server (this is other
-
     // people's data, not a browse-everyone endpoint).
-
     return HttpResponse.json(makePage(q === '' ? [] : [makeUserSummary()]));
-
   }),
 
   // ---- collaborations ---------------------------------------------------
@@ -130,53 +128,76 @@ export const handlers = [
   http.get(`${BASE}/collaborations/sent`, () => HttpResponse.json(makePage([makeCollaboration()]))),
 
   http.get(`${BASE}/collaborations/received`, () =>
-
     HttpResponse.json(makePage([makeCollaboration({ status: 'PENDING' })])),
-
   ),
 
+  // ONLY collaboratorId — see types.ts's corrected doc comment on
+  // CreateCollaborationRequest. A collaboration is not scoped to a note.
   http.post(`${BASE}/collaborations`, async ({ request }) => {
-
-    const body = (await request.json()) as {
-
-      noteId: number;
-
-      collaboratorId: number;
-
-      permission: 'READ' | 'WRITE';
-
-    };
-
+    const body = (await request.json()) as { collaboratorId: number };
     return HttpResponse.json(
-
       makeCollaboration({
-
-        noteId: body.noteId,
-
         collaborator: makeUserSummary({ id: body.collaboratorId }),
-
-        permission: body.permission,
-
         status: 'PENDING',
-
       }),
-
+      { status: 201 },
     );
-
   }),
 
   http.post(`${BASE}/collaborations/:id/accept`, ({ params }) =>
-
     HttpResponse.json(makeCollaboration({ id: Number(params['id']), status: 'ACCEPTED' })),
-
   ),
 
   http.post(`${BASE}/collaborations/:id/reject`, ({ params }) =>
-
     HttpResponse.json(makeCollaboration({ id: Number(params['id']), status: 'REJECTED' })),
-
   ),
 
   http.delete(`${BASE}/collaborations/:id`, () => new HttpResponse(null, { status: 204 })),
 
+  // ---- sharing (owner side) ----------------------------------------------
+
+  http.get(`${BASE}/notes/:noteId/shares`, ({ params }) =>
+    HttpResponse.json(makePage([makeShare({ noteId: Number(params['noteId']) })])),
+  ),
+
+  http.post(`${BASE}/notes/:noteId/shares`, async ({ params, request }) => {
+    const body = (await request.json()) as { sharedWithUserId: number; permission: 'READ' | 'WRITE' };
+    return HttpResponse.json(
+      makeShare({
+        noteId: Number(params['noteId']),
+        sharedWithUserId: body.sharedWithUserId,
+        permission: body.permission,
+      }),
+      { status: 201 },
+    );
+  }),
+
+  http.put(`${BASE}/notes/:noteId/shares/:userId`, async ({ params, request }) => {
+    const body = (await request.json()) as { permission: 'READ' | 'WRITE' };
+    return HttpResponse.json(
+      makeShare({
+        noteId: Number(params['noteId']),
+        sharedWithUserId: Number(params['userId']),
+        permission: body.permission,
+      }),
+    );
+  }),
+
+  http.delete(`${BASE}/notes/:noteId/shares/:userId`, () => new HttpResponse(null, { status: 204 })),
+
+  // ---- notifications ------------------------------------------------------
+
+  http.get(`${BASE}/notifications`, () => HttpResponse.json(makePage([makeNotification()]))),
+
+  http.get(`${BASE}/notifications/unread-count`, () => HttpResponse.json({ count: 1 })),
+
+  http.post(`${BASE}/notifications/:id/read`, ({ params }) =>
+    HttpResponse.json(
+      makeNotification({ id: Number(params['id']), readAt: '2026-08-11T00:00:00.000' }),
+    ),
+  ),
+
+  http.post(`${BASE}/notifications/read-all`, () => HttpResponse.json({ markedCount: 1 })),
+
+  http.delete(`${BASE}/notifications/:id`, () => new HttpResponse(null, { status: 204 })),
 ];

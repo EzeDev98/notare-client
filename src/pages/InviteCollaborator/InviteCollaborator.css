@@ -1,0 +1,33 @@
+@layer pages {
+  .invite-collaborator {
+    max-inline-size: var(--measure-prose);
+    margin-inline: auto;
+    padding: var(--space-8) var(--space-4);
+  }
+
+  .invite-collaborator__back {
+    margin-block-end: var(--space-4);
+    font-size: var(--font-size-sm);
+  }
+
+  .invite-collaborator__title {
+    margin: 0 0 var(--space-2);
+  }
+
+  .invite-collaborator__lead {
+    margin: 0 0 var(--space-6);
+    color: var(--color-text-secondary);
+  }
+
+  .invite-collaborator__error {
+    margin: var(--space-3) 0 0;
+    color: var(--color-danger);
+    font-size: var(--font-size-sm);
+  }
+
+  .invite-collaborator__status {
+    margin: var(--space-3) 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+}

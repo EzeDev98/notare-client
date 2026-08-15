@@ -9,12 +9,8 @@ import { server } from '~/msw/server';
 const BASE = 'http://localhost:2001/api/v1';
 
 describe('createCollaboration', () => {
-  it('creates a PENDING invitation as owner', async () => {
-    const result = await collaborationService.createCollaboration({
-      noteId: 5,
-      collaboratorId: 7,
-      permission: 'READ',
-    });
+  it('creates a PENDING invitation as owner, with only collaboratorId in the body', async () => {
+    const result = await collaborationService.createCollaboration({ collaboratorId: 7 });
 
     expect(result.status).toBe('PENDING');
     expect(result.collaborator.id).toBe(7);
