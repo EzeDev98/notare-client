@@ -18,7 +18,6 @@ import { useNotes } from '@/features/notes/hooks/useNotes';
 import { useSync } from '@/sync/useSync';
 import { useConflictCount } from '@/sync/useConflicts';
 import { useSyncStatus } from '@/sync/useSyncStatus';
-import { Logo } from '@/design-system/components/Logo/Logo';
 import { ThemeToggle } from '@/design-system/components/ThemeToggle/ThemeToggle';
 import './AppLayout.css';
 
@@ -77,7 +76,10 @@ const desktopOnlyItems: NavItem[] = [
 // itself stays untouched and still exactly matches what the compact nav
 // below renders, so there is no second four-item list to keep in sync by
 // hand, and mobile/tablet cannot silently grow past four icons.
-const foldersNavItems = [...desktopOnlyItems, ...navItems.filter((item) => item.to !== '/notes')];
+const foldersNavItems = [
+  ...desktopOnlyItems,
+  ...navItems.filter((item) => item.to !== '/notes' && item.to !== '/notifications'),
+];
 
 /**
  * The authenticated application shell.
@@ -228,12 +230,6 @@ export function AppLayout() {
     authState.status === 'authenticated' || authState.status === 'refreshing'
       ? authState.user.id
       : null;
-  // Shown at the top of the folders panel — see that section's own JSX.
-  const currentUserEmail =
-    authState.status === 'authenticated' || authState.status === 'refreshing'
-      ? authState.user.email
-      : null;
-
   useSync(ownerId);
 
   /*
@@ -375,7 +371,6 @@ export function AppLayout() {
               <path d="M9 4v16" />
             </svg>
           </button>
-          <Logo />
           <button type="button" className="app-shell__toolbar-icon-btn" aria-label="Delete note">
             <Trash2 aria-hidden="true" strokeWidth={1.75} />
           </button>
@@ -470,8 +465,6 @@ export function AppLayout() {
         reader's view.
       */}
       <nav className="app-shell__folders" aria-label="Folders" inert={!isFoldersOpen}>
-        <p className="app-shell__folders-account">{currentUserEmail}</p>
-
         <ul className="app-shell__bottom-nav" role="list">
           {foldersNavItems.map((item) => (
             <li key={item.to}>

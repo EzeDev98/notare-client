@@ -14,10 +14,38 @@
   .app-shell {
     display: flex;
     flex-direction: column;
+    block-size: 100dvh;
+    max-block-size: 100dvh;
+    overflow: hidden;
     /* dvh tracks the VISIBLE viewport as mobile browser chrome expands and
      * contracts. vh is pinned to the largest possible viewport, which puts the
      * bottom bar below the fold. */
     min-block-size: 100dvh;
+    /*
+     * Stops the PAGE ITSELF from scrolling. `body` (tokens/reset.css)
+     * only sets `min-height: 100dvh` — a minimum, not a cap — and
+     * neither `body` nor `html` sets `overflow: hidden`. Without this,
+     * anything inside .app-shell computing even slightly taller than
+     * its own box has nowhere to go but to inflate body's height, and
+     * the whole browser window scrolls to show it — carrying the
+     * toolbar and the sidebar's own footer out of view with it.
+     *
+     * This does NOT interfere with position:sticky on .app-shell__nav
+     * (the mobile bottom bar): that element is already pinned to the
+     * bottom of this same bounded flex column by ordinary flex layout —
+     * it is the last child, .app-shell__main above it takes flex:1 and
+     * scrolls its own overflow internally, so nav's position never
+     * depends on sticky "activating" against a scrolling ancestor in
+     * the first place. The desktop toolbar (>=1024px) doesn't use
+     * sticky at all — it's a normal CSS Grid row (grid-row: 1) — so
+     * there is no sticky context for this to disturb there either.
+     * Every legitimate scroll need already has its own internal
+     * overflow-y:auto region (.app-shell__main, .app-shell__note-list,
+     * .app-shell__folders' content, .note-detail__scroll); this only
+     * removes the illegitimate kind, at the page level, which should
+     * never have been possible.
+     */
+    overflow: hidden;
   }
 
   .app-shell__skip {
@@ -222,6 +250,15 @@
      * long note scrolls the whole shell and takes the nav with it. */
     min-block-size: 0;
     overflow-y: auto;
+
+    /*
+     * Never set before, so this fell through to body's --color-bg (a warm
+     * off-white) — visibly different from .app-shell__nav's own
+     * --color-surface (pure white) right next to it. Same token as nav
+     * now, so the note list and the editor read as one continuous white
+     * surface; only .app-shell__folders keeps --color-surface-sunken.
+     */
+    background-color: var(--color-surface);
   }
 
   /* ---- 640px+ : icon rail --------------------------------------------- */
@@ -313,17 +350,21 @@
        * tracks, always px values via the two custom properties).
        */
       transition: grid-template-columns 0.22s ease;
-      grid-template-rows: auto 1fr;
+      grid-template-rows: 52px minmax(0, 1fr);
       block-size: 100dvh;
+      max-block-size: 100dvh;
+      overflow: hidden;
       /* The resize handle below positions itself against THIS box. */
       position: relative;
     }
 
     .app-shell__toolbar {
-      display: flex;
+      display: flex !important;
       grid-column: 1 / -1;
       grid-row: 1;
       block-size: 52px;
+      min-block-size: 52px;
+      overflow: hidden;
       border-block-end: var(--border-width) solid var(--color-border);
       background-color: var(--color-surface);
     }
@@ -548,9 +589,18 @@
       border-block-start: var(--border-width) solid var(--color-border);
     }
 
+    /*
+     * auto, not a fixed space token — .app-shell__folders is a full-height
+     * flex column with nothing else below this, so `auto` claims all
+     * remaining space above it and pins the toggle to the panel's bottom
+     * edge, the same "last flex child after something else's flex:1"
+     * trick .app-shell__bottom-nav's own comment describes, just without
+     * a flex:1 sibling to do it for free here.
+     */
     .app-shell__theme-toggle {
       flex-shrink: 0;
-      margin-block-start: var(--space-3);
+      margin-block-start: auto;
+      padding-block-end: var(--space-3);
     }
 
     .app-shell__nav-link {
@@ -627,6 +677,16 @@
     /* ---- Folders panel ---------------------------------------------- */
 
     .app-shell__folders {
+      /*
+       * The base (mobile/tablet) rule sets display:none and this block
+       * never overrode it back — grid-column/grid-row placement was set,
+       * but the element and everything inside it (Archived/Trash/Voice/
+       * Notifications/Account, the theme toggle) stayed display:none at
+       * every breakpoint including this one. That's the whole bug: not
+       * a visibility fight with `inert`, nothing rendering at all.
+       */
+      display: flex;
+      flex-direction: column;
       grid-column: 1;
       grid-row: 2;
       min-block-size: 0;
@@ -636,6 +696,15 @@
       overflow: hidden;
       border-inline-end: var(--border-width) solid var(--color-border);
       padding-inline: var(--space-3);
+
+      /*
+       * Darker and distinct from the note list beside it, matching the
+       * reference — sunken rather than a hand-picked colour, so it stays
+       * correct in dark mode too (--color-surface-sunken flips from a
+       * light warm tint to a genuinely darker tone there, same token
+       * both places).
+       */
+      background-color: var(--color-surface-sunken);
     }
 
     .app-shell__folders-account {

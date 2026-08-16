@@ -12,23 +12,28 @@
    *
    * A flex COLUMN filling .app-shell__main's box, not a plain block — see
    * .note-detail__scroll's own comment for why: this element's job is now
-   * just to host two siblings (a scrolling region, a fixed footer), not to
-   * hold content itself.
+   * just to host two siblings (a scrolling region, and the floating
+   * voice recorder), not to hold content itself.
    */
   .note-detail {
     display: flex;
     flex-direction: column;
     block-size: 100%;
+    /* Positioning context for .voice-recorder__dock (VoiceRecorder.css) —
+       "80% of the note editor interface" only means something relative to
+       THIS box, not the viewport. */
+    position: relative;
   }
 
   /*
    * THE scroll container. Everything that used to be .note-detail's own
-   * padding lives here instead — back link, states, the editor. flex:1
-   * claims whatever height .note-detail__voice's footer (a sibling below,
-   * outside this div) doesn't need, min-block-size:0 lets it actually
-   * shrink to that instead of growing around its content, and
-   * overflow-y:auto is what makes THIS scroll independently rather than
-   * the note detail page as a whole — the identical three-property
+   * padding lives here instead — back link, states, the editor, and now
+   * the past-recordings list too (.note-detail__voice, below). flex:1
+   * claims whatever the rest of .note-detail doesn't need,
+   * min-block-size:0 lets it actually shrink to that instead of growing
+   * around its content, and overflow-y:auto is what makes THIS scroll
+   * independently rather than the note detail page as a whole — the
+   * identical three-property
    * pattern .app-shell__note-list already uses for the sidebar.
    */
   .note-detail__scroll {
@@ -146,26 +151,18 @@
 
 @layer pages {
   /*
-   * The fixed footer — flex-shrink:0 so it never gives up space to
-   * .note-detail__scroll's flex:1 above, which is what keeps it visible
-   * regardless of how far the editor content scrolls. Background +
-   * border-block-start (rather than just the border-block-start it had
-   * as a normal in-flow section) is what makes it actually READ as a
-   * footer bar sitting on top of the scroll region, not just another
-   * paragraph that happens to stay put — the same visual role
-   * .app-shell__bottom-nav's border-block-start already plays for the
-   * sidebar's own footer group.
+   * Ordinary in-flow content now, not a footer — see NoteDetailPage's
+   * own comment on why the old boxed-footer treatment (background,
+   * border, max-height, its own scroll) was actively causing the
+   * overlap: it was a second bottom-anchored box competing with the
+   * recorder's floating dock for the same corner. This section just
+   * scrolls with the rest of the note now, like any other content
+   * below it.
    */
   .note-detail__voice {
-    flex-shrink: 0;
-    padding: var(--space-4) var(--space-8);
-    background-color: var(--color-surface);
+    margin-block-start: var(--space-10);
+    padding-block-start: var(--space-6);
     border-block-start: var(--border-width) solid var(--color-border);
-    /* A ceiling, not a fixed height — a note with many recordings scrolls
-       WITHIN the footer rather than pushing it past a usable share of the
-       screen. */
-    max-block-size: 40%;
-    overflow-y: auto;
   }
 
   .note-detail__voice-heading {

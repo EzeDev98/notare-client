@@ -40,7 +40,7 @@ export type RecorderStatus =
   | { state: 'requesting-permission' }
   | { state: 'permission-denied' }
   | { state: 'unsupported' }
-  | { state: 'recording'; startedAt: number }
+  | { state: 'recording'; startedAt: number; paused: boolean }
   | { state: 'stopped'; blob: Blob; durationSeconds: number; mimeType: string }
   | { state: 'error'; message: string };
 
@@ -59,6 +59,11 @@ export function useMediaRecorderState() {
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const startedAtRef = useRef<number>(0);
+  // Total time spent paused this recording, plus (while currently paused)
+  // the still-open segment — both needed so `durationSeconds` on stop
+  // reflects actual SPOKEN time, not wall-clock time including pauses.
+  const pausedTotalMsRef = useRef<number>(0);
+  const pausedAtRef = useRef<number | null>(null);
 
   const stopTracks = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => {
@@ -94,6 +99,8 @@ export function useMediaRecorderState() {
 
     streamRef.current = stream;
     chunksRef.current = [];
+    pausedTotalMsRef.current = 0;
+    pausedAtRef.current = null;
 
     const recorder = new MediaRecorder(stream, { mimeType });
     mediaRecorderRef.current = recorder;
@@ -103,7 +110,12 @@ export function useMediaRecorderState() {
     };
 
     recorder.onstop = () => {
-      const durationSeconds = (Date.now() - startedAtRef.current) / 1000;
+      // A stop CAN arrive while paused (discarding a paused recording, for
+      // instance) — the still-open pause segment counts too, or a
+      // discard-then-resume-math bug would under-subtract it.
+      const openPauseMs = pausedAtRef.current === null ? 0 : Date.now() - pausedAtRef.current;
+      const totalPausedMs = pausedTotalMsRef.current + openPauseMs;
+      const durationSeconds = (Date.now() - startedAtRef.current - totalPausedMs) / 1000;
       const blob = new Blob(chunksRef.current, { type: mimeType });
       chunksRef.current = [];
       stopTracks();
@@ -117,13 +129,30 @@ export function useMediaRecorderState() {
 
     startedAtRef.current = Date.now();
     recorder.start();
-    setStatus({ state: 'recording', startedAt: startedAtRef.current });
+    setStatus({ state: 'recording', startedAt: startedAtRef.current, paused: false });
   }, [stopTracks]);
 
   const stop = useCallback(() => {
-    if (mediaRecorderRef.current?.state === 'recording') {
+    if (mediaRecorderRef.current?.state === 'recording' || mediaRecorderRef.current?.state === 'paused') {
       mediaRecorderRef.current.stop();
     }
+  }, []);
+
+  const pause = useCallback(() => {
+    if (mediaRecorderRef.current?.state !== 'recording') return;
+    mediaRecorderRef.current.pause();
+    pausedAtRef.current = Date.now();
+    setStatus((prev) => (prev.state === 'recording' ? { ...prev, paused: true } : prev));
+  }, []);
+
+  const resume = useCallback(() => {
+    if (mediaRecorderRef.current?.state !== 'paused') return;
+    mediaRecorderRef.current.resume();
+    if (pausedAtRef.current !== null) {
+      pausedTotalMsRef.current += Date.now() - pausedAtRef.current;
+      pausedAtRef.current = null;
+    }
+    setStatus((prev) => (prev.state === 'recording' ? { ...prev, paused: false } : prev));
   }, []);
 
   /** Discards a finished recording and returns to idle — "record again"
@@ -133,5 +162,5 @@ export function useMediaRecorderState() {
     setStatus({ state: 'idle' });
   }, []);
 
-  return { status, start, stop, reset };
+  return { status, start, stop, pause, resume, reset };
 }

@@ -33,7 +33,7 @@ export function SidebarNoteItem({ note }: SidebarNoteItemProps) {
   const contentTrimmed = note.content.trim();
   const lines = contentTrimmed.split('\n');
   const firstLineIndex = lines.findIndex((line) => line.trim() !== '');
-  const firstLine = firstLineIndex === -1 ? '' : lines[firstLineIndex].trim();
+  const firstLine = firstLineIndex === -1 ? '' : (lines[firstLineIndex] ?? '').trim();
 
   const displayTitle =
     titleTrimmed !== '' ? titleTrimmed : firstLine !== '' ? firstLine : 'New Note';

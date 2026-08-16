@@ -3,10 +3,8 @@ import { Link, useParams } from 'react-router';
 import { useAuth } from '@/app/providers/auth-context';
 import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
 import { parseNoteId, useNote } from '@/features/notes/hooks/useNote';
-import { VoiceNoteCard } from '@/features/voice/components/VoiceNoteCard/VoiceNoteCard';
 import { VoiceRecorder } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
 import { useVoiceNotesByNote } from '@/features/voice/hooks/useVoiceNotes';
-import { useDeleteVoiceNote } from '@/features/voice/hooks/useVoiceNoteMutations';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './NoteDetail.css';
@@ -29,13 +27,11 @@ export function NoteDetailPage() {
     <article className="note-detail">
       {/*
         Everything that should SCROLL lives in here — the back link, the
-        loading/error states, and the editor itself. Voice notes sits
-        OUTSIDE this div, as a sibling below it, so it stays visible as a
-        fixed footer no matter how far the editor content scrolls — the
-        exact same structural pattern the sidebar uses for Archived/Trash/
-        Voice/Notifications/Account: a flex:1, min-block-size:0,
-        overflow-y:auto region for the part that scrolls, and a
-        flex-shrink:0 sibling for the part that doesn't.
+        loading/error states, the editor itself, and the past-recordings
+        list. The voice RECORDER (the floating mic/waveform dock) is the
+        one thing that sits OUTSIDE this div, as a sibling below it — see
+        that element's own comment for why it needs to float rather than
+        live in the normal scrolling flow.
       */}
       <div className="note-detail__scroll">
         {/*
@@ -87,61 +83,35 @@ export function NoteDetailPage() {
         {state.status === 'ready' ? (
           <NoteEditorHost key={state.row.localId} row={state.row} currentUserId={currentUserId} />
         ) : null}
+
+        {/*
+          serverId, not localId — sharing/voice notes are grants and
+          uploads against the SERVER's note row, so a note that has never
+          synced has nothing to attach a recording to yet. Inside the
+          scroll region now, not a separate footer box — past recordings
+          are note content, they scroll with everything else above them.
+          Only the RECORDER itself (below) needs to float.
+        */}
       </div>
 
       {/*
-        serverId, not localId — same reasoning as the Share link above.
-        Voice notes link to a NOTE ID the server knows about
-        (VoiceNote.noteId), so an unsynced note has nothing for a
-        recording to attach to yet. OUTSIDE .note-detail__scroll on
-        purpose — see that div's own comment.
+        THE floating mic / recording dock — the ONLY thing anchored to
+        .note-detail's own box (position:relative there), and the ONLY
+        thing outside .note-detail__scroll. Previously this lived INSIDE
+        a separate "voice notes" footer section that was ALSO
+        flex-shrink:0 with its own background/border/padding — two
+        different bottom-anchored things (a real boxed footer, and an
+        absolutely-positioned dock inside it) competing for the same
+        corner of the screen, which is what made the recording bar look
+        broken and overlap the page. Now there is exactly one bottom-right
+        element, full stop: it doesn't consume any layout space, so
+        nothing else needs to make room for it, and it stays in the exact
+        same spot regardless of how far the note content above is
+        scrolled — "firm and intact", not shaky.
       */}
       {state.status === 'ready' && state.row.serverId !== null ? (
-        <NoteVoiceSection serverId={state.row.serverId} />
+        <VoiceRecorder noteId={state.row.serverId} />
       ) : null}
     </article>
-  );
-}
-
-/**
- * "Record and transcribe. Record → upload → submit transcription → poll
- * → transcript appears alongside the note." (architecture doc §3's
- * usability scenario 6, verbatim) — this section is that scenario's home.
- * `/voice/:id` (VoiceDetail) remains the durable, linkable destination
- * for one recording; this is the inline, in-context place to make one.
- */
-function NoteVoiceSection({ serverId }: { serverId: number }) {
-  const voiceNotes = useVoiceNotesByNote(serverId);
-  const deleteVoiceNote = useDeleteVoiceNote(serverId);
-
-  return (
-    <section className="note-detail__voice" aria-labelledby="note-detail-voice-heading">
-      <h2 id="note-detail-voice-heading" className="note-detail__voice-heading">
-        Voice notes
-      </h2>
-
-      <VoiceRecorder noteId={serverId} />
-
-      {voiceNotes.isLoading ? (
-        <div className="note-detail__voice-centre">
-          <Spinner label="Loading voice notes" size="sm" />
-        </div>
-      ) : null}
-
-      {voiceNotes.data && voiceNotes.data.length > 0 ? (
-        <ul className="note-detail__voice-list" role="list">
-          {voiceNotes.data.map((vn) => (
-            <VoiceNoteCard
-              key={vn.id}
-              voiceNote={vn}
-              deleting={deleteVoiceNote.isPending && deleteVoiceNote.variables === vn.id}
-              onDelete={(id) => {
-                deleteVoiceNote.mutate(id);
-              }}
-            />
-          ))}
-        </ul>
-      ) : null}
-    </section>
   );
 }
