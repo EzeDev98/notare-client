@@ -34,11 +34,33 @@
     font-size: var(--font-size-sm);
   }
 
-  /* PRIMARY — --color-accent, not --color-accent-soft. White on #8B7EAA is
-   * 3.71:1 and fails AA; on #75698F it is 5.03:1. See 2B. */
+  /*
+   * `!important` on every variant's `color` below — not a stylistic choice,
+   * a necessary one. `tokens/reset.css` sets `input, button, textarea,
+   * select { color: inherit }`, correctly inside `@layer reset`, which
+   * SHOULD lose to this file's `@layer components` per the precedence
+   * `@layer reset, tokens, base, components, pages, utilities;` declares
+   * in global.css. In practice it does not always lose: Vite dev serves
+   * each component's CSS as its own separately-injected <style> tag
+   * (confirmed via getComputedStyle debugging — 13+ inline stylesheets,
+   * no linked hrefs), and a CSS layer's precedence is fixed at FIRST
+   * ENCOUNTER across the whole cascade — if `reset.css`'s own `@layer
+   * reset {...}` block happens to be injected before global.css's
+   * precedence statement is parsed, "reset" and "components" can end up
+   * ordered by injection order instead of by what the code declares,
+   * with no error and no warning. `primary` and `danger` are the
+   * variants where this was actually VISIBLE (their colour differs from
+   * `--color-text`, what the reset's `inherit` resolves to); `secondary`
+   * and `ghost` were equally exposed but happened to look correct by
+   * coincidence, since they already use `--color-text` themselves.
+   * `!important` sidesteps the whole layer-ordering question: among
+   * declarations for the same property, `!important` always beats a
+   * non-`!important` one regardless of origin or layer, and
+   * `color: inherit` above is not `!important`.
+   */
   .ds-button[data-variant='primary'] {
     background-color: var(--color-accent);
-    color: var(--color-text-on-accent);
+    color: var(--color-text-on-accent) !important;
   }
 
   .ds-button[data-variant='primary']:hover:not(:disabled) {
@@ -50,7 +72,7 @@
   .ds-button[data-variant='secondary'] {
     background-color: var(--color-surface);
     border-color: var(--color-border-strong);
-    color: var(--color-text);
+    color: var(--color-text) !important;
   }
 
   .ds-button[data-variant='secondary']:hover:not(:disabled) {
@@ -60,7 +82,7 @@
   /* GHOST — toolbar and inline actions, where a border would be noise. */
   .ds-button[data-variant='ghost'] {
     background-color: transparent;
-    color: var(--color-text);
+    color: var(--color-text) !important;
   }
 
   .ds-button[data-variant='ghost']:hover:not(:disabled) {
@@ -70,7 +92,7 @@
   /* DANGER — white on #B3261E is 6.54:1. */
   .ds-button[data-variant='danger'] {
     background-color: var(--color-danger);
-    color: var(--color-text-on-danger);
+    color: var(--color-text-on-danger) !important;
   }
 
   .ds-button[data-variant='danger']:hover:not(:disabled) {

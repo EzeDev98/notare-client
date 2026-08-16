@@ -1,19 +1,41 @@
 @layer components {
+  /* The thin rule under each row IS the separator between notes — no gap,
+     no card background, so a long list reads as one continuous sheet the
+     way the reference app's own sidebar does. */
+  .sidebar-note-item {
+    border-block-end: var(--border-width) solid var(--color-border);
+    /*
+     * THE fix for the horizontal scrollbar that used to appear across the
+     * whole sidebar. A grid item (this <li>, inside
+     * .app-shell__note-list's display:grid) defaults to min-width: auto,
+     * which means it refuses to shrink below its CONTENT's natural width
+     * — an unbroken random-looking title with no spaces to wrap at. That
+     * forced the <li>, the <ul>, and the sidebar column itself to widen
+     * to fit it, which is what produced the scrollbar: the ellipsis
+     * truncation below was never actually being reached, because nothing
+     * upstream of it was ever narrow enough to need it. min-inline-size:
+     * 0 is the same one-line fix .app-shell__main and .app-shell__nav
+     * already needed on the BLOCK axis for the sticky-toolbar/independent-
+     * scroll fix — the identical default-sizing trap, just the other axis.
+     */
+    min-inline-size: 0;
+  }
+
+  .sidebar-note-item:last-child {
+    border-block-end: none;
+  }
+
   .sidebar-note-item__link {
-    display: block;
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-md);
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3);
+    color: var(--color-text);
     text-decoration: none;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .sidebar-note-item__link:hover {
     background-color: var(--color-accent-faint);
-    color: var(--color-text);
   }
 
   /* Same attribute-driven pattern as .app-shell__nav-link — NavLink sets
@@ -21,12 +43,36 @@
      can't drift apart. */
   .sidebar-note-item__link[aria-current='page'] {
     background-color: var(--color-accent-subtle);
-    color: var(--color-text);
-    font-weight: var(--font-weight-medium);
   }
 
-  .sidebar-note-item__untitled {
+  .sidebar-note-item__title {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Date and preview share ONE line, same as the reference's "Friday  1
+     Information (d…" row — a single truncation point rather than the
+     date and the preview each getting their own ellipsis. */
+  .sidebar-note-item__meta {
+    display: flex;
+    gap: var(--space-2);
+    font-size: var(--font-size-xs);
     color: var(--color-text-secondary);
-    font-style: italic;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .sidebar-note-item__date {
+    flex-shrink: 0;
+  }
+
+  .sidebar-note-item__preview {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

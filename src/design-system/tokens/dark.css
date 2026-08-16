@@ -40,11 +40,17 @@
     --color-text-disabled: #78716c;
 
     /*
-     * Dark text on the accent, inverted from light mode. A DARK fill with
-     * light text in a dark UI reads as a hole punched in the page; a light
-     * fill reads as a raised control. #1C1917 on #B0A3CF is 7.48:1.
+     * WHITE on the accent in both themes — a deliberate override, not an
+     * oversight. The dark-mode default used to be dark text (#1c1917 on
+     * #b0a3cf, 7.48:1 — the correct AA-passing choice, since dark mode's
+     * accent is a lighter lavender than light mode's). White here is
+     * ~2.3:1, well under the 4.5:1 AA floor every other pairing in this
+     * file holds. Chosen anyway, explicitly, for brand consistency on
+     * primary buttons (Sign in / Create account / Send code / New note)
+     * over AA compliance on this one element. If that trade-off is ever
+     * revisited, #1c1917 was the correct fallback.
      */
-    --color-text-on-accent: #1c1917;
+    --color-text-on-accent: #ffffff;
 
     --color-border: #3a3532;
     --color-border-strong: #78716c; /* 3.65 — clears the 3:1 controls need */

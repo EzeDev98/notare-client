@@ -143,6 +143,32 @@
     outline-offset: var(--focus-ring-offset);
   }
 
+  /*
+   * EXPLICIT EXCEPTION, requested by name: no focus ring on any text-entry
+   * surface anywhere in the app — the title field, the note body, search,
+   * every TextField/PasswordField/Select input, all of it. Everywhere else
+   * (buttons, links, nav items) keeps the ring above; a person tabbing
+   * through the sidebar or toolbar still sees where they are. Only the
+   * fields you type INTO go silent, matching the reference design's
+   * seamless look for those specifically.
+   *
+   * `!important`, not just higher specificity or layer order — the same
+   * fix Button.css needed today for the identical reason: this codebase's
+   * `@layer` precedence (`reset, tokens, base, components, pages,
+   * utilities`) is not reliably honoured by Vite's dev-mode CSS injection
+   * order in this environment (confirmed via getComputedStyle debugging
+   * earlier), so a normal-specificity override here is not guaranteed to
+   * win against whatever a component's own stylesheet sets, regardless of
+   * which layer either one is nominally in. `!important` sidesteps that
+   * question entirely rather than gambling on it again.
+   */
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [contenteditable]:focus-visible {
+    outline: none !important;
+  }
+
   a {
     color: var(--color-accent);
     text-decoration: none;

@@ -1,22 +1,34 @@
-import { Link, NavLink, Outlet } from 'react-router';
+import {
+  type CSSProperties,
+  type FormEvent,
+  type PointerEvent as ReactPointerEvent,
+  useRef,
+  useState,
+} from 'react';
+import { Link, NavLink, Outlet, useMatch, useNavigate } from 'react-router';
+import { Bell, Search, Share, SquarePen, Trash2 } from 'lucide-react';
 
 import { navItems, type NavItem } from '@/app/layouts/navItems';
 import { RouteFocus } from '@/app/RouteFocus';
 import { useAuth } from '@/app/providers/auth-context';
+import { useFoldersPanel } from '@/app/layouts/useFoldersPanel';
+import { useSidebarWidth } from '@/app/layouts/useSidebarWidth';
 import { SidebarNoteItem } from '@/features/notes/components/SidebarNoteItem/SidebarNoteItem';
 import { useNotes } from '@/features/notes/hooks/useNotes';
 import { useSync } from '@/sync/useSync';
 import { useConflictCount } from '@/sync/useConflicts';
 import { useSyncStatus } from '@/sync/useSyncStatus';
 import { Logo } from '@/design-system/components/Logo/Logo';
+import { ThemeToggle } from '@/design-system/components/ThemeToggle/ThemeToggle';
 import './AppLayout.css';
 
 /*
- * Archived and Trash, DESKTOP SIDEBAR ONLY — defined here rather than in
- * navItems.tsx, same reasoning as bottomNavItems below: navItems.tsx
- * drives the <1024px compact nav and stays exactly as it already was, so
- * mobile/tablet are untouched (this file's own top comment on why those
- * breakpoints keep the original four items rather than growing to six).
+ * Archived, Trash, Voice, Notifications, Account — the FOLDERS PANEL's
+ * contents now (moved out of the note-list sidebar's own footer). Still
+ * defined here rather than in navItems.tsx, same reasoning as before:
+ * navItems.tsx drives the <1024px compact nav and stays exactly as it
+ * already was, so mobile/tablet — which has no folders panel at all —
+ * are untouched.
  */
 const desktopOnlyItems: NavItem[] = [
   {
@@ -60,12 +72,12 @@ const desktopOnlyItems: NavItem[] = [
   },
 ];
 
-// Everything BUT Notes, plus Archived/Trash — the desktop sidebar's bottom
-// group. Derived here rather than edited into navItems.tsx: navItems
+// Everything BUT Notes, plus Archived/Trash — the folders panel's full
+// contents. Derived here rather than edited into navItems.tsx: navItems
 // itself stays untouched and still exactly matches what the compact nav
 // below renders, so there is no second four-item list to keep in sync by
 // hand, and mobile/tablet cannot silently grow past four icons.
-const bottomNavItems = [...desktopOnlyItems, ...navItems.filter((item) => item.to !== '/notes')];
+const foldersNavItems = [...desktopOnlyItems, ...navItems.filter((item) => item.to !== '/notes')];
 
 /**
  * The authenticated application shell.
@@ -84,8 +96,9 @@ const bottomNavItems = [...desktopOnlyItems, ...navItems.filter((item) => item.t
  *
  * THE SIDEBAR NOTE LIST (desktop only). At >=1024px, "Notes" no longer
  * exists as a nav destination — the sidebar itself lists every note live,
- * with a "New note" entry pinned at the top, and Archived/Trash/Voice/
- * Notifications/Account pinned at the bottom below the scrollable list.
+ * with a "New note" entry pinned at the top, Archived/Trash/Voice/
+ * Notifications/Account pinned at the bottom below the scrollable list,
+ * and the theme toggle below that.
  *
  * ONLY at >=1024px. A live, scrollable note list cannot fit in a 56px
  * icon rail or a mobile bottom bar without redesigning those layouts
@@ -97,6 +110,107 @@ const bottomNavItems = [...desktopOnlyItems, ...navItems.filter((item) => item.t
  * the one breakpoint that now shows the notes inline instead.
  */
 export function AppLayout() {
+  const navigate = useNavigate();
+
+  /*
+   * Drag-to-resize (>=1024px only — the handle below is hidden at every
+   * other breakpoint via CSS). --sidebar-width drives BOTH
+   * .app-shell's grid-template-columns and .app-shell__toolbar-nav's own
+   * width, so the toolbar's left segment and the sidebar column stay
+   * exactly aligned as the person drags — the same "+" intersection this
+   * shell has always drawn between them, just at a width that now moves.
+   *
+   * dragStateRef, not more useState: the drag start point and start width
+   * only matter WHILE a drag is in progress, read once per pointermove to
+   * compute the next width from the pointer's absolute position (not
+   * accumulated deltas, which drift under fast movement). A ref avoids a
+   * render on every mousedown for a value nothing displays.
+   */
+  const { width: sidebarWidth, setWidth: setSidebarWidth } = useSidebarWidth();
+  const dragStateRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  function handleResizePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    dragStateRef.current = { startX: event.clientX, startWidth: sidebarWidth };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handleResizePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!dragStateRef.current) return;
+    const delta = event.clientX - dragStateRef.current.startX;
+    setSidebarWidth(dragStateRef.current.startWidth + delta);
+  }
+
+  function handleResizePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    dragStateRef.current = null;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
+  /*
+   * The folders panel — Archived/Trash/Voice/Notifications/Account, the
+   * theme toggle — collapsed by default, toggled from the button at the
+   * toolbar's own top-left corner (below), and drag-resizable while open
+   * via its own handle, same pointer-capture pattern as the sidebar's.
+   */
+  const { isOpen: isFoldersOpen, toggle: toggleFolders, width: foldersWidth, setWidth: setFoldersWidth } =
+    useFoldersPanel();
+  const foldersDragStateRef = useRef<{ startX: number; startWidth: number } | null>(null);
+
+  function handleFoldersResizePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    foldersDragStateRef.current = { startX: event.clientX, startWidth: foldersWidth };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handleFoldersResizePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!foldersDragStateRef.current) return;
+    const delta = event.clientX - foldersDragStateRef.current.startX;
+    setFoldersWidth(foldersDragStateRef.current.startWidth + delta);
+  }
+
+  function handleFoldersResizePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    foldersDragStateRef.current = null;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
+  // The width actually applied to the grid column — 0 while closed, so
+  // the panel visually collapses to nothing rather than sitting empty at
+  // its remembered width. The width itself (foldersWidth) stays whatever
+  // it was dragged to, unaffected by toggling — reopening restores it.
+  const appliedFoldersWidth = isFoldersOpen ? foldersWidth : 0;
+
+  /*
+   * The toolbar's Share icon acts on WHATEVER note is currently open —
+   * there is no other way for a persistent, always-mounted toolbar to
+   * know that, since the note id lives in a CHILD route's params
+   * (/notes/:noteId, rendered through <Outlet/> below), not in
+   * AppLayout's own. useMatch reads the current URL against that pattern
+   * directly, which is the same thing useParams does one level down,
+   * just usable from a parent.
+   *
+   * Only matches the bare /notes/:noteId route, not /notes/new or
+   * /notes/:noteId/share themselves — sharing "the note you're sharing"
+   * or "the note you're about to create" is not a real action.
+   */
+  const noteDetailMatch = useMatch('/notes/:noteId');
+  const matchedNoteIdParam = noteDetailMatch?.params['noteId'];
+  // Same validation parseNoteId (useNote.ts) applies — useMatch has no
+  // concept of a numeric param, it matches any string in that segment.
+  const activeNoteId =
+    matchedNoteIdParam !== undefined && /^\d+$/.test(matchedNoteIdParam) ? matchedNoteIdParam : null;
+
+  /*
+   * Uncontrolled would be simpler, but the field must be CLEARABLE from
+   * code too — landing back on this layout after a search shouldn't leave
+   * stale text sitting in the toolbar's own box, out of sync with
+   * whatever /search is actually showing.
+   */
+  const [toolbarSearchTerm, setToolbarSearchTerm] = useState('');
+
+  function handleToolbarSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmed = toolbarSearchTerm.trim();
+    navigate(trimmed === '' ? '/search' : `/search?q=${encodeURIComponent(trimmed)}`);
+  }
+
   /*
    * Here, not in AuthProvider: this component only ever mounts for an
    * authenticated session (RequireAuth wraps its route), so "the shell
@@ -113,6 +227,11 @@ export function AppLayout() {
   const ownerId =
     authState.status === 'authenticated' || authState.status === 'refreshing'
       ? authState.user.id
+      : null;
+  // Shown at the top of the folders panel — see that section's own JSX.
+  const currentUserEmail =
+    authState.status === 'authenticated' || authState.status === 'refreshing'
+      ? authState.user.email
       : null;
 
   useSync(ownerId);
@@ -150,7 +269,15 @@ export function AppLayout() {
   const { notes } = useNotes();
 
   return (
-    <div className="app-shell">
+    <div
+      className="app-shell"
+      style={
+        {
+          '--sidebar-width': `${String(sidebarWidth)}px`,
+          '--folders-width': `${String(appliedFoldersWidth)}px`,
+        } as CSSProperties
+      }
+    >
       <RouteFocus targetId="main" />
 
       {syncMessage ? (
@@ -196,6 +323,197 @@ export function AppLayout() {
       </a>
 
       {/*
+        STEP 1 of the desktop toolbar. Structural only — no icons yet.
+        Empty and display:none below 1024px, same media-query-only pattern
+        the rest of this three-layouts-in-one-DOM shell already uses (this
+        file's own top comment). At >=1024px it becomes the full-width bar
+        above BOTH the sidebar and the content, which is why it lives here
+        as a sibling of nav/main rather than inside either — nothing that
+        spans both columns can be a child of one of them.
+      */}
+      <div className="app-shell__toolbar">
+        {/*
+          Same 240px as .app-shell__nav's inline-size, so this segment's
+          border-inline-end lines up exactly above nav's own border below
+          it — the two borders read as one line crossing the toolbar's
+          border-block-end, the "+" intersection at the sidebar's top
+          corner in the target design, instead of two unrelated lines that
+          happen to be near each other.
+
+          Trash lives here, right-aligned against that border — the icon
+          sits on the SIDEBAR's side of the intersection, matching the
+          reference. Not wired to an action yet: this step is placement
+          only, same as the sidebar's own Trash nav item started as a
+          plain link before anything pointed at it.
+        */}
+        <div className="app-shell__toolbar-nav">
+          {/*
+            THE toggle for the folders panel — Archived/Trash/Voice/
+            Notifications/Account, the theme toggle — collapsed by
+            default, opened from here. Always the first thing in the
+            toolbar's top-left corner regardless of the panel's own
+            state, matching the reference exactly: this button's
+            position never moves, only what's behind it does.
+          */}
+          <button
+            type="button"
+            className="app-shell__toolbar-icon-btn"
+            aria-label={isFoldersOpen ? 'Hide folders' : 'Show folders'}
+            aria-pressed={isFoldersOpen}
+            onClick={toggleFolders}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="4" width="18" height="16" rx="2" />
+              <path d="M9 4v16" />
+            </svg>
+          </button>
+          <Logo />
+          <button type="button" className="app-shell__toolbar-icon-btn" aria-label="Delete note">
+            <Trash2 aria-hidden="true" strokeWidth={1.75} />
+          </button>
+        </div>
+
+        {/*
+          Compose sits on the CONTENT side of the same intersection, right
+          against .app-shell__toolbar-nav's border — "beside" the trash
+          icon across that line, matching the reference. A real Link to
+          /notes/new, not a placeholder: that route already exists and the
+          sidebar's own "New note" button already points at it, so there is
+          no reason for this one to be inert too.
+        */}
+        <div className="app-shell__toolbar-main">
+          <Link to="/notes/new" className="app-shell__toolbar-icon-btn" aria-label="New note">
+            <SquarePen aria-hidden="true" strokeWidth={1.75} />
+          </Link>
+
+          {/*
+            Right-aligned group, reference order: notifications, then
+            share, then search last against the toolbar's own trailing
+            edge. Notifications is a real Link — /notifications already
+            exists and is one of the four routes the compact nav below
+            already points at.
+
+            Share now does what NoteDetail's old inline "Share" text link
+            used to (that link is gone — this icon replaces it entirely,
+            per note above `activeNoteId`). Enabled only while a note is
+            actually open: `disabled`, not omitted, so the icon's position
+            in the toolbar never shifts as you navigate in and out of a
+            note.
+          */}
+          <div className="app-shell__toolbar-actions">
+            <Link
+              to="/notifications"
+              className="app-shell__toolbar-icon-btn"
+              aria-label="Notifications"
+            >
+              <Bell aria-hidden="true" strokeWidth={1.75} />
+            </Link>
+
+            {activeNoteId !== null ? (
+              <Link
+                to={`/notes/${activeNoteId}/share`}
+                className="app-shell__toolbar-icon-btn"
+                aria-label="Share this note"
+              >
+                <Share aria-hidden="true" strokeWidth={1.75} />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className="app-shell__toolbar-icon-btn"
+                aria-label="Share this note"
+                disabled
+              >
+                <Share aria-hidden="true" strokeWidth={1.75} />
+              </button>
+            )}
+
+            <form
+              className="app-shell__toolbar-search"
+              role="search"
+              onSubmit={handleToolbarSearchSubmit}
+            >
+              <Search aria-hidden="true" strokeWidth={1.75} />
+              <input
+                type="search"
+                placeholder="Search"
+                aria-label="Search your notes"
+                value={toolbarSearchTerm}
+                onChange={(event) => {
+                  setToolbarSearchTerm(event.target.value);
+                }}
+              />
+            </form>
+          </div>
+        </div>
+      </div>
+
+      {/*
+        THE FOLDERS PANEL — >=1024px only, collapsed by default. Its own
+        grid column (--folders-width, 0 while closed), separate from the
+        note-list sidebar below rather than a section within it: this is
+        a distinct region (account-level navigation — Archived, Trash,
+        Voice, Notifications, Account, the theme toggle) that can be
+        hidden entirely, where the note list underneath it cannot.
+        `inert` while closed — not just clipped via overflow:hidden on
+        the CSS side — so its links are neither focusable nor announced
+        while the panel is width:0 and visually gone; CSS alone hides
+        content but does not remove it from the tab order or a screen
+        reader's view.
+      */}
+      <nav className="app-shell__folders" aria-label="Folders" inert={!isFoldersOpen}>
+        <p className="app-shell__folders-account">{currentUserEmail}</p>
+
+        <ul className="app-shell__bottom-nav" role="list">
+          {foldersNavItems.map((item) => (
+            <li key={item.to}>
+              <NavLink to={item.to} className="app-shell__nav-link">
+                <span className="app-shell__nav-icon">{item.icon}</span>
+                <span className="app-shell__nav-label">{item.label}</span>
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+
+        {/*
+          The one control for useTheme() in the whole app — see
+          ThemeToggle's own doc comment. Placed below the nav group
+          rather than inside .app-shell__bottom-nav's <ul>: it isn't a
+          navigation destination, it's a setting, and mixing the two
+          into one semantic list would tell a screen reader "here are
+          five links" for something that is five links and a radio
+          group.
+        */}
+        <div className="app-shell__theme-toggle">
+          <ThemeToggle />
+        </div>
+      </nav>
+
+      {/*
+        The folders panel's OWN resize handle — only rendered while open;
+        dragging the edge of a width:0 panel has nothing to drag.
+      */}
+      {isFoldersOpen ? (
+        <div
+          className="app-shell__folders-resize-handle"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize folders panel"
+          onPointerDown={handleFoldersResizePointerDown}
+          onPointerMove={handleFoldersResizePointerMove}
+          onPointerUp={handleFoldersResizePointerUp}
+        />
+      ) : null}
+
+      {/*
         Nav is FIRST in the DOM at every breakpoint and moves to the bottom
         visually on mobile via flex `order`.
 
@@ -206,19 +524,6 @@ export function AppLayout() {
         reaching the sidebar only AFTER the entire page.
       */}
       <nav className="app-shell__nav" aria-label="Main">
-        {/*
-          Only actually visible at the >=1024px sidebar breakpoint
-          (AppLayout.css) — the icon rail and mobile bottom bar are both
-          too cramped for a wordmark, and the nav items themselves already
-          carry enough identity at those sizes. display:none below
-          1024px, same media-query-only approach the rest of this
-          three-layouts-in-one-DOM shell already uses (this file's own
-          top comment).
-        */}
-        <div className="app-shell__brand" aria-hidden="true">
-          <Logo withWordmark />
-        </div>
-
         {/*
           COMPACT NAV — <1024px only. The original four items, completely
           unchanged, so the mobile bottom bar and tablet icon rail behave
@@ -243,21 +548,6 @@ export function AppLayout() {
 
         {/* DESKTOP SIDEBAR — >=1024px only. See this file's own top comment. */}
         <div className="app-shell__sidebar">
-          <Link to="/notes/new" className="app-shell__new-note">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            <span>New note</span>
-          </Link>
-
           {/*
             `notes` is `undefined` for one instant before Dexie's first
             answer (useNotes' own doc comment on why that is distinct from
@@ -276,19 +566,27 @@ export function AppLayout() {
           {notes && notes.length === 0 ? (
             <p className="app-shell__note-list-empty">No notes yet.</p>
           ) : null}
-
-          <ul className="app-shell__bottom-nav" role="list">
-            {bottomNavItems.map((item) => (
-              <li key={item.to}>
-                <NavLink to={item.to} className="app-shell__nav-link">
-                  <span className="app-shell__nav-icon">{item.icon}</span>
-                  <span className="app-shell__nav-label">{item.label}</span>
-                </NavLink>
-              </li>
-            ))}
-          </ul>
         </div>
       </nav>
+
+      {/*
+        The drag-to-resize handle — >=1024px only (AppLayout.css hides it
+        below that, same as everything else scoped to the sidebar
+        breakpoint). Absolutely positioned against .app-shell rather than
+        given its own grid column: a column would mean redefining
+        grid-template-columns as three tracks instead of two just to fit
+        a handle a few pixels wide, for no benefit over positioning it at
+        the boundary the existing two-column grid already has.
+      */}
+      <div
+        className="app-shell__resize-handle"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize sidebar"
+        onPointerDown={handleResizePointerDown}
+        onPointerMove={handleResizePointerMove}
+        onPointerUp={handleResizePointerUp}
+      />
 
       {/* The ONLY scroll container. A page-level scroll would drift the
           editor toolbar off-screen while writing. */}

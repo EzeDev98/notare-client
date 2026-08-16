@@ -1,20 +1,55 @@
 @layer pages {
   /*
    * §30: reading a note should feel like a clean document, not a dashboard
-   * card. Everything here serves that — a capped measure, generous vertical
-   * space, restrained chrome, and no borders or shadows around the text
-   * itself.
+   * card. Everything here serves that — generous vertical space, restrained
+   * chrome, and no borders or shadows around the text itself.
+   *
+   * NOT capped to --measure-prose / centred. That reads as a marketing
+   * article, not a page in a notes app — the reference app's own note view
+   * fills the pane edge to edge behind a small, consistent side margin, so
+   * the writing surface is the same width as the toolbar and header above
+   * it rather than an island floating in the middle of the screen.
+   *
+   * A flex COLUMN filling .app-shell__main's box, not a plain block — see
+   * .note-detail__scroll's own comment for why: this element's job is now
+   * just to host two siblings (a scrolling region, a fixed footer), not to
+   * hold content itself.
    */
   .note-detail {
-    max-inline-size: var(--measure-prose);
-    margin-inline: auto;
-    padding: var(--space-6) var(--space-4) var(--space-16);
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
   }
 
+  /*
+   * THE scroll container. Everything that used to be .note-detail's own
+   * padding lives here instead — back link, states, the editor. flex:1
+   * claims whatever height .note-detail__voice's footer (a sibling below,
+   * outside this div) doesn't need, min-block-size:0 lets it actually
+   * shrink to that instead of growing around its content, and
+   * overflow-y:auto is what makes THIS scroll independently rather than
+   * the note detail page as a whole — the identical three-property
+   * pattern .app-shell__note-list already uses for the sidebar.
+   */
+  .note-detail__scroll {
+    flex: 1;
+    min-block-size: 0;
+    overflow-y: auto;
+    padding: var(--space-6) var(--space-8) var(--space-16);
+  }
+
+  /*
+   * Mobile/tablet only. At the >=1024px sidebar breakpoint the sidebar's
+   * own live note list already IS "all notes" — a persistent, better way
+   * back than a link at the top of whichever note happens to be open —
+   * so this becomes redundant there and is hidden (media query below).
+   * Still needed below 1024px: the compact nav's "Notes" item opens the
+   * latest note (NotesLandingPage), not a list, so this remains the only
+   * way back to browsing at those sizes.
+   */
   .note-detail__back {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     font-size: var(--font-size-sm);
   }
 
@@ -22,8 +57,10 @@
     text-decoration: none;
   }
 
-  .note-detail__share-link {
-    color: var(--color-accent);
+  @media (min-width: 1024px) {
+    .note-detail__back {
+      display: none;
+    }
   }
 
   .note-detail__header {
@@ -108,10 +145,27 @@
 }
 
 @layer pages {
+  /*
+   * The fixed footer — flex-shrink:0 so it never gives up space to
+   * .note-detail__scroll's flex:1 above, which is what keeps it visible
+   * regardless of how far the editor content scrolls. Background +
+   * border-block-start (rather than just the border-block-start it had
+   * as a normal in-flow section) is what makes it actually READ as a
+   * footer bar sitting on top of the scroll region, not just another
+   * paragraph that happens to stay put — the same visual role
+   * .app-shell__bottom-nav's border-block-start already plays for the
+   * sidebar's own footer group.
+   */
   .note-detail__voice {
-    margin-block-start: var(--space-10);
-    padding-block-start: var(--space-6);
+    flex-shrink: 0;
+    padding: var(--space-4) var(--space-8);
+    background-color: var(--color-surface);
     border-block-start: var(--border-width) solid var(--color-border);
+    /* A ceiling, not a fixed height — a note with many recordings scrolls
+       WITHIN the footer rather than pushing it past a usable share of the
+       screen. */
+    max-block-size: 40%;
+    overflow-y: auto;
   }
 
   .note-detail__voice-heading {

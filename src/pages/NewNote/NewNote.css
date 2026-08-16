@@ -10,11 +10,14 @@
    * only way to reach this page — never triggered that import. The layout
    * was silently unstyled. Giving this page its own stylesheet is not
    * housekeeping; it is the actual fix.
+   *
+   * NOT capped to --measure-prose / centred — same reasoning as
+   * NoteDetail.css's own comment on its identical rule: the writing surface
+   * should fill the pane behind a small, consistent side margin, not float
+   * as a narrow column in the middle of the screen.
    */
   .new-note {
-    max-inline-size: var(--measure-prose);
-    margin-inline: auto;
-    padding: var(--space-6) var(--space-4) var(--space-16);
+    padding: var(--space-6) var(--space-8) var(--space-16);
   }
 
   .new-note__centre {

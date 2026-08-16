@@ -1,0 +1,38 @@
+@layer components {
+  .theme-toggle {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface-sunken);
+  }
+
+  .theme-toggle__button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    block-size: 32px;
+
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+
+  .theme-toggle__button svg {
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+  }
+
+  .theme-toggle__button:hover {
+    color: var(--color-text);
+  }
+
+  .theme-toggle__button[aria-checked='true'] {
+    background-color: var(--color-surface);
+    color: var(--color-accent);
+    box-shadow: var(--shadow-sm);
+  }
+}

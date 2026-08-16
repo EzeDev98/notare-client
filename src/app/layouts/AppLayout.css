@@ -40,6 +40,35 @@
     inset-block-start: var(--space-4);
   }
 
+  /* ---- Toolbar (desktop only — see AppLayout.tsx's own comment) -------- */
+
+  /*
+   * Nothing below 1024px. The mobile bottom bar and tablet icon rail have
+   * no full-width row above them to speak of — this element exists purely
+   * for the >=1024px sidebar layout, where it becomes the bar spanning
+   * both the sidebar and the content.
+   */
+  .app-shell__toolbar {
+    display: none;
+  }
+
+  .app-shell__toolbar-nav,
+  .app-shell__toolbar-main {
+    display: none;
+  }
+
+  /* Desktop only, alongside the toolbar itself — nothing to resize
+     between when the sidebar isn't a real column below 1024px. */
+  .app-shell__resize-handle,
+  .app-shell__folders-resize-handle {
+    display: none;
+  }
+
+  /* Same reasoning — no folders panel below the sidebar breakpoint. */
+  .app-shell__folders {
+    display: none;
+  }
+
   /* ---- Nav ------------------------------------------------------------- */
 
   .app-shell__nav {
@@ -76,15 +105,8 @@
     padding: 0;
   }
 
-  /* Hidden below the sidebar breakpoint — see AppLayout.tsx's own comment
-     on why the icon rail and mobile bottom bar are both too cramped for
-     a wordmark. */
-  .app-shell__brand {
-    display: none;
-  }
-
-  /* Hidden below the sidebar breakpoint, alongside the brand — nothing to
-     show until there's room for the note list this contains. */
+  /* Hidden below the sidebar breakpoint — nothing to show until there's
+     room for the note list this contains. */
   .app-shell__sidebar {
     display: none;
   }
@@ -249,8 +271,194 @@
   /* ---- 1024px+ : sidebar with labels ---------------------------------- */
 
   @media (min-width: 1024px) {
+    /*
+     * Flex row -> grid. A third full-width sibling (the toolbar) cannot sit
+     * "above" nav+main in a single-row flex container — grid gives it its
+     * own row spanning both columns, with nav and main dropping into row 2
+     * exactly where they already were.
+     *
+     * block-size: 100dvh — a HARD cap, not the base rule's min-block-size.
+     * This is what makes the toolbar sticky and the sidebar/main scroll
+     * independently: with only a MINIMUM height, the grid container was
+     * free to grow taller than the viewport whenever a note's content or
+     * the note list overflowed, and with nothing capping it, the whole
+     * PAGE scrolled as one unit — dragging the toolbar and the sidebar's
+     * footer (Archived/Trash/Voice/Notifications/Account) out of view
+     * along with it. Capping the container is what forces any overflow
+     * into the internal scroll containers below (.app-shell__main,
+     * .app-shell__note-list) instead of the page itself.
+     */
+    .app-shell {
+      display: grid;
+      /*
+       * THREE columns, always — [folders][sidebar][main]. The folders
+       * column is 0px while the panel is closed (AppLayout.tsx's own
+       * comment on `appliedFoldersWidth`), not conditionally present as
+       * two vs three tracks: keeping the track COUNT constant is what
+       * lets grid-template-columns transition smoothly below rather than
+       * snapping, and it means .app-shell__nav and .app-shell__main
+       * never need their own grid-column to change — they stay in
+       * columns 2 and 3 whether the folders panel is open or not. The
+       * 240px sidebar fallback is what applies before React hydrates (or
+       * if JS fails entirely), and is also the same DEFAULT_WIDTH
+       * useSidebarWidth.ts falls back to — one number, kept in step by
+       * hand in the two places it has to exist as a literal.
+       */
+      grid-template-columns: var(--folders-width, 0px) var(--sidebar-width, 240px) 1fr;
+      /*
+       * The "slides smoothly to the right" the folders panel was asked
+       * for — animating grid-template-columns directly, supported in
+       * every current browser as long as the track count and unit types
+       * stay the same between states, which they do here (always three
+       * tracks, always px values via the two custom properties).
+       */
+      transition: grid-template-columns 0.22s ease;
+      grid-template-rows: auto 1fr;
+      block-size: 100dvh;
+      /* The resize handle below positions itself against THIS box. */
+      position: relative;
+    }
+
+    .app-shell__toolbar {
+      display: flex;
+      grid-column: 1 / -1;
+      grid-row: 1;
+      block-size: 52px;
+      border-block-end: var(--border-width) solid var(--color-border);
+      background-color: var(--color-surface);
+    }
+
+    /* Same width as .app-shell__nav below, via the same variable — see
+       AppLayout.tsx's own comment on why the two stay locked together. */
+    .app-shell__toolbar-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      /*
+       * BOTH columns combined — folders + sidebar, via the same two
+       * variables the grid itself uses. This segment now spans the
+       * folders panel AND the note list, so its own right border still
+       * lines up exactly with the note list's right edge (the "+"
+       * intersection this shell always draws) whether the folders panel
+       * is open, animating, or closed.
+       */
+      inline-size: calc(var(--folders-width, 0px) + var(--sidebar-width, 240px));
+      padding-inline: var(--space-3);
+      border-inline-end: var(--border-width) solid var(--color-border);
+      transition: inline-size 0.22s ease;
+    }
+
+    .app-shell__toolbar-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex: 1;
+      padding-inline: var(--space-3);
+    }
+
+    /* Notifications, share, search — in that order against the toolbar's
+       own trailing edge. */
+    .app-shell__toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .app-shell__toolbar-search {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      inline-size: 220px;
+      block-size: 32px;
+      padding-inline: var(--space-3);
+      border-radius: var(--radius-full);
+      background-color: var(--color-surface-sunken);
+      color: var(--color-text-secondary);
+    }
+
+    .app-shell__toolbar-search svg {
+      flex-shrink: 0;
+      inline-size: 1rem;
+      block-size: 1rem;
+    }
+
+    .app-shell__toolbar-search input {
+      inline-size: 100%;
+      border: none;
+      background: none;
+      color: var(--color-text);
+      font: inherit;
+      font-size: var(--font-size-sm);
+    }
+
+    /*
+     * No focus ring — a deliberate, explicit exception to the app's
+     * global `:focus-visible` ring (tokens/colors.css), asked for by
+     * name: this field should read as seamless, matching the reference
+     * design's borderless search pill, not as a form control announcing
+     * itself. The pill's own background colour is still the visible
+     * "this is a field" cue at rest; focus doesn't need a second one on
+     * top of it for this one element to remain usable.
+     */
+    .app-shell__toolbar-search input:focus-visible {
+      outline: none;
+    }
+
+    .app-shell__toolbar-search input::placeholder {
+      color: var(--color-text-secondary);
+    }
+
+    .app-shell__toolbar-search input::-webkit-search-cancel-button {
+      display: none;
+    }
+
+    .app-shell__toolbar-icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      inline-size: 32px;
+      block-size: 32px;
+      padding: 0;
+      border: none;
+      border-radius: var(--radius-md);
+      background: none;
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .app-shell__toolbar-icon-btn:hover {
+      background-color: var(--color-accent-faint);
+      color: var(--color-text);
+    }
+
+    /*
+     * The Share icon when no note is open (AppLayout.tsx's own comment on
+     * `activeNoteId`) — a real :disabled button, not just visually dimmed
+     * text, so it's neither clickable nor a tab stop announced as
+     * actionable.
+     */
+    .app-shell__toolbar-icon-btn:disabled {
+      color: var(--color-text-disabled);
+      cursor: not-allowed;
+    }
+
+    .app-shell__toolbar-icon-btn:disabled:hover {
+      background-color: transparent;
+    }
+
+    /* lucide-react renders as an <svg> with stroke="currentColor" and
+       strokeWidth set on the component itself — just size here. */
+    .app-shell__toolbar-icon-btn svg {
+      inline-size: 1.25rem;
+      block-size: 1.25rem;
+    }
+
     .app-shell__nav {
-      inline-size: 240px;
+      grid-column: 2;
+      grid-row: 2;
+      inline-size: var(--sidebar-width, 240px);
       padding-inline: var(--space-3);
       /* The sidebar is now one column: brand, then either the compact nav
          (hidden below) or the sidebar (new note / list / bottom nav),
@@ -258,11 +466,35 @@
          bottom via the note list's flex:1 below. */
       display: flex;
       flex-direction: column;
+
+      /*
+       * Cancels the 640px+ block's position:sticky — that assumed nav is a
+       * full-height flex sibling of main with nothing above it, true
+       * through 1023px, no longer true here now that the toolbar occupies
+       * its own grid row above both columns. position:sticky is no longer
+       * needed for this to stay visible: with .app-shell's own block-size
+       * now hard-capped to 100dvh (above), a grid ROW is height-bounded
+       * automatically, and this cell only needs to actually USE that
+       * bound rather than override it.
+       *
+       * min-block-size: 0, NOT block-size: auto. A grid item stretches to
+       * fill its row's cross-axis size by default — block-size: auto
+       * (this rule's previous value) explicitly DEFEATS that stretch,
+       * sizing to content instead, which is exactly what let this column
+       * grow past the viewport rather than being capped to row 2's height
+       * and scrolling internally. min-block-size: 0 is the same fix
+       * .app-shell__main and .app-shell__sidebar already use below, for
+       * the identical reason: it lets a flex/grid item shrink below its
+       * content size instead of forcing its ancestor to grow around it.
+       */
+      position: static;
+      min-block-size: 0;
     }
 
-    .app-shell__brand {
-      display: flex;
-      padding: var(--space-3) var(--space-2) var(--space-5);
+    .app-shell__main {
+      grid-column: 3;
+      grid-row: 2;
+      min-block-size: 0;
     }
 
     /* The four-item compact nav is mobile/tablet only — see this file's
@@ -281,33 +513,6 @@
       min-block-size: 0;
     }
 
-    .app-shell__new-note {
-      display: flex;
-      align-items: center;
-      gap: var(--space-3);
-      flex-shrink: 0;
-
-      padding: var(--space-2) var(--space-3);
-      margin-block-end: var(--space-3);
-      border-radius: var(--radius-md);
-
-      background-color: var(--color-accent);
-      color: var(--color-text-on-accent);
-      text-decoration: none;
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-    }
-
-    .app-shell__new-note:hover {
-      background-color: var(--color-accent-hover);
-    }
-
-    .app-shell__new-note svg {
-      inline-size: 1.25rem;
-      block-size: 1.25rem;
-      flex-shrink: 0;
-    }
-
     /* THE scroll container for the note list — flex:1 claims whatever
        space the new-note button and bottom nav don't need, and
        overflow-y is what makes a long list scroll internally rather than
@@ -315,10 +520,10 @@
     .app-shell__note-list {
       display: grid;
       align-content: start;
-      gap: 2px;
       flex: 1;
       min-block-size: 0;
       overflow-y: auto;
+      overflow-x: hidden;
       margin: 0 calc(-1 * var(--space-2)) 0 0;
       padding: 0 var(--space-2) 0 0;
     }
@@ -341,6 +546,11 @@
       margin: 0;
       padding-block-start: var(--space-3);
       border-block-start: var(--border-width) solid var(--color-border);
+    }
+
+    .app-shell__theme-toggle {
+      flex-shrink: 0;
+      margin-block-start: var(--space-3);
     }
 
     .app-shell__nav-link {
@@ -367,6 +577,98 @@
       inline-size: auto;
       block-size: auto;
       clip-path: none;
+    }
+
+    /*
+     * THE resize handle. inset-inline-start tracks the SAME variable the
+     * grid column and the toolbar segment both use, so as the number
+     * changes mid-drag, the handle, the column boundary, and the "+"
+     * intersection with the toolbar all move together — there is
+     * genuinely one source of truth for this width, not three numbers
+     * that happen to agree.
+     *
+     * A generous 10px hit target, visually centred on the 1px boundary
+     * line via the negative margin — grabbing a resize handle precisely
+     * on a hairline border is a mouse-precision tax nobody should pay.
+     * touch-action: none stops a touchscreen's own scroll/zoom gestures
+     * from competing with the drag.
+     */
+    .app-shell__resize-handle {
+      /*
+       * MUST override the base rule's display:none — position/inset alone
+       * do nothing to an element that isn't rendered at all. This was
+       * missing; it's the entire reason the handle was invisible and
+       * un-draggable at every width, not just a visibility nicety.
+       */
+      display: block;
+      position: absolute;
+      inset-block: 52px 0;
+      /*
+       * calc(folders + sidebar) — this handle sits at the boundary
+       * between the note list and main content (columns 2/3), which has
+       * moved right by whatever the folders panel currently occupies.
+       * Was just var(--sidebar-width, 240px) before the folders panel
+       * existed; wrong now that column 1 can be non-zero.
+       */
+      inset-inline-start: calc(var(--folders-width, 0px) + var(--sidebar-width, 240px));
+      inline-size: 10px;
+      margin-inline-start: -5px;
+      z-index: var(--z-sticky);
+      cursor: col-resize;
+      touch-action: none;
+      transition: inset-inline-start 0.22s ease;
+    }
+
+    .app-shell__resize-handle:hover,
+    .app-shell__resize-handle:active {
+      background-color: var(--color-accent-faint);
+    }
+
+    /* ---- Folders panel ---------------------------------------------- */
+
+    .app-shell__folders {
+      grid-column: 1;
+      grid-row: 2;
+      min-block-size: 0;
+      /* Clips the content while the column is animating toward/from 0 —
+         without this, text would visibly wrap and reflow mid-slide
+         instead of reading as content being revealed or hidden. */
+      overflow: hidden;
+      border-inline-end: var(--border-width) solid var(--color-border);
+      padding-inline: var(--space-3);
+    }
+
+    .app-shell__folders-account {
+      margin: var(--space-3) 0 var(--space-4);
+      padding-inline: var(--space-2);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--color-text-secondary);
+      font-size: var(--font-size-xs);
+    }
+
+    /*
+     * The folders panel's own handle — inset-inline-start tracks
+     * --folders-width alone (the boundary between columns 1 and 2),
+     * distinct from .app-shell__resize-handle's boundary between 2 and
+     * 3. Same 10px hit target and centring technique as that one.
+     */
+    .app-shell__folders-resize-handle {
+      display: block;
+      position: absolute;
+      inset-block: 52px 0;
+      inset-inline-start: var(--folders-width, 0px);
+      inline-size: 10px;
+      margin-inline-start: -5px;
+      z-index: var(--z-sticky);
+      cursor: col-resize;
+      touch-action: none;
+    }
+
+    .app-shell__folders-resize-handle:hover,
+    .app-shell__folders-resize-handle:active {
+      background-color: var(--color-accent-faint);
     }
   }
 }
