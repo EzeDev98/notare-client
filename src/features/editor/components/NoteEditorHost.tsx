@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
 import { ConflictPanel } from '@/features/editor/components/ConflictPanel/ConflictPanel';
 import { EditorSurface } from '@/features/editor/components/EditorSurface/EditorSurface';
@@ -16,6 +16,8 @@ interface NoteEditorHostProps {
    * without a session.
    */
   currentUserId: number | null;
+  /** Optional content rendered inside the writing surface around the body. */
+  contentAccessory?: ReactNode;
 }
 
 function countWords(text: string): number {
@@ -23,7 +25,7 @@ function countWords(text: string): number {
   return trimmed === '' ? 0 : trimmed.split(/\s+/).length;
 }
 
-export function NoteEditorHost({ row, currentUserId }: NoteEditorHostProps) {
+export function NoteEditorHost({ row, currentUserId, contentAccessory }: NoteEditorHostProps) {
   const editor = useNoteEditor(row);
 
   useEditorShortcuts({ onSave: editor.flush });
@@ -92,6 +94,7 @@ export function NoteEditorHost({ row, currentUserId }: NoteEditorHostProps) {
         onBlur={() => {
           void editor.flush();
         }}
+        contentAccessory={contentAccessory}
       />
     </>
   );

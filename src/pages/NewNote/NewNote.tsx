@@ -3,8 +3,10 @@ import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
-import { createLocalNote } from '@/features/notes/local/noteMappers';
+import { createLocalNote, fromNoteResponse } from '@/features/notes/local/noteMappers';
 import { noteRepository } from '@/features/notes/local/noteRepository';
+import { noteService } from '@/features/notes/api/noteService';
+import { VoiceRecorder } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 
@@ -13,17 +15,10 @@ import './NewNote.css';
 /**
  * A new note.
  *
- * The row is created in Dexie IMMEDIATELY, before anything is typed — which is
- * the opposite of Step 6, where nothing existed until the first keystroke.
- *
- * The reason it is now safe: a local row costs nothing and never reaches the
- * server. The POST still fires only on the first edit (the row is created
- * clean, so `save` returns early while it is empty), so clicking "New note"
- * and changing your mind leaves an empty local row and no server note. Step 8
- * prunes those.
- *
- * What it buys is that the editor always has a row to write into, so there is
- * no "no id yet" state in the editor at all.
+ * The note is created locally and on the server as part of the "New Note"
+ * action itself. This means a brand-new note immediately has a serverId,
+ * allowing all note-scoped features — including voice recording — to be
+ * available before the user types anything.
  */
 export function NewNotePage() {
   useDocumentTitle('New note');
@@ -39,20 +34,70 @@ export function NewNotePage() {
   useEffect(() => {
     if (currentUserId === null) return;
 
-    // Created clean and not dirty: an untouched note is not something to save.
-    const row = {
-      ...createLocalNote(currentUserId),
-      dirty: 0 as const,
-      syncState: 'synced' as const,
+    let cancelled = false;
+
+    async function createNote() {
+      const localRow = {
+        ...createLocalNote(currentUserId),
+        dirty: 0 as const,
+        syncState: 'synced' as const,
+      };
+
+      /*
+       * Put the local row first so the note has a stable local identity even
+       * if the network request is still in flight.
+       */
+      await noteRepository.put(localRow);
+
+      if (cancelled) return;
+
+      setLocalId(localRow.localId);
+      window.history.replaceState(null, '', `/notes/local/${localRow.localId}`);
+
+      try {
+        /*
+         * The "New Note" action itself creates the server note. This is
+         * intentionally done before the first keystroke so the note already
+         * has a serverId when the editor opens.
+         */
+        const created = await noteService.createNote({
+          title: '',
+          content: '',
+        });
+
+        if (cancelled) return;
+
+        const latest = (await noteRepository.getByLocalId(localRow.localId)) ?? localRow;
+
+        await noteRepository.put({
+          ...fromNoteResponse(created, latest),
+          title: latest.title,
+          content: latest.content,
+          dirty: latest.dirty,
+          syncState: latest.dirty === 1 ? 'pending' : 'synced',
+        });
+      } catch {
+        /*
+         * Keep the local note alive if the initial server create fails.
+         * The existing editor/sync flow can reconcile it when connectivity
+         * returns. The recorder will become available as soon as the row
+         * receives its serverId.
+         */
+      }
+    }
+
+    void createNote();
+
+    return () => {
+      cancelled = true;
     };
-    void noteRepository.put(row).then(() => {
-      setLocalId(row.localId);
-      window.history.replaceState(null, '', `/notes/local/${row.localId}`);
-    });
   }, [currentUserId]);
 
   const row = useLiveQuery(
-    async () => (localId === null ? null : ((await noteRepository.getByLocalId(localId)) ?? null)),
+    async () =>
+      localId === null
+        ? null
+        : ((await noteRepository.getByLocalId(localId)) ?? null),
     [localId],
   );
 
@@ -68,7 +113,17 @@ export function NewNotePage() {
 
   return (
     <article className="new-note">
-      <NoteEditorHost key={row.localId} row={row} currentUserId={currentUserId} />
+      <div className="new-note__scroll">
+        <NoteEditorHost
+          key={row.localId}
+          row={row}
+          currentUserId={currentUserId}
+        />
+      </div>
+
+      {row.serverId !== null ? (
+        <VoiceRecorder noteId={row.serverId} />
+      ) : null}
     </article>
   );
 }

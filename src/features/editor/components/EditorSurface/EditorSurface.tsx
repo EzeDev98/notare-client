@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 import './EditorSurface.css';
 
@@ -10,6 +10,8 @@ interface EditorSurfaceProps {
   /** Read-only for a READ collaborator (Step 9). */
   readOnly?: boolean;
   onBlur?: () => void;
+  /** Optional content rendered in document flow around the body text. */
+  contentAccessory?: ReactNode;
 }
 
 /**
@@ -33,6 +35,7 @@ export function EditorSurface({
   onContentChange,
   readOnly = false,
   onBlur,
+  contentAccessory,
 }: EditorSurfaceProps) {
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
@@ -62,14 +65,8 @@ export function EditorSurface({
 
   return (
     <div className="editor-surface">
-      {/*
-        An input, not an h1 with contentEditable. contentEditable brings
-        pasted formatting, unpredictable selection behaviour and no native
-        maxLength — for a plain-text title that is all cost.
-      */}
       <input
         className="editor-surface__title"
-        // A visible placeholder is not a label. Screen readers announce this.
         aria-label="Note title"
         placeholder="Untitled"
         value={title}
@@ -81,23 +78,26 @@ export function EditorSurface({
         onBlur={onBlur}
       />
 
-      <textarea
-        ref={contentRef}
-        className="editor-surface__content"
-        aria-label="Note content"
-        placeholder="Start writing…"
-        value={content}
-        readOnly={readOnly}
-        // The server's limit. Enforced here because a 400 carries no field
-        // detail for this, so the user would lose the overflow with no
-        // explanation.
-        maxLength={20_000}
-        rows={1}
-        onChange={(event) => {
-          onContentChange(event.target.value);
-        }}
-        onBlur={onBlur}
-      />
+      <div className="editor-surface__body">
+        {content.trim() === '' ? contentAccessory : null}
+
+        <textarea
+          ref={contentRef}
+          className="editor-surface__content"
+          aria-label="Note content"
+          placeholder="Start writing…"
+          value={content}
+          readOnly={readOnly}
+          maxLength={20_000}
+          rows={1}
+          onChange={(event) => {
+            onContentChange(event.target.value);
+          }}
+          onBlur={onBlur}
+        />
+
+        {content.trim() !== '' ? contentAccessory : null}
+      </div>
     </div>
-  );
+  )
 }

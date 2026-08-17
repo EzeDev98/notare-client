@@ -9,7 +9,7 @@ export const voiceKeys = {
   detail: (id: number) => [...voiceKeys.all, 'detail', id] as const,
 };
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 8;
 
 /** The `/voice` list — every voice note across all notes. */
 export function useVoiceNotes(page: number) {

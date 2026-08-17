@@ -1,0 +1,153 @@
+@layer components {
+  .inline-voice-notes {
+    display: grid;
+    gap: var(--space-3);
+    margin-block: var(--space-4);
+  }
+
+  /*
+   * Compact WhatsApp-style voice message.
+   * The bubble intentionally stays short rather than stretching
+   * across the note editor.
+   */
+  .inline-voice-note {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-1);
+    inline-size: min(360px, 72%);
+  }
+
+  .inline-voice-note__bubble {
+    inline-size: 100%;
+    padding: 8px 12px 7px;
+    border-radius: 10px;
+    background-color: var(--color-accent-subtle);
+  }
+
+  .inline-voice-note__main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-inline-size: 0;
+  }
+
+  .inline-voice-note__avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 34px;
+    inline-size: 34px;
+    block-size: 34px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-accent);
+    color: var(--color-text-on-accent);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .inline-voice-note__play {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 24px;
+    inline-size: 24px;
+    block-size: 24px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text-primary);
+    cursor: pointer;
+  }
+
+  .inline-voice-note__play:hover {
+    color: var(--color-accent);
+  }
+
+  .inline-voice-note__play:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .inline-voice-note__play svg {
+    inline-size: 1.05rem;
+    block-size: 1.05rem;
+  }
+
+  .inline-voice-note__wave {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2px;
+    min-inline-size: 0;
+    block-size: 28px;
+    overflow: hidden;
+  }
+
+  .inline-voice-note__wave-bar {
+    flex: 1 1 0;
+    min-inline-size: 2px;
+    max-inline-size: 3px;
+    block-size: 18px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-accent);
+    opacity: 0.3;
+    transform: scaleY(0.45);
+    transform-origin: center;
+  }
+
+  .inline-voice-note__wave-bar:nth-child(3n) {
+    block-size: 24px;
+  }
+
+  .inline-voice-note__wave-bar:nth-child(4n) {
+    block-size: 13px;
+  }
+
+  .inline-voice-note__wave-bar.is-played {
+    opacity: 1;
+  }
+
+  .inline-voice-note__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-inline-start: 42px;
+    margin-block-start: -2px;
+  }
+
+  .inline-voice-note__duration,
+  .inline-voice-note__recorded-time {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .inline-voice-note__transcribe {
+    margin-inline-start: 42px;
+    color: var(--color-accent);
+    font-size: var(--font-size-xs);
+    text-decoration: none;
+  }
+
+  .inline-voice-note__transcribe:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .inline-voice-note__error {
+    margin-inline-start: 42px;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-xs);
+  }
+
+  .inline-voice-note__audio {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+}

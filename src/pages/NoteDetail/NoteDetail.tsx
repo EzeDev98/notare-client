@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
+import { InlineVoiceNotes } from '@/features/voice/components/InlineVoiceNote/InlineVoiceNote';
 import { parseNoteId, useNote } from '@/features/notes/hooks/useNote';
 import { VoiceRecorder } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
 import { useVoiceNotesByNote } from '@/features/voice/hooks/useVoiceNotes';
@@ -19,6 +20,8 @@ export function NoteDetailPage() {
     authState.status === 'authenticated' || authState.status === 'refreshing'
       ? authState.user.id
       : null;
+
+  const voiceNotes = useVoiceNotesByNote(serverId);
 
   const title = state.status === 'ready' ? state.row.title.trim() : '';
   useDocumentTitle(title === '' ? 'Untitled note' : title);
@@ -81,7 +84,16 @@ export function NoteDetailPage() {
         ) : null}
 
         {state.status === 'ready' ? (
-          <NoteEditorHost key={state.row.localId} row={state.row} currentUserId={currentUserId} />
+          <NoteEditorHost
+            key={state.row.localId}
+            row={state.row}
+            currentUserId={currentUserId}
+            contentAccessory={
+              voiceNotes.data && voiceNotes.data.length > 0 ? (
+                <InlineVoiceNotes voiceNotes={voiceNotes.data} />
+              ) : null
+            }
+          />
         ) : null}
 
         {/*
