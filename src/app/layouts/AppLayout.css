@@ -135,22 +135,13 @@
    * .app-shell__sidebar takes over (see AppLayout.tsx's own top comment
    * on why: no room for a live note list at those sizes).
    */
-  .app-shell__compact-nav {
-    display: flex !important;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: stretch;
-    gap: var(--space-2);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    visibility: visible !important;
-    opacity: 1 !important;
-  }
+
   /* Hidden below the sidebar breakpoint — nothing to show until there's
      room for the note list this contains. */
   .app-shell__sidebar {
-    display: none;
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
   }
 
   .app-shell__nav-link {
@@ -282,11 +273,7 @@
       flex-direction: row;
     }
 
-    .app-shell__compact-nav {
-      flex-direction: column;
-      justify-content: flex-start;
-      gap: var(--space-2);
-    }
+
 
     /*
      * Labels hidden but PRESENT — the same clip technique as VisuallyHidden,
@@ -537,9 +524,7 @@
     }
 
     /* Keep the compact navigation visible at every viewport width. */
-    .app-shell__compact-nav {
-      display: flex;
-    }
+
 
     .app-shell__sidebar {
       display: flex;
@@ -749,9 +734,7 @@
   display: block !important;
 }
 
-.app-shell__compact-nav {
-  display: flex !important;
-}
+
 
 /*
  * TEMPORARY NAVIGATION VISIBILITY OVERRIDE
@@ -765,9 +748,7 @@
   display: flex !important;
 }
 
-.app-shell__compact-nav {
-  display: flex !important;
-}
+
 
 /* FORCE NAVBAR VISIBLE AT ALL VIEWPORT SIZES */
 .app-shell__nav {
@@ -782,16 +763,9 @@
   flex-shrink: 0 !important;
 }
 
-.app-shell__compact-nav {
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
 
-.app-shell__compact-nav li {
-  display: list-item !important;
-  visibility: visible !important;
-}
+
+
 
 .app-shell__nav-link {
   visibility: visible !important;

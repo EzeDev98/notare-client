@@ -7,7 +7,7 @@ import {
 } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, NavLink, Outlet, useMatch, useNavigate } from 'react-router';
-import { Bell, Search, Share, SquarePen, Trash2 } from 'lucide-react';
+import { Bell, Search, Share, SquarePen, Trash2, Users } from 'lucide-react';
 
 import { navItems, type NavItem } from '@/app/layouts/navItems';
 import { RouteFocus } from '@/app/RouteFocus';
@@ -26,7 +26,7 @@ import { ThemeToggle } from '@/design-system/components/ThemeToggle/ThemeToggle'
 import './AppLayout.css';
 
 /*
- * Archived, Trash, Voice, Notifications, Account — the FOLDERS PANEL's
+ * Archived, Trash, Voice, Shared with me, Account — the FOLDERS PANEL's
  * contents now (moved out of the note-list sidebar's own footer). Still
  * defined here rather than in navItems.tsx, same reasoning as before:
  * navItems.tsx drives the <1024px compact nav and stays exactly as it
@@ -80,9 +80,23 @@ const desktopOnlyItems: NavItem[] = [
 // itself stays untouched and still exactly matches what the compact nav
 // below renders, so there is no second four-item list to keep in sync by
 // hand, and mobile/tablet cannot silently grow past four icons.
+//
+// Shared with me is NOT part of navItems (that array drives the <1024px
+// compact nav too, and Shared has no place in that unchanged four-item
+// list) — it's inserted here directly, between Voice and Account, so it
+// picks up the same NavLink rendering as everything else in this panel
+// without navItems.tsx growing a fifth entry mobile/tablet never asked for.
+const sharedWithMeItem: NavItem = {
+  to: '/shared',
+  label: 'Shared with me',
+  icon: <Users aria-hidden="true" strokeWidth={1.75} />,
+};
+
 const foldersNavItems = [
   ...desktopOnlyItems,
-  ...navItems.filter((item) => item.to !== '/notes' && item.to !== '/notifications'),
+  ...navItems.filter((item) => item.to === '/voice'),
+  sharedWithMeItem,
+  ...navItems.filter((item) => item.to === '/account/sessions'),
 ];
 
 /**
@@ -102,9 +116,9 @@ const foldersNavItems = [
  *
  * THE SIDEBAR NOTE LIST (desktop only). At >=1024px, "Notes" no longer
  * exists as a nav destination — the sidebar itself lists every note live,
- * with a "New note" entry pinned at the top, Archived/Trash/Voice/
- * Notifications/Account pinned at the bottom below the scrollable list,
- * and the theme toggle below that.
+ * with a "New note" entry pinned at the top, Archived/Trash/Voice/Shared
+ * with me/Account pinned at the bottom below the scrollable list, and the
+ * theme toggle below that.
  *
  * ONLY at >=1024px. A live, scrollable note list cannot fit in a 56px
  * icon rail or a mobile bottom bar without redesigning those layouts
@@ -152,7 +166,7 @@ export function AppLayout() {
   }
 
   /*
-   * The folders panel — Archived/Trash/Voice/Notifications/Account, the
+   * The folders panel — Archived/Trash/Voice/Shared with me/Account, the
    * theme toggle — collapsed by default, toggled from the button at the
    * toolbar's own top-left corner (below), and drag-resizable while open
    * via its own handle, same pointer-capture pattern as the sidebar's.
@@ -389,7 +403,7 @@ export function AppLayout() {
         <div className="app-shell__toolbar-nav">
           {/*
             THE toggle for the folders panel — Archived/Trash/Voice/
-            Notifications/Account, the theme toggle — collapsed by
+            Shared with me/Account, the theme toggle — collapsed by
             default, opened from here. Always the first thing in the
             toolbar's top-left corner regardless of the panel's own
             state, matching the reference exactly: this button's
@@ -508,7 +522,7 @@ export function AppLayout() {
         grid column (--folders-width, 0 while closed), separate from the
         note-list sidebar below rather than a section within it: this is
         a distinct region (account-level navigation — Archived, Trash,
-        Voice, Notifications, Account, the theme toggle) that can be
+        Voice, Shared with me, Account, the theme toggle) that can be
         hidden entirely, where the note list underneath it cannot.
         `inert` while closed — not just clipped via overflow:hidden on
         the CSS side — so its links are neither focusable nor announced
@@ -575,21 +589,6 @@ export function AppLayout() {
           exactly as they did before this file's own top comment describes
           why: no room for a note list at those sizes.
         */}
-        <ul className="app-shell__compact-nav" role="list">
-          {navItems.map((item) => (
-            <li key={item.to}>
-              {/*
-                NavLink sets aria-current="page" when active. The CSS styles
-                that same attribute rather than a class, so what is announced
-                and what is highlighted cannot drift apart.
-              */}
-              <NavLink to={item.to} className="app-shell__nav-link">
-                <span className="app-shell__nav-icon">{item.icon}</span>
-                <span className="app-shell__nav-label">{item.label}</span>
-              </NavLink>
-            </li>
-          ))}
-        </ul>
 
         {/* DESKTOP SIDEBAR — >=1024px only. See this file's own top comment. */}
         <div className="app-shell__sidebar">
