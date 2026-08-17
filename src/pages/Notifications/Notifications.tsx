@@ -47,19 +47,17 @@ export function NotificationsPage() {
 
   function resolveActor(actorId: number): string | undefined {
     const fromSent = (sent.data?.content ?? []).find(
-      (row) => row.status === 'ACCEPTED' && row.collaborator.id === actorId,
+      (row) => row.status === 'ACCEPTED' && row.collaboratorId === actorId,
     );
     if (fromSent) {
-      const full = `${fromSent.collaborator.firstName} ${fromSent.collaborator.lastName}`.trim();
-      return full === '' ? fromSent.collaborator.username : full;
+      return `User ${fromSent.collaboratorId}`;
     }
 
     const fromReceived = (received.data?.content ?? []).find(
-      (row) => row.status === 'ACCEPTED' && row.owner.id === actorId,
+      (row) => row.status === 'ACCEPTED' && row.ownerId === actorId,
     );
     if (fromReceived) {
-      const full = `${fromReceived.owner.firstName} ${fromReceived.owner.lastName}`.trim();
-      return full === '' ? fromReceived.owner.username : full;
+      return `User ${fromReceived.ownerId}`;
     }
 
     return undefined;

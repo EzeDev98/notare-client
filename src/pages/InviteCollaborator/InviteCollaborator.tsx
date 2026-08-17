@@ -33,7 +33,7 @@ export function InviteCollaboratorPage() {
   const [justInvited, setJustInvited] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const excludeIds = (sent.data?.content ?? []).map((row) => row.collaborator.id);
+  const excludeIds = (sent.data?.content ?? []).map((row) => row.collaboratorId);
 
   function handleSelect(user: UserSummaryResponse) {
     setError(null);

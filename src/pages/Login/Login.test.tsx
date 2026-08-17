@@ -70,7 +70,7 @@ describe('the login form', () => {
     renderApp();
 
     await user.type(await screen.findByLabelText(/username or email/i), 'testuser');
-    await user.type(screen.getByLabelText(/password/i), 'Passw0rd');
+    await user.type(screen.getByLabelText('Password', { selector: 'input' }), 'Passw0rd');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     expect(await screen.findByRole('heading', { name: 'Notes' })).toBeInTheDocument();
@@ -87,7 +87,7 @@ describe('the login form', () => {
     renderApp();
 
     await user.type(await screen.findByLabelText(/username or email/i), 'testuser');
-    await user.type(screen.getByLabelText(/password/i), 'wrong');
+    await user.type(screen.getByLabelText('Password', { selector: 'input' }), 'wrong');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     /*
@@ -111,7 +111,7 @@ describe('the login form', () => {
     renderApp();
 
     await user.type(await screen.findByLabelText(/username or email/i), 'testuser');
-    await user.type(screen.getByLabelText(/password/i), 'Passw0rd');
+    await user.type(screen.getByLabelText('Password', { selector: 'input' }), 'Passw0rd');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     /*
@@ -142,7 +142,7 @@ describe('the guard', () => {
     renderApp('/notes');
 
     await user.type(await screen.findByLabelText(/username or email/i), 'testuser');
-    await user.type(screen.getByLabelText(/password/i), 'Passw0rd');
+    await user.type(screen.getByLabelText('Password', { selector: 'input' }), 'Passw0rd');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     // Not the default destination by luck — the guard stashed /notes in

@@ -3,8 +3,11 @@ import type { CollaborationResponse, UserSummaryResponse } from '@/features/coll
 let nextUserId = 100;
 let nextCollaborationId = 1;
 
-export function makeUserSummary(overrides: Partial<UserSummaryResponse> = {}): UserSummaryResponse {
+export function makeUserSummary(
+  overrides: Partial<UserSummaryResponse> = {},
+): UserSummaryResponse {
   const id = overrides.id ?? nextUserId++;
+
   return {
     id,
     notarianId: `NTR-${String(id)}`,
@@ -19,12 +22,14 @@ export function makeCollaboration(
   overrides: Partial<CollaborationResponse> = {},
 ): CollaborationResponse {
   const id = overrides.id ?? nextCollaborationId++;
+
   return {
     id,
-    owner: makeUserSummary({ id: 1, username: 'owner' }),
-    collaborator: makeUserSummary({ id: 2, username: 'collaborator' }),
+    ownerId: 1,
+    collaboratorId: 2,
     status: 'PENDING',
     createdAt: '2026-08-10T09:00:00.000',
+    updatedAt: '2026-08-10T09:00:00.000',
     ...overrides,
   };
 }

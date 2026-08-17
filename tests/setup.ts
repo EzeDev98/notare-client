@@ -13,10 +13,25 @@ import '@testing-library/jest-dom/vitest';
 import 'fake-indexeddb/auto';
 
 import { cleanup } from '@testing-library/react';
-import { afterAll, afterEach, beforeAll } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest';
 
 import { resetDatabase } from './harness';
 import { server } from './msw/server';
+
+beforeAll(() => {
+  window.matchMedia =
+    window.matchMedia ??
+    ((query: string): MediaQueryList => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList);
+});
 
 /*
  * onUnhandledRequest: 'error' is what makes the mock server trustworthy.
@@ -65,5 +80,23 @@ afterEach(cleanup);
  * and the resulting green is meaningless.
  */
 afterEach(async () => {
+  await resetDatabase();
+});
+
+/*
+ * Empties Dexie again, before the NEXT test even starts.
+ *
+ * useAutoSaveScheduler's unmount cleanup makes a best-effort final save
+ * (`void run()`), deliberately fire-and-forget — a React effect cleanup
+ * cannot be awaited. `cleanup()` above unmounts synchronously and returns
+ * long before that save's chain (dispatch -> fetch through MSW -> catch ->
+ * a Dexie/IndexedDB transaction) settles; each hop is a real event-loop
+ * turn, so no fixed number of awaits after cleanup() reliably outlasts it.
+ *
+ * So the previous test's straggling write can land AFTER afterEach's
+ * resetDatabase already ran — queuing that test's data into the next test's
+ * tables. Clearing again here wipes any straggler that arrived in the gap.
+ */
+beforeEach(async () => {
   await resetDatabase();
 });

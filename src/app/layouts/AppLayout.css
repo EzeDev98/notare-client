@@ -100,25 +100,34 @@
   /* ---- Nav ------------------------------------------------------------- */
 
   .app-shell__nav {
-    /* Bottom bar on mobile: nav is first in the DOM, last visually. */
-    order: 1;
-
+    order: 0;
     position: sticky;
-    inset-block-end: 0;
+    inset-block-start: 0;
+    inset-block-end: auto;
     z-index: var(--z-sticky);
 
+    display: flex !important;
+    flex-direction: column;
+
+    inline-size: 56px;
+    min-inline-size: 56px;
+    block-size: 100dvh;
+
+    flex-shrink: 0;
+
     background-color: var(--color-surface);
-    border-block-start: var(--border-width) solid var(--color-border);
+    border-inline-end: var(--border-width) solid var(--color-border);
+    border-block-start: none;
 
-    /*
-     * The iPhone home indicator. Without this the bar's bottom row of pixels
-     * is untappable — and env() returns 0 unless index.html sets
-     * viewport-fit=cover, so this line looks correct and does nothing without
-     * that meta tag.
-     */
-    padding-block-end: env(safe-area-inset-bottom);
+    padding-block: var(--space-4);
+    padding-block-end: max(
+      var(--space-4),
+      env(safe-area-inset-bottom)
+    );
+
+    visibility: visible !important;
+    opacity: 1 !important;
   }
-
   /*
    * COMPACT NAV — the original four-item nav (Notes/Voice/Notifications/
    * Account), unchanged. Governs the mobile bottom bar and tablet icon
@@ -127,12 +136,17 @@
    * on why: no room for a live note list at those sizes).
    */
   .app-shell__compact-nav {
-    display: flex;
-    justify-content: space-around;
+    display: flex !important;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    gap: var(--space-2);
     margin: 0;
     padding: 0;
+    list-style: none;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
-
   /* Hidden below the sidebar breakpoint — nothing to show until there's
      room for the note list this contains. */
   .app-shell__sidebar {
@@ -266,22 +280,6 @@
   @media (min-width: 640px) {
     .app-shell {
       flex-direction: row;
-    }
-
-    .app-shell__nav {
-      order: 0; /* back to the left, matching DOM order */
-      inline-size: 56px;
-      flex-shrink: 0;
-
-      /* Sticky top rather than bottom, and full height. */
-      position: sticky;
-      inset-block: 0;
-      block-size: 100dvh;
-
-      border-block-start: none;
-      border-inline-end: var(--border-width) solid var(--color-border);
-      padding-block: var(--space-4);
-      padding-block-end: max(var(--space-4), env(safe-area-inset-bottom));
     }
 
     .app-shell__compact-nav {
@@ -538,10 +536,9 @@
       min-block-size: 0;
     }
 
-    /* The four-item compact nav is mobile/tablet only — see this file's
-       own top comment on .app-shell__compact-nav. */
+    /* Keep the compact navigation visible at every viewport width. */
     .app-shell__compact-nav {
-      display: none;
+      display: flex;
     }
 
     .app-shell__sidebar {
@@ -740,4 +737,63 @@
       background-color: var(--color-accent-faint);
     }
   }
+}
+
+/* -------------------------------------------------------------------------
+   NAVIGATION VISIBILITY OVERRIDE
+   The app navigation must remain visible at every viewport width.
+   Responsive layouts may change its shape, but must never remove it.
+   ------------------------------------------------------------------------- */
+
+.app-shell__nav {
+  display: block !important;
+}
+
+.app-shell__compact-nav {
+  display: flex !important;
+}
+
+/*
+ * TEMPORARY NAVIGATION VISIBILITY OVERRIDE
+ *
+ * Keep the main navigation visible at every viewport width while we
+ * stabilize the responsive layout. This intentionally overrides the
+ * desktop-only hiding behavior so resizing the browser or opening
+ * DevTools cannot make the navbar disappear.
+ */
+.app-shell__nav {
+  display: flex !important;
+}
+
+.app-shell__compact-nav {
+  display: flex !important;
+}
+
+/* FORCE NAVBAR VISIBLE AT ALL VIEWPORT SIZES */
+.app-shell__nav {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: sticky !important;
+  inset-block-start: 0 !important;
+  inset-block-end: auto !important;
+  inset-inline-start: 0 !important;
+  z-index: var(--z-sticky) !important;
+  flex-shrink: 0 !important;
+}
+
+.app-shell__compact-nav {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.app-shell__compact-nav li {
+  display: list-item !important;
+  visibility: visible !important;
+}
+
+.app-shell__nav-link {
+  visibility: visible !important;
+  opacity: 1 !important;
 }

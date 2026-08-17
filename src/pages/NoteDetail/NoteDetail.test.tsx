@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
 import { ToastProvider } from '@/app/providers/ToastProvider';
+import { QueryProvider } from '@/app/providers/QueryProvider';
 import { parseNoteId } from '@/features/notes/hooks/useNote';
 import { NoteDetailPage } from '@/pages/NoteDetail/NoteDetail';
 import { expectNoAxeViolations } from '~/a11y';
@@ -25,9 +26,11 @@ function renderDetail(path = '/notes/1') {
 
   return render(
     <SignedIn>
-      <ToastProvider>
-        <RouterProvider router={router} />
-      </ToastProvider>
+      <QueryProvider>
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
+      </QueryProvider>
     </SignedIn>,
   );
 }

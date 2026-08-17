@@ -103,10 +103,9 @@ function ShareManager({ noteId }: { noteId: number }) {
    * than a second lookup call the server doesn't offer anyway (G2).
    */
   function resolveName(userId: number): string {
-    const match = acceptedCollaborators.find((row) => row.collaborator.id === userId);
+    const match = acceptedCollaborators.find((row) => row.collaboratorId === userId);
     if (match === undefined) return `User ${String(userId)}`;
-    const full = `${match.collaborator.firstName} ${match.collaborator.lastName}`.trim();
-    return full === '' ? match.collaborator.username : full;
+    return `User ${match.collaboratorId}`;
   }
 
   if (grants.isLoading || sent.isLoading) {
@@ -135,7 +134,7 @@ function ShareManager({ noteId }: { noteId: number }) {
   const rows = grants.data?.content ?? [];
   const grantedUserIds = new Set(rows.map((row) => row.sharedWithUserId));
   const shareableCollaborators = acceptedCollaborators.filter(
-    (row) => !grantedUserIds.has(row.collaborator.id),
+    (row) => !grantedUserIds.has(row.collaboratorId),
   );
 
   function handleRevoke(row: NoteShareResponse) {
@@ -255,7 +254,7 @@ interface ShareFormProps {
  * only offer people already through that gate.
  */
 function ShareForm({ candidates, pending, onShare }: ShareFormProps) {
-  const [selectedId, setSelectedId] = useState<number | null>(candidates[0]?.collaborator.id ?? null);
+  const [selectedId, setSelectedId] = useState<number | null>(candidates[0]?.collaboratorId ?? null);
   const [permission, setPermission] = useState<SharePermission>('READ');
 
   if (candidates.length === 0) {
@@ -285,9 +284,8 @@ function ShareForm({ candidates, pending, onShare }: ShareFormProps) {
         }}
       >
         {candidates.map((row) => (
-          <option key={row.collaborator.id} value={row.collaborator.id}>
-            {`${row.collaborator.firstName} ${row.collaborator.lastName}`.trim() ||
-              row.collaborator.username}
+          <option key={row.collaboratorId} value={row.collaboratorId}>
+            {`User ${row.collaboratorId}`}
           </option>
         ))}
       </Select>

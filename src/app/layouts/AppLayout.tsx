@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, NavLink, Outlet, useMatch, useNavigate } from 'react-router';
 import { Bell, Search, Share, SquarePen, Trash2 } from 'lucide-react';
 
@@ -14,7 +15,10 @@ import { useAuth } from '@/app/providers/auth-context';
 import { useFoldersPanel } from '@/app/layouts/useFoldersPanel';
 import { useSidebarWidth } from '@/app/layouts/useSidebarWidth';
 import { SidebarNoteItem } from '@/features/notes/components/SidebarNoteItem/SidebarNoteItem';
+import { useDeleteNote } from '@/features/notes/hooks/useDeleteNote';
 import { useNotes } from '@/features/notes/hooks/useNotes';
+import { toView } from '@/features/notes/local/noteMappers';
+import { noteRepository } from '@/features/notes/local/noteRepository';
 import { useSync } from '@/sync/useSync';
 import { useConflictCount } from '@/sync/useConflicts';
 import { useSyncStatus } from '@/sync/useSyncStatus';
@@ -200,6 +204,45 @@ export function AppLayout() {
     matchedNoteIdParam !== undefined && /^\d+$/.test(matchedNoteIdParam) ? matchedNoteIdParam : null;
 
   /*
+   * The toolbar's Delete icon needs the same "whatever note is currently
+   * open" reach as Share above, but for BOTH note routes — a note without a
+   * serverId yet lives at /notes/local/:localId (see NoteCard's routing
+   * comment), and it must be just as deletable as one that has synced.
+   *
+   * Share only needed the id (to build a Link). Delete needs the actual row
+   * — useDeleteNote takes a NoteView, which carries title/version/updatedAt
+   * for the trash toast and the server PATCH — so this reads Dexie directly
+   * rather than re-deriving a NoteView from a bare id string.
+   */
+  const localNoteMatch = useMatch('/notes/local/:localId');
+  const activeLocalId = localNoteMatch?.params['localId'] ?? null;
+
+  const activeNoteRow = useLiveQuery(async () => {
+    if (activeLocalId !== null) {
+      return (await noteRepository.getByLocalId(activeLocalId)) ?? null;
+    }
+    if (activeNoteId !== null) {
+      return (await noteRepository.getByServerId(Number(activeNoteId))) ?? null;
+    }
+    return null;
+  }, [activeLocalId, activeNoteId]);
+
+  const deleteNote = useDeleteNote();
+
+  async function handleDeleteActiveNote() {
+    if (!activeNoteRow) return;
+
+    await deleteNote(toView(activeNoteRow));
+
+    // The route the user was just on now points at a trashed note — same
+    // "something left the screen" case setArchived's toast comment already
+    // names, except here there is nowhere left on this route to redraw.
+    // /notes always has somewhere sane to land, whichever of the two note
+    // routes the icon was clicked from.
+    navigate('/notes');
+  }
+
+  /*
    * Uncontrolled would be simpler, but the field must be CLEARABLE from
    * code too — landing back on this layout after a search shouldn't leave
    * stale text sitting in the toolbar's own box, out of sync with
@@ -338,9 +381,10 @@ export function AppLayout() {
 
           Trash lives here, right-aligned against that border — the icon
           sits on the SIDEBAR's side of the intersection, matching the
-          reference. Not wired to an action yet: this step is placement
-          only, same as the sidebar's own Trash nav item started as a
-          plain link before anything pointed at it.
+          reference. Acts on whichever note is currently open, the same
+          "note above `activeNoteId`" pattern the Share icon below uses —
+          see the activeNoteRow comment further down for why Delete needs
+          the full row rather than just an id.
         */}
         <div className="app-shell__toolbar-nav">
           {/*
@@ -371,7 +415,15 @@ export function AppLayout() {
               <path d="M9 4v16" />
             </svg>
           </button>
-          <button type="button" className="app-shell__toolbar-icon-btn" aria-label="Delete note">
+          <button
+            type="button"
+            className="app-shell__toolbar-icon-btn"
+            aria-label="Delete note"
+            disabled={activeNoteRow == null}
+            onClick={() => {
+              void handleDeleteActiveNote();
+            }}
+          >
             <Trash2 aria-hidden="true" strokeWidth={1.75} />
           </button>
         </div>

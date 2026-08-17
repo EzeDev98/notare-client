@@ -1,0 +1,8 @@
+.local-note-detail {
+  width: 100%;
+}
+
+.local-note-detail__status {
+  margin: 0;
+  padding: 2rem;
+}

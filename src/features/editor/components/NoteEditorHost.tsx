@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { useNavigate } from 'react-router';
 
 import { ConflictPanel } from '@/features/editor/components/ConflictPanel/ConflictPanel';
 import { EditorSurface } from '@/features/editor/components/EditorSurface/EditorSurface';
@@ -26,6 +27,7 @@ function countWords(text: string): number {
 }
 
 export function NoteEditorHost({ row, currentUserId, contentAccessory }: NoteEditorHostProps) {
+  const navigate = useNavigate();
   const editor = useNoteEditor(row);
 
   useEditorShortcuts({ onSave: editor.flush });
@@ -43,9 +45,11 @@ export function NoteEditorHost({ row, currentUserId, contentAccessory }: NoteEdi
    */
   useEffect(() => {
     if (serverId !== null && window.location.pathname.startsWith('/notes/local/')) {
-      window.history.replaceState(null, '', `/notes/${String(serverId)}`);
+      void navigate(`/notes/${String(serverId)}`, {
+        replace: true,
+      });
     }
-  }, [serverId]);
+  }, [navigate, serverId]);
 
   if (editor.saveState.status === 'conflict') {
     return (

@@ -61,7 +61,7 @@ describe('notifications list', () => {
           content: [
             makeCollaboration({
               status: 'ACCEPTED',
-              owner: { id: 9, notarianId: 'NTR-9', username: 'femi', firstName: 'Femi', lastName: 'Ade' },
+              ownerId: 9,
             }),
           ],
           page: 0,

@@ -39,7 +39,7 @@ describe('collaborations — received', () => {
             makeCollaboration({
               id: 1,
               status: 'PENDING',
-              owner: { id: 9, notarianId: 'NTR-9', username: 'femi', firstName: 'Femi', lastName: 'Ade' },
+              ownerId: 9,
             }),
           ],
           page: 0,
@@ -130,13 +130,7 @@ describe('collaborations — sent', () => {
                 makeCollaboration({
                   id: 2,
                   status: 'ACCEPTED',
-                  collaborator: {
-                    id: 3,
-                    notarianId: 'NTR-3',
-                    username: 'jane',
-                    firstName: 'Jane',
-                    lastName: 'Doe',
-                  },
+                  collaboratorId: 3,
                 }),
               ],
           page: 0,

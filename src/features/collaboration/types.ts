@@ -61,10 +61,11 @@ export interface UserSummaryResponse {
  */
 export interface CollaborationResponse {
   id: number;
-  owner: UserSummaryResponse;
-  collaborator: UserSummaryResponse;
+  ownerId: number;
+  collaboratorId: number;
   status: CollaborationStatus;
   createdAt: ServerDateTime;
+  updatedAt: ServerDateTime;
 }
 
 /**

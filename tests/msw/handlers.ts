@@ -139,7 +139,7 @@ export const handlers = [
     const body = (await request.json()) as { collaboratorId: number };
     return HttpResponse.json(
       makeCollaboration({
-        collaborator: makeUserSummary({ id: body.collaboratorId }),
+        collaboratorId: body.collaboratorId,
         status: 'PENDING',
       }),
       { status: 201 },

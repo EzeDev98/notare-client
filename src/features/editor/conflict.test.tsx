@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -33,12 +34,22 @@ function renderEditor() {
     ],
     { initialEntries: ['/notes/1'] },
   );
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+
   return render(
-    <SignedIn>
-      <ToastProvider>
-        <RouterProvider router={router} />
-      </ToastProvider>
-    </SignedIn>,
+    <QueryClientProvider client={queryClient}>
+      <SignedIn>
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
+      </SignedIn>
+    </QueryClientProvider>,
   );
 }
 

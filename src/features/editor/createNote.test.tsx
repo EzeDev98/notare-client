@@ -7,6 +7,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { ToastProvider } from '@/app/providers/ToastProvider';
 import { outboxRepository } from '@/features/notes/local/noteRepository';
 import { NewNotePage } from '@/pages/NewNote/NewNote';
+import { LocalNoteDetailPage } from '@/pages/NoteDetail/LocalNoteDetail';
 import { makeNote } from '~/fixtures/notes';
 import { SignedIn } from '~/harness';
 import { server } from '~/msw/server';
@@ -14,9 +15,15 @@ import { server } from '~/msw/server';
 const BASE = 'http://localhost:2001/api/v1';
 
 function renderNew() {
-  const router = createMemoryRouter([{ path: '/notes/new', element: <NewNotePage /> }], {
-    initialEntries: ['/notes/new'],
-  });
+  const router = createMemoryRouter(
+    [
+      { path: '/notes/new', element: <NewNotePage /> },
+      { path: '/notes/local/:localId', element: <LocalNoteDetailPage /> },
+    ],
+    {
+      initialEntries: ['/notes/new'],
+    },
+  );
   return render(
     <SignedIn>
       <ToastProvider>

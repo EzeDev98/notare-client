@@ -50,7 +50,7 @@ describe('sharing a note (owner side)', () => {
           content: [
             makeCollaboration({
               status: 'ACCEPTED',
-              collaborator: { id: 2, notarianId: 'NTR-2', username: 'jane', firstName: 'Jane', lastName: 'Doe' },
+              collaboratorId: 2,
             }),
           ],
           page: 0,
@@ -117,7 +117,7 @@ describe('sharing a note (owner side)', () => {
           content: [
             makeCollaboration({
               status: 'ACCEPTED',
-              collaborator: { id: 2, notarianId: 'NTR-2', username: 'jane', firstName: 'Jane', lastName: 'Doe' },
+              collaboratorId: 2,
             }),
           ],
           page: 0,
@@ -158,7 +158,7 @@ describe('sharing a note (owner side)', () => {
           content: [
             makeCollaboration({
               status: 'ACCEPTED',
-              collaborator: { id: 2, notarianId: 'NTR-2', username: 'jane', firstName: 'Jane', lastName: 'Doe' },
+              collaboratorId: 2,
             }),
           ],
           page: 0,

@@ -334,13 +334,12 @@ function StatusBadge({ status }: { status: CollaborationStatus }) {
 }
 
 function ownerLabel(row: CollaborationResponse): string {
-  return `${row.owner.firstName} ${row.owner.lastName}`.trim() || row.owner.username;
+  return `User ${row.ownerId}`;
 }
 
 function collaboratorLabel(row: CollaborationResponse): string {
   return (
-    `${row.collaborator.firstName} ${row.collaborator.lastName}`.trim() ||
-    row.collaborator.username
+    `User ${row.collaboratorId}`
   );
 }
 

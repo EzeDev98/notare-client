@@ -135,6 +135,32 @@ export class NotareDatabase extends Dexie {
       })
       .upgrade(async (tx) => {
         const notes = await tx.table<NoteRow, string>('notes').where('dirty').equals(1).toArray();
+
+        /*
+         * V1 has no auto-increment sequence that represents insertion order.
+         * `localId` is a UUID, so ordering by the primary key would be arbitrary.
+         *
+         * `localUpdatedAt` is the local ordering signal carried by every V1
+         * note. When two operations happened in the same millisecond, use the
+         * operation type as a deterministic tie-breaker: a CREATE must be
+         * pushed before a DELETE so the resulting outbox never asks the server
+         * to delete a note before that note has been created.
+         */
+        notes.sort((a, b) => {
+          const byLocalUpdatedAt = a.localUpdatedAt - b.localUpdatedAt;
+          if (byLocalUpdatedAt !== 0) return byLocalUpdatedAt;
+
+          const aType = a.serverId === null ? 'CREATE' : a.deleted === 1 ? 'DELETE' : null;
+          const bType = b.serverId === null ? 'CREATE' : b.deleted === 1 ? 'DELETE' : null;
+
+          if (aType === bType) return 0;
+          if (aType === 'CREATE') return -1;
+          if (bType === 'CREATE') return 1;
+          if (aType === 'DELETE') return -1;
+          if (bType === 'DELETE') return 1;
+          return 0;
+        });
+
         const now = Date.now();
 
         const seeded: OutboxRow[] = [];

@@ -13,7 +13,7 @@ describe('createCollaboration', () => {
     const result = await collaborationService.createCollaboration({ collaboratorId: 7 });
 
     expect(result.status).toBe('PENDING');
-    expect(result.collaborator.id).toBe(7);
+    expect(result.collaboratorId).toBe(7);
   });
 });
 

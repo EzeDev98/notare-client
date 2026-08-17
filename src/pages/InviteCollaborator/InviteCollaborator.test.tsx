@@ -58,7 +58,7 @@ describe('inviting a collaborator', () => {
       http.post(`${BASE}/collaborations`, async ({ request }) => {
         capturedBody = await request.json();
         return HttpResponse.json(
-          makeCollaboration({ collaborator: { id: 42, notarianId: 'NTR-42', username: 'grace', firstName: 'Grace', lastName: 'Hopper' } }),
+          makeCollaboration({ collaboratorId: 42 }),
           { status: 201 },
         );
       }),
@@ -84,7 +84,7 @@ describe('inviting a collaborator', () => {
           content: [
             makeCollaboration({
               status: 'REJECTED',
-              collaborator: { id: 42, notarianId: 'NTR-42', username: 'grace', firstName: 'Grace', lastName: 'Hopper' },
+              collaboratorId: 42,
             }),
           ],
           page: 0,

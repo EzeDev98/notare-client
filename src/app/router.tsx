@@ -61,6 +61,26 @@ export const routes = [
             },
           },
           {
+            // Registered before 'notes/:noteId' for readability only, same
+            // convention as 'notes/new' above and 'voice' below — React
+            // Router ranks the static 'local' segment over the dynamic
+            // :noteId param regardless of array order.
+            path: 'notes/local/:localId',
+            lazy: async () => {
+              const { LocalNoteDetailPage } = await import('@/pages/NoteDetail/LocalNoteDetail');
+              return { Component: LocalNoteDetailPage };
+            },
+          },
+          {
+            path: 'notes/local/:localId',
+            lazy: async () => {
+              const { LocalNoteDetailPage } = await import(
+                '@/pages/LocalNoteDetail/LocalNoteDetail'
+              );
+              return { Component: LocalNoteDetailPage };
+            },
+          },
+          {
             path: 'notes/:noteId',
             lazy: async () => {
               const { NoteDetailPage } = await import('@/pages/NoteDetail/NoteDetail');
