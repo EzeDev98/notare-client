@@ -1,0 +1,20 @@
+@layer components {
+  /*
+   * No new visual vocabulary — the card reuses .shared-note-card's box,
+   * padding, hover, title, badge and meta rules wholesale (imported via the
+   * shared class on the <li>) so a voice-only share and a text share read as
+   * the same kind of thing at a glance. Only the two voice-specific bits
+   * below are new.
+   */
+
+  .shared-voice-card__preview {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    -webkit-line-clamp: unset;
+  }
+
+  .shared-voice-card__icon {
+    font-size: var(--font-size-md);
+  }
+}
