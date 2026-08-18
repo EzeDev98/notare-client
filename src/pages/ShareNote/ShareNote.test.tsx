@@ -68,7 +68,17 @@ describe('sharing a note (owner side)', () => {
     expect(await screen.findByText('Jane Doe')).toBeInTheDocument();
   });
 
-  it('falls back to "User {id}" when no accepted collaboration matches the grant', async () => {
+  /*
+   * PRE-12A this asserted `User 99` — the OLD resolveName's own fallback
+   * for an unmatched id. 12a replaced that resolution with the batch
+   * `useUserLookup` feature, whose fallback chain (`formatUserName`) ends
+   * at "Unknown user", not a raw id — exactly the case this test exercises
+   * (no accepted collaboration at all means id 99 is never even looked up,
+   * so `profiles.get(99)` is `undefined`). Updated to match the actual,
+   * intentional behaviour rather than the placeholder 12a existed to
+   * remove.
+   */
+  it('falls back to "Unknown user" when no accepted collaboration matches the grant', async () => {
     server.use(
       http.get(`${BASE}/notes/:noteId/shares`, () =>
         HttpResponse.json({
@@ -96,7 +106,7 @@ describe('sharing a note (owner side)', () => {
 
     renderShareNote();
 
-    expect(await screen.findByText('User 99')).toBeInTheDocument();
+    expect(await screen.findByText('Unknown user')).toBeInTheDocument();
   });
 
   it('excludes an already-granted collaborator from the share picker', async () => {

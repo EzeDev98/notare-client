@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
@@ -72,5 +72,53 @@ describe('the toolbar delete icon', () => {
 
     const row = await noteRepository.getByLocalId('local-offline');
     expect(row?.deleted).toBe(1);
+  });
+});
+
+/*
+ * Step 1's addition to the folders panel — see AppLayout.tsx's own doc
+ * comments on why the panel's actual contents (Archived/Trash/Voice/
+ * Shared with me/Account) don't include Notifications, unlike its stale
+ * pre-Step-1 comments once claimed.
+ */
+describe('the folders panel — Shared with me', () => {
+  /*
+   * useFoldersPanel persists open/closed state to localStorage on every
+   * change, and nothing else in this suite clears it between tests —
+   * without this, the first test's click here would leave the panel open
+   * for the second, which would then find "Hide folders" instead of the
+   * "Show folders" button it's looking for.
+   */
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it('links to /shared, positioned between Voice and Account', async () => {
+    const user = userEvent.setup();
+    renderAt('/notes');
+
+    await user.click(screen.getByRole('button', { name: 'Show folders' }));
+
+    const folders = screen.getByRole('navigation', { name: 'Folders' });
+    const linkNames = within(folders)
+      .getAllByRole('link')
+      .map((link) => link.textContent);
+
+    expect(linkNames).toEqual(['Archived', 'Trash', 'Voice', 'Shared with me', 'Account']);
+
+    expect(within(folders).getByRole('link', { name: 'Shared with me' })).toHaveAttribute(
+      'href',
+      '/shared',
+    );
+  });
+
+  it('navigates to the Shared with me page', async () => {
+    const user = userEvent.setup();
+    renderAt('/notes');
+
+    await user.click(screen.getByRole('button', { name: 'Show folders' }));
+    await user.click(screen.getByRole('link', { name: 'Shared with me' }));
+
+    expect(await screen.findByRole('heading', { name: 'Shared with me' })).toBeInTheDocument();
   });
 });

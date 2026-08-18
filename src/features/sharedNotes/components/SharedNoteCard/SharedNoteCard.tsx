@@ -6,6 +6,22 @@ import './SharedNoteCard.css';
 
 interface SharedNoteCardProps {
   shared: SharedNoteSummaryResponse;
+  /**
+   * The owner's display name, already resolved and formatted (see
+   * `formatUserName`). Resolved via ONE batch `useUserLookup` call at the
+   * page level covering every row's `ownerId` at once — never fetched
+   * per-card, which is the entire reason that hook batches in the first
+   * place (its own doc comment: "in ONE request, however many rows on
+   * screen reference those ids").
+   *
+   * `undefined` means "still resolving", not "no owner" — the page only
+   * ever passes a real string once its lookup's `isLoading` is false, at
+   * which point `formatUserName`'s own fallback chain (`@username` →
+   * "Unknown user") has already run. Rendering nothing while `undefined`
+   * avoids a flash of "Unknown user" for a name that's simply still in
+   * flight.
+   */
+  ownerName?: string;
 }
 
 /**
@@ -26,7 +42,7 @@ interface SharedNoteCardProps {
  * that") is by share time, and showing a date the list isn't actually
  * ordered by would be misleading.
  */
-export function SharedNoteCard({ shared }: SharedNoteCardProps) {
+export function SharedNoteCard({ shared, ownerName }: SharedNoteCardProps) {
   /*
    * `.trim()` needs a `string`, not `string | null` — unlike `NoteCard`,
    * which reads `NoteView` (noteMappers.ts already normalises a null server
@@ -57,9 +73,12 @@ export function SharedNoteCard({ shared }: SharedNoteCardProps) {
           <span className="shared-note-card__badge" data-permission={shared.permission}>
             {shared.permission === 'WRITE' ? 'Can edit' : 'Read only'}
           </span>
-          <time dateTime={shared.sharedAt} title={formatServerDateTimeAbsolute(shared.sharedAt)}>
-            Shared {formatServerDateTimeRelative(shared.sharedAt)}
-          </time>
+          <span className="shared-note-card__owner-time">
+            {ownerName !== undefined ? <>Shared by {ownerName} &middot; </> : 'Shared '}
+            <time dateTime={shared.sharedAt} title={formatServerDateTimeAbsolute(shared.sharedAt)}>
+              {formatServerDateTimeRelative(shared.sharedAt)}
+            </time>
+          </span>
         </p>
       </Link>
     </li>

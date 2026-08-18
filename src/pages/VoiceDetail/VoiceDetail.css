@@ -14,6 +14,27 @@
     margin-block-end: var(--space-6);
   }
 
+  .voice-detail__header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .voice-detail__share-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .voice-detail__share-link:hover {
+    text-decoration: underline;
+  }
+
   .voice-detail__muted {
     color: var(--color-text-secondary);
     font-size: var(--font-size-sm);

@@ -1,0 +1,78 @@
+@layer pages {
+  .shared-voice-detail {
+    max-inline-size: var(--measure-prose);
+    margin-inline: auto;
+    padding: var(--space-6) var(--space-4) var(--space-16);
+  }
+
+  .shared-voice-detail__back {
+    font-size: var(--font-size-sm);
+  }
+
+  .shared-voice-detail__back a {
+    text-decoration: none;
+  }
+
+  .shared-voice-detail__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-block-start: var(--space-4);
+  }
+
+  .shared-voice-detail__header h1 {
+    margin: 0;
+  }
+
+  .shared-voice-detail__untitled {
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-normal);
+  }
+
+  /*
+   * Same badge treatment as `.shared-note-card__badge` (READ vs WRITE get
+   * different colours, not just different text) — kept consistent even
+   * though a voice grant is READ-only in practice today, so this doesn't
+   * need to change if that ever stops being true.
+   */
+  .shared-voice-detail__badge {
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    background-color: var(--color-accent-subtle);
+    white-space: nowrap;
+  }
+
+  .shared-voice-detail__badge[data-permission='READ'] {
+    background-color: var(--color-surface-sunken);
+    color: var(--color-text-secondary);
+  }
+
+  .shared-voice-detail__muted {
+    margin-block-start: var(--space-2);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  .shared-voice-detail__player {
+    margin-block-start: var(--space-6);
+  }
+
+  .shared-voice-detail__retry {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-accent);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .shared-voice-detail__centre {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-3);
+    padding-block: var(--space-16);
+    text-align: center;
+  }
+}

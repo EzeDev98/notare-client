@@ -7,6 +7,7 @@ import { parseNoteId, useNote } from '@/features/notes/hooks/useNote';
 import { useCreateShare, useRevokeShare, useUpdateShare } from '@/features/sharing/hooks/useShareMutations';
 import { useShares } from '@/features/sharing/hooks/useShares';
 import type { NoteShareResponse, SharePermission } from '@/features/sharing/types';
+import { formatUserName, useUserLookup } from '@/features/userLookup/hooks/useUserLookup';
 import { isBadRequest } from '@/lib/http/errors';
 import { Button } from '@/design-system/components/Button/Button';
 import { Select } from '@/design-system/components/Select/Select';
@@ -98,14 +99,20 @@ function ShareManager({ noteId }: { noteId: number }) {
 
   /**
    * A grant's `sharedWithUserId` is bare (types.ts's own doc comment on
-   * `NoteShareResponse`) — this is the resolution step, built from the
-   * SAME accepted-collaborations fetch the picker already needs, rather
-   * than a second lookup call the server doesn't offer anyway (G2).
+   * `NoteShareResponse`) — resolved here via the batch `useUserLookup`
+   * feature rather than the accepted-collaborations fetch alone.
+   *
+   * PREVIOUSLY (before this step) this rendered `User {id}` for every row,
+   * matched or not — a real instance of the placeholder-label problem
+   * `useUserLookup` exists to fix, now corrected to match
+   * `ShareVoiceNotePage`'s already-real-names implementation.
    */
+  const { profiles, isLoading: namesLoading } = useUserLookup(
+    acceptedCollaborators.map((row) => row.collaboratorId),
+  );
+
   function resolveName(userId: number): string {
-    const match = acceptedCollaborators.find((row) => row.collaboratorId === userId);
-    if (match === undefined) return `User ${String(userId)}`;
-    return `User ${match.collaboratorId}`;
+    return namesLoading ? `User ${String(userId)}` : formatUserName(profiles.get(userId));
   }
 
   if (grants.isLoading || sent.isLoading) {
@@ -213,6 +220,7 @@ function ShareManager({ noteId }: { noteId: number }) {
 
       <ShareForm
         candidates={shareableCollaborators}
+        resolveName={resolveName}
         pending={create.isPending}
         onShare={(sharedWithUserId, permission) => {
           setFormError(null);
@@ -242,6 +250,7 @@ function ShareManager({ noteId }: { noteId: number }) {
 
 interface ShareFormProps {
   candidates: CollaborationResponse[];
+  resolveName: (userId: number) => string;
   pending: boolean;
   onShare: (sharedWithUserId: number, permission: SharePermission) => void;
 }
@@ -252,8 +261,12 @@ interface ShareFormProps {
  * `CollaboratorPicker`'s free-text search — that component's whole job is
  * finding someone to INVITE (9C, master-brief lettering); this form can
  * only offer people already through that gate.
+ *
+ * `resolveName` passed in rather than re-derived here — one batch
+ * `useUserLookup` call at `ShareManager` level, not a second one this form
+ * would otherwise need for its own option labels.
  */
-function ShareForm({ candidates, pending, onShare }: ShareFormProps) {
+function ShareForm({ candidates, resolveName, pending, onShare }: ShareFormProps) {
   const [selectedId, setSelectedId] = useState<number | null>(candidates[0]?.collaboratorId ?? null);
   const [permission, setPermission] = useState<SharePermission>('READ');
 
@@ -285,7 +298,7 @@ function ShareForm({ candidates, pending, onShare }: ShareFormProps) {
       >
         {candidates.map((row) => (
           <option key={row.collaboratorId} value={row.collaboratorId}>
-            {`User ${row.collaboratorId}`}
+            {resolveName(row.collaboratorId)}
           </option>
         ))}
       </Select>

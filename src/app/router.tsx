@@ -144,6 +144,19 @@ export const routes = [
             },
           },
           {
+            // Step 13. A sibling of 'shared/:noteId' rather than nested
+            // under it — parallels the existing '/shared/:id' vs
+            // '/voice/:id' split (two distinct id spaces) instead of
+            // implying a voice note is a kind of note.
+            path: 'shared-voice/:voiceNoteId',
+            lazy: async () => {
+              const { SharedVoiceDetailPage } = await import(
+                '@/pages/SharedVoiceDetail/SharedVoiceDetail'
+              );
+              return { Component: SharedVoiceDetailPage };
+            },
+          },
+          {
             path: 'collaborations',
             lazy: async () => {
               const { InvitationsPage } = await import('@/pages/Invitations/Invitations');
@@ -182,6 +195,15 @@ export const routes = [
             lazy: async () => {
               const { VoiceDetailPage } = await import('@/pages/VoiceDetail/VoiceDetail');
               return { Component: VoiceDetailPage };
+            },
+          },
+          {
+            // Step 11. Same placement convention as 'notes/:noteId/share'
+            // right after 'notes/:noteId' above.
+            path: 'voice/:voiceNoteId/share',
+            lazy: async () => {
+              const { ShareVoiceNotePage } = await import('@/pages/ShareVoiceNote/ShareVoiceNote');
+              return { Component: ShareVoiceNotePage };
             },
           },
         ],

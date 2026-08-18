@@ -1,0 +1,17 @@
+@layer components {
+  .shared-audio-player {
+    display: block;
+  }
+
+  .shared-audio-player__control {
+    width: 100%;
+  }
+
+  .shared-audio-player--centre {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-block: var(--space-6);
+    color: var(--color-text-secondary);
+  }
+}

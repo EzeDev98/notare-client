@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
+import { Share } from 'lucide-react';
 
 import { AudioPlayer } from '@/features/voice/components/AudioPlayer/AudioPlayer';
 import { TranscriptionPanel } from '@/features/voice/components/TranscriptionPanel/TranscriptionPanel';
@@ -11,7 +12,16 @@ import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './VoiceDetail.css';
 
-function parseVoiceNoteId(param: string | undefined): number | null {
+/**
+ * Turns a route parameter into a voice-note id, or null. Same shape as
+ * `parseNoteId` (`useNote.ts`) for the same reason: `Number('')` is `0`,
+ * which would otherwise pass as a plausible id.
+ *
+ * Exported (not a page-local helper any more) so `ShareVoiceNotePage`
+ * (`/voice/:voiceNoteId/share`) can parse the identical route param shape
+ * without a second copy of this guard.
+ */
+export function parseVoiceNoteId(param: string | undefined): number | null {
   if (param === undefined) return null;
   const id = Number(param);
   return Number.isInteger(id) && id > 0 ? id : null;
@@ -82,7 +92,24 @@ export function VoiceDetailPage() {
       {voiceNote.data ? (
         <>
           <header className="voice-detail__header">
-            <h1>Voice note</h1>
+            <div className="voice-detail__header-row">
+              <h1>Voice note</h1>
+              {/*
+                No toolbar-level Share icon exists for voice notes the way
+                AppLayout's does for the active NOTE (that one is wired to
+                `/notes/:noteId` specifically via `useMatch`, not a general
+                mechanism) — this in-page link is voice's own attachment
+                point instead, same destination pattern (`/share`) as the
+                note side's toolbar icon.
+              */}
+              <Link
+                to={`/voice/${String(voiceNote.data.id)}/share`}
+                className="voice-detail__share-link"
+              >
+                <Share aria-hidden="true" size={16} strokeWidth={1.75} />
+                Share
+              </Link>
+            </div>
             <p className="voice-detail__muted">
               Recorded{' '}
               <time dateTime={voiceNote.data.createdAt}>

@@ -12,6 +12,68 @@
     gap: var(--space-4);
   }
 
+  /*
+   * Mirrors `.invitations__tabs`/`.invitations__tab` exactly — this page's
+   * own doc comment says the tab CHOICE mirrors `InvitationsPage`'s
+   * reasoning, so the tab LOOK does too, rather than this page inventing a
+   * second tab visual language for the same underlying pattern.
+   */
+  .shared-notes__tabs {
+    display: flex;
+    gap: var(--space-1);
+    margin-block-start: var(--space-4);
+    border-block-end: var(--border-width) solid var(--color-border);
+  }
+
+  .shared-notes__tab {
+    padding: var(--space-2) var(--space-3);
+    color: var(--color-text-secondary);
+    background: none;
+    border: none;
+    font: inherit;
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    border-block-end: 2px solid transparent;
+    margin-block-end: -1px;
+  }
+
+  .shared-notes__tab:hover {
+    color: var(--color-text);
+  }
+
+  .shared-notes__tab[aria-selected='true'] {
+    color: var(--color-accent);
+    border-block-end-color: var(--color-accent);
+    font-weight: var(--font-weight-medium);
+  }
+
+  /*
+   * The All tab's per-source failure notice (10e) — one source down while
+   * the other's rows still render above/below it. Mirrors
+   * `.shared-note__conflict`'s danger-outline treatment (the closest
+   * existing "something's wrong, but here's the rest of the content
+   * around it" banner in this codebase) rather than the full-panel
+   * `.shared-notes__centre` error, which this is deliberately NOT: that
+   * one replaces the panel's content, this one sits alongside it.
+   */
+  .shared-notes__partial-error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-block-start: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    color: var(--color-danger);
+    background-color: var(--color-surface-sunken);
+    border: var(--border-width) solid var(--color-danger);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+  }
+
+  .shared-notes__partial-error p {
+    margin: 0;
+  }
+
   .shared-notes__list {
     display: grid;
     gap: var(--space-3);
