@@ -21,7 +21,7 @@ interface SharedNoteCardProps {
    * avoids a flash of "Unknown user" for a name that's simply still in
    * flight.
    */
-  ownerName?: string;
+  ownerName?: string | undefined;
 }
 
 /**

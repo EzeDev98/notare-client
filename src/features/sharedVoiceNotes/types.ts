@@ -42,6 +42,8 @@ export interface SharedVoiceNoteSummaryResponse {
   /** The grant's own id — present so the client can address it if it ever needs to, though nothing here does yet. */
   shareId: number;
   voiceNoteId: number;
+  /** The parent text note, or null for a standalone voice note. */
+  noteId: number | null;
   /** Who shared it with me. */
   ownerId: number;
   /** What I may do with it. READ-only in practice today — the grant-gated endpoints only check for READ — kept as the full enum so WRITE has somewhere to land later. */

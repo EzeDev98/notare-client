@@ -30,7 +30,7 @@ interface ListOptions extends Cancellable {
 
 export const sharedVoiceNoteService = {
   /** Voice notes shared WITH the current user, sorted by when they were shared, newest first — the server's fixed order, no sort param to override it. */
-  listSharedWithMe({ page, size, signal }: ListOptions = {}): Promise
+  listSharedWithMe({ page, size, signal }: ListOptions = {}): Promise<
     PagedResponse<SharedVoiceNoteSummaryResponse>
   > {
     return httpClient.get<PagedResponse<SharedVoiceNoteSummaryResponse>>(SHARED_VOICE_NOTES, {

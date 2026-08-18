@@ -12,7 +12,7 @@ interface SharedVoiceNoteCardProps {
    * is still in flight rather than "no owner". See that prop's own doc
    * comment for the full reasoning; not repeated here.
    */
-  ownerName?: string;
+  ownerName?: string | undefined;
 }
 
 /**

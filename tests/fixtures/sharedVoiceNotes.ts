@@ -17,6 +17,7 @@ export function makeSharedVoiceNoteSummary(
   return {
     shareId,
     voiceNoteId: 1,
+    noteId: null,
     ownerId: 2,
     permission: 'READ',
     originalFilename: null,
