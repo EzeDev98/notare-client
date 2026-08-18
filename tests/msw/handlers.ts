@@ -284,10 +284,7 @@ export const handlers = [
   ),
 
   http.get(`${BASE}/voice-notes/:voiceNoteId/download`, () =>
-    // A minimal, real audio/webm-ish blob is unnecessary for tests that
-    // only assert an object URL was created — an arbitrary byte payload
-    // is enough.
-    new HttpResponse(new Blob([new Uint8Array([0, 1, 2, 3])]), {
+    new HttpResponse(new Uint8Array([0, 1, 2, 3]), {
       status: 200,
       headers: { 'content-type': 'audio/webm' },
     }),
@@ -318,9 +315,8 @@ export const handlers = [
     ),
   ),
 
-  // Same minimal-blob reasoning as /voice-notes/:voiceNoteId/download above.
   http.get(`${BASE}/shared-voice-notes/:voiceNoteId/download`, () =>
-    new HttpResponse(new Blob([new Uint8Array([0, 1, 2, 3])]), {
+    new HttpResponse(new Uint8Array([0, 1, 2, 3]), {
       status: 200,
       headers: { 'content-type': 'audio/webm' },
     }),

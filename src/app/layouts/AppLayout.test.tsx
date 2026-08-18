@@ -82,13 +82,6 @@ describe('the toolbar delete icon', () => {
  * pre-Step-1 comments once claimed.
  */
 describe('the folders panel — Shared with me', () => {
-  /*
-   * useFoldersPanel persists open/closed state to localStorage on every
-   * change, and nothing else in this suite clears it between tests —
-   * without this, the first test's click here would leave the panel open
-   * for the second, which would then find "Hide folders" instead of the
-   * "Show folders" button it's looking for.
-   */
   beforeEach(() => {
     window.localStorage.clear();
   });
@@ -97,7 +90,7 @@ describe('the folders panel — Shared with me', () => {
     const user = userEvent.setup();
     renderAt('/notes');
 
-    await user.click(screen.getByRole('button', { name: 'Show folders' }));
+    await user.click(await screen.findByRole('button', { name: 'Show folders' }));
 
     const folders = screen.getByRole('navigation', { name: 'Folders' });
     const linkNames = within(folders)
@@ -114,9 +107,9 @@ describe('the folders panel — Shared with me', () => {
 
   it('navigates to the Shared with me page', async () => {
     const user = userEvent.setup();
-    renderAt('/notes');
+    renderAt('/archived');
 
-    await user.click(screen.getByRole('button', { name: 'Show folders' }));
+    await user.click(await screen.findByRole('button', { name: 'Show folders' }));
     await user.click(screen.getByRole('link', { name: 'Shared with me' }));
 
     expect(await screen.findByRole('heading', { name: 'Shared with me' })).toBeInTheDocument();

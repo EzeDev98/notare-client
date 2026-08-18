@@ -10,7 +10,8 @@ import {
   useCancelCollaboration,
   useRejectCollaboration,
 } from '@/features/collaboration/hooks/useCollaborationMutations';
-import type { CollaborationResponse, CollaborationStatus } from '@/features/collaboration/types';
+import type { CollaborationStatus } from '@/features/collaboration/types';
+import { formatUserName, useUserLookup } from '@/features/userLookup/hooks/useUserLookup';
 import { isBadRequest } from '@/lib/http/errors';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
 import { Button } from '@/design-system/components/Button/Button';
@@ -20,28 +21,6 @@ import './Invitations.css';
 
 type Tab = 'received' | 'sent';
 
-/**
- * `/collaborations` (architecture doc §4.2: "tabs: Received / Sent; accept,
- * reject, cancel"). Closes the gap the audit flagged: the state machine
- * (types.ts), its HTTP surface (collaborationService.ts) and its query/
- * mutation hooks were all built and committed with nothing rendering them.
- *
- * A row here shows the OTHER PERSON and the invitation's status — nothing
- * about a note. A collaboration is a person-to-person relationship, not a
- * grant on any particular note (types.ts's own doc comment on
- * `CollaborationResponse` — this page previously displayed a `noteTitle`
- * and `permission` that don't exist on the real response; corrected before
- * the 9C invite flow was built on the same wrong assumption). Which notes
- * get shared with an accepted collaborator, and at what permission, is a
- * separate decision made later on `/notes/:id/share` (9D).
- *
- * ONE route with a local tab switch, not two routes (contrast with
- * `NoteTabs`, which deliberately IS route-per-tab because those are
- * different screens with different actions). Received and Sent are the
- * same kind of screen — a list of the same `CollaborationResponse` rows,
- * viewed from the other side — so a NavLink pair would create two URLs
- * for what the architecture doc itself specs as one.
- */
 export function InvitationsPage() {
   useDocumentTitle('Collaborations');
 
@@ -107,6 +86,11 @@ function ReceivedList() {
   const accept = useAcceptCollaboration();
   const reject = useRejectCollaboration();
   const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
+
+  const rowsForNames = data?.content ?? [];
+  const { profiles, isLoading: namesLoading } = useUserLookup(
+    rowsForNames.map((row) => row.ownerId),
+  );
 
   function clearRowError(id: number) {
     setRowErrors((current) => {
@@ -178,7 +162,9 @@ function ReceivedList() {
         return (
           <li key={row.id} className="invitations__row">
             <div className="invitations__row-main">
-              <p className="invitations__name">{ownerLabel(row)}</p>
+              <p className="invitations__name">
+                {namesLoading ? `User ${String(row.ownerId)}` : formatUserName(profiles.get(row.ownerId))}
+              </p>
               <p className="invitations__meta">
                 <time dateTime={row.createdAt} title={formatServerDateTimeAbsolute(row.createdAt)}>
                   {formatServerDateTimeRelative(row.createdAt)}
@@ -230,6 +216,11 @@ function SentList() {
   const { data, isLoading, isError, refetch } = useSentCollaborations();
   const cancel = useCancelCollaboration();
   const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
+
+  const rowsForNames = data?.content ?? [];
+  const { profiles, isLoading: namesLoading } = useUserLookup(
+    rowsForNames.map((row) => row.collaboratorId),
+  );
 
   function handleCancel(id: number) {
     setRowErrors((current) => {
@@ -285,7 +276,11 @@ function SentList() {
       {rows.map((row) => (
         <li key={row.id} className="invitations__row">
           <div className="invitations__row-main">
-            <p className="invitations__name">{collaboratorLabel(row)}</p>
+            <p className="invitations__name">
+              {namesLoading
+                ? `User ${String(row.collaboratorId)}`
+                : formatUserName(profiles.get(row.collaboratorId))}
+            </p>
             <p className="invitations__meta">
               <time dateTime={row.createdAt} title={formatServerDateTimeAbsolute(row.createdAt)}>
                 {formatServerDateTimeRelative(row.createdAt)}
@@ -294,12 +289,6 @@ function SentList() {
             <StatusBadge status={row.status} />
           </div>
 
-          {/*
-            Cancel is valid from ANY status, not just PENDING
-            (collaborationService.ts's own doc comment on
-            cancelCollaboration) — it is the only revocation path, so an
-            ACCEPTED grant still needs this button to be revocable at all.
-          */}
           <div className="invitations__row-actions">
             <Button
               variant="danger"
@@ -333,22 +322,6 @@ function StatusBadge({ status }: { status: CollaborationStatus }) {
   );
 }
 
-function ownerLabel(row: CollaborationResponse): string {
-  return `User ${row.ownerId}`;
-}
-
-function collaboratorLabel(row: CollaborationResponse): string {
-  return (
-    `User ${row.collaboratorId}`
-  );
-}
-
-/**
- * `isBadRequest` on accept/reject means the opposite-terminal-state case
- * (types.ts's own doc comment: accepting an already-rejected invite, or
- * vice versa) — the ONLY thing a 400 can mean on these two endpoints, per
- * the state machine. Everything else is a plain connectivity failure.
- */
 function describeTransitionError(error: unknown): string {
   if (isBadRequest(error)) {
     return 'This invitation was already resolved. Refresh to see its current status.';

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 
-import { useReceivedCollaborations, useSentCollaborations } from '@/features/collaboration/hooks/useCollaborations';
 import { composeNotificationMessage } from '@/features/notifications/compose';
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
 import {
@@ -10,19 +9,13 @@ import {
 } from '@/features/notifications/hooks/useNotificationMutations';
 import { useUnreadCount } from '@/features/notifications/hooks/useUnreadCount';
 import type { NotificationResponse } from '@/features/notifications/types';
+import { formatUserName, useUserLookup } from '@/features/userLookup/hooks/useUserLookup';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
 import { Button } from '@/design-system/components/Button/Button';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Notifications.css';
 
-/**
- * `/notifications` (architecture doc §4.2: "list, unread filter, mark
- * read, mark all, delete"). Poll-driven, not push — the unread badge in
- * the shell (`useUnreadCount`) is the only thing that polls; this page
- * fetches once on open, same "fetch the list on open" split §2.5 spells
- * out.
- */
 export function NotificationsPage() {
   useDocumentTitle('Notifications');
 
@@ -36,31 +29,15 @@ export function NotificationsPage() {
   const markAllRead = useMarkAllNotificationsRead();
   const deleteNotification = useDeleteNotification();
 
-  // Best-effort actor names, same technique `ShareNote.tsx`'s `resolveName`
-  // already uses for `sharedWithUserId`: there is no `/user/lookup` (G2),
-  // so the only names this app can attach to a bare id are the ones
-  // already sitting in the accepted-collaborations cache. An actor could
-  // be someone who invited ME (received) or someone I invited (sent) —
-  // both are checked.
-  const sent = useSentCollaborations();
-  const received = useReceivedCollaborations();
+  const actorIds = (notifications.data?.content ?? [])
+    .map((notification) => notification.actorId)
+    .filter((id): id is number => id !== null);
+  const { profiles, isLoading: namesLoading } = useUserLookup(actorIds);
 
   function resolveActor(actorId: number): string | undefined {
-    const fromSent = (sent.data?.content ?? []).find(
-      (row) => row.status === 'ACCEPTED' && row.collaboratorId === actorId,
-    );
-    if (fromSent) {
-      return `User ${fromSent.collaboratorId}`;
-    }
-
-    const fromReceived = (received.data?.content ?? []).find(
-      (row) => row.status === 'ACCEPTED' && row.ownerId === actorId,
-    );
-    if (fromReceived) {
-      return `User ${fromReceived.ownerId}`;
-    }
-
-    return undefined;
+    if (namesLoading) return undefined;
+    const profile = profiles.get(actorId);
+    return profile ? formatUserName(profile) : undefined;
   }
 
   function handleMarkRead(notification: NotificationResponse) {
@@ -146,8 +123,6 @@ export function NotificationsPage() {
                   className="notifications-page__row"
                   data-unread={isUnread || undefined}
                 >
-                  {/* Not decorative — the ONLY visual difference between
-                      read and unread besides colour (§36: never colour alone). */}
                   <span className="notifications-page__dot" aria-hidden={!isUnread}>
                     {isUnread ? <span className="ds-visually-hidden">Unread</span> : null}
                   </span>
