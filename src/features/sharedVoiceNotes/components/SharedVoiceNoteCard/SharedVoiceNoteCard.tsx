@@ -3,92 +3,102 @@ import { Link } from 'react-router';
 
 import type { SharedVoiceNoteSummaryResponse } from '@/features/sharedVoiceNotes/types';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
+import './SharedVoiceNoteCard.css';
 
 interface SharedVoiceNoteCardProps {
   shared: SharedVoiceNoteSummaryResponse;
   /**
-   * Same contract as `SharedNoteCard.ownerName` — resolved via ONE batch
-   * `useUserLookup` call at the page level, `undefined` while that lookup
-   * is still in flight rather than "no owner". See that prop's own doc
-   * comment for the full reasoning; not repeated here.
+   * Resolved once at the Shared with me page level through the single
+   * useUserLookup batch request.
+   *
+   * undefined means the lookup is still in progress.
    */
   ownerName?: string | undefined;
 }
 
-/**
- * A duplicate of `VoiceNoteCard.tsx`'s private `formatDuration`, not an
- * import from it. Mirrors this codebase's established rule that
- * recipient-facing content never reuses an owner-side component
- * (`VoiceDetail.tsx` vs `SharedNote.tsx`'s own established pattern) — kept
- * consistent here at the small-helper level too, rather than reaching into
- * `features/voice` for a one-line function and creating a cross-module
- * dependency an owner-side refactor could then break.
- */
 function formatDuration(seconds: number | null): string {
   if (seconds === null) return '';
+
   const total = Math.round(seconds);
   const mins = Math.floor(total / 60);
   const secs = total % 60;
+
   return `${String(mins)}:${String(secs).padStart(2, '0')}`;
 }
 
 /**
- * One row on "Shared with me"'s Voice view — the voice-note half of the
- * page `SharedNoteCard` already covers for notes.
+ * A standalone voice note on "Shared with me".
  *
- * STRUCTURALLY MIRRORS `SharedNoteCard` (same link-wraps-card shape, same
- * "Shared by X · time ago" meta line, same `ownerName` contract) but swaps
- * its permission-badge-plus-preview for an icon plus duration — a
- * deliberate divergence, not an inconsistency:
+ * This component is only rendered when the voice note does not have a shared
+ * parent note available on the current page. Voice notes attached to a shared
+ * text note are intentionally suppressed by useSharedItems() and therefore
+ * never become duplicate top-level rows.
  *
- *   - NO PREVIEW: a voice note has no text content to excerpt. The `Mic`
- *     icon is the visual anchor `SharedNoteCard`'s title/preview pair would
- *     otherwise occupy.
- *   - NO PERMISSION BADGE: unlike a note grant (READ or WRITE, genuinely
- *     either), a voice grant is READ-only in practice today — the
- *     grant-gated audio endpoints only ever check for READ
- *     (`SharedVoiceNoteSummaryResponse`'s own server-side doc comment). A
- *     badge that always reads the same value isn't conveying anything;
- *     rendering one anyway would imply a WRITE state that can't currently
- *     occur.
+ * The visual treatment follows the same compact card language as
+ * SharedNoteCard: title, supporting metadata, and no owner-side actions.
  *
- * Links to `/shared-voice/:voiceNoteId` — the recipient's own route,
- * never the owner's `/voice/:voiceNoteId` reused with a permission branch
- * (this project's established pattern, `VoiceDetail.tsx` vs `SharedNote.tsx`).
+ * This remains a recipient-specific route. We do not reuse the owner's
+ * `/voice/:voiceNoteId` route because shared content has its own
+ * authorization boundary.
  */
-export function SharedVoiceNoteCard({ shared, ownerName }: SharedVoiceNoteCardProps) {
+export function SharedVoiceNoteCard({
+  shared,
+  ownerName,
+}: SharedVoiceNoteCardProps) {
   const filename = (shared.originalFilename ?? '').trim();
+  const duration = formatDuration(shared.durationSeconds);
 
   return (
     <li className="shared-voice-note-card">
       <Link
         className="shared-voice-note-card__link"
         to={`/shared-voice/${String(shared.voiceNoteId)}`}
+        aria-label={
+          filename === ''
+            ? 'Open shared voice note'
+            : `Open shared voice note ${filename}`
+        }
       >
         <span className="shared-voice-note-card__icon" aria-hidden="true">
           <Mic size={20} />
         </span>
 
-        <h2 className="shared-voice-note-card__title">
-          {filename === '' ? (
-            <span className="shared-voice-note-card__untitled">Voice note</span>
-          ) : (
-            filename
-          )}
-        </h2>
+        <span className="shared-voice-note-card__content">
+          <h2 className="shared-voice-note-card__title">
+            {filename === '' ? (
+              <span className="shared-voice-note-card__untitled">
+                Voice note
+              </span>
+            ) : (
+              filename
+            )}
+          </h2>
 
-        <span className="shared-voice-note-card__duration">
-          {formatDuration(shared.durationSeconds)}
+          <p className="shared-voice-note-card__meta">
+            <span className="shared-voice-note-card__owner-time">
+              {ownerName !== undefined ? (
+                <>
+                  Shared by {ownerName} &middot;{' '}
+                </>
+              ) : (
+                'Shared '
+              )}
+
+              <time
+                dateTime={shared.sharedAt}
+                title={formatServerDateTimeAbsolute(shared.sharedAt)}
+              >
+                {formatServerDateTimeRelative(shared.sharedAt)}
+              </time>
+            </span>
+          </p>
         </span>
 
-        <p className="shared-voice-note-card__meta">
-          <span className="shared-voice-note-card__owner-time">
-            {ownerName !== undefined ? <>Shared by {ownerName} &middot; </> : 'Shared '}
-            <time dateTime={shared.sharedAt} title={formatServerDateTimeAbsolute(shared.sharedAt)}>
-              {formatServerDateTimeRelative(shared.sharedAt)}
-            </time>
+        {duration !== '' ? (
+          <span className="shared-voice-note-card__duration" aria-label={`Duration ${duration}`}>
+            {duration}
           </span>
-        </p>
+        ) : null}
       </Link>
     </li>
   );
