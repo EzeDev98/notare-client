@@ -34,15 +34,12 @@
     text-decoration: none;
   }
 
-  .sidebar-note-item__link:hover {
-    background-color: var(--color-accent-faint);
-  }
-
   /* Same attribute-driven pattern as .app-shell__nav-link — NavLink sets
      aria-current="page" itself, so what's announced and what's highlighted
      can't drift apart. */
   .sidebar-note-item__link[aria-current='page'] {
     background-color: var(--color-accent-subtle);
+    border-radius: 5px;
   }
 
   .sidebar-note-item__title {

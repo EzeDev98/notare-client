@@ -65,6 +65,15 @@
     color: var(--color-text);
   }
 
+  .notifications-page__message-link {
+    display: block;
+    text-decoration: none;
+  }
+
+  .notifications-page__message-link:hover {
+    text-decoration: underline;
+  }
+
   .notifications-page__time {
     display: block;
     margin-block-start: var(--space-1);
@@ -113,5 +122,66 @@
   .notifications-page__empty-body {
     margin: 0;
     max-inline-size: 32ch;
+  }
+}
+
+
+.notifications-page__collaboration-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.notifications-page__collaboration-button {
+  flex: 1;
+  min-height: 32px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    opacity 140ms ease;
+}
+
+.notifications-page__collaboration-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.notifications-page__collaboration-button--accept {
+  color: #166534;
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+
+.notifications-page__collaboration-button--accept:hover:not(:disabled) {
+  background: #bbf7d0;
+}
+
+.notifications-page__collaboration-button--reject {
+  color: #b91c1c;
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+
+.notifications-page__collaboration-button--reject:hover:not(:disabled) {
+  background: #fecaca;
+}
+
+@media (max-width: 640px) {
+  .notifications-page__collaboration-actions {
+    gap: 6px;
+  }
+
+  .notifications-page__collaboration-button {
+    min-height: 34px;
   }
 }

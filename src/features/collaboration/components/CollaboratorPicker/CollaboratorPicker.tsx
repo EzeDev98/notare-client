@@ -6,24 +6,29 @@ import type { UserSummaryResponse } from '@/features/collaboration/types';
 import './CollaboratorPicker.css';
 
 interface CollaboratorPickerProps {
-  /** Excluded from results — used to filter out people already invited (a
-   * collaboration is a person-to-person relationship, not scoped to any
-   * one note — types.ts's own doc comment on `CollaborationResponse`). */
-  excludeIds?: number[];
+  /**
+   * Search and selection component only.
+   *
+   * This component deliberately does NOT filter users based on existing
+   * collaborations. A user may have been invited before, rejected an
+   * invitation, accepted an invitation, or have no relationship at all.
+   *
+   * The caller decides what action is appropriate for the selected user.
+   */
   onSelect: (user: UserSummaryResponse) => void;
 }
 
 /**
- * A search-as-you-type input over GET /user/search, resolving to a single
- * pick. Deliberately uncontrolled from the caller's side beyond `onSelect`:
- * the picker owns its own query text and clears it after a selection, so a
- * form embedding this does not need to reset picker-internal state itself.
+ * Search-as-you-type user picker.
+ *
+ * The picker has no knowledge of collaboration state. Its responsibility is
+ * only to search users and return the selected user to its caller.
  */
-export function CollaboratorPicker({ excludeIds = [], onSelect }: CollaboratorPickerProps) {
+export function CollaboratorPicker({ onSelect }: CollaboratorPickerProps) {
   const [query, setQuery] = useState('');
   const { data, isLoading, isError } = useUserSearch(query);
 
-  const results = (data?.content ?? []).filter((user) => !excludeIds.includes(user.id));
+  const results = data?.content ?? [];
 
   function handleSelect(user: UserSummaryResponse) {
     onSelect(user);
@@ -44,7 +49,11 @@ export function CollaboratorPicker({ excludeIds = [], onSelect }: CollaboratorPi
 
       {query.trim().length > 0 && (
         <ul className="collaborator-picker__results" role="listbox">
-          {isLoading && <li className="collaborator-picker__status">Searching…</li>}
+          {isLoading && (
+            <li className="collaborator-picker__status">
+              Searching…
+            </li>
+          )}
 
           {isError && (
             <li className="collaborator-picker__status collaborator-picker__status--error">
@@ -53,7 +62,9 @@ export function CollaboratorPicker({ excludeIds = [], onSelect }: CollaboratorPi
           )}
 
           {!isLoading && !isError && results.length === 0 && (
-            <li className="collaborator-picker__status">No one found.</li>
+            <li className="collaborator-picker__status">
+              No one found.
+            </li>
           )}
 
           {results.map((user) => (
@@ -70,7 +81,10 @@ export function CollaboratorPicker({ excludeIds = [], onSelect }: CollaboratorPi
                 <span className="collaborator-picker__name">
                   {user.firstName} {user.lastName}
                 </span>
-                <span className="collaborator-picker__username">@{user.username}</span>
+
+                <span className="collaborator-picker__username">
+                  @{user.username}
+                </span>
               </button>
             </li>
           ))}

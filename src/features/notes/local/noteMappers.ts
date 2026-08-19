@@ -100,7 +100,10 @@ export function fromNoteResponse(note: NoteResponse, existing?: NoteRow): NoteRo
     lastModifiedBy: note.lastModifiedBy,
     dirty: 0,
     syncState: 'synced',
-    localUpdatedAt: Date.now(),
+    localUpdatedAt: existing?.localUpdatedAt ?? Date.now(),
+    // Preserve the existing local ordering when a note is merely read/refreshed.
+    // Opening a note is not a local mutation and must not move it to the top.
+    // A genuinely new note still receives Date.now().
     // A row reaching this function is, by definition, one the server just
     // gave us cleanly — any earlier conflict this row carried is resolved by
     // that fact alone, so it must not linger and be shown as still-open.
@@ -148,7 +151,10 @@ export function fromNoteSummary(
     lastModifiedBy: existing?.lastModifiedBy ?? null,
     dirty: existing?.dirty ?? 0,
     syncState: existing?.syncState ?? 'synced',
-    localUpdatedAt: Date.now(),
+    // A refresh/open is not a local edit. Preserve the existing ordering
+    // timestamp so reading a note does not move it to the top of the list.
+    // Only a genuinely new local row gets a fresh timestamp here.
+    localUpdatedAt: existing?.localUpdatedAt ?? Date.now(),
     conflictNote: existing?.conflictNote ?? null,
   };
 }

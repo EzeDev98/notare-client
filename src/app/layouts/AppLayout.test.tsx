@@ -86,7 +86,7 @@ describe('the folders panel — Shared with me', () => {
     window.localStorage.clear();
   });
 
-  it('links to /shared, positioned between Voice and Account', async () => {
+  it('links to /shared, positioned between Voice notes and Collaborations', async () => {
     const user = userEvent.setup();
     renderAt('/notes');
 
@@ -97,21 +97,33 @@ describe('the folders panel — Shared with me', () => {
       .getAllByRole('link')
       .map((link) => link.textContent);
 
-    expect(linkNames).toEqual(['Archived', 'Trash', 'Voice', 'Shared with me', 'Account']);
+    expect(linkNames).toEqual([
+      'Voice notes',
+      'Shared with me',
+      'Collaborations',
+      'Archived',
+      'Trash',
+      'Accounts',
+    ]);
 
     expect(within(folders).getByRole('link', { name: 'Shared with me' })).toHaveAttribute(
       'href',
       '/shared',
     );
+
+    expect(within(folders).getByRole('link', { name: 'Collaborations' })).toHaveAttribute(
+      'href',
+      '/collaborations',
+    );
   });
 
-  it('navigates to the Shared with me page', async () => {
+  it('navigates to the Collaboration page', async () => {
     const user = userEvent.setup();
     renderAt('/archived');
 
     await user.click(await screen.findByRole('button', { name: 'Show folders' }));
-    await user.click(screen.getByRole('link', { name: 'Shared with me' }));
+    await user.click(screen.getByRole('link', { name: 'Collaborations' }));
 
-    expect(await screen.findByRole('heading', { name: 'Shared with me' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Collaborations' })).toBeInTheDocument();
   });
 });

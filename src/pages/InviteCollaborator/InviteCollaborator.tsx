@@ -1,29 +1,29 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
 import { CollaboratorPicker } from '@/features/collaboration/components/CollaboratorPicker/CollaboratorPicker';
 import { useSentCollaborations } from '@/features/collaboration/hooks/useCollaborations';
 import { useCreateCollaboration } from '@/features/collaboration/hooks/useCollaborationMutations';
-import type { UserSummaryResponse } from '@/features/collaboration/types';
+import type {
+  CollaborationResponse,
+  UserSummaryResponse,
+} from '@/features/collaboration/types';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './InviteCollaborator.css';
 
-/**
- * `/collaborations/invite` — architecture doc §4.2's "Find people" screen:
- * "user search (`query` param), invite". The FIRST of the two stages the
- * architecture doc keeps insisting on separately (§2.4: "you invite
- * someone, they accept, *then* you can share notes with them") — this
- * screen only ever sends `collaboratorId` (types.ts's own corrected doc
- * comment on `CreateCollaborationRequest`); it has no notion of a note at
- * all, on purpose.
- *
- * `excludeIds` is every person already in `sent`, regardless of status —
- * not just PENDING. The server's `UNIQUE(owner_id, collaborator_id)`
- * (NOTARE-SERVER.md §8) means a second invite to someone already ACCEPTED
- * or REJECTED cannot succeed either; there is no "re-invite" concept, so
- * excluding only pending rows would let the picker offer a person a second
- * invite would only 400 on.
- */
+const NOTES_ROUTE = '/';
+
+type ExistingRelationship =
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'REJECTED';
+
+interface ExistingCollaboratorModalProps {
+  user: UserSummaryResponse;
+  relationship: ExistingRelationship;
+  onClose: () => void;
+}
+
 export function InviteCollaboratorPage() {
   useDocumentTitle('Find people');
 
@@ -32,23 +32,89 @@ export function InviteCollaboratorPage() {
 
   const [justInvited, setJustInvited] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [selectedExisting, setSelectedExisting] =
+    useState<{
+      user: UserSummaryResponse;
+      status: 'PENDING' | 'ACCEPTED';
+    } | null>(null);
 
-  const excludeIds = (sent.data?.content ?? []).map((row) => row.collaboratorId);
+  /**
+   * Relationships are keyed by collaborator ID so that a search result
+   * can be matched against an existing invitation/collaboration.
+   *
+   * IMPORTANT:
+   * We deliberately do NOT pass these IDs into CollaboratorPicker.
+   * Existing users must remain searchable.
+   */
+  const relationshipsByUserId = useMemo(() => {
+    const map = new Map<number, CollaborationResponse>();
+
+    for (const relationship of sent.data?.content ?? []) {
+      map.set(relationship.collaboratorId, relationship);
+    }
+
+    return map;
+  }, [sent.data?.content]);
 
   function handleSelect(user: UserSummaryResponse) {
     setError(null);
+
+    const existing = relationshipsByUserId.get(user.id);
+
+    /*
+     * The person has already accepted the collaboration.
+     *
+     * Do not send another invitation. Instead, explain that the
+     * collaboration already exists and send the user back to their notes,
+     * where the actual note-sharing operation belongs.
+     */
+    if (existing?.status === 'ACCEPTED') {
+      setSelectedExisting({
+        user,
+        status: 'ACCEPTED',
+      });
+      return;
+    }
+
+    /*
+     * The invitation is still pending.
+     *
+     * Again, do not create another collaboration row.
+     */
+    if (existing?.status === 'PENDING') {
+      setSelectedExisting({
+        user,
+        status: 'PENDING',
+      });
+      return;
+    }
+
+    /*
+     * No existing relationship, or the previous relationship was rejected.
+     *
+     * The server is responsible for handling a rejected relationship
+     * becoming pending again.
+     */
     create.mutate(
       { collaboratorId: user.id },
       {
         onSuccess: () => {
-          const name = `${user.firstName} ${user.lastName}`.trim() || user.username;
+          const name = getDisplayName(user);
+
           setJustInvited((current) => [name, ...current]);
         },
+
         onError: () => {
-          setError('Could not send that invitation. Check your connection and try again.');
+          setError(
+            'Could not send that invitation. Check your connection and try again.',
+          );
         },
       },
     );
+  }
+
+  function closeExistingModal() {
+    setSelectedExisting(null);
   }
 
   return (
@@ -57,25 +123,149 @@ export function InviteCollaboratorPage() {
         <Link to="/collaborations">← Collaborations</Link>
       </nav>
 
-      <h1 className="invite-collaborator__title">Find people</h1>
+      <h1 className="invite-collaborator__title">
+        Find people
+      </h1>
+
       <p className="invite-collaborator__lead">
-        Invite someone to collaborate. Once they accept, you can share specific notes with them
-        from that note&apos;s Share screen.
+        Search for anyone on Notare. Invite new people or find
+        collaborators you already work with.
       </p>
 
-      <CollaboratorPicker excludeIds={excludeIds} onSelect={handleSelect} />
+      <CollaboratorPicker onSelect={handleSelect} />
+
+      {sent.isLoading ? (
+        <p className="invite-collaborator__status">
+          Loading your collaborations…
+        </p>
+      ) : null}
+
+      {create.isPending ? (
+        <p className="invite-collaborator__status">
+          Sending invitation…
+        </p>
+      ) : null}
 
       {error !== null ? (
-        <p className="invite-collaborator__error" role="alert">
+        <p
+          className="invite-collaborator__error"
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
 
       {justInvited.length > 0 ? (
-        <p className="invite-collaborator__status" role="status">
+        <p
+          className="invite-collaborator__status"
+          role="status"
+        >
           Invited {justInvited.join(', ')}.
         </p>
       ) : null}
+
+      {selectedExisting !== null ? (
+        <ExistingCollaboratorModal
+          user={selectedExisting.user}
+          relationship={selectedExisting.status}
+          onClose={closeExistingModal}
+        />
+      ) : null}
     </section>
+  );
+}
+
+function ExistingCollaboratorModal({
+  user,
+  relationship,
+  onClose,
+}: ExistingCollaboratorModalProps) {
+  const isPending = relationship === 'PENDING';
+  const displayName = getDisplayName(user);
+
+  return (
+    <div
+      className="invite-collaborator__modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="invite-collaborator__modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="existing-collaborator-title"
+        aria-describedby="existing-collaborator-description"
+      >
+        <button
+          type="button"
+          className="invite-collaborator__modal-close"
+          aria-label="Close"
+          onClick={onClose}
+        >
+          ×
+        </button>
+
+        <div className="invite-collaborator__modal-icon" aria-hidden="true">
+          {isPending ? '✉' : '✓'}
+        </div>
+
+        <h2
+          id="existing-collaborator-title"
+          className="invite-collaborator__modal-title"
+        >
+          {isPending
+            ? 'Invitation already sent'
+            : 'You’re already collaborators'}
+        </h2>
+
+        <p
+          id="existing-collaborator-description"
+          className="invite-collaborator__modal-text"
+        >
+          {isPending ? (
+            <>
+              You have already invited <strong>{displayName}</strong> to
+              collaborate with you. Once they accept, you can share your
+              notes with them from the note's Share menu.
+            </>
+          ) : (
+            <>
+              <strong>{displayName}</strong> is already one of your
+              collaborators. To share a note with them, open the note you
+              want to share and select Share.
+            </>
+          )}
+        </p>
+
+        <div className="invite-collaborator__modal-actions">
+          <button
+            type="button"
+            className="invite-collaborator__modal-secondary"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+
+          <Link
+            to={NOTES_ROUTE}
+            className="invite-collaborator__modal-primary"
+            onClick={onClose}
+          >
+            Go to my notes
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getDisplayName(user: UserSummaryResponse): string {
+  return (
+    `${user.firstName} ${user.lastName}`.trim() ||
+    user.username
   );
 }

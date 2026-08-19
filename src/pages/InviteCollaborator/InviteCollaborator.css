@@ -1,33 +1,185 @@
-@layer pages {
+.invite-collaborator {
+  width: min(100%, 720px);
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.invite-collaborator__back {
+  margin-bottom: 28px;
+}
+
+.invite-collaborator__back a {
+  color: inherit;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.invite-collaborator__back a:hover {
+  text-decoration: underline;
+}
+
+.invite-collaborator__title {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.invite-collaborator__lead {
+  margin: 10px 0 28px;
+  max-width: 580px;
+  color: var(--text-secondary, #6b7280);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.invite-collaborator__status {
+  margin: 16px 0 0;
+  color: var(--text-secondary, #6b7280);
+  font-size: 14px;
+}
+
+.invite-collaborator__error {
+  margin: 16px 0 0;
+  color: var(--color-danger, #dc2626);
+  font-size: 14px;
+}
+
+/* Existing collaborator modal */
+
+.invite-collaborator__modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 42%);
+  backdrop-filter: blur(4px);
+}
+
+.invite-collaborator__modal {
+  position: relative;
+  width: min(100%, 440px);
+  padding: 32px;
+  border: 1px solid rgb(0 0 0 / 7%);
+  border-radius: 20px;
+  background: var(--surface, #ffffff);
+  box-shadow:
+    0 20px 50px rgb(0 0 0 / 16%),
+    0 4px 12px rgb(0 0 0 / 8%);
+}
+
+.invite-collaborator__modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary, #6b7280);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.invite-collaborator__modal-close:hover {
+  background: rgb(0 0 0 / 5%);
+}
+
+.invite-collaborator__modal-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 20px;
+  border-radius: 14px;
+  background: rgb(124 92 191 / 10%);
+  color: #7c5cbf;
+  font-size: 20px;
+}
+
+.invite-collaborator__modal-title {
+  margin: 0;
+  padding-right: 28px;
+  font-size: 22px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.invite-collaborator__modal-text {
+  margin: 12px 0 28px;
+  color: var(--text-secondary, #6b7280);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.invite-collaborator__modal-text strong {
+  color: var(--text-primary, #111827);
+  font-weight: 600;
+}
+
+.invite-collaborator__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.invite-collaborator__modal-secondary,
+.invite-collaborator__modal-primary {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.invite-collaborator__modal-secondary {
+  border: 1px solid var(--border, #e5e7eb);
+  background: transparent;
+  color: var(--text-primary, #111827);
+}
+
+.invite-collaborator__modal-secondary:hover {
+  background: rgb(0 0 0 / 4%);
+}
+
+.invite-collaborator__modal-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #7c5cbf;
+  background: #7c5cbf;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.invite-collaborator__modal-primary:hover {
+  filter: brightness(0.96);
+}
+
+@media (max-width: 520px) {
   .invite-collaborator {
-    max-inline-size: var(--measure-prose);
-    margin-inline: auto;
-    padding: var(--space-8) var(--space-4);
+    padding: 24px 16px 48px;
   }
 
-  .invite-collaborator__back {
-    margin-block-end: var(--space-4);
-    font-size: var(--font-size-sm);
+  .invite-collaborator__modal {
+    padding: 28px 22px 22px;
+    border-radius: 18px;
   }
 
-  .invite-collaborator__title {
-    margin: 0 0 var(--space-2);
+  .invite-collaborator__modal-actions {
+    flex-direction: column-reverse;
   }
 
-  .invite-collaborator__lead {
-    margin: 0 0 var(--space-6);
-    color: var(--color-text-secondary);
-  }
-
-  .invite-collaborator__error {
-    margin: var(--space-3) 0 0;
-    color: var(--color-danger);
-    font-size: var(--font-size-sm);
-  }
-
-  .invite-collaborator__status {
-    margin: var(--space-3) 0 0;
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
+  .invite-collaborator__modal-secondary,
+  .invite-collaborator__modal-primary {
+    width: 100%;
   }
 }

@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
+import { MemoryRouter } from 'react-router';
 
 import { QueryProvider } from '@/app/providers/QueryProvider';
 import { NotificationsPage } from '@/pages/Notifications/Notifications';
@@ -16,7 +17,9 @@ function renderNotifications() {
   return render(
     <SignedIn>
       <QueryProvider>
-        <NotificationsPage />
+        <MemoryRouter>
+          <NotificationsPage />
+        </MemoryRouter>
       </QueryProvider>
     </SignedIn>,
   );
@@ -33,6 +36,41 @@ function emptyCollaborationsPage() {
     hasPrevious: false,
   });
 }
+
+describe('notifications list', () => {
+  it('links collaboration invitation notifications to the collaboration page', async () => {
+    server.use(
+      http.get(`${BASE}/notifications`, () =>
+        HttpResponse.json({
+          content: [
+            makeNotification({
+              id: 42,
+              type: 'COLLABORATION_INVITED',
+              actorId: 9,
+              readAt: null,
+            }),
+          ],
+          page: 0,
+          size: 20,
+          totalElements: 1,
+          totalPages: 1,
+          hasNext: false,
+          hasPrevious: false,
+        }),
+      ),
+      http.get(`${BASE}/collaborations/received`, emptyCollaborationsPage),
+      http.get(`${BASE}/collaborations/sent`, emptyCollaborationsPage),
+      http.get(`${BASE}/notifications/unread-count`, () => HttpResponse.json({ count: 1 })),
+    );
+
+    renderNotifications();
+
+    const link = await screen.findByRole('link', {
+      name: 'Femi Ade invited you to collaborate',
+    });
+
+    expect(link).toHaveAttribute('href', '/collaborations');
+  });
 
 describe('notifications list', () => {
   it('composes the message with a resolved actor from accepted collaborations', async () => {
@@ -172,4 +210,6 @@ describe('notifications list', () => {
 
     expect(await screen.findByText('You have a new notification')).toBeInTheDocument();
   });
+});
+
 });

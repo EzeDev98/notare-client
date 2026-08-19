@@ -183,6 +183,10 @@
     font-weight: var(--font-weight-medium);
   }
 
+  .app-shell__nav-icon {
+    color: var(--color-icon);
+  }
+
   .app-shell__nav-icon svg {
     inline-size: 1.5rem;
     block-size: 1.5rem;
@@ -449,7 +453,7 @@
       border: none;
       border-radius: var(--radius-md);
       background: none;
-      color: var(--color-text-secondary);
+      color: var(--color-icon);
       text-decoration: none;
       cursor: pointer;
     }

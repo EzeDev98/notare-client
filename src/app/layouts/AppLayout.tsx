@@ -7,7 +7,7 @@ import {
 } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, NavLink, Outlet, useMatch, useNavigate } from 'react-router';
-import { Bell, Search, Share, SquarePen, Trash2, Users } from 'lucide-react';
+import { Bell, Handshake, Search, Share, SquarePen, Trash2, Users } from 'lucide-react';
 
 import { navItems, type NavItem } from '@/app/layouts/navItems';
 import { RouteFocus } from '@/app/RouteFocus';
@@ -26,7 +26,7 @@ import { ThemeToggle } from '@/design-system/components/ThemeToggle/ThemeToggle'
 import './AppLayout.css';
 
 /*
- * Archived, Trash, Voice, Shared with me, Account — the FOLDERS PANEL's
+ * Archived, Trash, Voice, Shared with me, Collaboration, Account — the FOLDERS PANEL's
  * contents now (moved out of the note-list sidebar's own footer). Still
  * defined here rather than in navItems.tsx, same reasoning as before:
  * navItems.tsx drives the <1024px compact nav and stays exactly as it
@@ -83,7 +83,7 @@ const desktopOnlyItems: NavItem[] = [
 //
 // Shared with me is NOT part of navItems (that array drives the <1024px
 // compact nav too, and Shared has no place in that unchanged four-item
-// list) — it's inserted here directly, between Voice and Account, so it
+// list) — it's inserted here directly, between Shared with me and Account, so it
 // picks up the same NavLink rendering as everything else in this panel
 // without navItems.tsx growing a fifth entry mobile/tablet never asked for.
 const sharedWithMeItem: NavItem = {
@@ -92,11 +92,28 @@ const sharedWithMeItem: NavItem = {
   icon: <Users aria-hidden="true" strokeWidth={1.75} />,
 };
 
+const voiceNotesItem: NavItem = {
+  ...navItems.find((item) => item.to === '/voice')!,
+  label: 'Voice notes',
+};
+
+const collaborationItem: NavItem = {
+  to: '/collaborations',
+  label: 'Collaborations',
+  icon: <Handshake aria-hidden="true" strokeWidth={1.75} />,
+};
+
+const accountItem: NavItem = {
+  ...navItems.find((item) => item.to === '/account/sessions')!,
+  label: 'Accounts',
+};
+
 const foldersNavItems = [
-  ...desktopOnlyItems,
-  ...navItems.filter((item) => item.to === '/voice'),
+  voiceNotesItem,
   sharedWithMeItem,
-  ...navItems.filter((item) => item.to === '/account/sessions'),
+  collaborationItem,
+  ...desktopOnlyItems,
+  accountItem,
 ];
 
 /**

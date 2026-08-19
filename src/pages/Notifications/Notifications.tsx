@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { Link } from 'react-router';
 
+import { collaborationService } from '@/features/collaboration/api/collaborationService';
 import { composeNotificationMessage } from '@/features/notifications/compose';
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
 import {
@@ -29,6 +32,42 @@ export function NotificationsPage() {
   const markAllRead = useMarkAllNotificationsRead();
   const deleteNotification = useDeleteNotification();
 
+  const acceptCollaboration = useMutation({
+    mutationFn: (collaborationId: number) =>
+      collaborationService.acceptCollaboration(collaborationId),
+    onSuccess: async (_, collaborationId) => {
+      const notification = rows.find(
+        (item) =>
+          item.type === 'COLLABORATION_INVITED' &&
+          item.targetId === collaborationId,
+      );
+
+      if (notification && notification.readAt === null) {
+        markRead.mutate(notification.id);
+      }
+
+      await notifications.refetch();
+    },
+  });
+
+  const rejectCollaboration = useMutation({
+    mutationFn: (collaborationId: number) =>
+      collaborationService.rejectCollaboration(collaborationId),
+    onSuccess: async (_, collaborationId) => {
+      const notification = rows.find(
+        (item) =>
+          item.type === 'COLLABORATION_INVITED' &&
+          item.targetId === collaborationId,
+      );
+
+      if (notification && notification.readAt === null) {
+        markRead.mutate(notification.id);
+      }
+
+      await notifications.refetch();
+    },
+  });
+
   const actorIds = (notifications.data?.content ?? [])
     .map((notification) => notification.actorId)
     .filter((id): id is number => id !== null);
@@ -47,6 +86,20 @@ export function NotificationsPage() {
 
   function handleDelete(notification: NotificationResponse) {
     deleteNotification.mutate(notification.id);
+  }
+
+  function handleAcceptInvitation(notification: NotificationResponse) {
+    if (notification.type !== 'COLLABORATION_INVITED') return;
+    if (notification.targetId === null) return;
+
+    acceptCollaboration.mutate(notification.targetId);
+  }
+
+  function handleRejectInvitation(notification: NotificationResponse) {
+    if (notification.type !== 'COLLABORATION_INVITED') return;
+    if (notification.targetId === null) return;
+
+    rejectCollaboration.mutate(notification.targetId);
   }
 
   const rows = notifications.data?.content ?? [];
@@ -128,9 +181,18 @@ export function NotificationsPage() {
                   </span>
 
                   <div className="notifications-page__row-main">
-                    <p className="notifications-page__message">
-                      {composeNotificationMessage(notification, resolveActor)}
-                    </p>
+                    {notification.type === 'COLLABORATION_INVITED' ? (
+                      <Link
+                        to="/collaborations"
+                        className="notifications-page__message notifications-page__message-link"
+                      >
+                        {composeNotificationMessage(notification, resolveActor)}
+                      </Link>
+                    ) : (
+                      <p className="notifications-page__message">
+                        {composeNotificationMessage(notification, resolveActor)}
+                      </p>
+                    )}
                     <time
                       className="notifications-page__time"
                       dateTime={notification.createdAt}
@@ -154,6 +216,7 @@ export function NotificationsPage() {
                         Mark read
                       </Button>
                     ) : null}
+
                     <Button
                       variant="ghost"
                       size="sm"
@@ -171,6 +234,49 @@ export function NotificationsPage() {
                     >
                       Delete
                     </Button>
+
+                    {notification.type === 'COLLABORATION_INVITED' &&
+                    notification.targetId !== null ? (
+                      <div className="notifications-page__collaboration-actions">
+                        <button
+                          type="button"
+                          className="notifications-page__collaboration-button notifications-page__collaboration-button--accept"
+                          disabled={
+                            (acceptCollaboration.isPending &&
+                              acceptCollaboration.variables === notification.targetId) ||
+                            (rejectCollaboration.isPending &&
+                              rejectCollaboration.variables === notification.targetId)
+                          }
+                          onClick={() => {
+                            handleAcceptInvitation(notification);
+                          }}
+                        >
+                          {acceptCollaboration.isPending &&
+                          acceptCollaboration.variables === notification.targetId
+                            ? 'Accepting…'
+                            : 'Accept'}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="notifications-page__collaboration-button notifications-page__collaboration-button--reject"
+                          disabled={
+                            (acceptCollaboration.isPending &&
+                              acceptCollaboration.variables === notification.targetId) ||
+                            (rejectCollaboration.isPending &&
+                              rejectCollaboration.variables === notification.targetId)
+                          }
+                          onClick={() => {
+                            handleRejectInvitation(notification);
+                          }}
+                        >
+                          {rejectCollaboration.isPending &&
+                          rejectCollaboration.variables === notification.targetId
+                            ? 'Rejecting…'
+                            : 'Reject'}
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 </li>
               );

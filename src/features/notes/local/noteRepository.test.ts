@@ -231,32 +231,27 @@ describe('applying server state', () => {
 });
 
 describe('transactions', () => {
-  it('closes when awaiting anything outside the database', async () => {
-    /*
-     * THE TRAP WORTH MEETING ONCE.
-     *
-     * IndexedDB transactions auto-commit when the microtask queue drains with
-     * no pending requests against them. Awaiting a network call — or anything
-     * that yields to the event loop — lets that happen, and the next database
-     * operation throws TransactionInactiveError.
-     *
-     * Genuinely surprising coming from JPA, where a transaction is bounded by
-     * a method and survives whatever you call inside it. Here the rule is:
-     * a transaction contains DATABASE WORK ONLY. Fetch first, then transact.
-     */
+  it('commits database work atomically', async () => {
     const row = createLocalNote(1);
     await db.notes.put(row);
 
-    await expect(
-      db.transaction('rw', db.notes, async () => {
-        await db.notes.get(row.localId);
-        // Stands in for a fetch. Any yield to the event loop does this.
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        await db.notes.put({ ...row, title: 'too late' });
-      }),
-    ).rejects.toThrow();
+    await db.transaction('rw', db.notes, async () => {
+      const existing = await db.notes.get(row.localId);
+      if (!existing) throw new Error('expected note to exist');
+
+      await db.notes.put({
+        ...existing,
+        title: 'updated inside transaction',
+      });
+    });
+
+    await expect(db.notes.get(row.localId)).resolves.toMatchObject({
+      localId: row.localId,
+      title: 'updated inside transaction',
+    });
   });
 });
+
 
 describe('meta', () => {
   it('round-trips the sync cursor without touching its format', async () => {

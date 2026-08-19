@@ -36,6 +36,9 @@
      */
     --color-text-secondary: #a8a29e;
 
+    /* Icons — intentionally softer than primary text. */
+    --color-icon: #a8a29e;
+
     /* 3.65 — still visibly unavailable, still not for readable text. */
     --color-text-disabled: #78716c;
 
