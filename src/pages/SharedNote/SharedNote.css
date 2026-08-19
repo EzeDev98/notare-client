@@ -1,15 +1,48 @@
 @layer pages {
+  /*
+   * Structurally identical to `.note-detail` (NoteDetail.css) — a flex
+   * column filling `.app-shell__main`'s box, edge-to-edge behind a small
+   * consistent side margin, NOT capped to `--measure-prose` / centred (that
+   * reads as a marketing article floating in the middle of the screen, not
+   * a page in a notes app — see `.note-detail`'s own comment on this exact
+   * point). `position: relative` is the positioning context for
+   * `.voice-recorder__dock` (VoiceRecorder.css), same role `.note-detail`
+   * plays there.
+   */
   .shared-note {
-    /* Anchors VoiceRecorder's `.voice-recorder__dock` (position: absolute),
-       same role `.note-detail`'s own `position: relative` plays for
-       NoteDetailPage — see VoiceRecorder.css's own comment on that rule. */
+    display: flex;
+    flex-direction: column;
+    block-size: 100%;
     position: relative;
-    max-inline-size: var(--measure-prose);
-    margin-inline: auto;
-    padding: var(--space-6) var(--space-4) var(--space-16);
   }
 
+  /*
+   * THE scroll container — matches `.note-detail__scroll` exactly. Back
+   * link, states, the editor, and the past-recordings list all live here;
+   * the voice RECORDER is the one thing rendered as a sibling below this,
+   * outside the scrolling flow, so it can float bottom-right against
+   * `.shared-note` itself instead of scrolling away with the content.
+   */
+  .shared-note__scroll {
+    flex: 1;
+    min-block-size: 0;
+    overflow-y: auto;
+    padding: var(--space-6) var(--space-8) var(--space-16);
+  }
+
+  /*
+   * UNLIKE `.note-detail__back`, this stays visible at every width,
+   * including the >=1024px sidebar breakpoint. `.note-detail__back` hides
+   * there because the sidebar's own note list IS "all notes" at that size —
+   * a genuinely redundant second way back. The sidebar's "Shared with me"
+   * nav item is not that: it opens the shared-notes LIST, not the note
+   * currently open, so it is not a substitute for this link. It is also
+   * the one deliberate, permanent difference from `.note-detail` this page
+   * keeps (`SharedNote.tsx`'s own top comment).
+   */
   .shared-note__back {
+    display: flex;
+    align-items: center;
     font-size: var(--font-size-sm);
   }
 

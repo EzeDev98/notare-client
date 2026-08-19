@@ -60,11 +60,13 @@ export function SharedVoiceDetailPage() {
   if (voiceNoteId === null) {
     return (
       <article className="shared-note">
-        <SharedVoiceDetailChrome />
+        <div className="shared-note__scroll">
+          <SharedVoiceDetailChrome />
 
-        <div className="shared-note__centre">
-          <h1>Voice note not found</h1>
-          <Link to="/shared">Back to shared with me</Link>
+          <div className="shared-note__centre">
+            <h1>Voice note not found</h1>
+            <Link to="/shared">Back to shared with me</Link>
+          </div>
         </div>
       </article>
     );
@@ -72,97 +74,107 @@ export function SharedVoiceDetailPage() {
 
   return (
     <article className="shared-note">
-      <SharedVoiceDetailChrome />
+      {/*
+        Same shell as `/shared/:id` (`SharedNote.tsx`'s own comment on why):
+        everything scrolls inside `.shared-note__scroll`. This page has no
+        recorder — a voice grant is READ-only in practice today — so there
+        is no sibling below this div, but the wrapper still matters: it is
+        what supplies the padding and the independent scroll region, now
+        that `.shared-note` itself is bare flex/positioning chrome.
+      */}
+      <div className="shared-note__scroll">
+        <SharedVoiceDetailChrome />
 
-      {query.isLoading ? (
-        <div className="shared-note__centre">
-          <Spinner label="Loading this recording" />
-        </div>
-      ) : null}
-
-      {query.isError && isNoGrantError(query.error) ? (
-        <div className="shared-note__centre">
-          <h1>Not shared with you</h1>
-
-          {/*
-            Deliberately vague about WHY, same reasoning as `SharedNote.tsx`'s
-            identical copy: this 404 also covers a voice note that never
-            existed, so naming a specific cause would be a claim the
-            response doesn't actually support.
-          */}
-          <p className="shared-note__muted">
-            This recording isn&apos;t available to you — it may have never
-            been shared with you, or access may have changed.
-          </p>
-
-          <Link to="/shared">Back to shared with me</Link>
-        </div>
-      ) : null}
-
-      {query.isError && !isNoGrantError(query.error) ? (
-        <div className="shared-note__centre" role="alert">
-          <h1>Can&apos;t open this recording</h1>
-
-          <p className="shared-note__muted">
-            You&apos;re offline, or Notare can&apos;t be reached right now.
-          </p>
-
-          <button
-            type="button"
-            className="shared-note__retry"
-            onClick={() => void query.refetch()}
-          >
-            Try again
-          </button>
-        </div>
-      ) : null}
-
-      {query.data ? (
-        <>
-          <div className="shared-note__mode" role="status">
-            <span>
-              {ownerName !== undefined ? <>Shared by {ownerName} &middot; </> : 'Shared '}
-              <time
-                dateTime={query.data.sharedAt}
-                title={formatServerDateTimeAbsolute(query.data.sharedAt)}
-              >
-                {formatServerDateTimeRelative(query.data.sharedAt)}
-              </time>
-              {' · '}
-              {query.data.permission === 'WRITE' ? 'Can edit' : 'Read only'}
-            </span>
+        {query.isLoading ? (
+          <div className="shared-note__centre">
+            <Spinner label="Loading this recording" />
           </div>
+        ) : null}
 
-          {/*
-            `hideBody`: there is no text content behind a standalone voice
-            share, so the note surface stops at the title — same title
-            styling and placeholder behaviour as `/shared/:id`, just without
-            reserving the editor's 60vh body for an empty, read-only field.
-          */}
-          <EditorSurface
-            title={filename === '' ? 'Voice note' : filename}
-            content=""
-            onTitleChange={() => {
-              /* Voice shares are read-only; the title field never accepts edits. */
-            }}
-            onContentChange={() => {
-              /* No body to edit in a voice-only share. */
-            }}
-            readOnly
-            hideBody
-          />
+        {query.isError && isNoGrantError(query.error) ? (
+          <div className="shared-note__centre">
+            <h1>Not shared with you</h1>
 
-          <div className="shared-note__voice-card">
-            <span className="shared-note__voice-icon" aria-hidden="true">
-              <Mic size={18} />
-            </span>
+            {/*
+              Deliberately vague about WHY, same reasoning as `SharedNote.tsx`'s
+              identical copy: this 404 also covers a voice note that never
+              existed, so naming a specific cause would be a claim the
+              response doesn't actually support.
+            */}
+            <p className="shared-note__muted">
+              This recording isn&apos;t available to you — it may have never
+              been shared with you, or access may have changed.
+            </p>
 
-            <div className="shared-note__voice-player">
-              <SharedAudioPlayer voiceNoteId={voiceNoteId} />
+            <Link to="/shared">Back to shared with me</Link>
+          </div>
+        ) : null}
+
+        {query.isError && !isNoGrantError(query.error) ? (
+          <div className="shared-note__centre" role="alert">
+            <h1>Can&apos;t open this recording</h1>
+
+            <p className="shared-note__muted">
+              You&apos;re offline, or Notare can&apos;t be reached right now.
+            </p>
+
+            <button
+              type="button"
+              className="shared-note__retry"
+              onClick={() => void query.refetch()}
+            >
+              Try again
+            </button>
+          </div>
+        ) : null}
+
+        {query.data ? (
+          <>
+            <div className="shared-note__mode" role="status">
+              <span>
+                {ownerName !== undefined ? <>Shared by {ownerName} &middot; </> : 'Shared '}
+                <time
+                  dateTime={query.data.sharedAt}
+                  title={formatServerDateTimeAbsolute(query.data.sharedAt)}
+                >
+                  {formatServerDateTimeRelative(query.data.sharedAt)}
+                </time>
+                {' · '}
+                {query.data.permission === 'WRITE' ? 'Can edit' : 'Read only'}
+              </span>
             </div>
-          </div>
-        </>
-      ) : null}
+
+            {/*
+              `hideBody`: there is no text content behind a standalone voice
+              share, so the note surface stops at the title — same title
+              styling and placeholder behaviour as `/shared/:id`, just without
+              reserving the editor's 60vh body for an empty, read-only field.
+            */}
+            <EditorSurface
+              title={filename === '' ? 'Voice note' : filename}
+              content=""
+              onTitleChange={() => {
+                /* Voice shares are read-only; the title field never accepts edits. */
+              }}
+              onContentChange={() => {
+                /* No body to edit in a voice-only share. */
+              }}
+              readOnly
+              hideBody
+            />
+
+            <div className="shared-note__voice-card">
+              <span className="shared-note__voice-icon" aria-hidden="true">
+                <Mic size={18} />
+              </span>
+
+              <div className="shared-note__voice-player">
+                <SharedAudioPlayer voiceNoteId={voiceNoteId} />
+              </div>
+            </div>
+          </>
+        ) : null}
+      </div>
     </article>
   );
 }

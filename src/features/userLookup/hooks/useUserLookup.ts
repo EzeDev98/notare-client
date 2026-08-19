@@ -96,3 +96,24 @@ export function formatUserName(profile: UserSummaryResponse | undefined): string
 
   return 'Unknown user';
 }
+
+/**
+ * Two-letter avatar label — `firstName`+`lastName` initials -> fallback
+ * first two characters of `username` -> fallback `?`. Same
+ * profile-in/string-out shape as `formatUserName` above and for the same
+ * reason: one fallback chain every avatar-bearing consumer shares, rather
+ * than each one inventing its own.
+ */
+export function formatUserInitials(profile: UserSummaryResponse | undefined): string {
+  if (profile === undefined) return '?';
+
+  const first = profile.firstName.trim().charAt(0);
+  const last = profile.lastName.trim().charAt(0);
+  const initials = `${first}${last}`.toUpperCase();
+  if (initials !== '') return initials;
+
+  const username = profile.username.trim();
+  if (username !== '') return username.slice(0, 2).toUpperCase();
+
+  return '?';
+}

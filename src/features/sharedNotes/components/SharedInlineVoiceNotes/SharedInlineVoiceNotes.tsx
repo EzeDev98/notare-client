@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pause, Play } from 'lucide-react';
 
 import { useAttachedAudioBlob } from '@/features/sharedNotes/hooks/useAttachedAudioBlob';
+import { formatUserInitials, useUserLookup } from '@/features/userLookup/hooks/useUserLookup';
 import type { VoiceNoteResponse } from '@/features/voice/types';
 import '@/features/voice/components/InlineVoiceNote/InlineVoiceNote.css';
 
@@ -46,14 +47,29 @@ function formatRecordedTime(createdAt: string): string {
  *    conditionally show one link is not worth the complexity yet — omitted
  *    uniformly for now, flagged as a reasonable follow-up rather than solved
  *    here.
+ * 3. The round avatar shows the RECORDING'S OWNER initials
+ *    (`voiceNote.ownerId`, resolved via `useUserLookup`), not the owner
+ *    page's own placeholder — a shared note can carry recordings from
+ *    several different collaborators, unlike the owner's own note where
+ *    every attached recording is always the current user's.
  */
 export function SharedInlineVoiceNotes({ noteId, voiceNotes }: SharedInlineVoiceNotesProps) {
+  // One batch lookup for every distinct recorder on this note, not one
+  // request per bubble — same `useUserLookup` batching every other
+  // multi-row consumer (Shared with me, Share Note) already relies on.
+  const { profiles } = useUserLookup(voiceNotes.map((voiceNote) => voiceNote.ownerId));
+
   if (voiceNotes.length === 0) return null;
 
   return (
     <div className="inline-voice-notes" aria-label="Voice notes in this note">
       {voiceNotes.map((voiceNote) => (
-        <SharedInlineVoiceNote key={voiceNote.id} noteId={noteId} voiceNote={voiceNote} />
+        <SharedInlineVoiceNote
+          key={voiceNote.id}
+          noteId={noteId}
+          voiceNote={voiceNote}
+          ownerInitials={formatUserInitials(profiles.get(voiceNote.ownerId))}
+        />
       ))}
     </div>
   );
@@ -62,9 +78,11 @@ export function SharedInlineVoiceNotes({ noteId, voiceNotes }: SharedInlineVoice
 function SharedInlineVoiceNote({
   noteId,
   voiceNote,
+  ownerInitials,
 }: {
   noteId: number;
   voiceNote: VoiceNoteResponse;
+  ownerInitials: string;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -124,7 +142,7 @@ function SharedInlineVoiceNote({
       <div className="inline-voice-note__bubble">
         <div className="inline-voice-note__main">
           <div className="inline-voice-note__avatar" aria-hidden="true">
-            🎙
+            {ownerInitials}
           </div>
 
           <button

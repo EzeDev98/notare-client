@@ -12,6 +12,7 @@ import {
   useSharedNote,
 } from '@/features/sharedNotes/hooks/useSharedNote';
 import { useSharedNotePermission } from '@/features/sharedNotes/hooks/useSharedNotePermission';
+import type { SharePermission } from '@/features/sharedNotes/types';
 import { useUpdateSharedNote } from '@/features/sharedNotes/hooks/useUpdateSharedNote';
 import { isConflict, isForbidden } from '@/lib/http/errors';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
@@ -28,6 +29,29 @@ import './SharedNote.css';
  * NOT use the owner's Dexie/local-note/editor state. Shared content remains
  * server-authoritative and online-only.
  *
+ * SHELL NOW MATCHES `NoteDetailPage` EXACTLY (`.note-detail` /
+ * `.note-detail__scroll` there, `.shared-note` / `.shared-note__scroll`
+ * here — same rules, just renamed). The ONLY visual difference between the
+ * two pages is the back link: "← All notes" there, "← Shared with me"
+ * here. In particular:
+ *   - `.shared-note` is a flex column filling the pane, edge-to-edge, NOT
+ *     capped to `--measure-prose` and centred — that read as a marketing
+ *     article floating in the middle of the screen instead of a page in a
+ *     notes app (see `.note-detail`'s own comment on the same point).
+ *   - Everything that scrolls (back link, states, editor, voice list) lives
+ *     inside `.shared-note__scroll`; the voice RECORDER is the one thing
+ *     rendered as a sibling below it, so it can float bottom-right via
+ *     `.voice-recorder__dock`'s `position: absolute` against `.shared-note`
+ *     itself, exactly like `NoteDetailPage`.
+ *
+ * That floating placement is why the recorder's own hooks
+ * (`useSharedNotePermission`, `useAttachedVoiceNotes`,
+ * `useUploadAttachedVoiceNote`) and the `triedEditing` toggle now live in
+ * `SharedNoteView` rather than down inside the editor — the editor (inside
+ * the scroll region) and the recorder (outside it) are siblings, so
+ * whatever decides "should the recorder show at all" has to sit above both
+ * of them.
+ *
  * WRITE:
  *   - edit title/content
  *   - record a voice note against this note
@@ -39,8 +63,8 @@ import './SharedNote.css';
  *   - no editing
  *   - no voice recorder
  *
- * REVISED: attached voice notes and the recorder now go through the
- * NOTE-GRANT-gated paths (`useAttachedVoiceNotes`, `SharedInlineVoiceNotes`,
+ * Attached voice notes and the recorder go through the NOTE-GRANT-gated
+ * paths (`useAttachedVoiceNotes`, `SharedInlineVoiceNotes`,
  * `useUploadAttachedVoiceNote`) instead of the owner-scoped
  * `useVoiceNotesByNote`/`InlineVoiceNotes`/plain `VoiceRecorder` upload,
  * which would 403/404 for a recipient viewing attachments they don't
@@ -51,77 +75,111 @@ export function SharedNotePage() {
   const { noteId: noteIdParam } = useParams();
   const noteId = parseNoteId(noteIdParam);
 
-  const query = useSharedNote(noteId ?? -1);
-
-  const title = (query.data?.title ?? '').trim();
-
-  useDocumentTitle(title === '' ? 'Shared note' : title);
-
-  if (noteId === null) {
-    return (
-      <article className="shared-note">
-        <SharedNoteChrome />
-
-        <div className="shared-note__centre">
-          <h1>Note not found</h1>
-          <Link to="/shared">Back to shared with me</Link>
-        </div>
-      </article>
-    );
-  }
-
   return (
     <article className="shared-note">
-      <SharedNoteChrome />
-
-      {query.isLoading ? (
-        <div className="shared-note__centre">
-          <Spinner label="Loading this note" />
+      {noteId === null ? (
+        <div className="shared-note__scroll">
+          <SharedNoteChrome />
+          <div className="shared-note__centre">
+            <h1>Note not found</h1>
+            <Link to="/shared">Back to shared with me</Link>
+          </div>
         </div>
-      ) : null}
+      ) : (
+        <SharedNoteView noteId={noteId} />
+      )}
+    </article>
+  );
+}
 
-      {query.isError && isNoGrantError(query.error) ? (
-        <div className="shared-note__centre">
-          <h1>Not shared with you</h1>
+/**
+ * Everything that depends on `noteId` being real — split out from
+ * `SharedNotePage` so the recorder (a sibling of the scroll region, per
+ * this file's own top comment) and the editor inside it can share one
+ * source of truth for permission/`triedEditing` without either one owning
+ * the other.
+ */
+function SharedNoteView({ noteId }: { noteId: number }) {
+  const query = useSharedNote(noteId);
+  const title = (query.data?.title ?? '').trim();
+  useDocumentTitle(title === '' ? 'Shared note' : title);
 
-          <p className="shared-note__muted">
-            This note isn&apos;t available to you — it may have never been
-            shared with you, or access may have changed.
-          </p>
+  const [triedEditing, setTriedEditing] = useState(false);
+  const cachedPermission = useSharedNotePermission(noteId);
+  const voiceNotes = useAttachedVoiceNotes(noteId);
+  const uploadVoiceNote = useUploadAttachedVoiceNote(noteId);
 
-          <Link to="/shared">Back to shared with me</Link>
-        </div>
-      ) : null}
+  const showVoiceRecorder =
+    query.data !== undefined &&
+    (cachedPermission === 'WRITE' || (cachedPermission === undefined && triedEditing));
 
-      {query.isError && !isNoGrantError(query.error) ? (
-        <div className="shared-note__centre" role="alert">
-          <h1>Can&apos;t open this note</h1>
+  return (
+    <>
+      <div className="shared-note__scroll">
+        <SharedNoteChrome />
 
-          <p className="shared-note__muted">
-            You&apos;re offline, or Notare can&apos;t be reached right now.
-          </p>
+        {query.isLoading ? (
+          <div className="shared-note__centre">
+            <Spinner label="Loading this note" />
+          </div>
+        ) : null}
 
-          <button
-            type="button"
-            className="shared-note__retry"
-            onClick={() => void query.refetch()}
-          >
-            Try again
-          </button>
-        </div>
-      ) : null}
+        {query.isError && isNoGrantError(query.error) ? (
+          <div className="shared-note__centre">
+            <h1>Not shared with you</h1>
 
-      {query.data ? (
-        <SharedNoteEditor
-          noteId={noteId}
-          note={{
-            title: query.data.title ?? '',
-            content: query.data.content ?? '',
-            version: query.data.version,
+            <p className="shared-note__muted">
+              This note isn&apos;t available to you — it may have never been
+              shared with you, or access may have changed.
+            </p>
+
+            <Link to="/shared">Back to shared with me</Link>
+          </div>
+        ) : null}
+
+        {query.isError && !isNoGrantError(query.error) ? (
+          <div className="shared-note__centre" role="alert">
+            <h1>Can&apos;t open this note</h1>
+
+            <p className="shared-note__muted">
+              You&apos;re offline, or Notare can&apos;t be reached right now.
+            </p>
+
+            <button
+              type="button"
+              className="shared-note__retry"
+              onClick={() => void query.refetch()}
+            >
+              Try again
+            </button>
+          </div>
+        ) : null}
+
+        {query.data ? (
+          <SharedNoteEditor
+            noteId={noteId}
+            note={{
+              title: query.data.title ?? '',
+              content: query.data.content ?? '',
+              version: query.data.version,
+            }}
+            cachedPermission={cachedPermission}
+            triedEditing={triedEditing}
+            onTriedEditingChange={setTriedEditing}
+            voiceNotes={voiceNotes}
+          />
+        ) : null}
+      </div>
+
+      {showVoiceRecorder ? (
+        <VoiceRecorder
+          upload={uploadVoiceNote}
+          onUploaded={() => {
+            void voiceNotes.refetch();
           }}
         />
       ) : null}
-    </article>
+    </>
   );
 }
 
@@ -140,33 +198,27 @@ interface SharedNoteEditorProps {
     content: string;
     version: number;
   };
+  /** Lifted up to `SharedNoteView` — see this file's top comment. */
+  cachedPermission: SharePermission | undefined;
+  triedEditing: boolean;
+  onTriedEditingChange: (value: boolean) => void;
+  voiceNotes: ReturnType<typeof useAttachedVoiceNotes>;
 }
 
-function SharedNoteEditor({ noteId, note }: SharedNoteEditorProps) {
+function SharedNoteEditor({
+  noteId,
+  note,
+  cachedPermission,
+  triedEditing,
+  onTriedEditingChange,
+  voiceNotes,
+}: SharedNoteEditorProps) {
   const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
   const [version, setVersion] = useState(note.version);
   const [conflictMessage, setConflictMessage] = useState<string | null>(null);
-  const [triedEditing, setTriedEditing] = useState(false);
 
-  const cachedPermission = useSharedNotePermission(noteId);
   const update = useUpdateSharedNote(noteId);
-
-  /*
-   * The parent note owns its attached voice notes.
-   *
-   * REVISED: queried through the NOTE-GRANT-gated
-   * `/shared-notes/{noteId}/voice-notes` (useAttachedVoiceNotes), not the
-   * owner-scoped `/voice-notes/by-note/{noteId}` — that endpoint checks the
-   * caller OWNS the note, which a recipient never does, so it would 403/404
-   * here regardless of how strong their share grant is.
-   *
-   * Still deliberately queried by noteId rather than treated as a second
-   * top-level Shared with me item — an attachment does not create its own
-   * list entry, it lives inside this note's own page.
-   */
-  const voiceNotes = useAttachedVoiceNotes(noteId);
-  const uploadVoiceNote = useUploadAttachedVoiceNote(noteId);
 
   const knownReadOnly = cachedPermission === 'READ';
 
@@ -208,7 +260,7 @@ function SharedNoteEditor({ noteId, note }: SharedNoteEditorProps) {
             setConflictMessage(
               "You don't have permission to edit this note.",
             );
-            setTriedEditing(false);
+            onTriedEditingChange(false);
             return;
           }
 
@@ -219,10 +271,6 @@ function SharedNoteEditor({ noteId, note }: SharedNoteEditorProps) {
       },
     );
   }
-
-  const showVoiceRecorder =
-    cachedPermission === 'WRITE' ||
-    (cachedPermission === undefined && triedEditing);
 
   return (
     <>
@@ -240,7 +288,7 @@ function SharedNoteEditor({ noteId, note }: SharedNoteEditorProps) {
                 type="button"
                 className="shared-note__try-edit"
                 onClick={() => {
-                  setTriedEditing(true);
+                  onTriedEditingChange(true);
                 }}
               >
                 Try editing
@@ -271,28 +319,31 @@ function SharedNoteEditor({ noteId, note }: SharedNoteEditorProps) {
         onContentChange={setContent}
         readOnly={readOnly}
         onBlur={handleBlur}
+        /*
+         * Passed IN rather than rendered as a sibling after `<EditorSurface>`
+         * — matches `NoteEditorHost`'s own call exactly. `.editor-surface__body`
+         * reserves 60vh (EditorSurface.css) for the writing area itself; a
+         * sibling placed after the whole `<EditorSurface>` element lands
+         * below that entire reserved block, which is what put a large gap
+         * between the text and the voice note here. As a `contentAccessory`
+         * it renders INSIDE `.editor-surface__body`, immediately after the
+         * text (`EditorSurface.tsx`'s own doc comment on the accessory slot)
+         * — same placement the owner's note gets.
+         */
+        contentAccessory={
+          <>
+            {voiceNotes.isError ? (
+              <p className="shared-note__muted" role="status">
+                Voice notes could not be loaded.
+              </p>
+            ) : null}
+
+            {voiceNotes.data && voiceNotes.data.length > 0 ? (
+              <SharedInlineVoiceNotes noteId={noteId} voiceNotes={voiceNotes.data} />
+            ) : null}
+          </>
+        }
       />
-
-      {voiceNotes.isError ? (
-        <p className="shared-note__muted" role="status">
-          Voice notes could not be loaded.
-        </p>
-      ) : null}
-
-      {voiceNotes.data && voiceNotes.data.length > 0 ? (
-        <SharedInlineVoiceNotes noteId={noteId} voiceNotes={voiceNotes.data} />
-      ) : null}
-
-      {showVoiceRecorder ? (
-        <div className="shared-note__voice-recorder">
-          <VoiceRecorder
-            upload={uploadVoiceNote}
-            onUploaded={() => {
-              void voiceNotes.refetch();
-            }}
-          />
-        </div>
-      ) : null}
     </>
   );
 }
