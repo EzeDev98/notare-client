@@ -41,17 +41,15 @@ function emptyBoth() {
 }
 
 describe('Shared with me', () => {
-  it('renders with the All tab selected by default', async () => {
+  it('renders a single merged feed with no All/Notes/Voice tabs', async () => {
     emptyBoth();
     renderShared();
 
     expect(await screen.findByRole('heading', { name: 'Shared with me' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'All' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tab', { name: 'Notes' })).toHaveAttribute('aria-selected', 'false');
-    expect(screen.getByRole('tab', { name: 'Voice' })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   });
 
-  it('shows a shared note on the All tab, with the owner name resolved', async () => {
+  it('shows a shared note as a note-shaped card, with the owner name resolved', async () => {
     server.use(
       http.get(`${BASE}/shared-notes`, () =>
         HttpResponse.json(
@@ -72,7 +70,7 @@ describe('Shared with me', () => {
     });
   });
 
-  it('shows a shared voice note on the All tab, with the owner name resolved', async () => {
+  it('shows a standalone shared voice note as a note-shaped card, with the owner name resolved', async () => {
     server.use(
       http.get(`${BASE}/shared-notes`, () => HttpResponse.json(makePage([]))),
       http.get(`${BASE}/shared-voice-notes`, () =>
@@ -91,7 +89,37 @@ describe('Shared with me', () => {
     });
   });
 
-  it('combines notes and voice notes on the All tab, newest sharedAt first', async () => {
+  it('does not give a voice note attached to a shared note its own row', async () => {
+    server.use(
+      http.get(`${BASE}/shared-notes`, () =>
+        HttpResponse.json(
+          makePage([
+            makeSharedNoteSummary({ note: makeNoteSummary({ id: 42, title: 'Cooking' }) }),
+          ]),
+        ),
+      ),
+      http.get(`${BASE}/shared-voice-notes`, () =>
+        // noteId !== null -> attached to note 42, must not surface as its own row
+        HttpResponse.json(
+          makePage([
+            makeSharedVoiceNoteSummary({
+              voiceNoteId: 7,
+              noteId: 42,
+              originalFilename: 'Attached.webm',
+            }),
+          ]),
+        ),
+      ),
+    );
+
+    renderShared();
+
+    await screen.findByRole('heading', { name: 'Cooking' });
+    expect(screen.queryByRole('heading', { name: 'Attached.webm' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(1);
+  });
+
+  it('combines notes and standalone voice notes in one feed, newest sharedAt first', async () => {
     server.use(
       http.get(`${BASE}/shared-notes`, () =>
         HttpResponse.json(
@@ -138,11 +166,11 @@ describe('Shared with me', () => {
 
     renderShared();
 
-    expect(screen.getByText('Loading shared items')).toBeInTheDocument();
+    expect(screen.getByText('Loading shared notes')).toBeInTheDocument();
     expect(screen.queryByText('Nothing shared with you yet')).not.toBeInTheDocument();
 
     expect(await screen.findByText('Nothing shared with you yet')).toBeInTheDocument();
-    expect(screen.queryByText('Loading shared items')).not.toBeInTheDocument();
+    expect(screen.queryByText('Loading shared notes')).not.toBeInTheDocument();
   });
 
   it('keeps showing a successfully loaded collection when the other one fails', async () => {
@@ -158,25 +186,42 @@ describe('Shared with me', () => {
     renderShared();
 
     expect(await screen.findByRole('heading', { name: 'Cooking' })).toBeInTheDocument();
-    expect(await screen.findByText("Couldn't load shared voice notes.")).toBeInTheDocument();
     expect(
-      screen.queryByText("Couldn't load what's been shared with you."),
-    ).not.toBeInTheDocument();
+      await screen.findByText("Some shared items couldn't be loaded right now."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Couldn't load your shared notes.")).not.toBeInTheDocument();
     expect(screen.queryByText('Nothing shared with you yet')).not.toBeInTheDocument();
   });
 
-  it('shows the correct per-tab empty state once both collections have genuinely resolved empty', async () => {
+  it('shows one merged empty state when both collections genuinely resolve empty', async () => {
     emptyBoth();
-    const user = userEvent.setup();
     renderShared();
 
     expect(await screen.findByText('Nothing shared with you yet')).toBeInTheDocument();
+  });
 
-    await user.click(screen.getByRole('tab', { name: 'Notes' }));
-    expect(await screen.findByText('No shared notes yet')).toBeInTheDocument();
+  it('shows a full-page error with retry when both collections fail', async () => {
+    let failing = true;
+    server.use(
+      http.get(`${BASE}/shared-notes`, () =>
+        failing ? problemDetail(500) : HttpResponse.json(makePage([])),
+      ),
+      http.get(`${BASE}/shared-voice-notes`, () =>
+        failing ? problemDetail(500) : HttpResponse.json(makePage([])),
+      ),
+    );
 
-    await user.click(screen.getByRole('tab', { name: 'Voice' }));
-    expect(await screen.findByText('No shared voice notes yet')).toBeInTheDocument();
+    const user = userEvent.setup();
+    renderShared();
+
+    expect(
+      await screen.findByText("Couldn't load your shared notes."),
+    ).toBeInTheDocument();
+
+    failing = false;
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+
+    expect(await screen.findByText('Nothing shared with you yet')).toBeInTheDocument();
   });
 
   it('navigates to /shared/:noteId when a shared note is clicked', async () => {

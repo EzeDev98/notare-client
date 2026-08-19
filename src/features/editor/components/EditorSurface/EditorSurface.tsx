@@ -12,6 +12,18 @@ interface EditorSurfaceProps {
   onBlur?: () => void;
   /** Optional content rendered in document flow around the body text. */
   contentAccessory?: ReactNode;
+  /**
+   * Skips the body textarea entirely.
+   *
+   * For a standalone shared voice note there is no text body — it is a
+   * note container holding only a title and a recording. Rendering an
+   * empty, read-only textarea there would reserve `.editor-surface__body`'s
+   * 60vh of blank space and show a "Start writing…" placeholder the
+   * recipient can never act on. `hideBody` keeps the title (so the surface
+   * still reads as the same note interface) while letting the caller place
+   * voice content directly below via its own markup.
+   */
+  hideBody?: boolean;
 }
 
 /**
@@ -36,6 +48,7 @@ export function EditorSurface({
   readOnly = false,
   onBlur,
   contentAccessory,
+  hideBody = false,
 }: EditorSurfaceProps) {
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
@@ -78,26 +91,28 @@ export function EditorSurface({
         onBlur={onBlur}
       />
 
-      <div className="editor-surface__body">
-        {content.trim() === '' ? contentAccessory : null}
+      {hideBody ? null : (
+        <div className="editor-surface__body">
+          {content.trim() === '' ? contentAccessory : null}
 
-        <textarea
-          ref={contentRef}
-          className="editor-surface__content"
-          aria-label="Note content"
-          placeholder="Start writing…"
-          value={content}
-          readOnly={readOnly}
-          maxLength={20_000}
-          rows={1}
-          onChange={(event) => {
-            onContentChange(event.target.value);
-          }}
-          onBlur={onBlur}
-        />
+          <textarea
+            ref={contentRef}
+            className="editor-surface__content"
+            aria-label="Note content"
+            placeholder="Start writing…"
+            value={content}
+            readOnly={readOnly}
+            maxLength={20_000}
+            rows={1}
+            onChange={(event) => {
+              onContentChange(event.target.value);
+            }}
+            onBlur={onBlur}
+          />
 
-        {content.trim() !== '' ? contentAccessory : null}
-      </div>
+          {content.trim() !== '' ? contentAccessory : null}
+        </div>
+      )}
     </div>
   )
 }

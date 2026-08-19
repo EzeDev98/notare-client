@@ -3,6 +3,10 @@ import type {
   SharedNoteSummaryResponse,
   UpdateSharedNoteRequest,
 } from '@/features/sharedNotes/types';
+import type { VoiceNoteResponse } from '@/features/voice/types';
+import { getAuthHooks } from '@/lib/http/authHooks';
+import { env } from '@/lib/config/env';
+import { ApiError } from '@/lib/http/errors';
 import { httpClient } from '@/lib/http/client';
 import type { PagedResponse } from '@/lib/http/types';
 
@@ -96,4 +100,114 @@ export const sharedNoteService = {
       ...(signal ? { signal } : {}),
     });
   },
+
+  /**
+   * Every voice note attached to this shared note, regardless of which
+   * collaborator recorded each one. Requires at least READ — same grant
+   * that unlocks the note itself.
+   */
+  listAttachedVoiceNotes(
+    noteId: number,
+    { signal }: Cancellable = {},
+  ): Promise<VoiceNoteResponse[]> {
+    return httpClient.get<VoiceNoteResponse[]>(`${SHARED_NOTES}/${String(noteId)}/voice-notes`, {
+      ...(signal ? { signal } : {}),
+    });
+  },
+
+  /**
+   * `POST /shared-notes/{noteId}/voice-notes`, `multipart/form-data`, field
+   * `file` — mirrors `voiceService.uploadVoiceNote`'s own XHR-with-progress
+   * approach verbatim (`fetch` cannot report upload progress at all, which
+   * is why this bypasses `httpClient` the same way that one does).
+   * Requires WRITE; a READ-only grant 403s, same as `updateSharedNote`.
+   */
+  async uploadVoiceNote(
+    noteId: number,
+    file: Blob,
+    { durationSeconds, onProgress, signal }: UploadOptions = {},
+  ): Promise<VoiceNoteResponse> {
+    const hooks = getAuthHooks();
+    const authorization = hooks ? await hooks.getAuthorization() : null;
+
+    const form = new FormData();
+    form.append('file', file, 'recording');
+
+    return new Promise<VoiceNoteResponse>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', buildAttachedUploadUrl(noteId, durationSeconds));
+      xhr.responseType = 'json';
+      if (authorization !== null) xhr.setRequestHeader('Authorization', authorization);
+      xhr.setRequestHeader('Accept', 'application/json');
+
+      xhr.upload.onprogress = (event) => {
+        if (!event.lengthComputable || !onProgress) return;
+        onProgress(event.loaded / event.total);
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(xhr.response as VoiceNoteResponse);
+        } else {
+          reject(new ApiError({ kind: 'http', status: xhr.status, body: xhr.response as unknown }));
+        }
+      };
+      xhr.onerror = () => {
+        reject(new ApiError({ kind: 'network' }));
+      };
+      xhr.ontimeout = () => {
+        reject(new ApiError({ kind: 'timeout' }));
+      };
+      if (signal) {
+        signal.addEventListener('abort', () => {
+          xhr.abort();
+        });
+      }
+
+      xhr.send(form);
+    });
+  },
+
+  /**
+   * Raw fetch, not httpClient — mirrors voiceService.downloadVoiceNoteBlob
+   * and sharedVoiceNoteService.downloadSharedVoiceNoteBlob's own reasoning:
+   * a Blob response isn't something httpClient's JSON-shaped parseResponse
+   * handles. Gated by the PARENT NOTE's grant on the server
+   * (SharedNoteService#getAttachedVoiceNoteAudio), not a VoiceShare grant.
+   */
+  async downloadAttachedVoiceNoteBlob(
+    noteId: number,
+    voiceNoteId: number,
+    { signal }: Cancellable = {},
+  ): Promise<Blob> {
+    const hooks = getAuthHooks();
+    const authorization = hooks ? await hooks.getAuthorization() : null;
+
+    const response = await fetch(
+      `${env.apiBaseUrl}${SHARED_NOTES}/${String(noteId)}/voice-notes/${String(voiceNoteId)}/download`,
+      {
+        headers: authorization !== null ? { Authorization: authorization } : {},
+        ...(signal ? { signal } : {}),
+      },
+    );
+
+    if (!response.ok) {
+      throw new ApiError({ kind: 'http', status: response.status, body: null });
+    }
+
+    return response.blob();
+  },
 };
+
+interface UploadOptions extends Cancellable {
+  durationSeconds?: number;
+  /** 0–1. See `uploadVoiceNote`'s own doc comment for why this bypasses `httpClient`. */
+  onProgress?: (fraction: number) => void;
+}
+
+function buildAttachedUploadUrl(noteId: number, durationSeconds?: number): string {
+  const params = new URLSearchParams();
+  if (durationSeconds !== undefined) params.set('durationSeconds', String(Math.round(durationSeconds)));
+  const query = params.toString();
+  return `${env.apiBaseUrl}${SHARED_NOTES}/${String(noteId)}/voice-notes${query === '' ? '' : `?${query}`}`;
+}

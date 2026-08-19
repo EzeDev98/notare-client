@@ -4,7 +4,8 @@ import { useAuth } from '@/app/providers/auth-context';
 import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
 import { InlineVoiceNotes } from '@/features/voice/components/InlineVoiceNote/InlineVoiceNote';
 import { parseNoteId, useNote } from '@/features/notes/hooks/useNote';
-import { VoiceRecorder } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
+import { VoiceRecorder, type VoiceUploadHandle } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
+import { useUploadVoiceNote } from '@/features/voice/hooks/useVoiceNoteMutations';
 import { useVoiceNotesByNote } from '@/features/voice/hooks/useVoiceNotes';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
@@ -22,6 +23,24 @@ export function NoteDetailPage() {
       : null;
 
   const voiceNotes = useVoiceNotesByNote(serverId);
+  const uploadMutation = useUploadVoiceNote();
+  /**
+   * Adapts `useUploadVoiceNote` (whose variables carry an OPTIONAL noteId,
+   * since it also backs the standalone `/voice` recorder with no note at
+   * all) to `VoiceRecorder`'s fixed-note `VoiceUploadHandle` shape, closing
+   * over this page's own `serverId`. Rebuilt each render — no useMemo —
+   * since nothing here depends on this object's referential identity across
+   * renders; only VoiceRecorder's own click handlers close over it.
+   */
+  const upload: VoiceUploadHandle = {
+    mutate: (variables, options) =>
+      uploadMutation.mutate(
+        { ...variables, ...(serverId !== null ? { noteId: serverId } : {}) },
+        options,
+      ),
+    isPending: uploadMutation.isPending,
+    isError: uploadMutation.isError,
+  };
 
   const title = state.status === 'ready' ? state.row.title.trim() : '';
   useDocumentTitle(title === '' ? 'Untitled note' : title);
@@ -122,7 +141,7 @@ export function NoteDetailPage() {
         scrolled — "firm and intact", not shaky.
       */}
       {state.status === 'ready' && state.row.serverId !== null ? (
-        <VoiceRecorder noteId={state.row.serverId} />
+        <VoiceRecorder upload={upload} />
       ) : null}
     </article>
   );

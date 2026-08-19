@@ -3,9 +3,10 @@ import { Link, useParams } from 'react-router';
 
 import { EditorSurface } from '@/features/editor/components/EditorSurface/EditorSurface';
 import { parseNoteId } from '@/features/notes/hooks/useNote';
-import { InlineVoiceNotes } from '@/features/voice/components/InlineVoiceNote/InlineVoiceNote';
+import { SharedInlineVoiceNotes } from '@/features/sharedNotes/components/SharedInlineVoiceNotes/SharedInlineVoiceNotes';
+import { useAttachedVoiceNotes } from '@/features/sharedNotes/hooks/useAttachedVoiceNotes';
+import { useUploadAttachedVoiceNote } from '@/features/sharedNotes/hooks/useUploadAttachedVoiceNote';
 import { VoiceRecorder } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
-import { useVoiceNotesByNote } from '@/features/voice/hooks/useVoiceNotes';
 import {
   isNoGrantError,
   useSharedNote,
@@ -37,6 +38,14 @@ import './SharedNote.css';
  *   - listen to attached voice notes
  *   - no editing
  *   - no voice recorder
+ *
+ * REVISED: attached voice notes and the recorder now go through the
+ * NOTE-GRANT-gated paths (`useAttachedVoiceNotes`, `SharedInlineVoiceNotes`,
+ * `useUploadAttachedVoiceNote`) instead of the owner-scoped
+ * `useVoiceNotesByNote`/`InlineVoiceNotes`/plain `VoiceRecorder` upload,
+ * which would 403/404 for a recipient viewing attachments they don't
+ * personally own (the note owner's own recordings, or another
+ * collaborator's).
  */
 export function SharedNotePage() {
   const { noteId: noteIdParam } = useParams();
@@ -146,10 +155,18 @@ function SharedNoteEditor({ noteId, note }: SharedNoteEditorProps) {
   /*
    * The parent note owns its attached voice notes.
    *
-   * We deliberately query the voice notes by noteId rather than treating
-   * shared voice notes as a second top-level Shared with me item.
+   * REVISED: queried through the NOTE-GRANT-gated
+   * `/shared-notes/{noteId}/voice-notes` (useAttachedVoiceNotes), not the
+   * owner-scoped `/voice-notes/by-note/{noteId}` — that endpoint checks the
+   * caller OWNS the note, which a recipient never does, so it would 403/404
+   * here regardless of how strong their share grant is.
+   *
+   * Still deliberately queried by noteId rather than treated as a second
+   * top-level Shared with me item — an attachment does not create its own
+   * list entry, it lives inside this note's own page.
    */
-  const voiceNotes = useVoiceNotesByNote(noteId);
+  const voiceNotes = useAttachedVoiceNotes(noteId);
+  const uploadVoiceNote = useUploadAttachedVoiceNote(noteId);
 
   const knownReadOnly = cachedPermission === 'READ';
 
@@ -263,13 +280,13 @@ function SharedNoteEditor({ noteId, note }: SharedNoteEditorProps) {
       ) : null}
 
       {voiceNotes.data && voiceNotes.data.length > 0 ? (
-        <InlineVoiceNotes voiceNotes={voiceNotes.data} />
+        <SharedInlineVoiceNotes noteId={noteId} voiceNotes={voiceNotes.data} />
       ) : null}
 
       {showVoiceRecorder ? (
         <div className="shared-note__voice-recorder">
           <VoiceRecorder
-            noteId={noteId}
+            upload={uploadVoiceNote}
             onUploaded={() => {
               void voiceNotes.refetch();
             }}

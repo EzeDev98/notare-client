@@ -2,13 +2,34 @@ import { useEffect, useRef, useState } from 'react';
 import { Mic, Pause, Play, Send, Trash2 } from 'lucide-react';
 
 import { useMediaRecorderState } from '@/features/voice/hooks/useMediaRecorderState';
-import { useUploadVoiceNote } from '@/features/voice/hooks/useVoiceNoteMutations';
 import { Button } from '@/design-system/components/Button/Button';
 import './VoiceRecorder.css';
 
+/**
+ * The shape `VoiceRecorder` needs from an upload mutation — deliberately
+ * NOT `UseMutationResult` itself (React Query's real type carries a lot
+ * VoiceRecorder never touches). Both call sites' mutation hooks already
+ * satisfy this structurally: `useUploadVoiceNote` (the owner's own
+ * recordings, wrapped in `NoteDetailPage` to fix `noteId` via closure — see
+ * that file) and `useUploadAttachedVoiceNote` (a shared note's recorder,
+ * `noteId` fixed per-hook-instance already).
+ *
+ * This is what actually decouples VoiceRecorder from note OWNERSHIP: it no
+ * longer knows or cares whether the note it's recording onto belongs to the
+ * current user or was shared to them — that decision lives entirely in
+ * which mutation hook the caller passes in.
+ */
+export interface VoiceUploadHandle {
+  mutate: (
+    variables: { file: Blob; durationSeconds?: number; onProgress?: (fraction: number) => void },
+    options?: { onSuccess?: () => void },
+  ) => void;
+  isPending: boolean;
+  isError: boolean;
+}
+
 interface VoiceRecorderProps {
-  /** The note this recording will be linked to, once uploaded. */
-  noteId: number;
+  upload: VoiceUploadHandle;
   onUploaded?: () => void;
 }
 
@@ -64,9 +85,8 @@ function Waveform({ paused }: { paused: boolean }) {
  * modifier class + children lets `inline-size` transition smoothly from
  * the idle mic's 56px to the active bar's 80%.
  */
-export function VoiceRecorder({ noteId, onUploaded }: VoiceRecorderProps) {
+export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
   const recorder = useMediaRecorderState();
-  const upload = useUploadVoiceNote();
   const [progress, setProgress] = useState(0);
   const [elapsed, setElapsed] = useState(0);
 
@@ -84,7 +104,6 @@ export function VoiceRecorder({ noteId, onUploaded }: VoiceRecorderProps) {
     upload.mutate(
       {
         file: blob,
-        noteId,
         durationSeconds,
         onProgress: setProgress,
       },

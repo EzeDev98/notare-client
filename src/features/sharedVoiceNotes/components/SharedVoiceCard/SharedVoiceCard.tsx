@@ -6,6 +6,13 @@ import './SharedVoiceCard.css';
 
 interface SharedVoiceCardProps {
   shared: SharedVoiceNoteSummaryResponse;
+  /**
+   * The owner's display name, already resolved and formatted — same
+   * page-level batch `useUserLookup` contract as `SharedNoteCard.ownerName`.
+   * `undefined` means "still resolving"; see that component's own doc
+   * comment for why that state renders nothing rather than a placeholder.
+   */
+  ownerName?: string | undefined;
 }
 
 /**
@@ -22,7 +29,7 @@ interface SharedVoiceCardProps {
  * that itself; it trusts its caller, same as `SharedNoteCard` trusts being
  * handed only note shares.
  */
-export function SharedVoiceCard({ shared }: SharedVoiceCardProps) {
+export function SharedVoiceCard({ shared, ownerName }: SharedVoiceCardProps) {
   const title = (shared.originalFilename ?? '').trim();
 
   return (
@@ -43,12 +50,15 @@ export function SharedVoiceCard({ shared }: SharedVoiceCardProps) {
           <span className="shared-note-card__badge" data-permission={shared.permission}>
             {shared.permission === 'WRITE' ? 'Can edit' : 'Read only'}
           </span>
-          <time
-            dateTime={shared.sharedAt}
-            title={formatServerDateTimeAbsolute(shared.sharedAt)}
-          >
-            Shared {formatServerDateTimeRelative(shared.sharedAt)}
-          </time>
+          <span className="shared-note-card__owner-time">
+            {ownerName !== undefined ? <>Shared by {ownerName} &middot; </> : 'Shared '}
+            <time
+              dateTime={shared.sharedAt}
+              title={formatServerDateTimeAbsolute(shared.sharedAt)}
+            >
+              {formatServerDateTimeRelative(shared.sharedAt)}
+            </time>
+          </span>
         </p>
       </Link>
     </li>

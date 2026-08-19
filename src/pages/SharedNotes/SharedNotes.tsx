@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { SharedNoteCard } from '@/features/sharedNotes/components/SharedNoteCard/SharedNoteCard';
 import { useSharedWithMeFeed } from '@/features/sharedNotes/hooks/useSharedWithMeFeed';
 import { SharedVoiceCard } from '@/features/sharedVoiceNotes/components/SharedVoiceCard/SharedVoiceCard';
+import { formatUserName, useUserLookup } from '@/features/userLookup/hooks/useUserLookup';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { Button } from '@/design-system/components/Button/Button';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
@@ -33,6 +34,19 @@ export function SharedNotesPage() {
   const [page, setPage] = useState(0);
   const { items, isLoading, isError, isPartialError, isFetching, hasMoreNotes, hasMoreVoice, refetch } =
     useSharedWithMeFeed(page, PAGE_SIZE);
+
+  /*
+   * One batch lookup covering both item kinds in the merged feed — the same
+   * "resolve every row's owner in ONE request" contract `useUserLookup`
+   * documents itself, not a per-card fetch. Kept at the page level so
+   * switching pages never creates one lookup per card.
+   */
+  const ownerIds = useMemo(() => items.map((item) => item.data.ownerId), [items]);
+  const { profiles, isLoading: ownerNamesLoading } = useUserLookup(ownerIds);
+
+  function ownerNameFor(ownerId: number): string | undefined {
+    return ownerNamesLoading ? undefined : formatUserName(profiles.get(ownerId));
+  }
 
   const hasMore = hasMoreNotes || hasMoreVoice;
 
@@ -77,9 +91,17 @@ export function SharedNotesPage() {
           <ul className="shared-notes__list" role="list">
             {items.map((item) =>
               item.kind === 'note' ? (
-                <SharedNoteCard key={`note-${String(item.data.note.id)}`} shared={item.data} />
+                <SharedNoteCard
+                  key={`note-${String(item.data.note.id)}`}
+                  shared={item.data}
+                  ownerName={ownerNameFor(item.data.ownerId)}
+                />
               ) : (
-                <SharedVoiceCard key={`voice-${String(item.data.voiceNoteId)}`} shared={item.data} />
+                <SharedVoiceCard
+                  key={`voice-${String(item.data.voiceNoteId)}`}
+                  shared={item.data}
+                  ownerName={ownerNameFor(item.data.ownerId)}
+                />
               ),
             )}
           </ul>
