@@ -2,11 +2,12 @@ import {
   type CSSProperties,
   type FormEvent,
   type PointerEvent as ReactPointerEvent,
+  useEffect,
   useRef,
   useState,
 } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Link, NavLink, Outlet, useMatch, useNavigate } from 'react-router';
+import { Link, NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router';
 import {
   Archive,
   Bell,
@@ -16,6 +17,7 @@ import {
   Share,
   SquarePen,
   Trash2,
+  NotebookPen,
   Users,
 } from 'lucide-react';
 
@@ -29,10 +31,12 @@ import { useDeleteNote } from '@/features/notes/hooks/useDeleteNote';
 import { useNotes } from '@/features/notes/hooks/useNotes';
 import { toView } from '@/features/notes/local/noteMappers';
 import { noteRepository } from '@/features/notes/local/noteRepository';
+import { NotificationsPanel } from '@/features/notifications/components/NotificationsPanel/NotificationsPanel';
 import { useSync } from '@/sync/useSync';
 import { useConflictCount } from '@/sync/useConflicts';
 import { useSyncStatus } from '@/sync/useSyncStatus';
 import { ThemeToggle } from '@/design-system/components/ThemeToggle/ThemeToggle';
+import { Modal } from '@/design-system/components/Modal/Modal';
 import './AppLayout.css';
 
 /*
@@ -240,6 +244,7 @@ export function AppLayout() {
   }, [activeLocalId, activeNoteId]);
 
   const deleteNote = useDeleteNote();
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   async function handleDeleteActiveNote() {
     if (!activeNoteRow) return;
@@ -252,6 +257,7 @@ export function AppLayout() {
     // /notes always has somewhere sane to land, whichever of the two note
     // routes the icon was clicked from.
     navigate('/notes');
+    setDeleteModalOpen(false);
   }
 
   /*
@@ -261,6 +267,58 @@ export function AppLayout() {
    * whatever /search is actually showing.
    */
   const [toolbarSearchTerm, setToolbarSearchTerm] = useState('');
+
+  /*
+   * Step 1 (notifications rework). The bell used to be a bare
+   * `<Link to="/notifications">` — nothing to toggle, so a second click
+   * did nothing and the only way "out" was navigating elsewhere or a full
+   * refresh. Now it opens `NotificationsPanel` in place, and this is
+   * everything responsible for closing it again.
+   *
+   * `notificationsRef` covers the button AND the panel together (the
+   * panel renders as a sibling inside the same wrapper div below, not a
+   * portal — see the panel's own CSS comment on why) — "outside" means
+   * outside that whole unit, not just outside the panel, otherwise
+   * clicking the bell itself while open would register as an outside
+   * click and immediately reopen it.
+   */
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!notificationsOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (notificationsRef.current?.contains(event.target as Node)) return;
+      setNotificationsOpen(false);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setNotificationsOpen(false);
+      }
+    }
+
+    // Listening only while open, not unconditionally on mount — an
+    // always-on document listener across every authenticated screen for a
+    // panel that is closed 99% of the time is wasted work for no benefit.
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [notificationsOpen]);
+
+  // Belt-and-braces alongside the panel's own onClose-on-link-click: ANY
+  // route change (the toolbar search submitting, the sidebar, a browser
+  // back/forward) must not leave a stale panel floating over the next
+  // page, not just the two links the panel happens to render today.
+  useEffect(() => {
+    setNotificationsOpen(false);
+  }, [location.pathname]);
 
   function handleToolbarSearchSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -422,7 +480,7 @@ export function AppLayout() {
             aria-label="Delete note"
             disabled={activeNoteRow == null}
             onClick={() => {
-              void handleDeleteActiveNote();
+              setDeleteModalOpen(true);
             }}
           >
             <Trash2 aria-hidden="true" />
@@ -445,9 +503,11 @@ export function AppLayout() {
           {/*
             Right-aligned group, reference order: notifications, then
             share, then search last against the toolbar's own trailing
-            edge. Notifications is a real Link — /notifications already
-            exists and is one of the four routes the compact nav below
-            already points at.
+            edge. Notifications is a toggle button now, not a Link — see
+            the `notificationsOpen` state and its two effects above for
+            why. The full `/notifications` page this used to link to
+            directly still exists and is still reachable, both by URL and
+            via the panel's own "View all" link.
 
             Share now does what NoteDetail's old inline "Share" text link
             used to (that link is gone — this icon replaces it entirely,
@@ -457,13 +517,24 @@ export function AppLayout() {
             note.
           */}
           <div className="app-shell__toolbar-actions">
-            <Link
-              to="/notifications"
-              className="app-shell__toolbar-icon-btn"
-              aria-label="Notifications"
-            >
-              <Bell aria-hidden="true" />
-            </Link>
+            <div className="app-shell__notifications" ref={notificationsRef}>
+              <button
+                type="button"
+                className="app-shell__toolbar-icon-btn"
+                aria-label="Notifications"
+                aria-haspopup="dialog"
+                aria-expanded={notificationsOpen}
+                onClick={() => {
+                  setNotificationsOpen((open) => !open);
+                }}
+              >
+                <Bell aria-hidden="true" />
+              </button>
+
+              {notificationsOpen ? (
+                <NotificationsPanel onClose={() => setNotificationsOpen(false)} />
+              ) : null}
+            </div>
 
             {activeNoteId !== null ? (
               <Link
@@ -618,6 +689,36 @@ export function AppLayout() {
         onPointerMove={handleResizePointerMove}
         onPointerUp={handleResizePointerUp}
       />
+
+      {deleteModalOpen ? (
+        <Modal
+          title=""
+          description={
+            <>
+              Are you sure you want to delete
+              <br />
+              the selected note?
+            </>
+          }
+          icon={<NotebookPen className="delete-note-modal__icon" aria-hidden="true" />}
+          destructive
+          secondaryAction={{
+            label: 'Cancel',
+            onClick: () => {
+              setDeleteModalOpen(false);
+            },
+          }}
+          primaryAction={{
+            label: 'Delete',
+            onClick: () => {
+              void handleDeleteActiveNote();
+            },
+          }}
+          onClose={() => {
+            setDeleteModalOpen(false);
+          }}
+        />
+      ) : null}
 
       {/* The ONLY scroll container. A page-level scroll would drift the
           editor toolbar off-screen while writing. */}

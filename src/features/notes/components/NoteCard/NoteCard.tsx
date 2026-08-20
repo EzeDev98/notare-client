@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { Link } from 'react-router';
 
 import { Button } from '@/design-system/components/Button/Button';
+import { Modal } from '@/design-system/components/Modal/Modal';
+import { Trash2 } from 'lucide-react';
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
 import './NoteCard.css';
@@ -31,6 +34,7 @@ interface NoteCardProps {
  * and routing uses `localId`, which exists from the moment the note does.
  */
 export function NoteCard({ note, actions }: NoteCardProps) {
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const title = note.title.trim();
   const label = title === '' ? 'Untitled' : title;
 
@@ -109,12 +113,37 @@ export function NoteCard({ note, actions }: NoteCardProps) {
             size="sm"
             aria-label={`Delete ${label}`}
             onClick={() => {
-              actions.onDelete(note);
+              setDeleteModalOpen(true);
             }}
           >
             Delete
           </Button>
         </div>
+      ) : null}
+
+      {deleteModalOpen ? (
+        <Modal
+          icon={<Trash2 aria-hidden="true" />}
+          title="Delete this note?"
+          description="The note will be moved to Trash."
+          secondaryAction={{
+            label: 'Cancel',
+            onClick: () => {
+              setDeleteModalOpen(false);
+            },
+          }}
+          primaryAction={{
+            label: 'Delete',
+            onClick: () => {
+              setDeleteModalOpen(false);
+              actions?.onDelete(note);
+            },
+          }}
+          destructive
+          onClose={() => {
+            setDeleteModalOpen(false);
+          }}
+        />
       ) : null}
     </li>
   );

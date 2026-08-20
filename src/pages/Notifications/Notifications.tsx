@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from 'react-router';
+import { Trash2, X } from 'lucide-react';
 
 import { collaborationService } from '@/features/collaboration/api/collaborationService';
 import { composeNotificationMessage } from '@/features/notifications/compose';
@@ -15,6 +16,7 @@ import type { NotificationResponse } from '@/features/notifications/types';
 import { formatUserName, useUserLookup } from '@/features/userLookup/hooks/useUserLookup';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
 import { Button } from '@/design-system/components/Button/Button';
+import { Modal } from '@/design-system/components/Modal/Modal';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Notifications.css';
@@ -85,6 +87,14 @@ export function NotificationsPage() {
   }
 
   function handleDelete(notification: NotificationResponse) {
+    setConfirmingDelete(notification);
+  }
+
+  function confirmDelete() {
+    if (confirmingDelete === null) return;
+
+    const notification = confirmingDelete;
+    setConfirmingDelete(null);
     deleteNotification.mutate(notification.id);
   }
 
@@ -99,13 +109,78 @@ export function NotificationsPage() {
     if (notification.type !== 'COLLABORATION_INVITED') return;
     if (notification.targetId === null) return;
 
+    setConfirmingReject(notification);
+  }
+
+  function confirmRejectInvitation() {
+    if (confirmingReject === null) return;
+    if (confirmingReject.targetId === null) return;
+
+    const notification = confirmingReject;
+    setConfirmingReject(null);
     rejectCollaboration.mutate(notification.targetId);
   }
+
+  const [confirmingDelete, setConfirmingDelete] =
+    useState<NotificationResponse | null>(null);
+  const [confirmingReject, setConfirmingReject] =
+    useState<NotificationResponse | null>(null);
 
   const rows = notifications.data?.content ?? [];
 
   return (
     <section className="notifications-page">
+      {confirmingDelete !== null ? (
+        <Modal
+          icon={<Trash2 aria-hidden="true" />}
+          title="Delete this notification?"
+          description="This can't be undone."
+          secondaryAction={{
+            label: 'Cancel',
+            onClick: () => {
+              setConfirmingDelete(null);
+            },
+          }}
+          primaryAction={{
+            label: 'Delete',
+            onClick: confirmDelete,
+          }}
+          destructive
+          onClose={() => {
+            setConfirmingDelete(null);
+          }}
+        />
+      ) : null}
+
+      {confirmingReject !== null ? (
+        <Modal
+          icon={<X aria-hidden="true" />}
+          title="Reject this invite?"
+          description={
+            confirmingReject.targetLabel.trim() !== '' ? (
+              <>
+                You won't get access to <strong>{confirmingReject.targetLabel}</strong>.
+              </>
+            ) : (
+              <>You won't get access to this invitation.</>
+            )
+          }
+          secondaryAction={{
+            label: 'Cancel',
+            onClick: () => {
+              setConfirmingReject(null);
+            },
+          }}
+          primaryAction={{
+            label: 'Reject',
+            onClick: confirmRejectInvitation,
+          }}
+          onClose={() => {
+            setConfirmingReject(null);
+          }}
+        />
+      ) : null}
+
       <header className="notifications-page__header">
         <h1>Notifications</h1>
         <Button
@@ -207,6 +282,7 @@ export function NotificationsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="notifications-page__mark-read"
                         loading={markRead.isPending && markRead.variables === notification.id}
                         disabled={markRead.isPending && markRead.variables === notification.id}
                         onClick={() => {
@@ -220,6 +296,7 @@ export function NotificationsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="notifications-page__delete"
                       loading={
                         deleteNotification.isPending &&
                         deleteNotification.variables === notification.id

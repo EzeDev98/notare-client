@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
@@ -110,6 +110,13 @@ describe('searching', () => {
     await screen.findByRole('link', { name: /meeting notes/i });
 
     await user.click(screen.getByRole('button', { name: /delete meeting notes/i }));
+
+    const deleteModal = await screen.findByRole('dialog');
+    expect(deleteModal).toBeInTheDocument();
+
+    await user.click(
+      within(deleteModal).getByRole('button', { name: 'Delete', exact: true }),
+    );
 
     await waitFor(() => {
       expect(screen.queryByRole('link', { name: /meeting notes/i })).not.toBeInTheDocument();

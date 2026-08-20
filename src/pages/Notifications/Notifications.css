@@ -81,10 +81,34 @@
     font-size: var(--font-size-xs);
   }
 
+  /*
+   * Fixed 2-column grid, not flex: Accept/Reject (added below, via
+   * `.notifications-page__collaboration-actions`'s `display: contents`)
+   * need to land in SPECIFIC cells under Mark read/Delete regardless of
+   * whether Mark read is even rendered for this row (it's conditional on
+   * `isUnread`, Accept/Reject aren't) — a flex row has no concept of "the
+   * cell below," which is exactly what was squeezing Mark read before:
+   * the collaboration-actions wrapper's own `width: 100%` fighting the
+   * other buttons for space in a single row.
+   */
   .notifications-page__row-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    grid-template-rows: auto auto;
     flex-shrink: 0;
     gap: var(--space-1);
+  }
+
+  /* Row 1, explicitly — so Delete stays in column 2 whether or not Mark
+     read (column 1) is present for this row. */
+  .notifications-page__mark-read {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .notifications-page__delete {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .notifications-page__pager {
@@ -126,16 +150,20 @@
 }
 
 
+/*
+ * `display: contents` — this wrapper no longer generates its own box at
+ * all, so Accept/Reject become direct grid items of
+ * `.notifications-page__row-actions` above and can be placed into
+ * specific cells (row 2, columns 1/2 respectively) via the
+ * `--accept`/`--reject` rules below. This is what used to be a
+ * `width: 100%` flex row squeezing Mark read/Delete out of their own
+ * space; now it contributes no box or width of its own at all.
+ */
 .notifications-page__collaboration-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  margin-top: 8px;
+  display: contents;
 }
 
 .notifications-page__collaboration-button {
-  flex: 1;
   min-height: 32px;
   padding: 6px 12px;
   border: 1px solid transparent;
@@ -157,6 +185,8 @@
 }
 
 .notifications-page__collaboration-button--accept {
+  grid-column: 1;
+  grid-row: 2;
   color: #166534;
   background: #dcfce7;
   border-color: #bbf7d0;
@@ -167,6 +197,8 @@
 }
 
 .notifications-page__collaboration-button--reject {
+  grid-column: 2;
+  grid-row: 2;
   color: #b91c1c;
   background: #fee2e2;
   border-color: #fecaca;
@@ -177,7 +209,14 @@
 }
 
 @media (max-width: 640px) {
-  .notifications-page__collaboration-actions {
+  /*
+   * Was targeting `.notifications-page__collaboration-actions`, which is
+   * now `display: contents` (see that rule's own comment) and generates
+   * no box — a `gap` there would have silently done nothing on small
+   * screens. `.notifications-page__row-actions` is the actual grid
+   * container now, so the tighter mobile gap belongs on it.
+   */
+  .notifications-page__row-actions {
     gap: 6px;
   }
 

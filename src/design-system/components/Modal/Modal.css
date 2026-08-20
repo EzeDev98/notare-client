@@ -101,3 +101,62 @@
     flex: 1;
   }
 }
+
+
+/* Delete-note confirmation: large standalone note icon, no lavender badge. */
+.ds-modal:has(.delete-note-modal__icon) .ds-modal__icon {
+  background: transparent;
+  inline-size: auto;
+  block-size: auto;
+  border-radius: 0;
+}
+
+.delete-note-modal__icon {
+  width: 48px;
+  height: 48px;
+}
+
+
+/* Slightly more compact delete-note confirmation. */
+.ds-modal:has(.delete-note-modal__icon) {
+  width: min(360px, calc(100vw - 32px));
+}
+
+.ds-modal:has(.delete-note-modal__icon) .ds-modal__actions {
+  gap: 10px;
+}
+
+.ds-modal:has(.delete-note-modal__icon) .ds-modal__action {
+  min-height: 40px;
+  padding-inline: 16px;
+}
+
+.ds-modal {
+  position: relative;
+}
+
+.ds-modal__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ds-modal__close:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.ds-modal__close:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

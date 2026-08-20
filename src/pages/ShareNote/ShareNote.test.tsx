@@ -191,6 +191,18 @@ describe('sharing a note (owner side)', () => {
     await screen.findByText('Jane Doe');
     await user.click(screen.getByRole('button', { name: 'Revoke' }));
 
+    // 6C: revoking now requires confirmation.
+    const dialog = screen.getByRole('dialog');
+
+    expect(dialog).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Remove this collaborator?' }),
+    ).toBeInTheDocument();
+    expect(dialog).toHaveTextContent('Jane Doe');
+    expect(dialog).toHaveTextContent('will lose access to this note');
+
+    await user.click(screen.getByRole('button', { name: 'Remove' }));
+
     // Not "Jane Doe" gone entirely — she legitimately reappears in the
     // share picker's <option> once no longer granted. It's the GRANT row
     // (and its Revoke button) that must disappear.

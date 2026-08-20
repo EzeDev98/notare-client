@@ -1,12 +1,24 @@
 import { useState } from 'react';
+import { LogOut, ShieldAlert } from 'lucide-react';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { useSessions } from '@/features/auth/hooks/useSessions';
 import { Button } from '@/design-system/components/Button/Button';
+import { Modal } from '@/design-system/components/Modal/Modal';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { formatInstantAbsolute, formatInstantRelative } from '@/lib/time';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Sessions.css';
+
+type Confirmation =
+  | {
+      type: 'session';
+      sessionId: string;
+    }
+  | {
+      type: 'all';
+    }
+  | null;
 
 export function SessionsPage() {
   useDocumentTitle('Sessions');
@@ -14,41 +26,65 @@ export function SessionsPage() {
   const { logout } = useAuth();
   const { sessions, error, revoke, revokeAll } = useSessions();
 
-  /*
-   * Inline confirmation instead of a modal: 2D deferred Modal and it still has
-   * no other consumer, so building one here would be designing against a
-   * single use. A two-step button needs no focus trap, no scroll lock and no
-   * portal.
-   */
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<Confirmation>(null);
   const [busy, setBusy] = useState(false);
 
-  async function handleRevoke(sessionId: string, isCurrent: boolean): Promise<void> {
+  const confirmingSession =
+    confirmation?.type === 'session'
+      ? sessions?.find(
+          (session) => session.sessionId === confirmation.sessionId,
+        ) ?? null
+      : null;
+
+  async function handleRevoke(
+    sessionId: string,
+    isCurrent: boolean,
+  ): Promise<void> {
     setBusy(true);
+
     try {
       if (isCurrent) {
         /*
-         * Revoking your OWN session is a logout, and must be handled as one.
-         *
-         * Treating it as an ordinary row means the delete succeeds, the next
-         * request 401s, the refresh fails against a record that no longer
-         * exists, and the user is bounced to login with no idea why. The
-         * `current` flag exists precisely so the client can avoid that.
+         * Revoking your own session is a logout and must be handled as one.
+         * The auth provider clears the local authentication state after
+         * logging out rather than leaving the application with a deleted
+         * server-side session.
          */
         await logout();
         return;
       }
+
       await revoke(sessionId);
     } finally {
       setBusy(false);
-      setConfirmingId(null);
+      setConfirmation(null);
     }
+  }
+
+  async function handleRevokeAll(): Promise<void> {
+    setBusy(true);
+
+    try {
+      await revokeAll();
+      await logout();
+    } finally {
+      setBusy(false);
+      setConfirmation(null);
+    }
+  }
+
+  function closeConfirmation() {
+    if (busy) return;
+    setConfirmation(null);
   }
 
   return (
     <section className="sessions">
       <h1>Sessions</h1>
-      <p className="sessions__lead">Devices and browsers currently signed in to your account.</p>
+
+      <p className="sessions__lead">
+        Devices and browsers currently signed in to your account.
+      </p>
 
       {error !== null ? (
         <p className="sessions__error" role="alert">
@@ -56,7 +92,9 @@ export function SessionsPage() {
         </p>
       ) : null}
 
-      {sessions === null && error === null ? <Spinner label="Loading your sessions" /> : null}
+      {sessions === null && error === null ? (
+        <Spinner label="Loading your sessions" />
+      ) : null}
 
       {sessions !== null ? (
         <ul className="sessions__list" role="list">
@@ -65,55 +103,37 @@ export function SessionsPage() {
               <div className="sessions__detail">
                 <p className="sessions__device">
                   {session.userAgent ?? 'Unknown device'}
+
                   {session.current ? (
-                    // Text, not just a colour — §36.
-                    <span className="sessions__badge">This device</span>
+                    <span className="sessions__badge">
+                      This device
+                    </span>
                   ) : null}
                 </p>
 
-                {/*
-                  Session timestamps are Instant — real UTC with a Z — so
-                  new Date() is correct on them, unlike every other timestamp
-                  in this API. title gives the absolute value on hover, since
-                  "3 days ago" is friendly but imprecise.
-                */}
-                <p className="sessions__meta" title={formatInstantAbsolute(session.lastUsedAt)}>
+                <p
+                  className="sessions__meta"
+                  title={formatInstantAbsolute(session.lastUsedAt)}
+                >
                   Last used {formatInstantRelative(session.lastUsedAt)}
-                  {session.ipAddress !== null ? ` · ${session.ipAddress}` : ''}
+                  {session.ipAddress !== null
+                    ? ` · ${session.ipAddress}`
+                    : ''}
                 </p>
               </div>
 
-              {confirmingId === session.sessionId ? (
-                <div className="sessions__confirm">
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    loading={busy}
-                    onClick={() => void handleRevoke(session.sessionId, session.current)}
-                  >
-                    {session.current ? 'Sign out here' : 'Confirm'}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setConfirmingId(null);
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    setConfirmingId(session.sessionId);
-                  }}
-                >
-                  {session.current ? 'Sign out' : 'Revoke'}
-                </Button>
-              )}
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setConfirmation({
+                    type: 'session',
+                    sessionId: session.sessionId,
+                  });
+                }}
+              >
+                {session.current ? 'Sign out' : 'Revoke'}
+              </Button>
             </li>
           ))}
         </ul>
@@ -123,15 +143,87 @@ export function SessionsPage() {
         <Button
           variant="danger"
           onClick={() => {
-            void revokeAll().then(() => logout());
+            setConfirmation({ type: 'all' });
           }}
         >
           Sign out everywhere
         </Button>
+
         <p className="sessions__meta">
-          Ends every session, including this one. Use this if you have lost a device.
+          Ends every session, including this one. Use this if you have lost a
+          device.
         </p>
       </div>
+
+      {confirmation?.type === 'session' && confirmingSession !== null ? (
+        <Modal
+          icon={
+            confirmingSession.current ? (
+              <LogOut aria-hidden="true" />
+            ) : (
+              <ShieldAlert aria-hidden="true" />
+            )
+          }
+          title={
+            confirmingSession.current
+              ? 'Sign out from this device?'
+              : 'Revoke this session?'
+          }
+          description={
+            confirmingSession.current ? (
+              <>
+                You will be signed out of this device and returned to the
+                login screen.
+              </>
+            ) : (
+              <>
+                This device or browser will no longer be able to access your
+                Notare account using this session.
+              </>
+            )
+          }
+          secondaryAction={{
+            label: 'Cancel',
+            onClick: closeConfirmation,
+          }}
+          primaryAction={{
+            label: confirmingSession.current ? 'Sign out' : 'Revoke',
+            onClick: () => {
+              void handleRevoke(
+                confirmingSession.sessionId,
+                confirmingSession.current,
+              );
+            },
+          }}
+          destructive
+          onClose={closeConfirmation}
+        />
+      ) : null}
+
+      {confirmation?.type === 'all' ? (
+        <Modal
+          icon={<LogOut aria-hidden="true" />}
+          title="Sign out everywhere?"
+          description={
+            <>
+              This will end every active session, including the device you are
+              using now. You will need to sign in again.
+            </>
+          }
+          secondaryAction={{
+            label: 'Cancel',
+            onClick: closeConfirmation,
+          }}
+          primaryAction={{
+            label: 'Sign out everywhere',
+            onClick: () => {
+              void handleRevokeAll();
+            },
+          }}
+          destructive
+          onClose={closeConfirmation}
+        />
+      ) : null}
     </section>
   );
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
+import { X } from 'lucide-react';
 
 import {
   useReceivedCollaborations,
@@ -15,6 +16,7 @@ import { formatUserName, useUserLookup } from '@/features/userLookup/hooks/useUs
 import { isBadRequest } from '@/lib/http/errors';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
 import { Button } from '@/design-system/components/Button/Button';
+import { Modal } from '@/design-system/components/Modal/Modal';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Invitations.css';
@@ -86,6 +88,7 @@ function ReceivedList() {
   const accept = useAcceptCollaboration();
   const reject = useRejectCollaboration();
   const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
+  const [confirmingRejectId, setConfirmingRejectId] = useState<number | null>(null);
 
   const rowsForNames = data?.content ?? [];
   const { profiles, isLoading: namesLoading } = useUserLookup(
@@ -111,6 +114,14 @@ function ReceivedList() {
   }
 
   function handleReject(id: number) {
+    setConfirmingRejectId(id);
+  }
+
+  function confirmReject() {
+    if (confirmingRejectId === null) return;
+
+    const id = confirmingRejectId;
+    setConfirmingRejectId(null);
     clearRowError(id);
     reject.mutate(id, {
       onError: (error) => {
@@ -152,7 +163,8 @@ function ReceivedList() {
   }
 
   return (
-    <ul className="invitations__list" role="list">
+    <>
+      <ul className="invitations__list" role="list">
       {rows.map((row) => {
         const isPending = row.status === 'PENDING';
         const pendingThisRow =
@@ -209,6 +221,28 @@ function ReceivedList() {
         );
       })}
     </ul>
+
+    {confirmingRejectId !== null ? (
+      <Modal
+        icon={<X aria-hidden="true" />}
+        title="Reject this invite?"
+        description="You won't get access to this invitation."
+        secondaryAction={{
+          label: 'Cancel',
+          onClick: () => {
+            setConfirmingRejectId(null);
+          },
+        }}
+        primaryAction={{
+          label: 'Reject',
+          onClick: confirmReject,
+        }}
+        onClose={() => {
+          setConfirmingRejectId(null);
+        }}
+      />
+    ) : null}
+    </>
   );
 }
 
@@ -216,6 +250,7 @@ function SentList() {
   const { data, isLoading, isError, refetch } = useSentCollaborations();
   const cancel = useCancelCollaboration();
   const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
+  const [confirmingCancelId, setConfirmingCancelId] = useState<number | null>(null);
 
   const rowsForNames = data?.content ?? [];
   const { profiles, isLoading: namesLoading } = useUserLookup(
@@ -223,6 +258,14 @@ function SentList() {
   );
 
   function handleCancel(id: number) {
+    setConfirmingCancelId(id);
+  }
+
+  function confirmCancel() {
+    if (confirmingCancelId === null) return;
+
+    const id = confirmingCancelId;
+    setConfirmingCancelId(null);
     setRowErrors((current) => {
       if (!(id in current)) return current;
       const next = { ...current };
@@ -272,7 +315,8 @@ function SentList() {
   }
 
   return (
-    <ul className="invitations__list" role="list">
+    <>
+      <ul className="invitations__list" role="list">
       {rows.map((row) => (
         <li key={row.id} className="invitations__row">
           <div className="invitations__row-main">
@@ -311,6 +355,28 @@ function SentList() {
         </li>
       ))}
     </ul>
+
+    {confirmingCancelId !== null ? (
+      <Modal
+        icon={<X aria-hidden="true" />}
+        title="Cancel this invite?"
+        description="This invitation will no longer be available to the recipient."
+        secondaryAction={{
+          label: 'Keep invite',
+          onClick: () => {
+            setConfirmingCancelId(null);
+          },
+        }}
+        primaryAction={{
+          label: 'Cancel invite',
+          onClick: confirmCancel,
+        }}
+        onClose={() => {
+          setConfirmingCancelId(null);
+        }}
+      />
+    ) : null}
+    </>
   );
 }
 

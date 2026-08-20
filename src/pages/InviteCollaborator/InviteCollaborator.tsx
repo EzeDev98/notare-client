@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Check, Mail } from 'lucide-react';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 
 import { CollaboratorPicker } from '@/features/collaboration/components/CollaboratorPicker/CollaboratorPicker';
 import { useSentCollaborations } from '@/features/collaboration/hooks/useCollaborations';
@@ -182,22 +182,8 @@ function ExistingCollaboratorModal({
   relationship,
   onClose,
 }: ExistingCollaboratorModalProps) {
-  const navigate = useNavigate();
   const isPending = relationship === 'PENDING';
   const displayName = getDisplayName(user);
-
-  /*
-   * The old modal's primary action was a <Link>, since it needed to
-   * navigate rather than just fire a callback. The reusable Modal's
-   * primaryAction is onClick-only (every other call site is a plain
-   * confirm/cancel), so navigation happens imperatively here instead —
-   * close first, then navigate, matching what the <Link>'s onClick={onClose}
-   * + built-in navigation used to do together in one click.
-   */
-  function goToNotes() {
-    onClose();
-    navigate(NOTES_ROUTE);
-  }
 
   return (
     <Modal
@@ -221,7 +207,11 @@ function ExistingCollaboratorModal({
         )
       }
       secondaryAction={{ label: 'Cancel', onClick: onClose }}
-      primaryAction={{ label: 'Go to my notes', onClick: goToNotes }}
+      primaryAction={{
+        label: 'Go to my notes',
+        href: NOTES_ROUTE,
+        onClick: onClose,
+      }}
       onClose={onClose}
     />
   );

@@ -1,5 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router';
+import { X } from 'lucide-react';
 
 import { Button } from '@/design-system/components/Button/Button';
 import './Modal.css';
@@ -7,6 +9,7 @@ import './Modal.css';
 interface ModalAction {
   label: string;
   onClick: () => void;
+  href?: string;
 }
 
 interface ModalProps {
@@ -29,11 +32,8 @@ interface ModalProps {
   /** Left-hand, outlined button. Omit for a single-button alert. */
   secondaryAction?: ModalAction;
   /**
-   * Gives the primary action the danger (red) treatment instead of the
-   * lavender accent one — for a genuinely destructive confirmation (delete,
-   * remove, discard). Everything else in the app stays lavender by default;
-   * this is the one deliberate exception, same reasoning as `Button`'s own
-   * `danger` variant.
+   * Gives the primary action the danger treatment instead of the
+   * default lavender/purple treatment.
    */
   destructive?: boolean;
   onClose: () => void;
@@ -91,7 +91,7 @@ export function Modal({
     >
       <div
         className="ds-modal"
-        role="alertdialog"
+        role="dialog"
         aria-modal="true"
         aria-labelledby="ds-modal-title"
         aria-describedby={description ? 'ds-modal-description' : undefined}
@@ -101,6 +101,15 @@ export function Modal({
             {icon}
           </div>
         ) : null}
+
+        <button
+          type="button"
+          className="ds-modal__close"
+          aria-label="Close"
+          onClick={onClose}
+        >
+          <X aria-hidden="true" size={18} />
+        </button>
 
         <h2 id="ds-modal-title" className="ds-modal__title">
           {title}
@@ -139,14 +148,24 @@ export function Modal({
             confirmation the risk is low and it isn't implemented here,
             flagged rather than silently shipped as if it were complete.
           */}
-          <Button
-            autoFocus
-            variant={destructive ? 'danger' : 'primary'}
-            className="ds-modal__action"
-            onClick={primaryAction.onClick}
-          >
-            {primaryAction.label}
-          </Button>
+          {primaryAction.href ? (
+            <Link
+              to={primaryAction.href}
+              className="ds-button ds-button--primary ds-modal__action"
+              onClick={primaryAction.onClick}
+            >
+              {primaryAction.label}
+            </Link>
+          ) : (
+            <Button
+              autoFocus
+              variant={destructive ? 'danger' : 'primary'}
+              className="ds-modal__action"
+              onClick={primaryAction.onClick}
+            >
+              {primaryAction.label}
+            </Button>
+          )}
         </div>
       </div>
     </div>,

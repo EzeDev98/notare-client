@@ -11,33 +11,14 @@ import './Login.css';
 
 const DEFAULT_DESTINATION = '/notes';
 
-/**
- * Reads the intended destination from router state.
- *
- * location.state is typed `any` by React Router, so narrowing is required
- * rather than optional.
- *
- * The startsWith('/') check is an OPEN REDIRECT guard. It is not strictly
- * needed today — this value comes from RequireAuth, not from user input — but
- * the moment anyone adds `?next=` to the login URL, an unvalidated redirect
- * sends users to https://evil.example with our own login page as the referrer.
- * One line now, and the habit costs nothing.
- */
 /** True when we arrived here straight after verifying an account. */
 function readVerified(state: unknown): boolean {
   if (typeof state !== 'object' || state === null) return false;
   return (state as { verified?: unknown }).verified === true;
 }
 
-function readDestination(state: unknown): string {
-  if (typeof state !== 'object' || state === null) return DEFAULT_DESTINATION;
-
-  const from: unknown = (state as { from?: unknown }).from;
-  if (typeof from !== 'string') return DEFAULT_DESTINATION;
-
-  // Must be a path on this origin. "//evil.example" is a protocol-relative
-  // URL and starts with "/", so the second character matters too.
-  return from.startsWith('/') && !from.startsWith('//') ? from : DEFAULT_DESTINATION;
+function readDestination(): string {
+  return DEFAULT_DESTINATION;
 }
 
 export function LoginPage() {
@@ -59,7 +40,7 @@ export function LoginPage() {
    * conclusion about the current state, not a side effect of one.
    */
   if (authState.status === 'authenticated' || authState.status === 'refreshing') {
-    return <Navigate to={readDestination(location.state)} replace />;
+    return <Navigate to={readDestination()} replace />;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -93,7 +74,7 @@ export function LoginPage() {
        * to reason about, for something that is simply the next step of an
        * action the user took.
        */
-      void navigate(readDestination(location.state), { replace: true });
+      void navigate(readDestination(), { replace: true });
     } catch (error) {
       if (isUnauthorized(error)) {
         /*

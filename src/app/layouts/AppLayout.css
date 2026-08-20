@@ -353,7 +353,16 @@
       grid-row: 1;
       block-size: 52px;
       min-block-size: 52px;
-      overflow: hidden;
+      /*
+       * No `overflow: hidden` here (there used to be one) — it was
+       * silently clipping `NotificationsPanel`, which is `position:
+       * absolute` and deliberately drops down BELOW this 52px box. This
+       * rule's own children stay within 52px in normal flow regardless,
+       * so nothing here relied on the clip; only the panel needed to
+       * escape it, and now it can. See NotificationsPanel.css's own
+       * comment on why it isn't a portal — that comment assumed this
+       * ancestor had no `overflow: hidden`, which wasn't true until now.
+       */
       border-block-end: var(--border-width) solid var(--color-border);
       background-color: var(--color-surface);
     }
@@ -393,6 +402,19 @@
       display: flex;
       align-items: center;
       gap: var(--space-2);
+    }
+
+    /*
+     * The bell's own positioning context — `NotificationsPanel` anchors
+     * itself to THIS box (`position: absolute` against it), not to
+     * `.app-shell__toolbar-actions` as a whole, so the panel stays
+     * pinned under the bell specifically regardless of what else sits in
+     * this row (Share, Search) or how wide the row grows.
+     */
+    .app-shell__notifications {
+      position: relative;
+      display: flex;
+      align-items: center;
     }
 
     .app-shell__toolbar-search {

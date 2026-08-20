@@ -49,10 +49,7 @@
     margin: var(--space-1) 0 0;
   }
 
-  .sessions__confirm {
-    display: flex;
-    gap: var(--space-2);
-  }
+
 
   .sessions__error {
     margin: 0;

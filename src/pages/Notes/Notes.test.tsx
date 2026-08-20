@@ -163,6 +163,12 @@ describe('the notes list', () => {
 
     await user.click(await screen.findByRole('button', { name: /delete note 1/i }));
 
+    const deleteModal = await screen.findByRole('dialog');
+
+    await user.click(
+      within(deleteModal).getByRole('button', { name: 'Delete', exact: true }),
+    );
+
     // Gone from the list, because `deleted` is part of the live query's
     // predicate — nothing told the list to remove it.
     await screen.findByRole('heading', { name: /nothing here yet/i });

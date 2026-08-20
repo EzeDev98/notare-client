@@ -46,6 +46,8 @@ describe('the toolbar delete icon', () => {
     const deleteButton = await screen.findByRole('button', { name: 'Delete note' });
     await waitFor(() => expect(deleteButton).toBeEnabled());
     await user.click(deleteButton);
+    await user.click(await screen.findByRole('button', { name: 'Delete' }));
+    await user.click(await screen.findByRole('button', { name: /^Delete$/ }));
 
     await waitFor(() => expect(document.title).toBe('Notes · Notare'));
 
@@ -67,6 +69,8 @@ describe('the toolbar delete icon', () => {
     const deleteButton = await screen.findByRole('button', { name: 'Delete note' });
     await waitFor(() => expect(deleteButton).toBeEnabled());
     await user.click(deleteButton);
+    await user.click(await screen.findByRole('button', { name: 'Delete' }));
+    await user.click(await screen.findByRole('button', { name: /^Delete$/ }));
 
     await waitFor(() => expect(document.title).toBe('Notes · Notare'));
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
+import { UserX } from 'lucide-react';
 
 import { useSentCollaborations } from '@/features/collaboration/hooks/useCollaborations';
 import type { CollaborationResponse } from '@/features/collaboration/types';
@@ -10,6 +11,7 @@ import type { NoteShareResponse, SharePermission } from '@/features/sharing/type
 import { formatUserName, useUserLookup } from '@/features/userLookup/hooks/useUserLookup';
 import { isBadRequest } from '@/lib/http/errors';
 import { Button } from '@/design-system/components/Button/Button';
+import { Modal } from '@/design-system/components/Modal/Modal';
 import { Select } from '@/design-system/components/Select/Select';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
@@ -79,6 +81,7 @@ function ShareManager({ noteId }: { noteId: number }) {
 
   const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [confirmingRevoke, setConfirmingRevoke] = useState<NoteShareResponse | null>(null);
 
   function setRowError(userId: number, message: string) {
     setRowErrors((current) => ({ ...current, [userId]: message }));
@@ -145,6 +148,14 @@ function ShareManager({ noteId }: { noteId: number }) {
   );
 
   function handleRevoke(row: NoteShareResponse) {
+    setConfirmingRevoke(row);
+  }
+
+  function confirmRevoke() {
+    if (confirmingRevoke === null) return;
+
+    const row = confirmingRevoke;
+    setConfirmingRevoke(null);
     clearRowError(row.sharedWithUserId);
     revoke.mutate(row.sharedWithUserId, {
       onError: () => {
@@ -217,6 +228,33 @@ function ShareManager({ noteId }: { noteId: number }) {
           ))
         )}
       </ul>
+
+      {confirmingRevoke !== null ? (
+        <Modal
+          icon={<UserX aria-hidden="true" />}
+          title="Remove this collaborator?"
+          description={
+            <>
+              <strong>{resolveName(confirmingRevoke.sharedWithUserId)}</strong> will lose access to
+              this note.
+            </>
+          }
+          secondaryAction={{
+            label: 'Cancel',
+            onClick: () => {
+              setConfirmingRevoke(null);
+            },
+          }}
+          primaryAction={{
+            label: 'Remove',
+            onClick: confirmRevoke,
+          }}
+          destructive
+          onClose={() => {
+            setConfirmingRevoke(null);
+          }}
+        />
+      ) : null}
 
       <ShareForm
         candidates={shareableCollaborators}

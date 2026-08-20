@@ -118,6 +118,45 @@ describe('collaborations — received', () => {
   });
 });
 
+describe('collaborations — received', () => {
+  it('confirms before rejecting an invitation', async () => {
+    let rejected = false;
+
+    server.use(
+      http.get(`${BASE}/collaborations/received`, () =>
+        HttpResponse.json({
+          content: rejected ? [] : [makeCollaboration({ id: 1, status: 'PENDING', ownerId: 9 })],
+          page: 0,
+          size: 20,
+          totalElements: rejected ? 0 : 1,
+          totalPages: rejected ? 0 : 1,
+          hasNext: false,
+          hasPrevious: false,
+        }),
+      ),
+      http.post(`${BASE}/collaborations/1/reject`, () => {
+        rejected = true;
+        return HttpResponse.json(makeCollaboration({ id: 1, status: 'REJECTED' }));
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderInvitations();
+
+    await user.click(await screen.findByRole('button', { name: 'Reject' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('Reject this invite?');
+    expect(dialog).toHaveTextContent("You won't get access to");
+
+    await user.click(within(dialog).getByRole('button', { name: 'Reject' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Reject' })).not.toBeInTheDocument();
+    });
+  });
+});
+
 describe('collaborations — sent', () => {
   it('lets the owner cancel a relationship of any status, not only PENDING', async () => {
     let cancelled = false;
@@ -156,7 +195,64 @@ describe('collaborations — sent', () => {
     expect(row).not.toBeNull();
     expect(within(row as HTMLElement).getByText('Accepted')).toBeInTheDocument();
 
+    await user.click(
+      within(row as HTMLElement).getByRole('button', { name: 'Cancel' }),
+    );
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('Cancel this invite?');
+
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Cancel invite' }),
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Jane Doe')).not.toBeInTheDocument();
+    });
+  });
+
+  it('confirms before cancelling an invitation', async () => {
+    let cancelled = false;
+
+    server.use(
+      http.get(`${BASE}/collaborations/sent`, () =>
+        HttpResponse.json({
+          content: cancelled
+            ? []
+            : [makeCollaboration({ id: 2, status: 'PENDING', collaboratorId: 3 })],
+          page: 0,
+          size: 20,
+          totalElements: cancelled ? 0 : 1,
+          totalPages: cancelled ? 0 : 1,
+          hasNext: false,
+          hasPrevious: false,
+        }),
+      ),
+      http.delete(`${BASE}/collaborations/2`, () => {
+        cancelled = true;
+        return new HttpResponse(null, { status: 204 });
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderInvitations();
+
+    await user.click(screen.getByRole('tab', { name: 'Sent' }));
+
+    const row = (await screen.findByText('Jane Doe')).closest('li');
+    expect(row).not.toBeNull();
+
     await user.click(within(row as HTMLElement).getByRole('button', { name: 'Cancel' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('Cancel this invite?');
+    expect(dialog).toHaveTextContent(
+      'This invitation will no longer be available to the recipient.',
+    );
+
+    await user.click(
+      within(dialog).getByRole('button', { name: 'Cancel invite' }),
+    );
 
     await waitFor(() => {
       expect(screen.queryByText('Jane Doe')).not.toBeInTheDocument();

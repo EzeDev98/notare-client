@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { Share } from 'lucide-react';
+import { Share, Trash2 } from 'lucide-react';
 
 import { AudioPlayer } from '@/features/voice/components/AudioPlayer/AudioPlayer';
 import { TranscriptionPanel } from '@/features/voice/components/TranscriptionPanel/TranscriptionPanel';
@@ -8,6 +8,7 @@ import { useVoiceNote } from '@/features/voice/hooks/useVoiceNotes';
 import { useDeleteVoiceNote } from '@/features/voice/hooks/useVoiceNoteMutations';
 import { formatServerDateTimeAbsolute } from '@/lib/time';
 import { Button } from '@/design-system/components/Button/Button';
+import { Modal } from '@/design-system/components/Modal/Modal';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './VoiceDetail.css';
@@ -41,6 +42,7 @@ export function VoiceDetailPage() {
   const voiceNote = useVoiceNote(id ?? -1);
   const deleteVoiceNote = useDeleteVoiceNote(voiceNote.data?.noteId ?? null);
   const [error, setError] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   useDocumentTitle(voiceNote.data ? 'Voice note' : 'Voice note');
 
@@ -57,6 +59,12 @@ export function VoiceDetailPage() {
 
   function handleDelete() {
     if (id === null) return;
+    setDeleteModalOpen(true);
+  }
+
+  function confirmDelete() {
+    if (id === null) return;
+    setDeleteModalOpen(false);
     setError(null);
     deleteVoiceNote.mutate(id, {
       onSuccess: () => {
@@ -147,6 +155,28 @@ export function VoiceDetailPage() {
               </p>
             ) : null}
           </div>
+
+          {deleteModalOpen ? (
+            <Modal
+              icon={<Trash2 aria-hidden="true" />}
+              title="Delete this voice note?"
+              description="This voice note will be permanently deleted. This action cannot be undone."
+              secondaryAction={{
+                label: 'Cancel',
+                onClick: () => {
+                  setDeleteModalOpen(false);
+                },
+              }}
+              primaryAction={{
+                label: 'Delete',
+                onClick: confirmDelete,
+              }}
+              destructive
+              onClose={() => {
+                setDeleteModalOpen(false);
+              }}
+            />
+          ) : null}
         </>
       ) : null}
     </section>

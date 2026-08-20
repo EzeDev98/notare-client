@@ -182,6 +182,22 @@ describe('notifications list', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Delete' }));
 
+    // 6C: deleting a notification now requires confirmation.
+    const dialog = screen.getByRole('dialog');
+
+    expect(dialog).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Delete this notification?' }),
+    ).toBeInTheDocument();
+    expect(dialog).toHaveTextContent("This can't be undone.");
+
+    expect(dialog).toHaveTextContent('Delete this notification?');
+    expect(dialog).toHaveTextContent("This can't be undone.");
+
+    await user.click(
+      dialog.querySelector('button[data-variant="danger"]') as HTMLButtonElement,
+    );
+
     await waitFor(() => {
       expect(screen.queryByText('Q3 Plan', { exact: false })).not.toBeInTheDocument();
     });
