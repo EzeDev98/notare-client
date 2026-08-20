@@ -238,7 +238,7 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
             onClick={handleDiscardWhileRecording}
             aria-label="Discard recording"
           >
-            <Trash2 aria-hidden="true" strokeWidth={1.75} color="var(--color-danger)" />
+            <Trash2 aria-hidden="true" color="var(--color-danger)" />
           </button>
 
           {/*
@@ -260,9 +260,9 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
             aria-label={recorder.status.paused ? 'Resume recording' : 'Pause recording'}
           >
             {recorder.status.paused ? (
-              <Play aria-hidden="true" strokeWidth={1.75} />
+              <Play aria-hidden="true" />
             ) : (
-              <Pause aria-hidden="true" strokeWidth={1.75} />
+              <Pause aria-hidden="true" />
             )}
           </button>
 
@@ -272,7 +272,7 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
             onClick={handleSendWhileRecording}
             aria-label="Save recording"
           >
-            <Send aria-hidden="true" strokeWidth={1.75} color="var(--color-text-on-accent)" />
+            <Send aria-hidden="true" color="var(--color-text-on-accent)" />
           </button>
         </>
       ) : null}
@@ -286,7 +286,7 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
             disabled={upload.isPending}
             aria-label="Discard recording"
           >
-            <Trash2 aria-hidden="true" strokeWidth={1.75} color="var(--color-danger)" />
+            <Trash2 aria-hidden="true" color="var(--color-danger)" />
           </button>
 
           <div className="voice-recorder__bar-status" role="status">
@@ -305,7 +305,7 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
             disabled={upload.isPending}
             aria-label="Save recording"
           >
-            <Send aria-hidden="true" strokeWidth={1.75} color="var(--color-text-on-accent)" />
+            <Send aria-hidden="true" color="var(--color-text-on-accent)" />
           </button>
 
           {upload.isError ? (
@@ -328,7 +328,7 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
           }}
           aria-label="Record a voice note"
         >
-          <Mic aria-hidden="true" strokeWidth={1.75} color="var(--color-text-on-accent)" />
+          <Mic aria-hidden="true" color="var(--color-text-on-accent)" />
         </button>
       ) : null}
     </div>

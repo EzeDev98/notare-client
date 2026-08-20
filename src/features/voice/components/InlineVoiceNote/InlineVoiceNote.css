@@ -56,7 +56,7 @@
     padding: 0;
     border: none;
     background: transparent;
-    color: var(--color-text-primary);
+    color: var(--color-icon);
     cursor: pointer;
   }
 
@@ -69,9 +69,17 @@
     cursor: default;
   }
 
+  /*
+   * `color: inherit` is needed here: `.lucide` sets `color` directly
+   * on the svg, which blocks inheritance from an ancestor's `color`.
+   * Without this line, the icon would always sit at the base
+   * --color-icon and the `:hover` rule above — which works by changing
+   * THIS BUTTON's color — would stop reaching it.
+   */
   .inline-voice-note__play svg {
-    inline-size: 1.05rem;
+    inline-size: 1.05rem;    /* intentionally smaller than 20px — compact chat-bubble UI, keep as-is */
     block-size: 1.05rem;
+    color: inherit;
   }
 
   .inline-voice-note__wave {

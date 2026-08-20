@@ -106,7 +106,7 @@ export function VoiceDetailPage() {
                 to={`/voice/${String(voiceNote.data.id)}/share`}
                 className="voice-detail__share-link"
               >
-                <Share aria-hidden="true" size={16} strokeWidth={1.75} />
+                <Share aria-hidden="true" />
                 Share
               </Link>
             </div>

@@ -7,7 +7,17 @@ import {
 } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, NavLink, Outlet, useMatch, useNavigate } from 'react-router';
-import { Bell, Handshake, Search, Share, SquarePen, Trash2, Users } from 'lucide-react';
+import {
+  Archive,
+  Bell,
+  Handshake,
+  PanelLeft,
+  Search,
+  Share,
+  SquarePen,
+  Trash2,
+  Users,
+} from 'lucide-react';
 
 import { navItems, type NavItem } from '@/app/layouts/navItems';
 import { RouteFocus } from '@/app/RouteFocus';
@@ -37,41 +47,12 @@ const desktopOnlyItems: NavItem[] = [
   {
     to: '/archived',
     label: 'Archived',
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <rect x="3" y="4" width="18" height="5" rx="1.5" />
-        <path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9" />
-        <path d="M10 13h4" />
-      </svg>
-    ),
+    icon: <Archive aria-hidden="true" />,
   },
   {
     to: '/trash',
     label: 'Trash',
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M4 7h16" />
-        <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-        <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12" />
-        <path d="M10 11v6M14 11v6" />
-      </svg>
-    ),
+    icon: <Trash2 aria-hidden="true" />,
   },
 ];
 
@@ -89,7 +70,7 @@ const desktopOnlyItems: NavItem[] = [
 const sharedWithMeItem: NavItem = {
   to: '/shared',
   label: 'Shared with me',
-  icon: <Users aria-hidden="true" strokeWidth={1.75} />,
+  icon: <Users aria-hidden="true" />,
 };
 
 const voiceNotesItem: NavItem = {
@@ -100,7 +81,7 @@ const voiceNotesItem: NavItem = {
 const collaborationItem: NavItem = {
   to: '/collaborations',
   label: 'Collaborations',
-  icon: <Handshake aria-hidden="true" strokeWidth={1.75} />,
+  icon: <Handshake aria-hidden="true" />,
 };
 
 const accountItem: NavItem = {
@@ -433,18 +414,7 @@ export function AppLayout() {
             aria-pressed={isFoldersOpen}
             onClick={toggleFolders}
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="3" y="4" width="18" height="16" rx="2" />
-              <path d="M9 4v16" />
-            </svg>
+            <PanelLeft aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -455,7 +425,7 @@ export function AppLayout() {
               void handleDeleteActiveNote();
             }}
           >
-            <Trash2 aria-hidden="true" strokeWidth={1.75} />
+            <Trash2 aria-hidden="true" />
           </button>
         </div>
 
@@ -469,7 +439,7 @@ export function AppLayout() {
         */}
         <div className="app-shell__toolbar-main">
           <Link to="/notes/new" className="app-shell__toolbar-icon-btn" aria-label="New note">
-            <SquarePen aria-hidden="true" strokeWidth={1.75} />
+            <SquarePen aria-hidden="true" />
           </Link>
 
           {/*
@@ -492,7 +462,7 @@ export function AppLayout() {
               className="app-shell__toolbar-icon-btn"
               aria-label="Notifications"
             >
-              <Bell aria-hidden="true" strokeWidth={1.75} />
+              <Bell aria-hidden="true" />
             </Link>
 
             {activeNoteId !== null ? (
@@ -501,7 +471,7 @@ export function AppLayout() {
                 className="app-shell__toolbar-icon-btn"
                 aria-label="Share this note"
               >
-                <Share aria-hidden="true" strokeWidth={1.75} />
+                <Share aria-hidden="true" />
               </Link>
             ) : (
               <button
@@ -510,7 +480,7 @@ export function AppLayout() {
                 aria-label="Share this note"
                 disabled
               >
-                <Share aria-hidden="true" strokeWidth={1.75} />
+                <Share aria-hidden="true" />
               </button>
             )}
 
@@ -519,7 +489,7 @@ export function AppLayout() {
               role="search"
               onSubmit={handleToolbarSearchSubmit}
             >
-              <Search aria-hidden="true" strokeWidth={1.75} />
+              <Search aria-hidden="true" />
               <input
                 type="search"
                 placeholder="Search"

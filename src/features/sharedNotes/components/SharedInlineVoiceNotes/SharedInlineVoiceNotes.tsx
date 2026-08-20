@@ -153,9 +153,9 @@ function SharedInlineVoiceNote({
             aria-label={playing ? 'Pause voice note' : 'Play voice note'}
           >
             {playing ? (
-              <Pause aria-hidden="true" strokeWidth={2} />
+              <Pause aria-hidden="true" />
             ) : (
-              <Play aria-hidden="true" strokeWidth={2} />
+              <Play aria-hidden="true" />
             )}
           </button>
 

@@ -165,7 +165,7 @@ export function SharedVoiceDetailPage() {
 
             <div className="shared-note__voice-card">
               <span className="shared-note__voice-icon" aria-hidden="true">
-                <Mic size={18} />
+                <Mic />
               </span>
 
               <div className="shared-note__voice-player">

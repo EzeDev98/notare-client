@@ -1,0 +1,103 @@
+@layer components {
+  .ds-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-overlay);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6);
+
+    /*
+     * No token for this: it's the one place in the app that deliberately
+     * darkens the page it sits over rather than sitting on --color-surface
+     * like everything else, so there's nothing in tokens/colors.css to
+     * point at. rgb(...) over a hex/keyword so opacity can vary
+     * independently of the color itself.
+     */
+    background-color: rgb(0 0 0 / 45%);
+    backdrop-filter: blur(4px);
+  }
+
+  .ds-modal {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-2);
+    inline-size: min(100%, 400px);
+    padding: var(--space-8) var(--space-6) var(--space-6);
+    border-radius: var(--radius-lg);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-md);
+    text-align: center;
+  }
+
+  .ds-modal__icon {
+    display: grid;
+    place-items: center;
+    inline-size: 56px;
+    block-size: 56px;
+    margin-block-end: var(--space-2);
+    border-radius: var(--radius-lg);
+
+    /*
+     * The one deliberate accent exception in this component: a badge
+     * exists to draw the eye, so it uses the lavender pairing the rest of
+     * the app reserves for identity/selected-state, same reasoning as
+     * `.shared-note__voice-icon` in SharedNote.css.
+     */
+    background-color: var(--color-accent-subtle);
+    color: var(--color-accent);
+  }
+
+  /*
+   * Size override + `color: inherit`, same pattern used everywhere else
+   * an icon sits in an accent-colored badge: `.lucide` sets both directly
+   * on the svg in the base layer, which blocks inheriting either the
+   * bigger badge size or the badge's accent color from `.ds-modal__icon`
+   * above. Without this the icon would render at the standard 20px in
+   * flat muted gray instead of standing out the way the badge intends.
+   */
+  .ds-modal__icon svg {
+    inline-size: 28px;
+    block-size: 28px;
+    color: inherit;
+  }
+
+  .ds-modal__title {
+    margin: 0;
+    color: var(--color-text);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-snug);
+  }
+
+  .ds-modal__description {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-normal);
+  }
+
+  .ds-modal__description strong {
+    color: var(--color-text);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .ds-modal__actions {
+    display: flex;
+    inline-size: 100%;
+    gap: var(--space-3);
+    margin-block-start: var(--space-4);
+  }
+
+  /*
+   * Equal-width, side by side — the reference dialog's layout, and a
+   * deliberate departure from InviteCollaboratorPage's old modal, which
+   * right-aligned two auto-width buttons instead. flex: 1 on both buttons
+   * (rather than sizing to each label) is what keeps Cancel/Delete-style
+   * pairs visually balanced regardless of which one has the longer word.
+   */
+  .ds-modal__action {
+    flex: 1;
+  }
+}

@@ -1,4 +1,5 @@
 import { useId, useState, type ComponentPropsWithoutRef } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 
 import { describedBy } from '@/design-system/components/Field/describedBy';
 import { Field, type FieldMessages } from '@/design-system/components/Field/Field';
@@ -16,53 +17,6 @@ interface PasswordFieldProps
   label: string;
 }
 
-/*
- * width/height attributes ADDED on top of the CSS sizing rule
- * (PasswordField.css's `.ds-password-field__toggle svg`) — belt and
- * suspenders. An <svg> with neither attribute defaults to a 300x150
- * intrinsic box (the HTML replaced-element default) until CSS has
- * loaded and painted; setting them here means the icon is never
- * momentarily oversized or dependent on stylesheet timing at all.
- */
-function EyeIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="18"
-      height="18"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function EyeOffIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="18"
-      height="18"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3 3l18 18" />
-      <path d="M10.6 5.2A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-3.2 4.1M6.6 6.6C4 8.3 2 12 2 12s3.5 7 10 7c1.4 0 2.7-.3 3.9-.8" />
-      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
-    </svg>
-  );
-}
-
 /**
  * A `TextField` that can reveal its own value.
  *
@@ -77,6 +31,13 @@ function EyeOffIcon() {
  * (tokens/colors.css), and `aria-pressed` announces the on/off state
  * alongside the label rather than leaving a screen reader user to infer it
  * from the icon alone.
+ *
+ * `Eye`/`EyeOff` from Lucide, not hand-written SVG — same icon
+ * standardization pass as navItems.tsx and ThemeToggle.tsx. lucide-react
+ * always sets `width`/`height` attributes on the svg itself (24 by
+ * default), so there is no unstyled 300x150 flash to guard against the way
+ * a bare hand-written `<svg>` needs — the old belt-and-suspenders
+ * width/height props this replaced are no longer necessary.
  */
 export function PasswordField({ label, hint, error, className, ...rest }: PasswordFieldProps) {
   const base = useId();
@@ -105,7 +66,7 @@ export function PasswordField({ label, hint, error, className, ...rest }: Passwo
           aria-label={visible ? 'Hide password' : 'Show password'}
           aria-pressed={visible}
         >
-          {visible ? <EyeOffIcon /> : <EyeIcon />}
+          {visible ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
         </button>
       </div>
     </Field>

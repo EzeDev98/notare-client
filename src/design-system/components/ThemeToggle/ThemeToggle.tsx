@@ -1,39 +1,21 @@
 import type { ReactNode } from 'react';
+import { Monitor, Moon, Sun } from 'lucide-react';
 
 import { useTheme } from '@/app/providers/theme-context';
 import type { ThemePreference } from '@/lib/theme/theme';
 import './ThemeToggle.css';
 
-function SunIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <circle cx="12" cy="12" r="4" />
-      <path d="M12 2v2.5M12 19.5V22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M2 12h2.5M19.5 12H22M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8" />
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" />
-    </svg>
-  );
-}
-
-function SystemIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="4.5" width="18" height="12" rx="1.5" />
-      <path d="M9 20h6M12 16.5V20" />
-    </svg>
-  );
-}
-
+/*
+ * Lucide, not hand-written SVG — same icon standardization pass as
+ * navItems.tsx. `Monitor` stands in for "System": Lucide has no literal
+ * "OS preference" glyph, and a monitor/display is the closest existing
+ * mark to what the hand-drawn version was already drawing (a screen with
+ * a stand).
+ */
 const OPTIONS: { value: ThemePreference; label: string; icon: ReactNode }[] = [
-  { value: 'light', label: 'Light', icon: <SunIcon /> },
-  { value: 'dark', label: 'Dark', icon: <MoonIcon /> },
-  { value: 'system', label: 'System', icon: <SystemIcon /> },
+  { value: 'light', label: 'Light', icon: <Sun aria-hidden="true" /> },
+  { value: 'dark', label: 'Dark', icon: <Moon aria-hidden="true" /> },
+  { value: 'system', label: 'System', icon: <Monitor aria-hidden="true" /> },
 ];
 
 /**

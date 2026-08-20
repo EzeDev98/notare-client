@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { Check, Mail } from 'lucide-react';
+import { Link, useNavigate } from 'react-router';
 
 import { CollaboratorPicker } from '@/features/collaboration/components/CollaboratorPicker/CollaboratorPicker';
 import { useSentCollaborations } from '@/features/collaboration/hooks/useCollaborations';
@@ -8,6 +9,7 @@ import type {
   CollaborationResponse,
   UserSummaryResponse,
 } from '@/features/collaboration/types';
+import { Modal } from '@/design-system/components/Modal/Modal';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './InviteCollaborator.css';
 
@@ -180,86 +182,48 @@ function ExistingCollaboratorModal({
   relationship,
   onClose,
 }: ExistingCollaboratorModalProps) {
+  const navigate = useNavigate();
   const isPending = relationship === 'PENDING';
   const displayName = getDisplayName(user);
 
+  /*
+   * The old modal's primary action was a <Link>, since it needed to
+   * navigate rather than just fire a callback. The reusable Modal's
+   * primaryAction is onClick-only (every other call site is a plain
+   * confirm/cancel), so navigation happens imperatively here instead —
+   * close first, then navigate, matching what the <Link>'s onClick={onClose}
+   * + built-in navigation used to do together in one click.
+   */
+  function goToNotes() {
+    onClose();
+    navigate(NOTES_ROUTE);
+  }
+
   return (
-    <div
-      className="invite-collaborator__modal-backdrop"
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
-    >
-      <div
-        className="invite-collaborator__modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="existing-collaborator-title"
-        aria-describedby="existing-collaborator-description"
-      >
-        <button
-          type="button"
-          className="invite-collaborator__modal-close"
-          aria-label="Close"
-          onClick={onClose}
-        >
-          ×
-        </button>
-
-        <div className="invite-collaborator__modal-icon" aria-hidden="true">
-          {isPending ? '✉' : '✓'}
-        </div>
-
-        <h2
-          id="existing-collaborator-title"
-          className="invite-collaborator__modal-title"
-        >
-          {isPending
-            ? 'Invitation already sent'
-            : 'You’re already collaborators'}
-        </h2>
-
-        <p
-          id="existing-collaborator-description"
-          className="invite-collaborator__modal-text"
-        >
-          {isPending ? (
-            <>
-              You have already invited <strong>{displayName}</strong> to
-              collaborate with you. Once they accept, you can share your
-              notes with them from the note's Share menu.
-            </>
-          ) : (
-            <>
-              <strong>{displayName}</strong> is already one of your
-              collaborators. To share a note with them, open the note you
-              want to share and select Share.
-            </>
-          )}
-        </p>
-
-        <div className="invite-collaborator__modal-actions">
-          <button
-            type="button"
-            className="invite-collaborator__modal-secondary"
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-
-          <Link
-            to={NOTES_ROUTE}
-            className="invite-collaborator__modal-primary"
-            onClick={onClose}
-          >
-            Go to my notes
-          </Link>
-        </div>
-      </div>
-    </div>
+    <Modal
+      icon={isPending ? <Mail aria-hidden="true" /> : <Check aria-hidden="true" />}
+      title={
+        isPending ? 'Invitation already sent' : 'You’re already collaborators'
+      }
+      description={
+        isPending ? (
+          <>
+            You have already invited <strong>{displayName}</strong> to
+            collaborate with you. Once they accept, you can share your notes
+            with them from the note's Share menu.
+          </>
+        ) : (
+          <>
+            <strong>{displayName}</strong> is already one of your
+            collaborators. To share a note with them, open the note you want
+            to share and select Share.
+          </>
+        )
+      }
+      secondaryAction={{ label: 'Cancel', onClick: onClose }}
+      primaryAction={{ label: 'Go to my notes', onClick: goToNotes }}
+      onClose={onClose}
+    />
   );
 }
 

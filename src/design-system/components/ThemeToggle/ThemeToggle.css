@@ -21,9 +21,19 @@
     cursor: pointer;
   }
 
+  /*
+   * Size now comes from the global `.lucide` rule (tokens/icons.css) —
+   * the old 1.125rem (18px) override is gone, so these fall to the same
+   * 20px every other icon in the app uses.
+   *
+   * `color: inherit` is still needed, though: `.lucide` sets `color`
+   * directly on the svg, which blocks inheritance from an ancestor's
+   * `color`. Without this line, the icon would always sit at the base
+   * --color-icon and the hover/selected rules below — which work by
+   * changing THIS BUTTON's color — would stop reaching it.
+   */
   .theme-toggle__button svg {
-    inline-size: 1.125rem;
-    block-size: 1.125rem;
+    color: inherit;
   }
 
   .theme-toggle__button:hover {

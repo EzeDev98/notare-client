@@ -128,6 +128,17 @@
     color: var(--color-accent);
   }
 
+  /*
+   * `color: inherit` is needed here: `.lucide` sets `color` directly
+   * on the svg, which blocks inheritance from an ancestor's `color`.
+   * This badge is a deliberate accent/brand exception to the muted
+   * default icon color, so without this line the Mic icon would fall
+   * back to the flat --color-icon gray instead of the accent purple.
+   */
+  .shared-note__voice-icon svg {
+    color: inherit;
+  }
+
   .shared-note__voice-player {
     flex: 1;
     min-inline-size: 0;

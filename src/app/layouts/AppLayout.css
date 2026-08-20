@@ -478,11 +478,16 @@
       background-color: transparent;
     }
 
-    /* lucide-react renders as an <svg> with stroke="currentColor" and
-       strokeWidth set on the component itself — just size here. */
+    /*
+     * Size and stroke width now come from the global `.lucide` rule
+     * (tokens/icons.css), not from here — that rule also sets `color`
+     * directly on the svg, which blocks the CSS inheritance this button
+     * relies on for its hover/disabled states below (`color: inherit`
+     * makes the icon follow the BUTTON's color again instead of always
+     * sitting at the base --color-icon).
+     */
     .app-shell__toolbar-icon-btn svg {
-      inline-size: 1.25rem;
-      block-size: 1.25rem;
+      color: inherit;
     }
 
     .app-shell__nav {
