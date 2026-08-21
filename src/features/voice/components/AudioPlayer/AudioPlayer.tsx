@@ -19,18 +19,18 @@ interface AudioPlayerProps {
 export function AudioPlayer({ voiceNoteId }: AudioPlayerProps) {
   const blob = useAudioBlob(voiceNoteId);
 
-  if (blob.status === 'loading') {
+  if (blob.status !== 'ready') {
+    if (blob.status === 'error') {
+      return (
+        <div className="audio-player audio-player--centre" role="alert">
+          <p>Couldn&apos;t load this recording.</p>
+        </div>
+      );
+    }
+
     return (
       <div className="audio-player audio-player--centre">
         <Spinner label="Loading recording" size="sm" />
-      </div>
-    );
-  }
-
-  if (blob.status === 'error') {
-    return (
-      <div className="audio-player audio-player--centre" role="alert">
-        <p>Couldn&apos;t load this recording.</p>
       </div>
     );
   }

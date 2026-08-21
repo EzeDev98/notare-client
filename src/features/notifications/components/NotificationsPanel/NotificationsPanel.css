@@ -22,7 +22,43 @@
     background-color: var(--color-surface);
     box-shadow: var(--shadow-md);
     overflow: hidden;
-    transition: max-block-size var(--transition-fast);
+    transition: max-block-size var(--motion-duration-base) var(--motion-ease-standard);
+    animation:
+      ds-notifications-panel-enter
+      var(--motion-duration-base)
+      var(--motion-ease-enter);
+  }
+
+  .notifications-panel[data-closing='true'] {
+    animation:
+      ds-notifications-panel-exit
+      var(--motion-duration-fast)
+      var(--motion-ease-exit)
+      forwards;
+  }
+
+  @keyframes ds-notifications-panel-enter {
+    from {
+      opacity: 0;
+      transform: translateY(-0.35rem) scale(0.985);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes ds-notifications-panel-exit {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateY(-0.25rem) scale(0.99);
+    }
   }
 
   /*

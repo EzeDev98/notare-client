@@ -61,8 +61,9 @@ function InlineVoiceNote({ voiceNote }: { voiceNote: VoiceNoteResponse }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [loadRequested, setLoadRequested] = useState(false);
 
-  const blob = useAudioBlob(voiceNote.id);
+  const blob = useAudioBlob(voiceNote.id, loadRequested);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -100,6 +101,11 @@ function InlineVoiceNote({ voiceNote }: { voiceNote: VoiceNoteResponse }) {
   }, [blob.status === 'ready' ? blob.url : null]);
 
   function togglePlayback() {
+    if (blob.status === 'idle' || blob.status === 'error') {
+      setLoadRequested(true);
+      return;
+    }
+
     const audio = audioRef.current;
 
     if (!audio || blob.status !== 'ready') return;
@@ -132,7 +138,7 @@ function InlineVoiceNote({ voiceNote }: { voiceNote: VoiceNoteResponse }) {
             type="button"
             className="inline-voice-note__play"
             onClick={togglePlayback}
-            disabled={blob.status !== 'ready'}
+            disabled={blob.status === 'loading'}
             aria-label={playing ? 'Pause voice note' : 'Play voice note'}
           >
             {playing ? (
@@ -181,20 +187,13 @@ function InlineVoiceNote({ voiceNote }: { voiceNote: VoiceNoteResponse }) {
         Transcribe
       </Link>
 
-      {blob.status === 'error' ? (
-        <span className="inline-voice-note__error" role="status">
-          Couldn&apos;t load recording. Open the voice note to try again.
-        </span>
-      ) : null}
-
-      {blob.status === 'ready' ? (
-        <audio
-          ref={audioRef}
-          src={blob.url}
-          preload="metadata"
-          className="inline-voice-note__audio"
-        />
-      ) : null}
+      <audio
+        ref={audioRef}
+        src={blob.status === 'ready' ? blob.url : undefined}
+        preload="metadata"
+        className="inline-voice-note__audio"
+        aria-label="Voice note audio"
+      />
     </article>
   );
 }

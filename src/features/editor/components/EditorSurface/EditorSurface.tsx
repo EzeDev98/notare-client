@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 
 import './EditorSurface.css';
 
@@ -24,6 +24,16 @@ interface EditorSurfaceProps {
    * voice content directly below via its own markup.
    */
   hideBody?: boolean;
+  /**
+   * Skips the title input.
+   *
+   * Regular notes (NoteEditorHost) pass this as true — the note interface
+   * is body-only, no title concept at all. Voice-note surfaces (VoiceDetail,
+   * SharedVoiceDetail) do NOT pass this: for them the title field is the
+   * only thing rendered (paired with hideBody), showing the recording's
+   * filename. Removing the input outright would have broken those screens.
+   */
+  hideTitle?: boolean;
 }
 
 /**
@@ -49,6 +59,7 @@ export function EditorSurface({
   onBlur,
   contentAccessory,
   hideBody = false,
+  hideTitle = false,
 }: EditorSurfaceProps) {
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
@@ -68,49 +79,60 @@ export function EditorSurface({
    * `field-sizing: content` does all of this in one CSS line and is
    * Chrome-only for now.
    */
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = contentRef.current;
     if (!element) return;
 
+    /*
+     * Measure before paint. This is critical when switching between notes:
+     * a long note must not first paint at the one-row textarea height and
+     * then expand after the frame is already visible.
+     */
     element.style.height = 'auto';
     element.style.height = `${String(element.scrollHeight)}px`;
   }, [content]);
 
   return (
     <div className="editor-surface">
-      <input
-        className="editor-surface__title"
-        aria-label="Note title"
-        placeholder="Untitled"
-        value={title}
-        readOnly={readOnly}
-        maxLength={255}
-        onChange={(event) => {
-          onTitleChange(event.target.value);
-        }}
-        onBlur={onBlur}
-      />
+      {hideTitle ? null : (
+        <input
+          className="editor-surface__title"
+          aria-label="Note title"
+          placeholder="Untitled"
+          value={title}
+          readOnly={readOnly}
+          maxLength={255}
+          onChange={(event) => {
+            onTitleChange(event.target.value);
+          }}
+          onBlur={onBlur}
+        />
+      )}
 
       {hideBody ? null : (
         <div className="editor-surface__body">
-          {content.trim() === '' ? contentAccessory : null}
-
           <textarea
             ref={contentRef}
             className="editor-surface__content"
             aria-label="Note content"
-            placeholder="Start writing…"
+            placeholder=""
             value={content}
             readOnly={readOnly}
             maxLength={20_000}
             rows={1}
+            /*
+             * Autofocus only on the title-less (regular note) surface.
+             * Voice-note surfaces keep hideTitle=false and are frequently
+             * read-only, so they must not steal focus on mount.
+             */
+            autoFocus={hideTitle && !readOnly}
             onChange={(event) => {
               onContentChange(event.target.value);
             }}
             onBlur={onBlur}
           />
 
-          {content.trim() !== '' ? contentAccessory : null}
+          {contentAccessory}
         </div>
       )}
     </div>

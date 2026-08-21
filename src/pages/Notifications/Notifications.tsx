@@ -133,7 +133,8 @@ export function NotificationsPage() {
       {confirmingDelete !== null ? (
         <Modal
           icon={<Bell aria-hidden="true" />}
-          description="Delete this notification? This can't be undone."
+          title="Delete this notification?"
+          description="This can't be undone."
           secondaryAction={{
             label: 'Cancel',
             onClick: () => {
@@ -153,14 +154,14 @@ export function NotificationsPage() {
       {confirmingReject !== null ? (
         <Modal
           icon={<Mail aria-hidden="true" />}
+          title="Reject this invite?"
           description={
             confirmingReject.targetLabel.trim() !== '' ? (
               <>
-                Reject this invite? You won't get access to{' '}
-                <strong>{confirmingReject.targetLabel}</strong>.
+                You won't get access to <strong>{confirmingReject.targetLabel}</strong>.
               </>
             ) : (
-              <>Reject this invite? You won't get access to this invitation.</>
+              <>You won't get access to this invitation.</>
             )
           }
           secondaryAction={{

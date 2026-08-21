@@ -77,16 +77,26 @@ export function NoteEditorHost({ row, currentUserId, contentAccessory }: NoteEdi
     <>
       <div className="note-detail__status">
         <SaveIndicator state={editor.saveState} />
-        {words > 0 ? (
-          <p className="note-detail__words">
-            {words} {words === 1 ? 'word' : 'words'}
-          </p>
-        ) : null}
+        {/*
+          ALWAYS mounted, never `words > 0 ? … : null`. Toggling this
+          element's presence based on content length is exactly what made
+          navigating between an empty note and a non-empty one visibly
+          jump: the status bar's height changed on every such switch, while
+          content<->content and empty<->empty never touched this at all.
+          `visibility: hidden` removes it from view (and from the
+          accessibility tree) without removing it from layout, so the
+          height of `.note-detail__status` is now constant regardless of
+          which note is open.
+        */}
+        <p className="note-detail__words" data-empty={words === 0 ? 'true' : undefined}>
+          {words > 0 ? `${String(words)} ${words === 1 ? 'word' : 'words'}` : '\u00A0'}
+        </p>
       </div>
 
       <EditorSurface
         title={editor.row.title}
         content={editor.row.content}
+        hideTitle
         onTitleChange={(value) => {
           editor.setDraft({ title: value });
           editor.markEdited();

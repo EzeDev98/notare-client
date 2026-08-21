@@ -28,6 +28,11 @@
   .editor-surface__content {
     margin-block-start: var(--space-6);
 
+    /* §1A: the blinking caret IS the writing indicator now that there's no
+     * title field above it — give it the brand accent so it reads as an
+     * intentional signal, not a stray default black cursor. */
+    caret-color: var(--color-accent);
+
     /* The reading size and leading from 2A — the same values the read view
      * used, so switching between them is not a visual jump. */
     font-size: var(--font-size-md);

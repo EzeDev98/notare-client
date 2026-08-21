@@ -37,7 +37,7 @@ export function newLocalId(): string {
 /** Builds a row for a note that exists only locally. */
 export function createLocalNote(
   ownerId: number | null,
-  fields: { title?: string; content?: string } = {},
+  fields: { content?: string } = {},
 ): NoteRow {
   const localId = newLocalId();
 
@@ -53,7 +53,6 @@ export function createLocalNote(
      * would tie a local storage decision to a wire contract.
      */
     clientId: localId,
-    title: fields.title ?? '',
     content: fields.content ?? '',
     pinned: 0,
     archived: 0,
@@ -87,7 +86,6 @@ export function fromNoteResponse(note: NoteResponse, existing?: NoteRow): NoteRo
     localId: existing?.localId ?? newLocalId(),
     serverId: note.id,
     clientId: existing?.clientId ?? newLocalId(),
-    title: note.title ?? '',
     content: note.content ?? '',
     pinned: flag(note.pinned),
     archived: flag(note.archived),
@@ -126,7 +124,6 @@ export function fromNoteSummary(
     localId: existing?.localId ?? newLocalId(),
     serverId: summary.id,
     clientId: existing?.clientId ?? newLocalId(),
-    title: summary.title ?? '',
     content: existing?.content ?? '',
     pinned: flag(summary.pinned),
     archived: flag(summary.archived),
@@ -193,7 +190,6 @@ export function fromTrashedNote(
 export interface NoteView {
   localId: string;
   serverId: number | null;
-  title: string;
   content: string;
   pinned: boolean;
   archived: boolean;
@@ -217,7 +213,6 @@ export function toView(row: NoteRow): NoteView {
   return {
     localId: row.localId,
     serverId: row.serverId,
-    title: row.title,
     content: row.content,
     /*
      * Decoded back to booleans HERE, and only here. 0 | 1 is a storage

@@ -352,7 +352,7 @@
        * stay the same between states, which they do here (always three
        * tracks, always px values via the two custom properties).
        */
-      transition: grid-template-columns 0.22s ease;
+      transition: grid-template-columns var(--motion-duration-base) var(--motion-ease-standard);
       grid-template-rows: 52px minmax(0, 1fr);
       block-size: 100dvh;
       max-block-size: 100dvh;
@@ -399,7 +399,7 @@
       inline-size: calc(var(--folders-width, 0px) + var(--sidebar-width, 240px));
       padding-inline: var(--space-3);
       border-inline-end: var(--border-width) solid var(--color-border);
-      transition: inline-size 0.22s ease;
+      transition: inline-size var(--motion-duration-base) var(--motion-ease-standard);
     }
 
     .app-shell__toolbar-main {
@@ -586,6 +586,7 @@
        overflow-y is what makes a long list scroll internally rather than
        pushing Voice/Notifications/Account off the bottom of the screen. */
     .app-shell__note-list {
+      position: relative;
       display: grid;
       align-content: start;
       flex: 1;
@@ -693,7 +694,7 @@
       z-index: var(--z-sticky);
       cursor: col-resize;
       touch-action: none;
-      transition: inset-inline-start 0.22s ease;
+      transition: inset-inline-start var(--motion-duration-base) var(--motion-ease-standard);
     }
 
     .app-shell__resize-handle:hover,
@@ -815,4 +816,17 @@
 .app-shell__nav-link {
   visibility: visible !important;
   opacity: 1 !important;
+}
+
+/*
+ * New Note is visually unavailable while an untouched empty local note
+ * already exists. Deliberately not disabled: the control stays in the
+ * toolbar and simply does nothing when clicked.
+ */
+.app-shell__toolbar-icon-btn[data-unavailable='true'] {
+  opacity: 0.45;
+}
+
+.app-shell__toolbar-icon-btn[data-unavailable='true']:hover {
+  opacity: 0.45;
 }

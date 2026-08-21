@@ -17,6 +17,50 @@
      */
     background-color: rgb(0 0 0 / 45%);
     backdrop-filter: blur(4px);
+
+    /*
+     * Step 6A/6B. Enter plays unconditionally on mount. The
+     * `[data-closing='true']` rule below overrides this with the exit
+     * keyframes instead — Modal.tsx only ever sets that attribute once it's
+     * already deferring the real close callback until this animation
+     * finishes (see its own onAnimationEnd handler), so the backdrop is
+     * never left stuck mid-fade.
+     */
+    animation: ds-modal-backdrop-enter var(--motion-duration-base) var(--motion-ease-enter);
+  }
+
+  @keyframes ds-modal-backdrop-enter {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  /*
+   * Exit — quicker than the matching enter (motion.css's own note on
+   * -ease-exit: "an exit is quicker than the matching enter, so a close
+   * never feels like it's dawdling on the way out"), hence
+   * --motion-duration-fast here against --motion-duration-base above.
+   * `forwards` holds the animation's end state (opacity: 0) for the brief
+   * gap between this finishing and Modal.tsx actually unmounting the node —
+   * without it the backdrop would snap back to fully visible the instant
+   * the animation completes, one frame before disappearing entirely.
+   */
+  .ds-modal-backdrop[data-closing='true'] {
+    animation: ds-modal-backdrop-exit var(--motion-duration-fast) var(--motion-ease-exit) forwards;
+  }
+
+  @keyframes ds-modal-backdrop-exit {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
   }
 
   /*
@@ -37,6 +81,47 @@
     background-color: var(--color-surface);
     box-shadow: var(--shadow-md);
     text-align: center;
+
+    /*
+     * Subtle, not dramatic (§8): a small scale + 4px settle, the same
+     * distance route-transition-enter and the Phase 5 record-content
+     * transitions use elsewhere, so this reads as part of the same motion
+     * language rather than a separate, showier effect. `[data-closing]`
+     * below swaps this for the exit keyframes — same mechanism as the
+     * backdrop above.
+     */
+    animation: ds-modal-enter var(--motion-duration-base) var(--motion-ease-enter);
+  }
+
+  @keyframes ds-modal-enter {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(4px);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  /* Exit — see .ds-modal-backdrop[data-closing='true']'s own comment for
+     why this is --motion-duration-fast/-ease-exit rather than a mirror of
+     the enter above, and why `forwards` matters. */
+  .ds-modal[data-closing='true'] {
+    animation: ds-modal-exit var(--motion-duration-fast) var(--motion-ease-exit) forwards;
+  }
+
+  @keyframes ds-modal-exit {
+    from {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: scale(0.96) translateY(4px);
+    }
   }
 
   .ds-modal__icon {

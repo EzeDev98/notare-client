@@ -14,3 +14,9 @@
     color: var(--color-danger);
   }
 }
+
+@layer components {
+  .save-indicator[data-empty='true'] {
+    visibility: hidden;
+  }
+}

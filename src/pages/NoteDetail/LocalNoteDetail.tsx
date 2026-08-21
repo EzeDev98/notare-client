@@ -1,9 +1,9 @@
+
 import { Link, useParams } from 'react-router';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
 import { useLocalNote } from '@/features/notes/hooks/useLocalNote';
-import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './NoteDetail.css';
 
@@ -40,18 +40,13 @@ export function LocalNoteDetailPage() {
   const title = state.status === 'ready' ? state.row.title.trim() : '';
   useDocumentTitle(title === '' ? 'Untitled note' : title);
 
+
   return (
     <article className="note-detail">
       <div className="note-detail__scroll">
         <nav className="note-detail__back">
           <Link to="/notes">← All notes</Link>
         </nav>
-
-        {state.status === 'loading' ? (
-          <div className="note-detail__centre">
-            <Spinner label="Loading this note" />
-          </div>
-        ) : null}
 
         {state.status === 'not-found' ? (
           <div className="note-detail__centre">
@@ -64,7 +59,11 @@ export function LocalNoteDetailPage() {
         ) : null}
 
         {state.status === 'ready' ? (
-          <NoteEditorHost key={state.row.localId} row={state.row} currentUserId={currentUserId} />
+          <div
+            className="note-detail__editor-region"
+          >
+            <NoteEditorHost row={state.row} currentUserId={currentUserId} />
+          </div>
         ) : null}
 
         {/*

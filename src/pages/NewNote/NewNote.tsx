@@ -33,8 +33,17 @@ export function NewNotePage() {
     };
 
     void noteRepository.put(row).then(() => {
+      /*
+       * `state: { skipEnterAnimation: true }` — see RouteTransition.tsx.
+       * This replace() is the second half of one click on the compose
+       * icon, not a fresh page the user navigated to; without this flag
+       * it plays its own page-enter fade on top of the one this page
+       * itself just played, which is what produced the visible
+       * double-jump on "add new note."
+       */
       void navigate(`/notes/local/${row.localId}`, {
         replace: true,
+        state: { skipEnterAnimation: true },
       });
     });
   }, [currentUserId, navigate]);

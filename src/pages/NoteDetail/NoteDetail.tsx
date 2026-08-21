@@ -1,3 +1,4 @@
+
 import { Link, useParams } from 'react-router';
 
 import { useAuth } from '@/app/providers/auth-context';
@@ -44,6 +45,7 @@ export function NoteDetailPage() {
 
   const title = state.status === 'ready' ? state.row.title.trim() : '';
   useDocumentTitle(title === '' ? 'Untitled note' : title);
+
 
   return (
     <article className="note-detail">
@@ -103,16 +105,17 @@ export function NoteDetailPage() {
         ) : null}
 
         {state.status === 'ready' ? (
-          <NoteEditorHost
-            key={state.row.localId}
-            row={state.row}
-            currentUserId={currentUserId}
-            contentAccessory={
-              voiceNotes.data && voiceNotes.data.length > 0 ? (
-                <InlineVoiceNotes voiceNotes={voiceNotes.data} />
-              ) : null
-            }
-          />
+          <div className="note-detail__editor-region">
+            <NoteEditorHost
+              row={state.row}
+              currentUserId={currentUserId}
+              contentAccessory={
+                voiceNotes.data && voiceNotes.data.length > 0 ? (
+                  <InlineVoiceNotes voiceNotes={voiceNotes.data} />
+                ) : null
+              }
+            />
+          </div>
         ) : null}
 
         {/*

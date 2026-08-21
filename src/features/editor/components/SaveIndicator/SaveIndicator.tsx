@@ -54,11 +54,14 @@ export function SaveIndicator({ state }: { state: SaveState }) {
 
   return (
     <>
-      {described ? (
-        <p className="save-indicator" data-tone={described.tone} aria-hidden="true">
-          {described.label}
-        </p>
-      ) : null}
+      <p
+        className="save-indicator"
+        data-tone={described?.tone}
+        data-empty={described === null ? 'true' : undefined}
+        aria-hidden="true"
+      >
+        {described?.label ?? '\u00A0'}
+      </p>
 
       {/*
         Always rendered, so the live region exists in the DOM before it has

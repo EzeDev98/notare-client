@@ -1,4 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
+import { useRef } from 'react';
 
 import { noteRepository } from '@/features/notes/local/noteRepository';
 import type { NoteRow } from '@/features/notes/local/noteRow';
@@ -28,12 +29,40 @@ export function useLocalNote(localId: string | undefined): LocalNoteState {
     return (await noteRepository.getByLocalId(localId)) ?? null;
   }, [localId]);
 
-  if (localId === undefined || localId.trim() === '') return { status: 'not-found' };
+  /*
+   * Same Step 5A fix as useNote.ts: hold the outgoing note's row while
+   * Dexie re-subscribes for the new localId, instead of dropping through
+   * 'loading' (spinner) on every switch between not-yet-synced notes.
+   */
+  const lastResolvedRef = useRef<NoteRow | null>(null);
+  if (row) {
+    lastResolvedRef.current = row;
+  }
 
-  // Dexie still answering.
-  if (row === undefined) return { status: 'loading' };
+  const hasId = localId !== undefined && localId.trim() !== '';
 
-  if (row === null) return { status: 'not-found' };
+  const displayRow =
+    row === undefined || row === null
+      ? lastResolvedRef.current
+      : row;
 
-  return { status: 'ready', row };
+  if (!hasId) {
+    return { status: 'not-found' };
+  }
+
+  /*
+   * Never replace an already-mounted editor with a loading state while
+   * navigating between local notes.
+   *
+   * A local note has already been persisted to Dexie before navigation,
+   * so a transient undefined/null result is a query lifecycle event, not
+   * evidence that the note does not exist.
+   */
+  if (displayRow === undefined || displayRow === null) {
+    return { status: 'loading' };
+  }
+
+  lastResolvedRef.current = displayRow;
+
+  return { status: 'ready', row: displayRow };
 }

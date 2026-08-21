@@ -7,7 +7,6 @@ import type { ServerDateTime } from '@/lib/http/types';
 /** A single note, in full. */
 export interface NoteResponse {
   id: number;
-  title: string | null;
   content: string | null;
   pinned: boolean;
   archived: boolean;
@@ -30,7 +29,6 @@ export interface NoteResponse {
 /** A note as it appears in a list — no full content. */
 export interface NoteSummaryResponse {
   id: number;
-  title: string | null;
   contentPreview: string | null;
   pinned: boolean;
   archived: boolean;
@@ -51,7 +49,6 @@ export interface TrashedNoteResponse {
 }
 
 export interface CreateNoteRequest {
-  title?: string;
   content?: string;
 }
 
@@ -69,7 +66,6 @@ export interface CreateNoteRequest {
  * worth more than the ceremony.
  */
 export interface UpdateNoteRequest {
-  title: string | null;
   content: string | null;
   version: number;
 }
@@ -79,15 +75,8 @@ export interface UpdateNoteRequest {
  *
  * An OMITTED field means "leave it alone". To CLEAR a field, send an empty
  * string, not null.
- *
- * exactOptionalPropertyTypes (1B) is doing real work here: `title?: string`
- * permits absence but NOT an explicit undefined, so `{ title: undefined }`
- * fails to compile. Without that flag the two would be interchangeable, and
- * "I am not sending a title" would look identical to "I am sending an
- * undefined title".
  */
 export interface AutoSaveNoteRequest {
-  title?: string;
   content?: string;
   version: number;
 }

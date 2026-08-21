@@ -1,0 +1,72 @@
+@layer components {
+  /*
+   * Only the newly created/deleted note gets this animation.
+   *
+   * The neighboring note's push-down / pull-up movement is handled
+   * separately by the FLIP animation in AnimatedSidebarNoteList.tsx.
+   */
+
+  .sidebar-note-item--enter {
+    animation:
+      sidebar-note-enter
+      440ms
+      cubic-bezier(0.22, 1, 0.36, 1)
+      both;
+  }
+
+  .sidebar-note-item--exit {
+    /*
+     * The deleted row is removed from normal grid flow immediately.
+     * This lets the immediate row underneath move upward at the same time
+     * instead of waiting for the exit animation to finish.
+     */
+    position: absolute;
+    inset-block-start: var(--sidebar-note-exit-top);
+    inset-inline-start: var(--sidebar-note-exit-left);
+    inline-size: var(--sidebar-note-exit-width);
+    block-size: var(--sidebar-note-exit-height);
+
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 1;
+
+    animation:
+      sidebar-note-exit
+      440ms
+      cubic-bezier(0.22, 1, 0.36, 1)
+      both;
+  }
+
+  @keyframes sidebar-note-enter {
+    from {
+      opacity: 0;
+      transform: translate3d(0, -22px, 0);
+    }
+
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  @keyframes sidebar-note-exit {
+    from {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translate3d(0, -22px, 0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar-note-item--enter,
+    .sidebar-note-item--exit {
+      animation: none;
+      transform: none;
+      opacity: 1;
+    }
+  }
+}

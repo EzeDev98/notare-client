@@ -16,9 +16,12 @@ import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
  * `version` is optional: present only when the write that set the override
  * (conflict resolution) also knows the new version synchronously; absent
  * for a plain typing edit, which never changes the version at all.
+ *
+ * 1B: no `title` field — the note domain has none (NoteRow, NoteResponse,
+ * CreateNoteRequest, UpdateNoteRequest and AutoSaveNoteRequest all dropped
+ * it). Content is the only text a note carries now.
  */
 interface DraftOverride {
-  title: string;
   content: string;
   version?: number | null;
 }
@@ -49,6 +52,14 @@ export function useNoteEditor(initialRow: NoteRow) {
   const [saveState, dispatch] = useReducer(saveReducer, initialSaveState);
   const online = useOnlineStatus();
 
+  /*
+   * The editor host remains mounted while navigation changes the
+   * selected note. localId therefore MUST follow the incoming row.
+   *
+   * The previous implementation relied on React remounting this
+   * hook through <NoteEditorHost key={row.localId}>. That made every
+   * note switch destroy and recreate the entire editor.
+   */
   const localId = initialRow.localId;
 
   /*
@@ -72,16 +83,16 @@ export function useNoteEditor(initialRow: NoteRow) {
    * event-loop ticks later, never in the same render pass as the keystroke
    * that caused it.
    *
-   * `EditorSurface`'s title/content are CONTROLLED, bound directly to
-   * whatever `row` this hook returns. Every `setDraft` call dispatches
-   * `EDITED`, which re-renders `NoteEditorHost` immediately — and if `row`
-   * at that render is still `liveRow` (unchanged, because Dexie hasn't
-   * caught up), React resets the controlled input's DOM value back to that
-   * stale prop, undoing what was just typed. Type fast enough and every
-   * keystroke lands on a freshly-reverted field: each character is the
-   * entire visible content for a moment, and only whichever one the
-   * debounced save happens to fire on ever reaches the server. This was the
-   * actual cause behind four failing tests that looked unrelated
+   * `EditorSurface`'s content is CONTROLLED, bound directly to whatever
+   * `row` this hook returns. Every `setDraft` call dispatches `EDITED`,
+   * which re-renders `NoteEditorHost` immediately — and if `row` at that
+   * render is still `liveRow` (unchanged, because Dexie hasn't caught up),
+   * React resets the controlled input's DOM value back to that stale prop,
+   * undoing what was just typed. Type fast enough and every keystroke
+   * lands on a freshly-reverted field: each character is the entire
+   * visible content for a moment, and only whichever one the debounced
+   * save happens to fire on ever reaches the server. This was the actual
+   * cause behind four failing tests that looked unrelated
    * (conflict.test.tsx, editorRaces.test.tsx, keepBoth.test.tsx,
    * offlineEdit.test.tsx) — all of them either render the controlled
    * surface and race it, or read `rowRef.current` synchronously right
@@ -98,10 +109,23 @@ export function useNoteEditor(initialRow: NoteRow) {
    */
   const [draftOverride, setDraftOverride] = useState<DraftOverride | null>(null);
 
+  const previousLocalIdRef = useRef(localId);
+
+  useEffect(() => {
+    if (previousLocalIdRef.current !== localId) {
+      previousLocalIdRef.current = localId;
+
+      /*
+       * The optimistic override belongs to the previous note.
+       * Clear it before the new note becomes authoritative.
+       */
+      setDraftOverride(null);
+    }
+  }, [localId]);
+
   useEffect(() => {
     if (
       draftOverride !== null &&
-      liveRow.title === draftOverride.title &&
       liveRow.content === draftOverride.content &&
       (draftOverride.version === undefined || liveRow.version === draftOverride.version)
     ) {
@@ -114,12 +138,11 @@ export function useNoteEditor(initialRow: NoteRow) {
       ? liveRow
       : {
           ...liveRow,
-          title: draftOverride.title,
           content: draftOverride.content,
           version: draftOverride.version === undefined ? liveRow.version : draftOverride.version,
           // Forced, not read from liveRow: `save()`'s "nothing to send"
           // check reads this synchronously via `rowRef`, and liveRow's
-          // `dirty` is exactly as stale as its title/content are while an
+          // `dirty` is exactly as stale as its content is while an
           // override is active.
           dirty: 1 as const,
         };
@@ -153,13 +176,12 @@ export function useNoteEditor(initialRow: NoteRow) {
    * This is the save that matters. The network one is reconciliation.
    */
   const setDraft = useCallback(
-    (changes: { title?: string; content?: string }) => {
+    (changes: { content?: string }) => {
       // Synchronous first — see draftOverride's own doc comment above.
       // Reads rowRef, not `row`/`liveRow` directly, so a second setDraft
       // call before Dexie catches up still merges onto the FIRST call's
       // override rather than the stale pre-edit row.
       const next = {
-        title: changes.title ?? rowRef.current.title,
         content: changes.content ?? rowRef.current.content,
       };
       setDraftOverride(next);
@@ -175,7 +197,7 @@ export function useNoteEditor(initialRow: NoteRow) {
        * that put the row there in the first place. Checking the outbox
        * table directly has no such window.
        */
-      void outboxRepository.syncQueuedContent(localId, next.title, next.content);
+      void outboxRepository.syncQueuedContent(localId, next.content);
     },
     [localId],
   );
@@ -194,7 +216,6 @@ export function useNoteEditor(initialRow: NoteRow) {
         // Join an in-flight creation rather than starting a second one.
         creatingRef.current ??= (async () => {
           const created = await noteService.createNote({
-            title: current.title,
             content: current.content,
           });
 
@@ -213,12 +234,10 @@ export function useNoteEditor(initialRow: NoteRow) {
            * with a server id, so every reference to it stays valid.
            */
           const latest = (await noteRepository.getByLocalId(localId)) ?? current;
-          const textUnchanged =
-            latest.title === current.title && latest.content === current.content;
+          const textUnchanged = latest.content === current.content;
 
           await noteRepository.put({
             ...fromNoteResponse(created, latest),
-            title: latest.title,
             content: latest.content,
             dirty: textUnchanged ? 0 : 1,
             syncState: textUnchanged ? 'synced' : 'pending',
@@ -246,7 +265,6 @@ export function useNoteEditor(initialRow: NoteRow) {
         }
 
         const updated = await noteService.autoSaveNote(current.serverId, {
-          title: current.title,
           content: current.content,
           // ECHOED, never incremented.
           version: current.version,
@@ -264,7 +282,7 @@ export function useNoteEditor(initialRow: NoteRow) {
          * currently local, and stay dirty if it has moved on.
          */
         const latest = (await noteRepository.getByLocalId(localId)) ?? current;
-        const textUnchanged = latest.title === current.title && latest.content === current.content;
+        const textUnchanged = latest.content === current.content;
 
         await noteRepository.put({
           ...latest,
@@ -309,8 +327,6 @@ export function useNoteEditor(initialRow: NoteRow) {
          * typed tail stranded outside the queued row.
          */
         const latest = (await noteRepository.getByLocalId(localId)) ?? current;
-        const newestTitle =
-          latest.localUpdatedAt >= current.localUpdatedAt ? latest.title : current.title;
         const newestContent =
           latest.localUpdatedAt >= current.localUpdatedAt ? latest.content : current.content;
 
@@ -318,7 +334,6 @@ export function useNoteEditor(initialRow: NoteRow) {
           await outboxRepository.enqueueCreate({
             localId,
             clientId: latest.clientId,
-            title: newestTitle,
             content: newestContent,
           });
         } else {
@@ -326,7 +341,6 @@ export function useNoteEditor(initialRow: NoteRow) {
             localId,
             noteId: current.serverId,
             version: current.version,
-            title: newestTitle,
             content: newestContent,
           });
         }
@@ -377,15 +391,14 @@ export function useNoteEditor(initialRow: NoteRow) {
     if (conflict.status !== 'ready') return;
     const mine = rowRef.current;
     /*
-     * An override with the version filled in, NOT a clear to null. Title
-     * and content are already right in `mine`, but `version` is the whole
-     * point of this action — and clearing to `null` would fall back to
-     * `liveRow.version`, which is still the OLD version until the write
-     * below resolves. Read synchronously (`result.current.row.version`)
-     * before Dexie catches up, that would show the stale version despite
-     * having just "kept mine."
+     * An override with the version filled in, NOT a clear to null. Content
+     * is already right in `mine`, but `version` is the whole point of this
+     * action — and clearing to `null` would fall back to `liveRow.version`,
+     * which is still the OLD version until the write below resolves. Read
+     * synchronously (`result.current.row.version`) before Dexie catches up,
+     * that would show the stale version despite having just "kept mine."
      */
-    setDraftOverride({ title: mine.title, content: mine.content, version: conflict.theirs.version });
+    setDraftOverride({ content: mine.content, version: conflict.theirs.version });
     void noteRepository
       .put({ ...mine, version: conflict.theirs.version, dirty: 1 })
       .then(() => {
@@ -407,7 +420,6 @@ export function useNoteEditor(initialRow: NoteRow) {
      * is about to persist.
      */
     setDraftOverride({
-      title: theirs.title ?? '',
       content: theirs.content ?? '',
       version: theirs.version,
     });
@@ -435,13 +447,6 @@ export function useNoteEditor(initialRow: NoteRow) {
         ? mine.content
         : `${theirContent}\n\n--- Your version ---\n\n${mine.content}`;
 
-    const theirTitle = (theirs.title ?? '').trim();
-    const mergedTitle =
-      theirTitle === '' || theirTitle === mine.title.trim()
-        ? mine.title
-        : `${theirTitle} / ${mine.title}`;
-
-    const finalTitle = mergedTitle.slice(0, 255);
     const finalContent = mergedContent.slice(0, 20_000);
 
     // Same reasoning as `useTheirs`: the merged text AND the adopted
@@ -449,11 +454,10 @@ export function useNoteEditor(initialRow: NoteRow) {
     // shadow either one — `row.version` needs to read 7 (or whatever
     // theirs.version is) the instant this returns, not after Dexie's
     // write resolves.
-    setDraftOverride({ title: finalTitle, content: finalContent, version: theirs.version });
+    setDraftOverride({ content: finalContent, version: theirs.version });
     void noteRepository
       .put({
         ...mine,
-        title: finalTitle,
         content: finalContent,
         version: theirs.version,
         dirty: 1,

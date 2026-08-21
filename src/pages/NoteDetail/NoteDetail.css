@@ -131,7 +131,7 @@
     padding-block: var(--space-16);
     text-align: center;
   }
-}
+
 
 @layer pages {
   .note-detail__status {
@@ -146,6 +146,17 @@
     margin: 0;
     color: var(--color-text-secondary);
     font-size: var(--font-size-xs);
+    min-block-size: 1em;
+  }
+
+  /*
+   * Hidden, not unmounted — see NoteEditorHost.tsx's own comment. The
+   * element stays in the DOM and keeps its layout box (min-block-size
+   * above) whether or not there are words to show, so switching between
+   * an empty note and a non-empty one never changes this row's height.
+   */
+  .note-detail__words[data-empty='true'] {
+    visibility: hidden;
   }
 }
 
@@ -163,6 +174,14 @@
     margin-block-start: var(--space-10);
     padding-block-start: var(--space-6);
     border-block-start: var(--border-width) solid var(--color-border);
+
+    /*
+     * Keep the voice-note region as one stable document section.
+     * The section may grow when recordings arrive, but it must never
+     * disappear and reappear as part of a note switch.
+     */
+    min-block-size: 0;
+    contain: layout paint;
   }
 
   .note-detail__voice-heading {
@@ -181,5 +200,12 @@
     display: flex;
     align-items: center;
     padding-block: var(--space-3);
+  }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .note-detail__editor-region[data-animate='true'] {
+    animation: none;
   }
 }

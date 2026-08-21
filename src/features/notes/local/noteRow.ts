@@ -48,7 +48,6 @@ export interface NoteRow {
    */
   clientId: string;
 
-  title: string;
   content: string;
   /*
    * 0 | 1, not boolean — INDEXEDDB CANNOT INDEX BOOLEANS.

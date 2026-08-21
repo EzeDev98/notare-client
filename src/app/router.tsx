@@ -72,15 +72,6 @@ export const routes = [
             },
           },
           {
-            path: 'notes/local/:localId',
-            lazy: async () => {
-              const { LocalNoteDetailPage } = await import(
-                '@/pages/LocalNoteDetail/LocalNoteDetail'
-              );
-              return { Component: LocalNoteDetailPage };
-            },
-          },
-          {
             path: 'notes/:noteId',
             lazy: async () => {
               const { NoteDetailPage } = await import('@/pages/NoteDetail/NoteDetail');

@@ -39,7 +39,7 @@
     box-shadow: 0 2px 8px rgb(0 0 0 / 0.2);
 
     inline-size: 56px;
-    transition: inline-size 280ms ease;
+    transition: inline-size var(--motion-duration-slow) var(--motion-ease-standard);
   }
 
   .voice-recorder__dock--active {

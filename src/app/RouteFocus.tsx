@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useLocation } from 'react-router';
 
 /**
@@ -27,6 +27,34 @@ export function RouteFocus({ targetId }: { targetId: string }) {
    * ref-as-DOM-handle — the same hook, two quite different jobs.
    */
   const isFirstRender = useRef(true);
+
+  /*
+   * `.app-shell__main` and `.note-detail__scroll` are this app's real
+   * scrolling surfaces — the shell has `overflow:hidden` at the page level
+   * (see AppLayout.css) precisely so scrolling only ever happens in one of
+   * these internal panes. Neither is ever remounted on a note/voice switch
+   * (only the record content inside them is), so their `scrollTop` simply
+   * carries over from whatever the PREVIOUS record left it at. Land on note
+   * B scrolled halfway down because that's where note A happened to be, or
+   * have B's shorter height hard-clamp the scroll instantly — either way it
+   * reads as a jump, and it's the one part of the audit's motion work that
+   * was never about animation at all, just a missing reset.
+   *
+   * A layout effect, not a passive one: this must land before the browser
+   * paints the new record, or there's a one-frame flash of the stale scroll
+   * position before it snaps to 0 — which is its own small jump. `window`
+   * still uses a plain effect below since nothing here paints twice for it.
+   *
+   * Deliberately does NOT touch `.app-shell__note-list` (the sidebar) —
+   * that list is being browsed WHILE its own scroll position should stay
+   * exactly where the user left it.
+   */
+  useLayoutEffect(() => {
+    if (isFirstRender.current) return;
+
+    document.querySelector('.note-detail__scroll')?.scrollTo({ top: 0, behavior: 'instant' });
+    document.querySelector('.app-shell__main')?.scrollTo({ top: 0, behavior: 'instant' });
+  }, [pathname]);
 
   useEffect(() => {
     /*

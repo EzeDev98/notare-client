@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { NavLink } from 'react-router';
 
 import type { NoteView } from '@/features/notes/local/noteMappers';
@@ -28,7 +29,19 @@ interface SidebarNoteItemProps {
  * text", never "Untitled": nothing has been left blank so much as not yet
  * written.
  */
-export function SidebarNoteItem({ note }: SidebarNoteItemProps) {
+export function SidebarNoteItem({
+  note,
+  animationState,
+  exitStyle,
+}: SidebarNoteItemProps & {
+  animationState?: 'enter' | 'exit' | undefined;
+  exitStyle?: {
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  } | undefined;
+}) {
   const titleTrimmed = note.title.trim();
   const contentTrimmed = note.content.trim();
   const lines = contentTrimmed.split('\n');
@@ -58,7 +71,26 @@ export function SidebarNoteItem({ note }: SidebarNoteItemProps) {
     note.serverId === null ? `/notes/local/${note.localId}` : `/notes/${String(note.serverId)}`;
 
   return (
-    <li className="sidebar-note-item">
+    <li
+      data-sidebar-note-id={note.localId}
+      style={
+        exitStyle
+          ? ({
+              '--sidebar-note-exit-top': `${exitStyle.top}px`,
+              '--sidebar-note-exit-left': `${exitStyle.left}px`,
+              '--sidebar-note-exit-width': `${exitStyle.width}px`,
+              '--sidebar-note-exit-height': `${exitStyle.height}px`,
+            } as CSSProperties)
+          : undefined
+      }
+      className={[
+        'sidebar-note-item',
+        animationState === 'enter' ? 'sidebar-note-item--enter' : '',
+        animationState === 'exit' ? 'sidebar-note-item--exit' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <NavLink to={to} className="sidebar-note-item__link">
         <span className="sidebar-note-item__title">{displayTitle}</span>
         <span className="sidebar-note-item__meta">

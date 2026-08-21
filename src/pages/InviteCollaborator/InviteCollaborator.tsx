@@ -188,12 +188,13 @@ function ExistingCollaboratorModal({
   return (
     <Modal
       icon={isPending ? <Mail aria-hidden="true" /> : <Check aria-hidden="true" />}
+      title={isPending ? 'Invitation already sent' : "You’re already collaborators"}
       description={
         isPending ? (
           <>
-            You have already invited <strong>{displayName}</strong> to
-            collaborate with you. Once they accept, you can share your notes
-            with them from the note's Share menu.
+            You have already invited <strong>{displayName}</strong>. Once
+            they accept, you can share your notes with them from the note's
+            Share menu.
           </>
         ) : (
           <>
@@ -203,7 +204,7 @@ function ExistingCollaboratorModal({
           </>
         )
       }
-      secondaryAction={{ label: 'Cancel', onClick: onClose }}
+      secondaryAction={{ label: 'Close', onClick: onClose }}
       primaryAction={{
         label: 'Go to my notes',
         href: NOTES_ROUTE,

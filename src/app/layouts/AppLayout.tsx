@@ -1,7 +1,9 @@
 import {
+  type AnimationEvent,
   type CSSProperties,
   type FormEvent,
   type PointerEvent as ReactPointerEvent,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -23,13 +25,15 @@ import {
 
 import { navItems, type NavItem } from '@/app/layouts/navItems';
 import { RouteFocus } from '@/app/RouteFocus';
+import { RouteTransition } from '@/app/RouteTransition';
 import { useAuth } from '@/app/providers/auth-context';
 import { useFoldersPanel } from '@/app/layouts/useFoldersPanel';
 import { useSidebarWidth } from '@/app/layouts/useSidebarWidth';
-import { SidebarNoteItem } from '@/features/notes/components/SidebarNoteItem/SidebarNoteItem';
+import { AnimatedSidebarNoteList } from '@/features/notes/components/AnimatedSidebarNoteList/AnimatedSidebarNoteList';
 import { useDeleteNote } from '@/features/notes/hooks/useDeleteNote';
 import { useNotes } from '@/features/notes/hooks/useNotes';
-import { toView } from '@/features/notes/local/noteMappers';
+import { createLocalNote, toView } from '@/features/notes/local/noteMappers';
+import { isEmptyNote } from '@/features/notes/local/isEmptyNote';
 import { noteRepository } from '@/features/notes/local/noteRepository';
 import { NotificationsPanel } from '@/features/notifications/components/NotificationsPanel/NotificationsPanel';
 import { useSync } from '@/sync/useSync';
@@ -233,6 +237,40 @@ export function AppLayout() {
   const localNoteMatch = useMatch('/notes/local/:localId');
   const activeLocalId = localNoteMatch?.params['localId'] ?? null;
 
+  /*
+   * A newly-created local note is disposable until the user actually puts
+   * something in it.
+   *
+   * When navigation leaves /notes/local/:localId, inspect the note we just
+   * left. If it is still local-only and completely blank, remove it from
+   * Dexie immediately.
+   *
+   * This deliberately does NOT use the editor's save lifecycle and does NOT
+   * touch server-backed notes. It is purely the "I created a blank note and
+   * changed my mind" navigation rule.
+   */
+  const previousActiveLocalIdRef = useRef<string | null>(activeLocalId);
+
+  useEffect(() => {
+    const previousLocalId = previousActiveLocalIdRef.current;
+
+    if (previousLocalId !== null && previousLocalId !== activeLocalId) {
+      void noteRepository.getByLocalId(previousLocalId).then((row) => {
+        if (
+          row &&
+          row.serverId === null &&
+          row.deleted === 0 &&
+          row.title.trim() === '' &&
+          row.content.trim() === ''
+        ) {
+          void noteRepository.hardDelete(previousLocalId);
+        }
+      });
+    }
+
+    previousActiveLocalIdRef.current = activeLocalId;
+  }, [activeLocalId]);
+
   const activeNoteRow = useLiveQuery(async () => {
     if (activeLocalId !== null) {
       return (await noteRepository.getByLocalId(activeLocalId)) ?? null;
@@ -283,26 +321,42 @@ export function AppLayout() {
    * click and immediately reopen it.
    */
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notificationsClosing, setNotificationsClosing] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+
+  const requestNotificationsClose = useCallback(() => {
+    if (!notificationsOpen || notificationsClosing) return;
+    setNotificationsClosing(true);
+  }, [notificationsOpen, notificationsClosing]);
+
+  function handleNotificationsAnimationEnd(event: AnimationEvent<HTMLDivElement>) {
+    if (
+      event.animationName !== 'ds-notifications-panel-exit' ||
+      event.target !== event.currentTarget
+    ) {
+      return;
+    }
+
+    setNotificationsOpen(false);
+    setNotificationsClosing(false);
+  }
 
   useEffect(() => {
     if (!notificationsOpen) return;
 
     function handlePointerDown(event: PointerEvent) {
       if (notificationsRef.current?.contains(event.target as Node)) return;
-      setNotificationsOpen(false);
+      requestNotificationsClose();
     }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        setNotificationsOpen(false);
+        requestNotificationsClose();
       }
     }
 
-    // Listening only while open, not unconditionally on mount — an
-    // always-on document listener across every authenticated screen for a
-    // panel that is closed 99% of the time is wasted work for no benefit.
+    // Listening only while open, not unconditionally on mount.
     document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
 
@@ -310,15 +364,13 @@ export function AppLayout() {
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [notificationsOpen]);
+  }, [notificationsOpen, requestNotificationsClose]);
 
-  // Belt-and-braces alongside the panel's own onClose-on-link-click: ANY
-  // route change (the toolbar search submitting, the sidebar, a browser
-  // back/forward) must not leave a stale panel floating over the next
-  // page, not just the two links the panel happens to render today.
+  // Route changes use the same exit lifecycle instead of unmounting
+  // the panel immediately.
   useEffect(() => {
-    setNotificationsOpen(false);
-  }, [location.pathname]);
+    requestNotificationsClose();
+  }, [location.pathname, requestNotificationsClose]);
 
   function handleToolbarSearchSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -376,6 +428,12 @@ export function AppLayout() {
   // live Dexie query, so there is exactly one source of truth for "what
   // are my notes" and the two never disagree.
   const { notes } = useNotes();
+
+  const emptyNote = notes?.find(
+    (note) => note.serverId === null && isEmptyNote(note),
+  );
+
+  const hasEmptyNote = emptyNote !== undefined;
 
   return (
     <div
@@ -496,9 +554,40 @@ export function AppLayout() {
           no reason for this one to be inert too.
         */}
         <div className="app-shell__toolbar-main">
-          <Link to="/notes/new" className="app-shell__toolbar-icon-btn" aria-label="New note">
+          <button
+            type="button"
+            className="app-shell__toolbar-icon-btn"
+            aria-label="New note"
+            aria-disabled={hasEmptyNote}
+            data-unavailable={hasEmptyNote || undefined}
+            onClick={async () => {
+              if (hasEmptyNote) {
+                return;
+              }
+
+              if (
+                authState.status !== 'authenticated' &&
+                authState.status !== 'refreshing'
+              ) {
+                return;
+              }
+
+              const row = {
+                ...createLocalNote(authState.user.id),
+                dirty: 0 as const,
+                syncState: 'synced' as const,
+              };
+
+              await noteRepository.put(row);
+
+              void navigate(`/notes/local/${row.localId}`, {
+                replace: true,
+                state: { skipEnterAnimation: true },
+              });
+            }}
+          >
             <SquarePen aria-hidden="true" />
-          </Link>
+          </button>
 
           {/*
             Right-aligned group, reference order: notifications, then
@@ -525,14 +614,26 @@ export function AppLayout() {
                 aria-haspopup="dialog"
                 aria-expanded={notificationsOpen}
                 onClick={() => {
-                  setNotificationsOpen((open) => !open);
+                  if (notificationsClosing) return;
+
+                  if (notificationsOpen) {
+                    requestNotificationsClose();
+                    return;
+                  }
+
+                  setNotificationsClosing(false);
+                  setNotificationsOpen(true);
                 }}
               >
                 <Bell aria-hidden="true" />
               </button>
 
-              {notificationsOpen ? (
-                <NotificationsPanel onClose={() => setNotificationsOpen(false)} />
+              {notificationsOpen || notificationsClosing ? (
+                <NotificationsPanel
+                  onClose={requestNotificationsClose}
+                  isClosing={notificationsClosing}
+                  onAnimationEnd={handleNotificationsAnimationEnd}
+                />
               ) : null}
             </div>
 
@@ -658,11 +759,7 @@ export function AppLayout() {
             every single authenticated page load.
           */}
           {notes && notes.length > 0 ? (
-            <ul className="app-shell__note-list" role="list">
-              {notes.map((note) => (
-                <SidebarNoteItem key={note.localId} note={note} />
-              ))}
-            </ul>
+            <AnimatedSidebarNoteList notes={notes} />
           ) : null}
 
           {notes && notes.length === 0 ? (
@@ -723,7 +820,9 @@ export function AppLayout() {
           editor toolbar off-screen while writing. */}
       {/* tabIndex={-1}: focusable by RouteFocus, but not a tab stop. */}
       <main className="app-shell__main" id="main" tabIndex={-1}>
-        <Outlet />
+        <RouteTransition>
+          <Outlet />
+        </RouteTransition>
       </main>
     </div>
   );

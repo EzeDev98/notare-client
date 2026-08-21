@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { noteService } from '@/features/notes/api/noteService';
 import { noteRepository } from '@/features/notes/local/noteRepository';
@@ -45,6 +45,30 @@ export function useNote(serverId: number | null): NoteState {
   }, [serverId]);
 
   /*
+   * Step 5A fix. dexie-react-hooks resets `row` to `undefined` the instant
+   * `serverId` changes, before the new subscription's first emission — the
+   * confirmed bug from Step 1D. Left alone, that means every note switch
+   * drops through `status: 'loading'` for a tick: the editor collapses to a
+   * bare spinner and then pops back in, stacked on top of the remount
+   * NoteEditorHost's own `key` already does. That double collapse/expand is
+   * the visible "jump."
+   *
+   * Fix: keep serving the OUTGOING note's row while the new query is still
+   * in flight, instead of showing nothing in between. Only falls back while
+   * `serverId` is a real id (a genuine note-to-note switch) — a route with
+   * no note at all (serverId === null) still resolves the ordinary way.
+   * Dexie reads are local and fast, so the stale frame is imperceptible;
+   * what it removes is the spinner-collapse entirely.
+   */
+  const lastResolvedRef = useRef<NoteRow | null>(null);
+  if (row) {
+    lastResolvedRef.current = row;
+  }
+  const previousRowRef = useRef<typeof displayRow>(undefined);
+
+  const displayRow = row === undefined && serverId !== null ? lastResolvedRef.current : row;
+
+  /*
    * Fetch only to FILL Dexie — a note opened from a deep link, or one the list
    * has never loaded. The result is written to the database and read back
    * through the live query above rather than being returned here.
@@ -75,11 +99,27 @@ export function useNote(serverId: number | null): NoteState {
     };
   }, [serverId]);
 
-  // Dexie still answering.
-  if (row === undefined) return { status: 'loading' };
+  // Dexie still answering, and nothing usable to show meanwhile.
+  /*
+   * A note switch can produce one render where the repository has
+   * not exposed the newly selected row yet. Do NOT turn that
+   * transient gap into a page-level loading state.
+   *
+   * The detail editor must remain mounted while the next row
+   * resolves. A real missing note is handled by the caller once
+   * the repository has settled; this branch is specifically for
+   * the transient switch gap.
+   */
+  if (displayRow === undefined) {
+    return previousRowRef.current
+      ? { status: 'ready', row: previousRowRef.current }
+      : { status: 'loading' };
+  }
+
+  previousRowRef.current = displayRow;
 
   // Local copy wins, even if the fetch failed. This is the whole point.
-  if (row !== null) return { status: 'ready', row };
+  if (displayRow !== null) return { status: 'ready', row: displayRow };
 
   if (remoteMiss === 'not-found') return { status: 'not-found' };
   if (remoteMiss === 'unavailable') return { status: 'unavailable' };

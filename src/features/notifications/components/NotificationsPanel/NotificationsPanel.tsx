@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type AnimationEventHandler } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from 'react-router';
 import { Bell, Mail } from 'lucide-react';
@@ -21,6 +21,8 @@ import './NotificationsPanel.css';
 
 interface NotificationsPanelProps {
   onClose: () => void;
+  isClosing?: boolean;
+  onAnimationEnd?: AnimationEventHandler<HTMLDivElement>;
 }
 
 /**
@@ -47,7 +49,11 @@ interface NotificationsPanelProps {
  * past the viewport; capping it at 5 with no scrolling at all is a later,
  * separate step.
  */
-export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
+export function NotificationsPanel({
+  onClose,
+  isClosing = false,
+  onAnimationEnd,
+}: NotificationsPanelProps) {
   const notifications = useNotifications(false, 0);
 
   const markRead = useMarkNotificationRead();
@@ -145,8 +151,10 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
   return (
     <div
       className={`notifications-panel${isExpanded ? ' notifications-panel--expanded' : ''}`}
+      data-closing={isClosing || undefined}
       role="dialog"
       aria-label="Notifications"
+      onAnimationEnd={onAnimationEnd}
     >
       <header className="notifications-panel__header">
         <h2>Notifications</h2>

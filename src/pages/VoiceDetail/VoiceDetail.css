@@ -87,4 +87,34 @@
     padding-block: var(--space-16);
     text-align: center;
   }
+
+  /*
+   * Phase 5's "subtler, same-route param change" treatment RouteTransition's
+   * own comment defers to. Only plays when data-animate='true' (every
+   * record switch after the first) — VoiceDetail.tsx's hasMounted guard
+   * keeps a fresh page load from animating in, matching RouteTransition's
+   * own first-load rule. Same opacity + 4px translateY shape as
+   * route-transition-enter, just at --motion-duration-base since this is a
+   * sub-page region, not a full page swap.
+   */
+  .voice-detail__content[data-animate='true'] {
+    animation: voice-detail-content-enter var(--motion-duration-base) var(--motion-ease-enter);
+  }
+
+  @keyframes voice-detail-content-enter {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-detail__content[data-animate='true'] {
+    animation: none;
+  }
 }

@@ -73,3 +73,15 @@
     white-space: nowrap;
   }
 }
+
+/*
+ * NOTE LIST MOTION
+ *
+ * These animations intentionally use transform/opacity rather than
+ * height/margin. Transform is compositor-friendly and does not cause
+ * the sidebar to repeatedly reflow while the animation is running.
+ *
+ * The AppLayout list uses FLIP positioning for existing rows. These
+ * classes handle only the row that is actually entering/leaving.
+ */
+

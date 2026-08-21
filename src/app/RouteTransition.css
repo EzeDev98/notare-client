@@ -1,0 +1,30 @@
+@layer components {
+  /*
+   * §5.2: a boundary, not a decoration. Static by default — only a
+   * CLIENT-SIDE navigation gets the data-animate flag from
+   * RouteTransition.tsx's own mount-effect guard, so a refresh/first load
+   * renders straight into its final state (§6's "should NOT animate like
+   * navigation").
+   */
+  .route-transition[data-animate='true'] {
+    animation: route-transition-enter var(--motion-duration-page) var(--motion-ease-enter);
+  }
+
+  /*
+   * Opacity + transform only (§25) — no layout property, so this never
+   * fights .app-shell__main's own overflow-y:auto scroll container it
+   * lives inside. A tiny 4px rise, not a slide (§8: avoid large horizontal
+   * slides, dramatic scaling — the goal is responsiveness, not a sequence).
+   */
+  @keyframes route-transition-enter {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

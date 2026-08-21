@@ -272,9 +272,9 @@ function ShareManager({ voiceNoteId }: { voiceNoteId: number }) {
       {confirmingRevoke !== null ? (
         <Modal
           icon={<UserX aria-hidden="true" />}
+          title="Remove this collaborator?"
           description={
             <>
-              Remove this collaborator?{' '}
               <strong>{resolveName(confirmingRevoke.sharedWithUserId)}</strong>{' '}
               will lose access to this voice note.
             </>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Mic, Share } from 'lucide-react';
 
@@ -43,6 +43,19 @@ export function VoiceDetailPage() {
   const deleteVoiceNote = useDeleteVoiceNote(voiceNote.data?.noteId ?? null);
   const [error, setError] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+
+  /*
+   * Same pattern as RouteTransition.tsx's own hasMounted guard: this page
+   * itself is never remounted on a param-only navigation (RouteTransition
+   * keys on the matched route id, not the resolved :voiceNoteId), so this
+   * ref reliably stays false only for the very first record shown and
+   * true for every subsequent record switch within this page instance.
+   */
+  const contentHasMounted = useRef(false);
+
+  useEffect(() => {
+    contentHasMounted.current = true;
+  }, []);
 
   useDocumentTitle(voiceNote.data ? 'Voice note' : 'Voice note');
 
@@ -98,7 +111,11 @@ export function VoiceDetailPage() {
       ) : null}
 
       {voiceNote.data ? (
-        <>
+        <div
+          key={voiceNote.data.id}
+          className="voice-detail__content"
+          data-animate={contentHasMounted.current ? 'true' : undefined}
+        >
           <header className="voice-detail__header">
             <div className="voice-detail__header-row">
               <h1>Voice note</h1>
@@ -155,27 +172,27 @@ export function VoiceDetailPage() {
               </p>
             ) : null}
           </div>
+        </div>
+      ) : null}
 
-          {deleteModalOpen ? (
-            <Modal
-              icon={<Mic aria-hidden="true" />}
-              description="Delete this voice note? This voice note will be permanently deleted. This action cannot be undone."
-              secondaryAction={{
-                label: 'Cancel',
-                onClick: () => {
-                  setDeleteModalOpen(false);
-                },
-              }}
-              primaryAction={{
-                label: 'Delete',
-                onClick: confirmDelete,
-              }}
-              onClose={() => {
-                setDeleteModalOpen(false);
-              }}
-            />
-          ) : null}
-        </>
+      {voiceNote.data && deleteModalOpen ? (
+        <Modal
+          icon={<Mic aria-hidden="true" />}
+          description="Delete this voice note? This voice note will be permanently deleted. This action cannot be undone."
+          secondaryAction={{
+            label: 'Cancel',
+            onClick: () => {
+              setDeleteModalOpen(false);
+            },
+          }}
+          primaryAction={{
+            label: 'Delete',
+            onClick: confirmDelete,
+          }}
+          onClose={() => {
+            setDeleteModalOpen(false);
+          }}
+        />
       ) : null}
     </section>
   );
