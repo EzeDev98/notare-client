@@ -232,11 +232,11 @@ function ShareManager({ noteId }: { noteId: number }) {
       {confirmingRevoke !== null ? (
         <Modal
           icon={<UserX aria-hidden="true" />}
-          title="Remove this collaborator?"
           description={
             <>
-              <strong>{resolveName(confirmingRevoke.sharedWithUserId)}</strong> will lose access to
-              this note.
+              Remove this collaborator?{' '}
+              <strong>{resolveName(confirmingRevoke.sharedWithUserId)}</strong>{' '}
+              will lose access to this note.
             </>
           }
           secondaryAction={{
@@ -249,7 +249,6 @@ function ShareManager({ noteId }: { noteId: number }) {
             label: 'Remove',
             onClick: confirmRevoke,
           }}
-          destructive
           onClose={() => {
             setConfirmingRevoke(null);
           }}

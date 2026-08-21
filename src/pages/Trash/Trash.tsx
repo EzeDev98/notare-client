@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Trash2 } from 'lucide-react';
+import { NotebookPen } from 'lucide-react';
 
 import { NoteTabs } from '@/features/notes/components/NoteTabs/NoteTabs';
 import { useTrash } from '@/features/notes/hooks/useTrash';
@@ -110,14 +110,11 @@ export function TrashPage() {
 
       {confirmingNote !== null ? (
         <Modal
-          icon={<Trash2 aria-hidden="true" />}
-          title="Delete note forever?"
+          icon={<NotebookPen aria-hidden="true" />}
           description={
             <>
-              <strong>
-                {confirmingNote.title.trim() || 'Untitled'}
-              </strong>{' '}
-              will be permanently deleted. This action cannot be undone.
+              Delete <strong>{confirmingNote.title.trim() || 'Untitled'}</strong>{' '}
+              forever? This action cannot be undone.
             </>
           }
           secondaryAction={{
@@ -128,7 +125,6 @@ export function TrashPage() {
             label: 'Delete forever',
             onClick: handleDeleteForever,
           }}
-          destructive
           onClose={closeConfirmation}
         />
       ) : null}

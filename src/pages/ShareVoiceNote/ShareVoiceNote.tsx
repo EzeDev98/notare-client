@@ -272,11 +272,11 @@ function ShareManager({ voiceNoteId }: { voiceNoteId: number }) {
       {confirmingRevoke !== null ? (
         <Modal
           icon={<UserX aria-hidden="true" />}
-          title="Remove this collaborator?"
           description={
             <>
-              <strong>{resolveName(confirmingRevoke.sharedWithUserId)}</strong> will lose access to
-              this voice note.
+              Remove this collaborator?{' '}
+              <strong>{resolveName(confirmingRevoke.sharedWithUserId)}</strong>{' '}
+              will lose access to this voice note.
             </>
           }
           secondaryAction={{
@@ -289,7 +289,6 @@ function ShareManager({ voiceNoteId }: { voiceNoteId: number }) {
             label: 'Remove',
             onClick: confirmRevoke,
           }}
-          destructive
           onClose={() => {
             setConfirmingRevoke(null);
           }}

@@ -19,11 +19,19 @@
     backdrop-filter: blur(4px);
   }
 
+  /*
+   * Sized and proportioned to match the reference dialog exactly (see the
+   * design handoff): a compact 360px card, not the wider 400px this used
+   * to default to. Every modal in the app renders through this one rule
+   * now — there is no longer a per-caller size override, so keeping this
+   * number right here is what keeps every confirmation dialog the same
+   * size instead of drifting apart one override at a time.
+   */
   .ds-modal {
     display: grid;
     justify-items: center;
     gap: var(--space-2);
-    inline-size: min(100%, 400px);
+    inline-size: min(360px, calc(100vw - 32px));
     padding: var(--space-8) var(--space-6) var(--space-6);
     border-radius: var(--radius-lg);
     background-color: var(--color-surface);
@@ -34,8 +42,8 @@
   .ds-modal__icon {
     display: grid;
     place-items: center;
-    inline-size: 56px;
-    block-size: 56px;
+    inline-size: 72px;
+    block-size: 72px;
     margin-block-end: var(--space-2);
     border-radius: var(--radius-lg);
 
@@ -43,23 +51,28 @@
      * The one deliberate accent exception in this component: a badge
      * exists to draw the eye, so it uses the lavender pairing the rest of
      * the app reserves for identity/selected-state, same reasoning as
-     * `.shared-note__voice-icon` in SharedNote.css.
+     * `.shared-note__voice-icon` in SharedNote.css. Every modal uses this
+     * same badge now, including the delete-note confirmation, which used
+     * to render its icon large and unbadged as a one-off exception — the
+     * reference dialog's icon sits inside a filled square exactly like
+     * this one, so that exception no longer has a reason to exist.
      */
-    background-color: var(--color-accent-subtle);
-    color: var(--color-accent);
+    background-color: transparent;
+    color: var(--color-icon);
   }
 
   /*
-   * Size override + `color: inherit`, same pattern used everywhere else
-   * an icon sits in an accent-colored badge: `.lucide` sets both directly
-   * on the svg in the base layer, which blocks inheriting either the
-   * bigger badge size or the badge's accent color from `.ds-modal__icon`
-   * above. Without this the icon would render at the standard 20px in
-   * flat muted gray instead of standing out the way the badge intends.
+   * Force every modal icon to exactly 50px.
+   *
+   * !important is intentional because the global `.lucide` rule sets
+   * width/height directly on the SVG and can otherwise override the
+   * modal's intended icon size.
    */
   .ds-modal__icon svg {
-    inline-size: 28px;
-    block-size: 28px;
+    inline-size: 50px !important;
+    block-size: 50px !important;
+    width: 50px !important;
+    height: 50px !important;
     color: inherit;
   }
 
@@ -86,7 +99,7 @@
   .ds-modal__actions {
     display: flex;
     inline-size: 100%;
-    gap: var(--space-3);
+    gap: 10px;
     margin-block-start: var(--space-4);
   }
 
@@ -96,67 +109,19 @@
    * right-aligned two auto-width buttons instead. flex: 1 on both buttons
    * (rather than sizing to each label) is what keeps Cancel/Delete-style
    * pairs visually balanced regardless of which one has the longer word.
+   *
+   * Otherwise this is Button's own standard `md` sizing — no height or
+   * padding override. `border-radius: var(--radius-lg)` is the one
+   * deliberate departure from Button's own `--radius-md` corners,
+   * matching the modal card's own radius rather than introducing a third
+   * radius value. Specificity here (two classes) is deliberately higher
+   * than `.ds-button`'s single-class `border-radius: var(--radius-md)`
+   * in Button.css, so this wins regardless of which stylesheet the
+   * browser happens to inject first — see that file's own note on
+   * `@layer` ordering being injection-order-dependent in dev.
    */
-  .ds-modal__action {
+  .ds-modal__actions .ds-modal__action {
     flex: 1;
+    border-radius: var(--radius-lg);
   }
-}
-
-
-/* Delete-note confirmation: large standalone note icon, no lavender badge. */
-.ds-modal:has(.delete-note-modal__icon) .ds-modal__icon {
-  background: transparent;
-  inline-size: auto;
-  block-size: auto;
-  border-radius: 0;
-}
-
-.delete-note-modal__icon {
-  width: 48px;
-  height: 48px;
-}
-
-
-/* Slightly more compact delete-note confirmation. */
-.ds-modal:has(.delete-note-modal__icon) {
-  width: min(360px, calc(100vw - 32px));
-}
-
-.ds-modal:has(.delete-note-modal__icon) .ds-modal__actions {
-  gap: 10px;
-}
-
-.ds-modal:has(.delete-note-modal__icon) .ds-modal__action {
-  min-height: 40px;
-  padding-inline: 16px;
-}
-
-.ds-modal {
-  position: relative;
-}
-
-.ds-modal__close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
-.ds-modal__close:hover {
-  background: rgba(0, 0, 0, 0.06);
-}
-
-.ds-modal__close:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
 }

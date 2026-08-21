@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 
 import { Button } from '@/design-system/components/Button/Button';
 import { Modal } from '@/design-system/components/Modal/Modal';
-import { Trash2 } from 'lucide-react';
+import { NotebookPen } from 'lucide-react';
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
 import './NoteCard.css';
@@ -123,9 +123,8 @@ export function NoteCard({ note, actions }: NoteCardProps) {
 
       {deleteModalOpen ? (
         <Modal
-          icon={<Trash2 aria-hidden="true" />}
-          title="Delete this note?"
-          description="The note will be moved to Trash."
+          icon={<NotebookPen aria-hidden="true" />}
+          description="Delete this note? The note will be moved to Trash."
           secondaryAction={{
             label: 'Cancel',
             onClick: () => {
@@ -139,7 +138,6 @@ export function NoteCard({ note, actions }: NoteCardProps) {
               actions?.onDelete(note);
             },
           }}
-          destructive
           onClose={() => {
             setDeleteModalOpen(false);
           }}

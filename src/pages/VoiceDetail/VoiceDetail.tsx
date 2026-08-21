@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { Share, Trash2 } from 'lucide-react';
+import { Mic, Share } from 'lucide-react';
 
 import { AudioPlayer } from '@/features/voice/components/AudioPlayer/AudioPlayer';
 import { TranscriptionPanel } from '@/features/voice/components/TranscriptionPanel/TranscriptionPanel';
@@ -158,9 +158,8 @@ export function VoiceDetailPage() {
 
           {deleteModalOpen ? (
             <Modal
-              icon={<Trash2 aria-hidden="true" />}
-              title="Delete this voice note?"
-              description="This voice note will be permanently deleted. This action cannot be undone."
+              icon={<Mic aria-hidden="true" />}
+              description="Delete this voice note? This voice note will be permanently deleted. This action cannot be undone."
               secondaryAction={{
                 label: 'Cancel',
                 onClick: () => {
@@ -171,7 +170,6 @@ export function VoiceDetailPage() {
                 label: 'Delete',
                 onClick: confirmDelete,
               }}
-              destructive
               onClose={() => {
                 setDeleteModalOpen(false);
               }}

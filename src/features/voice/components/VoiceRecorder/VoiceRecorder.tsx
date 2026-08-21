@@ -3,6 +3,7 @@ import { Mic, Pause, Play, Send, Trash2 } from 'lucide-react';
 
 import { useMediaRecorderState } from '@/features/voice/hooks/useMediaRecorderState';
 import { Button } from '@/design-system/components/Button/Button';
+import { Modal } from '@/design-system/components/Modal/Modal';
 import './VoiceRecorder.css';
 
 /**
@@ -89,6 +90,15 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
   const recorder = useMediaRecorderState();
   const [progress, setProgress] = useState(0);
   const [elapsed, setElapsed] = useState(0);
+  // Which trash button opened the confirmation, so the single Modal below
+  // knows which underlying discard to actually run once confirmed — the
+  // two trash buttons (recording vs. stopped) discard through different
+  // paths (stop-then-reset vs. an immediate reset), same as
+  // handleDiscardWhileRecording/recorder.reset did before this modal
+  // existed. null means the modal is closed.
+  const [confirmingDiscard, setConfirmingDiscard] = useState<'recording' | 'stopped' | null>(
+    null,
+  );
 
   const discardOnStopRef = useRef(false);
   // Set when "send" is clicked WHILE recording — see the effect below and
@@ -150,6 +160,18 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
   function handleDiscardWhileRecording() {
     discardOnStopRef.current = true;
     recorder.stop();
+  }
+
+  // Runs the discard the trash button actually asked for, once the person
+  // has confirmed it in the Modal — see confirmingDiscard's own comment
+  // above for why there are two different underlying actions here.
+  function confirmDiscard() {
+    if (confirmingDiscard === 'recording') {
+      handleDiscardWhileRecording();
+    } else if (confirmingDiscard === 'stopped') {
+      recorder.reset();
+    }
+    setConfirmingDiscard(null);
   }
 
   function handleSendWhileRecording() {
@@ -235,7 +257,9 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
           <button
             type="button"
             className="voice-recorder__bar-btn voice-recorder__bar-btn--danger"
-            onClick={handleDiscardWhileRecording}
+            onClick={() => {
+              setConfirmingDiscard('recording');
+            }}
             aria-label="Discard recording"
           >
             <Trash2 aria-hidden="true" color="var(--color-danger)" />
@@ -282,7 +306,9 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
           <button
             type="button"
             className="voice-recorder__bar-btn voice-recorder__bar-btn--danger"
-            onClick={recorder.reset}
+            onClick={() => {
+              setConfirmingDiscard('stopped');
+            }}
             disabled={upload.isPending}
             aria-label="Discard recording"
           >
@@ -330,6 +356,26 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
         >
           <Mic aria-hidden="true" color="var(--color-text-on-accent)" />
         </button>
+      ) : null}
+
+      {confirmingDiscard ? (
+        <Modal
+          icon={<Mic aria-hidden="true" />}
+          description="Discard this recording? It hasn't been saved yet — this can't be undone."
+          secondaryAction={{
+            label: 'Cancel',
+            onClick: () => {
+              setConfirmingDiscard(null);
+            },
+          }}
+          primaryAction={{
+            label: 'Discard',
+            onClick: confirmDiscard,
+          }}
+          onClose={() => {
+            setConfirmingDiscard(null);
+          }}
+        />
       ) : null}
     </div>
   );

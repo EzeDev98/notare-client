@@ -5,7 +5,7 @@ import type { VoiceNoteResponse } from '@/features/voice/types';
 import { formatServerDateTimeRelative } from '@/lib/time';
 import { Button } from '@/design-system/components/Button/Button';
 import { Modal } from '@/design-system/components/Modal/Modal';
-import { Trash2 } from 'lucide-react';
+import { Mic } from 'lucide-react';
 import './VoiceNoteCard.css';
 
 interface VoiceNoteCardProps {
@@ -57,9 +57,8 @@ export function VoiceNoteCard({ voiceNote, onDelete, deleting = false }: VoiceNo
 
       {deleteModalOpen ? (
         <Modal
-          icon={<Trash2 aria-hidden="true" />}
-          title="Delete this voice note?"
-          description="This recording will be permanently deleted. This action cannot be undone."
+          icon={<Mic aria-hidden="true" />}
+          description="Delete this voice note? This recording will be permanently deleted. This action cannot be undone."
           secondaryAction={{
             label: 'Cancel',
             onClick: () => {
@@ -73,7 +72,6 @@ export function VoiceNoteCard({ voiceNote, onDelete, deleting = false }: VoiceNo
               onDelete?.(voiceNote.id);
             },
           }}
-          destructive
           onClose={() => {
             setDeleteModalOpen(false);
           }}

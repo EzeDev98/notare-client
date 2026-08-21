@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LogOut, ShieldAlert } from 'lucide-react';
+import { LogOut, MonitorSmartphone } from 'lucide-react';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { useSessions } from '@/features/auth/hooks/useSessions';
@@ -161,24 +161,19 @@ export function SessionsPage() {
             confirmingSession.current ? (
               <LogOut aria-hidden="true" />
             ) : (
-              <ShieldAlert aria-hidden="true" />
+              <MonitorSmartphone aria-hidden="true" />
             )
-          }
-          title={
-            confirmingSession.current
-              ? 'Sign out from this device?'
-              : 'Revoke this session?'
           }
           description={
             confirmingSession.current ? (
               <>
-                You will be signed out of this device and returned to the
-                login screen.
+                Sign out from this device? You will be signed out and returned
+                to the login screen.
               </>
             ) : (
               <>
-                This device or browser will no longer be able to access your
-                Notare account using this session.
+                Revoke this session? This device or browser will no longer be
+                able to access your Notare account using this session.
               </>
             )
           }
@@ -195,7 +190,6 @@ export function SessionsPage() {
               );
             },
           }}
-          destructive
           onClose={closeConfirmation}
         />
       ) : null}
@@ -203,11 +197,11 @@ export function SessionsPage() {
       {confirmation?.type === 'all' ? (
         <Modal
           icon={<LogOut aria-hidden="true" />}
-          title="Sign out everywhere?"
           description={
             <>
-              This will end every active session, including the device you are
-              using now. You will need to sign in again.
+              Sign out everywhere? This will end every active session,
+              including the device you are using now. You will need to sign
+              in again.
             </>
           }
           secondaryAction={{
@@ -220,7 +214,6 @@ export function SessionsPage() {
               void handleRevokeAll();
             },
           }}
-          destructive
           onClose={closeConfirmation}
         />
       ) : null}

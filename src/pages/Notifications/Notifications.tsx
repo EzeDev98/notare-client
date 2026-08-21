@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { Trash2, X } from 'lucide-react';
+import { Bell, Mail } from 'lucide-react';
 
 import { collaborationService } from '@/features/collaboration/api/collaborationService';
 import { composeNotificationMessage } from '@/features/notifications/compose';
@@ -132,9 +132,8 @@ export function NotificationsPage() {
     <section className="notifications-page">
       {confirmingDelete !== null ? (
         <Modal
-          icon={<Trash2 aria-hidden="true" />}
-          title="Delete this notification?"
-          description="This can't be undone."
+          icon={<Bell aria-hidden="true" />}
+          description="Delete this notification? This can't be undone."
           secondaryAction={{
             label: 'Cancel',
             onClick: () => {
@@ -145,7 +144,6 @@ export function NotificationsPage() {
             label: 'Delete',
             onClick: confirmDelete,
           }}
-          destructive
           onClose={() => {
             setConfirmingDelete(null);
           }}
@@ -154,15 +152,15 @@ export function NotificationsPage() {
 
       {confirmingReject !== null ? (
         <Modal
-          icon={<X aria-hidden="true" />}
-          title="Reject this invite?"
+          icon={<Mail aria-hidden="true" />}
           description={
             confirmingReject.targetLabel.trim() !== '' ? (
               <>
-                You won't get access to <strong>{confirmingReject.targetLabel}</strong>.
+                Reject this invite? You won't get access to{' '}
+                <strong>{confirmingReject.targetLabel}</strong>.
               </>
             ) : (
-              <>You won't get access to this invitation.</>
+              <>Reject this invite? You won't get access to this invitation.</>
             )
           }
           secondaryAction={{

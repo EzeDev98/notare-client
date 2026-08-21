@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { Trash2, X } from 'lucide-react';
+import { Bell, Mail } from 'lucide-react';
 
 import { collaborationService } from '@/features/collaboration/api/collaborationService';
 import { composeNotificationMessage } from '@/features/notifications/compose';
@@ -30,10 +30,15 @@ interface NotificationsPanelProps {
  * fixes).
  *
  * A THIN layer over the same hooks/mutations `Notifications.tsx` (the full
- * `/notifications` page, still reachable via "View all" below) already
- * uses — one source of truth for what a notification IS and how it
- * mutates, two places that render it, rather than a second copy of that
- * logic drifting out of sync with the first.
+ * `/notifications` page remains available by direct route) already uses —
+ * one source of truth for what a notification IS and how it mutates, two
+ * places that render it, rather than a second copy of that logic drifting
+ * out of sync with the first.
+ *
+ * The panel's footer intentionally expands this same surface in place
+ * instead of navigating away. The bell remains the single toggle for
+ * opening and closing the panel, while the expanded state simply gives
+ * the user more room to review the existing notification list.
  *
  * Always page 0, unreadOnly=false — a glance-and-act surface, not a
  * replacement for the full page's own filter/pager. `PAGE_SIZE` is still
@@ -50,6 +55,7 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
   const deleteNotification = useDeleteNotification();
   const [confirmingDelete, setConfirmingDelete] = useState<NotificationResponse | null>(null);
   const [confirmingReject, setConfirmingReject] = useState<NotificationResponse | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const rows = notifications.data?.content ?? [];
 
@@ -137,7 +143,11 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
   }
 
   return (
-    <div className="notifications-panel" role="dialog" aria-label="Notifications">
+    <div
+      className={`notifications-panel${isExpanded ? ' notifications-panel--expanded' : ''}`}
+      role="dialog"
+      aria-label="Notifications"
+    >
       <header className="notifications-panel__header">
         <h2>Notifications</h2>
         <Button
@@ -217,23 +227,24 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
                   </div>
 
                   <div className="notifications-panel__row-actions">
-                    {isUnread ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        loading={markRead.isPending && markRead.variables === notification.id}
-                        disabled={markRead.isPending && markRead.variables === notification.id}
-                        onClick={() => {
-                          handleMarkRead(notification);
-                        }}
-                      >
-                        Mark read
-                      </Button>
-                    ) : null}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="notifications-panel__row-action"
+                      loading={isUnread && markRead.isPending && markRead.variables === notification.id}
+                      disabled={isUnread && markRead.isPending && markRead.variables === notification.id}
+                      onClick={() => {
+                        if (!isUnread) return;
+                        handleMarkRead(notification);
+                      }}
+                    >
+                      Mark read
+                    </Button>
 
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="notifications-panel__row-action notifications-panel__row-action--delete"
                       loading={
                         deleteNotification.isPending &&
                         deleteNotification.variables === notification.id
@@ -301,9 +312,8 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
 
       {confirmingDelete !== null ? (
         <Modal
-          icon={<Trash2 aria-hidden="true" />}
-          title="Delete this notification?"
-          description="This can't be undone."
+          icon={<Bell aria-hidden="true" />}
+          description="Delete this notification? This can't be undone."
           secondaryAction={{
             label: 'Cancel',
             onClick: () => {
@@ -314,7 +324,6 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
             label: 'Delete',
             onClick: confirmDelete,
           }}
-          destructive
           onClose={() => {
             setConfirmingDelete(null);
           }}
@@ -323,15 +332,15 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
 
       {confirmingReject !== null ? (
         <Modal
-          icon={<X aria-hidden="true" />}
-          title="Reject this invite?"
+          icon={<Mail aria-hidden="true" />}
           description={
             confirmingReject.targetLabel.trim() !== '' ? (
               <>
-                You won't get access to <strong>{confirmingReject.targetLabel}</strong>.
+                Reject this invite? You won't get access to{' '}
+                <strong>{confirmingReject.targetLabel}</strong>.
               </>
             ) : (
-              <>You won't get access to this invitation.</>
+              <>Reject this invite? You won't get access to this invitation.</>
             )
           }
           secondaryAction={{
@@ -350,11 +359,19 @@ export function NotificationsPanel({ onClose }: NotificationsPanelProps) {
         />
       ) : null}
 
-      <footer className="notifications-panel__footer">
-        <Link to="/notifications" className="notifications-panel__view-all" onClick={onClose}>
-          View all notifications
-        </Link>
-      </footer>
+      {!isExpanded ? (
+        <footer className="notifications-panel__footer">
+          <button
+            type="button"
+            className="notifications-panel__view-all"
+            onClick={() => {
+              setIsExpanded(true);
+            }}
+          >
+            View all notifications
+          </button>
+        </footer>
+      ) : null}
     </div>
   );
 }

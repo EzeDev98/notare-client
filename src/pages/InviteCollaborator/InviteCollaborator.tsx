@@ -188,9 +188,6 @@ function ExistingCollaboratorModal({
   return (
     <Modal
       icon={isPending ? <Mail aria-hidden="true" /> : <Check aria-hidden="true" />}
-      title={
-        isPending ? 'Invitation already sent' : 'You’re already collaborators'
-      }
       description={
         isPending ? (
           <>

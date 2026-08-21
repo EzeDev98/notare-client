@@ -259,6 +259,20 @@
      * long note scrolls the whole shell and takes the nav with it. */
     min-block-size: 0;
     overflow-y: auto;
+  }
+
+  /*
+   * RouteFocus.tsx calls target.focus() on this element (#main, tabIndex=-1)
+   * on every route change so screen readers land somewhere sane. It is NOT
+   * reachable by Tab and nothing else in the app ever focuses it, but a
+   * script-driven focus() here DOES trigger :focus-visible in Chrome, painting
+   * a full lavender ring whose top edge sits flush against the toolbar's own
+   * border-block-end below it — visible as a thick purple line under the
+   * toolbar for as long as focus stays here. Suppressed the same way
+   * EditorSurface.css already does for the title/content fields.
+   */
+  .app-shell__main:focus-visible {
+    outline: none !important;
 
     /*
      * Never set before, so this fell through to body's --color-bg (a warm

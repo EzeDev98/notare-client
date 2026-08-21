@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { X } from 'lucide-react';
+import { Mail } from 'lucide-react';
 
 import {
   useReceivedCollaborations,
@@ -224,9 +224,8 @@ function ReceivedList() {
 
     {confirmingRejectId !== null ? (
       <Modal
-        icon={<X aria-hidden="true" />}
-        title="Reject this invite?"
-        description="You won't get access to this invitation."
+        icon={<Mail aria-hidden="true" />}
+        description="Reject this invite? You won't get access to this invitation."
         secondaryAction={{
           label: 'Cancel',
           onClick: () => {
@@ -358,9 +357,8 @@ function SentList() {
 
     {confirmingCancelId !== null ? (
       <Modal
-        icon={<X aria-hidden="true" />}
-        title="Cancel this invite?"
-        description="This invitation will no longer be available to the recipient."
+        icon={<Mail aria-hidden="true" />}
+        description="Cancel this invite? This invitation will no longer be available to the recipient."
         secondaryAction={{
           label: 'Keep invite',
           onClick: () => {

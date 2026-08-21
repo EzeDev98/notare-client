@@ -700,8 +700,7 @@ export function AppLayout() {
               the selected note?
             </>
           }
-          icon={<NotebookPen className="delete-note-modal__icon" aria-hidden="true" />}
-          destructive
+          icon={<NotebookPen aria-hidden="true" />}
           secondaryAction={{
             label: 'Cancel',
             onClick: () => {

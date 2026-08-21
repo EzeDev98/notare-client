@@ -1,7 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router';
-import { X } from 'lucide-react';
 
 import { Button } from '@/design-system/components/Button/Button';
 import './Modal.css';
@@ -20,7 +19,7 @@ interface ModalProps {
    * passed.
    */
   icon?: ReactNode;
-  title: string;
+  title?: string;
   /**
    * Optional body copy under the title. Accepts a node (not just a string)
    * so a caller can bold a name inline, same as InviteCollaboratorPage's
@@ -31,11 +30,6 @@ interface ModalProps {
   primaryAction: ModalAction;
   /** Left-hand, outlined button. Omit for a single-button alert. */
   secondaryAction?: ModalAction;
-  /**
-   * Gives the primary action the danger treatment instead of the
-   * default lavender/purple treatment.
-   */
-  destructive?: boolean;
   onClose: () => void;
 }
 
@@ -60,7 +54,6 @@ export function Modal({
   description,
   primaryAction,
   secondaryAction,
-  destructive = false,
   onClose,
 }: ModalProps) {
   useEffect(() => {
@@ -93,23 +86,16 @@ export function Modal({
         className="ds-modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="ds-modal-title"
-        aria-describedby={description ? 'ds-modal-description' : undefined}
+        aria-labelledby={
+          title ? 'ds-modal-title' : description ? 'ds-modal-description' : undefined
+        }
+        aria-describedby={title && description ? 'ds-modal-description' : undefined}
       >
         {icon ? (
           <div className="ds-modal__icon" aria-hidden="true">
             {icon}
           </div>
         ) : null}
-
-        <button
-          type="button"
-          className="ds-modal__close"
-          aria-label="Close"
-          onClick={onClose}
-        >
-          <X aria-hidden="true" size={18} />
-        </button>
 
         <h2 id="ds-modal-title" className="ds-modal__title">
           {title}
@@ -149,9 +135,22 @@ export function Modal({
             flagged rather than silently shipped as if it were complete.
           */}
           {primaryAction.href ? (
+            /*
+             * data-variant/data-size, not a `ds-button--primary` class —
+             * matching exactly how Button.tsx itself renders these two
+             * attributes onto the real <button> below. Button.css only
+             * ever selects on `.ds-button[data-variant=...]` and
+             * `.ds-button[data-size=...]`; a modifier class like
+             * `ds-button--primary` matches nothing in that file, which is
+             * why this Link previously rendered with none of Button's
+             * variant styling — no fill, no sizing, just the bare
+             * `.ds-button` base rules (border, radius, transitions).
+             */
             <Link
               to={primaryAction.href}
-              className="ds-button ds-button--primary ds-modal__action"
+              className="ds-button ds-modal__action"
+              data-variant="primary"
+              data-size="md"
               onClick={primaryAction.onClick}
             >
               {primaryAction.label}
@@ -159,7 +158,7 @@ export function Modal({
           ) : (
             <Button
               autoFocus
-              variant={destructive ? 'danger' : 'primary'}
+              variant="primary"
               className="ds-modal__action"
               onClick={primaryAction.onClick}
             >

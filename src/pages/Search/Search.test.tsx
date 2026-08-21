@@ -115,7 +115,7 @@ describe('searching', () => {
     expect(deleteModal).toBeInTheDocument();
 
     await user.click(
-      within(deleteModal).getByRole('button', { name: 'Delete', exact: true }),
+      within(deleteModal).getByRole('button', { name: /^Delete$/i }),
     );
 
     await waitFor(() => {
