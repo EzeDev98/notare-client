@@ -89,7 +89,7 @@ describe('the trash', () => {
     // text: a brand-new row synced from a trash SUMMARY has no local
     // `content` yet (fromNoteSummary only ever backfills from `existing`,
     // never from `contentPreview` — a separate, pre-existing gap outside
-    // title removal's scope), so there is no label text here to assert on.
+    // this cleanup's scope), so there is no label text here to assert on.
     const stored = await waitFor(async () => {
       const row = await noteRepository.getByServerId(21);
       if (!row) throw new Error('row not synced yet');

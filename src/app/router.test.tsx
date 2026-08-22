@@ -65,6 +65,6 @@ describe('the real route tree', () => {
     // No row for 'some-uuid' — the local route's own not-found state sets
     // this exact title. A 404 fallthrough would set 'Page not found · Notare'
     // instead, which is the thing this test actually guards against.
-    await waitFor(() => expect(document.title).toBe('Untitled note · Notare'));
+    await waitFor(() => expect(document.title).toBe('Note · Notare'));
   });
 });

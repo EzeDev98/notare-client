@@ -8,6 +8,39 @@ const ANIMATION_MS = 440;
 
 interface AnimatedSidebarNoteListProps {
   notes: NoteView[];
+  /** Which note the route currently matches, local or server — see
+   * SidebarNoteItem's own comment on why these are threaded down rather
+   * than left to NavLink's built-in route matching. */
+  activeLocalId: string | null;
+  activeNoteId: string | null;
+  /** Set only during a pending note creation — see AppLayout's own
+   * pendingActiveLocalId comment for why. */
+  pendingActiveLocalId: string | null;
+}
+
+/**
+ * Whether ONE row should render as the currently-open note.
+ *
+ * `pendingActiveLocalId`, when set, overrides route-matching entirely: only
+ * the note actually being created counts as active, full stop — not the
+ * note the route still technically points at while its own navigate() is
+ * deliberately held back (AppLayout's own NOTE_LIFECYCLE_DELAY_MS comment),
+ * and not any other row either. Outside that window it falls back to the
+ * ordinary "does this row's own route match the current one" check.
+ */
+function isRowActive(
+  note: NoteView,
+  activeLocalId: string | null,
+  activeNoteId: string | null,
+  pendingActiveLocalId: string | null,
+): boolean {
+  if (pendingActiveLocalId !== null) {
+    return note.localId === pendingActiveLocalId;
+  }
+
+  return note.serverId === null
+    ? note.localId === activeLocalId
+    : String(note.serverId) === activeNoteId;
 }
 
 interface RenderedNote {
@@ -28,6 +61,9 @@ interface PendingMove {
 
 export function AnimatedSidebarNoteList({
   notes,
+  activeLocalId,
+  activeNoteId,
+  pendingActiveLocalId,
 }: AnimatedSidebarNoteListProps) {
   const listRef = useRef<HTMLUListElement>(null);
   const pendingMoveRef = useRef<PendingMove | null>(null);
@@ -331,6 +367,7 @@ export function AnimatedSidebarNoteList({
         <SidebarNoteItem
           key={item.note.localId}
           note={item.note}
+          isActive={isRowActive(item.note, activeLocalId, activeNoteId, pendingActiveLocalId)}
           animationState={item.animationState}
           exitStyle={item.exitStyle}
         />

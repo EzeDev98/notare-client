@@ -38,7 +38,7 @@ describe('the toolbar delete icon', () => {
   });
 
   it('trashes the open server-backed note and returns to the list', async () => {
-    await seedNotes(makeRow({ serverId: 7, localId: 'local-7', title: 'Meeting notes' }));
+    await seedNotes(makeRow({ serverId: 7, localId: 'local-7' }));
 
     const user = userEvent.setup();
     renderAt('/notes/7');

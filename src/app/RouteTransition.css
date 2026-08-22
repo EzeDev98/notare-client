@@ -1,5 +1,65 @@
 @layer components {
   /*
+   * THE MISSING LINK in what was otherwise a fully-bounded scroll chain.
+   *
+   * .app-shell__main (AppLayout.css) is flex:1 + min-block-size:0 +
+   * overflow-y:auto specifically so nothing inside it can grow the page
+   * itself — every legitimate scroll need gets its own internal region
+   * instead (that file's own comment on the point). NoteDetailPage follows
+   * the same pattern one level deeper: .note-detail is block-size:100%
+   * with only .note-detail__scroll (NoteDetail.css) actually scrolling,
+   * which is what lets VoiceRecorder's floating dock — position:absolute
+   * against .note-detail — stay pinned to one fixed spot no matter how
+   * much content .note-detail__scroll holds.
+   *
+   * But this element sits BETWEEN .app-shell__main and .note-detail (every
+   * route's content renders as ITS child, not .app-shell__main's directly),
+   * and previously carried no size of its own — a plain block div sized to
+   * its content. `block-size: 100%` on .note-detail computes against THIS
+   * element's height, and percentage heights against an auto-sized
+   * container resolve to nothing (effectively auto right back) per the CSS
+   * spec. So .note-detail silently fell back to growing with its own
+   * content instead of staying capped — which meant .app-shell__main's
+   * own overflow-y:auto ended up doing the scrolling instead of
+   * .note-detail__scroll, dragging .note-detail's entire box — dock
+   * included — down and out of view as more content (voice notes, in
+   * particular) was added.
+   *
+   * block-size:100% + min-block-size:0 + overflow-y:auto closes that gap —
+   * .note-detail's own block-size:100% now resolves against a genuinely
+   * fixed height instead of falling back to auto, so it never grows past
+   * the viewport, .note-detail__scroll goes back to being the only thing
+   * that actually scrolls on a note page, and the dock finally stays
+   * exactly where §-anchored: bottom-right, always.
+   *
+   * Deliberately NOT display:flex/flex-direction:column, even though
+   * .note-detail (its child) uses that exact pair — this element only
+   * needs a DEFINITE HEIGHT for the percentage chain above to resolve,
+   * and that requires nothing about its own display type (.app-shell__main
+   * proves it: flex:1 + min-block-size:0 + overflow-y:auto, no display:flex
+   * of its own, and .route-transition's height already resolves fine
+   * against it). Making this a flex container turns every OTHER routed
+   * page's root element (.notes, .voice-notes, .shared-notes,
+   * .invitations, .trash, .sessions, …) into a flex ITEM — and every one
+   * of them centers itself with `max-inline-size` + `margin-inline: auto`.
+   * Auto margins on a flex item's CROSS axis (horizontal, in a column flex
+   * container) are special-cased by the flexbox spec: they absorb the free
+   * space themselves and override align-items:stretch, so the item shrinks
+   * to fit its content instead of stretching out to max-inline-size first
+   * and THEN centering the leftover space — the exact "shrunk, no longer
+   * proper screen width" regression this caused on every page that isn't
+   * the note editor. A plain block box has no such special case:
+   * width:auto fills the available inline size up to max-inline-size, and
+   * margin-inline:auto centers the true leftover space, same as before
+   * this element had any size of its own.
+   */
+  .route-transition {
+    block-size: 100%;
+    min-block-size: 0;
+    overflow-y: auto;
+  }
+
+  /*
    * §5.2: a boundary, not a decoration. Static by default — only a
    * CLIENT-SIDE navigation gets the data-animate flag from
    * RouteTransition.tsx's own mount-effect guard, so a refresh/first load

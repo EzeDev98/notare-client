@@ -392,8 +392,12 @@ describe('inviting a collaborator', () => {
       }),
     );
 
-    expect(
-      screen.queryByRole('dialog'),
-    ).not.toBeInTheDocument();
+    // Modal.tsx defers onClose until its exit animation finishes — or,
+    // under jsdom where animationend never fires, its 250ms fallback timer.
+    // A synchronous assertion here would catch the dialog mid-close, still
+    // sitting at `data-closing="true"`.
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
   });
 });

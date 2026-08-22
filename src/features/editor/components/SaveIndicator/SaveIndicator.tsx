@@ -1,19 +1,22 @@
 import type { SaveState } from '@/features/editor/saveState';
 import './SaveIndicator.css';
 
-/** The visible text for each state, and whether it is worth announcing. */
-function describe(state: SaveState): { label: string; tone: 'quiet' | 'warn' | 'danger' } | null {
+/**
+ * The visible text for a save state — ONLY for the states worth a person's
+ * attention. `unsaved` / `saving` / `saved` are routine progress, not
+ * signal: narrating every debounce cycle ("Unsaved changes" → "Saving…" →
+ * "Saved", on repeat, for as long as someone is typing) is chrome nobody
+ * asked to keep reading, and it was pushing the note's own first line down
+ * to make room for it. The save itself still runs exactly the same either
+ * way — this only decides what gets narrated.
+ */
+function describe(state: SaveState): { label: string; tone: 'warn' | 'danger' } | null {
   switch (state.status) {
     case 'idle':
-      // NOTHING. An untouched note has no save status, and showing one would
-      // be chrome competing with the content before anything has happened.
-      return null;
     case 'unsaved':
-      return { label: 'Unsaved changes', tone: 'quiet' };
     case 'saving':
-      return { label: 'Saving…', tone: 'quiet' };
     case 'saved':
-      return { label: 'Saved', tone: 'quiet' };
+      return null;
     case 'offline':
       return { label: 'Offline — changes not saved yet', tone: 'warn' };
     case 'error':
@@ -27,41 +30,32 @@ function describe(state: SaveState): { label: string; tone: 'quiet' | 'warn' | '
   }
 }
 
-/** Only non-nominal states are worth interrupting a screen reader for. */
-function shouldAnnounce(state: SaveState): boolean {
-  return state.status === 'offline' || state.status === 'error' || state.status === 'conflict';
-}
-
 /**
  * The inline save status.
  *
- * §38: never a toast. "Note saved!" three times a minute is the canonical
- * example of a notification nobody asked for — this is a quiet line of text
- * that the user can look at when they want reassurance and ignore otherwise.
+ * §38: never a toast, and not even a quiet line of routine text either —
+ * only offline / a failed save / a conflict actually need a person to DO
+ * something (go back online, retry, resolve it), so those are the only
+ * states that render at all. Nothing renders — not even a hidden
+ * placeholder — for the routine states, so this element reserves no
+ * layout space until there is genuinely something worth attention.
  *
- * THE ACCESSIBILITY DECISION IS THE INTERESTING ONE. The obvious move is
- * role="status" on the whole thing, which announces "Saving… Saved" on EVERY
- * debounce cycle — a screen reader user typing a paragraph hears it a dozen
- * times.
- *
- * So the visible text is aria-hidden, and a separate polite live region
- * announces only problems: offline, error, conflict. Nominal progress is
- * silent, which is §38's principle applied to the audio channel rather than
- * the visual one.
+ * Visible and announced are the SAME set now, which is simpler than it
+ * used to be: previously the visible text covered every state (aria-hidden
+ * from screen readers) while a separate live region announced only
+ * problems. Now that routine states show nothing at all, there is no
+ * longer a gap between what's on screen and what a screen reader hears.
  */
 export function SaveIndicator({ state }: { state: SaveState }) {
   const described = describe(state);
 
   return (
     <>
-      <p
-        className="save-indicator"
-        data-tone={described?.tone}
-        data-empty={described === null ? 'true' : undefined}
-        aria-hidden="true"
-      >
-        {described?.label ?? '\u00A0'}
-      </p>
+      {described ? (
+        <p className="save-indicator" data-tone={described.tone}>
+          {described.label}
+        </p>
+      ) : null}
 
       {/*
         Always rendered, so the live region exists in the DOM before it has
@@ -70,7 +64,7 @@ export function SaveIndicator({ state }: { state: SaveState }) {
         watching.
       */}
       <p className="ds-visually-hidden" role="status">
-        {described && shouldAnnounce(state) ? described.label : ''}
+        {described ? described.label : ''}
       </p>
     </>
   );

@@ -146,10 +146,10 @@ describe('Shared with me', () => {
     renderShared();
 
     await screen.findByRole('heading', { name: 'Newer voice.webm' });
-    const titles = screen
+    const headings = screen
       .getAllByRole('listitem')
       .map((item) => item.querySelector('h2')?.textContent);
-    expect(titles).toEqual(['Newer voice.webm', 'Older note']);
+    expect(headings).toEqual(['Newer voice.webm', 'Older note']);
   });
 
   it('does not flash the empty state while both collections are still loading', async () => {

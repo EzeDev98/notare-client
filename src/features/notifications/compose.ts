@@ -30,7 +30,7 @@ function actorName(notification: NotificationResponse, resolveActor: ActorResolv
 
 /**
  * The known types, one line each. `targetLabel` is used only where it
- * plausibly denotes a note title (§10's own example: "Femi shared 'Q3
+ * plausibly denotes a note's name (§10's own example: "Femi shared 'Q3
  * Plan'") — collaboration-type notifications don't reference a note at
  * all (a collaboration is a person-to-person relationship, not scoped to
  * one — `features/collaboration/types.ts`'s own doc comment), so those

@@ -56,7 +56,7 @@ function renderNotes({ archived = false } = {}) {
 
 describe('the notes list', () => {
   it('has no automatically detectable accessibility violations', async () => {
-    await seedNotes(makeRow({ serverId: 1, title: 'Note 1', ownerId: TEST_USER.id }));
+    await seedNotes(makeRow({ serverId: 1, content: 'Note 1', ownerId: TEST_USER.id }));
     const { container } = renderNotes();
 
     await screen.findByRole('link', { name: /note 1/i });
@@ -64,7 +64,7 @@ describe('the notes list', () => {
   });
 
   it('renders each note as a link, not a clickable div', async () => {
-    await seedNotes(makeRow({ serverId: 1, title: 'Note 1', ownerId: TEST_USER.id }));
+    await seedNotes(makeRow({ serverId: 1, content: 'Note 1', ownerId: TEST_USER.id }));
     renderNotes();
 
     /*
@@ -83,7 +83,7 @@ describe('the notes list', () => {
       makeRow({
         serverId: null,
         localId: 'local-abc',
-        title: 'Drafted offline',
+        content: 'Drafted offline',
         ownerId: TEST_USER.id,
       }),
     );
@@ -120,7 +120,7 @@ describe('the notes list', () => {
      * this page. Before 7C a failed load replaced the screen with an error.
      * Now the notes are already local, so the failure is an aside.
      */
-    await seedNotes(makeRow({ serverId: 1, title: 'Saved here', ownerId: TEST_USER.id }));
+    await seedNotes(makeRow({ serverId: 1, content: 'Saved here', ownerId: TEST_USER.id }));
     server.use(http.get(`${BASE}/notes`, () => new HttpResponse(null, { status: 500 })));
     renderNotes();
 
@@ -129,15 +129,15 @@ describe('the notes list', () => {
     expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
   });
 
-  it('labels an untitled note rather than rendering an empty heading', async () => {
-    await seedNotes(makeRow({ serverId: 7, title: '', ownerId: TEST_USER.id }));
+  it('labels a blank note "New Note" rather than rendering an empty heading', async () => {
+    await seedNotes(makeRow({ serverId: 7, content: '', ownerId: TEST_USER.id }));
     renderNotes();
 
-    expect(await screen.findByText(/untitled/i)).toBeInTheDocument();
+    expect(await screen.findByText(/new note/i)).toBeInTheDocument();
   });
 
   it('pins a note without waiting for the server', async () => {
-    await seedNotes(makeRow({ serverId: 1, title: 'Note 1', pinned: 0, ownerId: TEST_USER.id }));
+    await seedNotes(makeRow({ serverId: 1, content: 'Note 1', pinned: 0, ownerId: TEST_USER.id }));
 
     // The server never answers. The pin must still land, because the local
     // write is the operation.
@@ -156,7 +156,7 @@ describe('the notes list', () => {
 
   it('moves a note to the trash and offers an undo', async () => {
     serverHasNoNotes();
-    await seedNotes(makeRow({ serverId: 1, title: 'Note 1', ownerId: TEST_USER.id }));
+    await seedNotes(makeRow({ serverId: 1, content: 'Note 1', ownerId: TEST_USER.id }));
 
     const user = userEvent.setup();
     renderNotes();
@@ -180,7 +180,7 @@ describe('the notes list', () => {
 
   it('archiving removes the note from the main list', async () => {
     serverHasNoNotes();
-    await seedNotes(makeRow({ serverId: 1, title: 'Note 1', ownerId: TEST_USER.id }));
+    await seedNotes(makeRow({ serverId: 1, content: 'Note 1', ownerId: TEST_USER.id }));
 
     const user = userEvent.setup();
     renderNotes();

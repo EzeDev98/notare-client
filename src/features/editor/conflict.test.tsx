@@ -74,12 +74,11 @@ function conflictingNote(options: { bare?: boolean } = {}) {
         theirsVisible
           ? makeNote({
               id: 1,
-              title: 'Shared',
               content: 'their words',
               version: 7,
               lastModifiedBy: 99,
             })
-          : makeNote({ id: 1, title: 'Shared', content: 'original', version: 0 }),
+          : makeNote({ id: 1, content: 'original', version: 0 }),
       ),
     ),
     http.patch(`${BASE}/notes/:noteId`, async ({ request }) => {
@@ -99,7 +98,7 @@ function conflictingNote(options: { bare?: boolean } = {}) {
       }
 
       return HttpResponse.json(
-        makeNote({ id: 1, title: 'Shared', content: body.content ?? '', version: 8 }),
+        makeNote({ id: 1, content: body.content ?? '', version: 8 }),
       );
     }),
   );

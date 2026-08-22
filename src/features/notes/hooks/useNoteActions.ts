@@ -59,7 +59,7 @@ export function useNoteActions() {
        * There is nothing to PATCH.
        *
        * OPEN EDGE CASE, flagged for 8A rather than resolved here:
-       * SyncOperationRequest's CREATE carries only title/content, so a note
+       * SyncOperationRequest's CREATE carries only content, so a note
        * pinned entirely offline before its first sync has nowhere to carry
        * that flag through CREATE either. Left as-is is a silent data loss on
        * first sync, not merely a delay. 8A needs to either add the flags to

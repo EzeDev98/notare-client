@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { NavLink } from 'react-router';
+import { Link } from 'react-router';
 
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { deriveNoteLabel, EMPTY_NOTE_REMAINDER } from '@/features/notes/local/noteLabel';
@@ -8,6 +8,10 @@ import './SidebarNoteItem.css';
 
 interface SidebarNoteItemProps {
   note: NoteView;
+  /** Whether THIS row is the currently-open note — computed by the parent
+   * list rather than left to route-matching here; see
+   * AnimatedSidebarNoteList's own isRowActive comment for why. */
+  isActive: boolean;
 }
 
 /**
@@ -17,10 +21,19 @@ interface SidebarNoteItemProps {
  * content area, where a 240px rail only has room for a label and a
  * one-line preview.
  *
- * `NavLink`, not `Link` — the same `aria-current="page"` + CSS-attribute
- * pattern `AppLayout.css`'s own `.app-shell__nav-link[aria-current='page']`
- * already uses, so the open note highlights in the list for free, with
- * no separate "which note is active" state to keep in sync by hand.
+ * Plain `Link`, not `NavLink` — NOT because route-matching is wrong most
+ * of the time (it isn't), but because a freshly-created note's own
+ * navigate() is deliberately delayed a beat (AppLayout's own
+ * NOTE_LIFECYCLE_DELAY_MS comment), so for that window the route still
+ * points at whichever note is being pushed down. Route-driven highlighting
+ * would keep THAT note's `aria-current="page"` lit while it slides away,
+ * instead of the new note sliding in already highlighted. `isActive` is
+ * the single source of truth for both — the ordinary case and that
+ * pending-creation override — computed once by the parent list rather
+ * than recomputed here from a route NavLink can't be told to ignore.
+ * `aria-current="page"` is set by hand here so
+ * `AppLayout.css`'s own `.sidebar-note-item__link[aria-current='page']`
+ * still lights the row up exactly as before.
  *
  * LABEL AND PREVIEW (1C): there is no title field any more, so
  * `deriveNoteLabel` (shared with NoteCard) is the ONLY source of what a
@@ -31,6 +44,7 @@ interface SidebarNoteItemProps {
  */
 export function SidebarNoteItem({
   note,
+  isActive,
   animationState,
   exitStyle,
 }: SidebarNoteItemProps & {
@@ -74,7 +88,7 @@ export function SidebarNoteItem({
         .filter(Boolean)
         .join(' ')}
     >
-      <NavLink to={to} className="sidebar-note-item__link">
+      <Link to={to} className="sidebar-note-item__link" aria-current={isActive ? 'page' : undefined}>
         <span className="sidebar-note-item__title">{displayTitle}</span>
         <span className="sidebar-note-item__meta">
           <span className="sidebar-note-item__date">
@@ -91,7 +105,7 @@ export function SidebarNoteItem({
           </span>
           <span className="sidebar-note-item__preview">{preview}</span>
         </span>
-      </NavLink>
+      </Link>
     </li>
   );
 }

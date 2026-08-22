@@ -134,33 +134,6 @@
 
 
 @layer pages {
-  .note-detail__status {
-    display: flex;
-    gap: var(--space-3);
-    align-items: baseline;
-    justify-content: space-between;
-    margin-block-start: var(--space-4);
-  }
-
-  .note-detail__words {
-    margin: 0;
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-xs);
-    min-block-size: 1em;
-  }
-
-  /*
-   * Hidden, not unmounted — see NoteEditorHost.tsx's own comment. The
-   * element stays in the DOM and keeps its layout box (min-block-size
-   * above) whether or not there are words to show, so switching between
-   * an empty note and a non-empty one never changes this row's height.
-   */
-  .note-detail__words[data-empty='true'] {
-    visibility: hidden;
-  }
-}
-
-@layer pages {
   /*
    * Ordinary in-flow content now, not a footer — see NoteDetailPage's
    * own comment on why the old boxed-footer treatment (background,

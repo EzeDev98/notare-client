@@ -21,11 +21,6 @@ interface NoteEditorHostProps {
   contentAccessory?: ReactNode;
 }
 
-function countWords(text: string): number {
-  const trimmed = text.trim();
-  return trimmed === '' ? 0 : trimmed.split(/\s+/).length;
-}
-
 export function NoteEditorHost({ row, currentUserId, contentAccessory }: NoteEditorHostProps) {
   const navigate = useNavigate();
   const editor = useNoteEditor(row);
@@ -71,27 +66,17 @@ export function NoteEditorHost({ row, currentUserId, contentAccessory }: NoteEdi
     );
   }
 
-  const words = countWords(editor.row.content);
-
+  /*
+   * No word count here any more, and SaveIndicator renders nothing at all
+   * for the routine states (its own doc comment explains why) — so this is
+   * the ONLY thing that can sit above the editor, and only when there is
+   * genuinely something worth a person's attention. The rest of the time
+   * this renders nothing, and the note's own first line starts right at
+   * the top of the writing surface.
+   */
   return (
     <>
-      <div className="note-detail__status">
-        <SaveIndicator state={editor.saveState} />
-        {/*
-          ALWAYS mounted, never `words > 0 ? … : null`. Toggling this
-          element's presence based on content length is exactly what made
-          navigating between an empty note and a non-empty one visibly
-          jump: the status bar's height changed on every such switch, while
-          content<->content and empty<->empty never touched this at all.
-          `visibility: hidden` removes it from view (and from the
-          accessibility tree) without removing it from layout, so the
-          height of `.note-detail__status` is now constant regardless of
-          which note is open.
-        */}
-        <p className="note-detail__words" data-empty={words === 0 ? 'true' : undefined}>
-          {words > 0 ? `${String(words)} ${words === 1 ? 'word' : 'words'}` : '\u00A0'}
-        </p>
-      </div>
+      <SaveIndicator state={editor.saveState} />
 
       <EditorSurface
         content={editor.row.content}

@@ -1,6 +1,12 @@
 @layer components {
   .save-indicator {
+    /*
+     * Only ever rendered when there's something worth showing (see
+     * SaveIndicator.tsx) — so this margin only ever applies above a real
+     * message, never reserving space above the note otherwise.
+     */
     margin: 0;
+    margin-block-start: var(--space-4);
     font-size: var(--font-size-xs);
     color: var(--color-text-secondary);
     /* Colour never carries the meaning alone (§36) — the words do. */
@@ -12,11 +18,5 @@
 
   .save-indicator[data-tone='danger'] {
     color: var(--color-danger);
-  }
-}
-
-@layer components {
-  .save-indicator[data-empty='true'] {
-    visibility: hidden;
   }
 }

@@ -18,7 +18,7 @@ function renderDelete() {
 
 describe('deleting a note', () => {
   it('marks the row deleted so every live query drops it', async () => {
-    const row = makeRow({ serverId: 1, title: 'Groceries' });
+    const row = makeRow({ serverId: 1 });
     await seedNotes(row);
 
     server.use(http.delete(`${BASE}/notes/:noteId`, () => new HttpResponse(null, { status: 204 })));
@@ -104,7 +104,6 @@ describe('deleting a note', () => {
       await outboxRepository.enqueueCreate({
         localId: row.localId,
         clientId: row.clientId,
-        title: row.title,
         content: row.content,
       });
 

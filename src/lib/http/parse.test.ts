@@ -26,7 +26,7 @@ async function captureError(promise: Promise<unknown>): Promise<ApiError> {
 
 describe('parseResponse — success', () => {
   it('parses a JSON body', async () => {
-    const note = { id: 1, title: 'Hello', version: 0 };
+    const note = { id: 1, content: 'Hello', version: 0 };
     await expect(parseResponse(jsonResponse(note))).resolves.toEqual(note);
   });
 

@@ -59,14 +59,16 @@ describe('parseNoteId', () => {
 describe('the note detail view', () => {
   it('has no automatically detectable accessibility violations', async () => {
     const { container } = renderDetail();
-    await screen.findByDisplayValue(/note 1/i);
+    // Waits for the note to load before running axe; the exact content is
+    // covered elsewhere, this test only cares that the editor has rendered.
+    await screen.findByLabelText('Note content');
     await expectNoAxeViolations(container);
   });
 
   it('preserves the newlines the user typed', async () => {
     server.use(
       http.get(`${BASE}/notes/:noteId`, () =>
-        HttpResponse.json(makeNote({ id: 1, title: 'Lists', content: 'one\ntwo\nthree' })),
+        HttpResponse.json(makeNote({ id: 1, content: 'one\ntwo\nthree' })),
       ),
     );
     renderDetail();
@@ -133,7 +135,7 @@ describe('the note detail view', () => {
   it('shows an empty writing surface for a note with no content', async () => {
     server.use(
       http.get(`${BASE}/notes/:noteId`, () =>
-        HttpResponse.json(makeNote({ id: 1, title: 'Empty', content: null })),
+        HttpResponse.json(makeNote({ id: 1, content: null })),
       ),
     );
     renderDetail();

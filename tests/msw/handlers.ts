@@ -35,7 +35,7 @@ export const handlers = [
         { status: 400, headers: { 'content-type': 'application/problem+json' } },
       );
     }
-    return HttpResponse.json(makePage([makeNoteSummary({ id: 1, title: term })]));
+    return HttpResponse.json(makePage([makeNoteSummary({ id: 1, contentPreview: term })]));
   }),
 
   http.get(`${BASE}/notes/trash`, () =>
@@ -50,7 +50,7 @@ export const handlers = [
   ),
 
   http.post(`${BASE}/notes`, async ({ request }) => {
-    const body = (await request.json()) as { title?: string; content?: string };
+    const body = (await request.json()) as { content?: string };
     return HttpResponse.json(makeNote({ ...body, version: 0 }), { status: 201 });
   }),
 
@@ -60,7 +60,7 @@ export const handlers = [
   ),
 
   http.patch(`${BASE}/notes/:noteId`, async ({ params, request }) => {
-    const body = (await request.json()) as { title?: string; content?: string; version: number };
+    const body = (await request.json()) as { content?: string; version: number };
 
     // Mirrors the server's version bump, so a test can assert the client
     // ADOPTS the returned version rather than counting for itself.
@@ -71,7 +71,6 @@ export const handlers = [
 
   http.put(`${BASE}/notes/:noteId`, async ({ params, request }) => {
     const body = (await request.json()) as {
-      title: string | null;
       content: string | null;
       version: number;
     };
@@ -109,7 +108,6 @@ export const handlers = [
 
   http.put(`${BASE}/shared-notes/:noteId`, async ({ params, request }) => {
     const body = (await request.json()) as {
-      title: string | null;
       content: string | null;
       version: number;
     };

@@ -62,8 +62,41 @@ function InlineVoiceNote({ voiceNote }: { voiceNote: VoiceNoteResponse }) {
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [loadRequested, setLoadRequested] = useState(false);
+  /*
+   * Set the moment the FIRST click asks for a load, cleared once that
+   * play actually fires (or the load fails). Plain click-to-play looked
+   * broken without this: clicking play while `blob.status === 'idle'`
+   * only calls `setLoadRequested(true)` below and returns — nothing in
+   * that branch ever calls `audio.play()`, because there's no audio to
+   * play yet, only a blob download about to start. The download finishing
+   * (blob.status flipping to 'ready') was a silent state change from the
+   * user's point of view; the button just sat there showing the Play icon
+   * until a SECOND click ran the `audio.paused` branch below and finally
+   * started playback. This ref is what turns "download finished" into
+   * "start the playback the user already asked for" — see the effect
+   * below that watches `blob.url` for exactly that transition.
+   */
+  const pendingPlayRef = useRef(false);
 
   const blob = useAudioBlob(voiceNote.id, loadRequested);
+
+  useEffect(() => {
+    if (blob.status === 'error') {
+      pendingPlayRef.current = false;
+      return;
+    }
+
+    if (blob.status !== 'ready' || !pendingPlayRef.current) return;
+
+    pendingPlayRef.current = false;
+
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    void audio.play().catch(() => {
+      setPlaying(false);
+    });
+  }, [blob.status, blob.status === 'ready' ? blob.url : null]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -102,6 +135,7 @@ function InlineVoiceNote({ voiceNote }: { voiceNote: VoiceNoteResponse }) {
 
   function togglePlayback() {
     if (blob.status === 'idle' || blob.status === 'error') {
+      pendingPlayRef.current = true;
       setLoadRequested(true);
       return;
     }

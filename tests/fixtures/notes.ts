@@ -18,7 +18,6 @@ export function makeNote(overrides: Partial<NoteResponse> = {}): NoteResponse {
 
   return {
     id,
-    title: `Note ${String(id)}`,
     content: 'Body text.',
     pinned: false,
     archived: false,
@@ -48,7 +47,6 @@ export function makeRow(overrides: Partial<NoteRow> = {}): NoteRow {
     localId,
     serverId,
     clientId: localId,
-    title: `Note ${String(serverId)}`,
     content: 'Body text.',
     pinned: 0,
     archived: 0,

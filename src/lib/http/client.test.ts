@@ -104,10 +104,10 @@ describe('URL building', () => {
 describe('body and headers', () => {
   it('serialises a JSON body and sets its content type', async () => {
     stubFetch(() => jsonOk());
-    await httpClient.post('/notes', { body: { title: 'Hello', content: 'World' } });
+    await httpClient.post('/notes', { body: { content: 'Hello', pinned: true } });
 
     const { init } = lastCall();
-    expect(init.body).toBe('{"title":"Hello","content":"World"}');
+    expect(init.body).toBe('{"content":"Hello","pinned":true}');
     expect(init.headers).toMatchObject({ 'content-type': 'application/json' });
   });
 
@@ -163,7 +163,7 @@ describe('methods', () => {
     await httpClient.get('/notes');
     expect(lastCall().init.method).toBe('GET');
 
-    await httpClient.patch('/notes/1', { body: { title: 'x' } });
+    await httpClient.patch('/notes/1', { body: { content: 'x' } });
     expect(lastCall().init.method).toBe('PATCH');
 
     await httpClient.delete('/notes/1');

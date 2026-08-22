@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Mic, Pause, Play, Send, Trash2 } from 'lucide-react';
 
 import { useMediaRecorderState } from '@/features/voice/hooks/useMediaRecorderState';
@@ -31,6 +31,21 @@ export interface VoiceUploadHandle {
 
 interface VoiceRecorderProps {
   upload: VoiceUploadHandle;
+  /**
+   * The note currently on screen. NOT just a label — this is what makes a
+   * recording belong to the note it was STARTED on rather than whichever
+   * note happens to be open when the person hits send.
+   *
+   * Why this is needed at all: NoteDetailPage/SharedNoteView are never
+   * remounted when the person switches notes (see NoteEditorHost's own
+   * note on why — the editor stays mounted across note switches), so this
+   * component and its `useMediaRecorderState` instance survive a note
+   * switch too. Without tracking which noteId owns the in-flight
+   * recording, `upload` (rebuilt fresh each render from whatever note is
+   * CURRENTLY open) would silently attach a recording to the wrong note —
+   * exactly the bug this prop exists to close.
+   */
+  noteId: number;
   onUploaded?: () => void;
 }
 
@@ -86,7 +101,7 @@ function Waveform({ paused }: { paused: boolean }) {
  * modifier class + children lets `inline-size` transition smoothly from
  * the idle mic's 56px to the active bar's 80%.
  */
-export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
+export function VoiceRecorder({ upload, noteId, onUploaded }: VoiceRecorderProps) {
   const recorder = useMediaRecorderState();
   const [progress, setProgress] = useState(0);
   const [elapsed, setElapsed] = useState(0);
@@ -100,6 +115,17 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
     null,
   );
 
+  /*
+   * The note that started the CURRENT recording — null whenever there is
+   * none in flight. This is the fix for "a vn must be tied to a note":
+   * without it, this component (which persists across note switches, see
+   * the `noteId` prop's own doc comment) has no way to tell "the note I'm
+   * looking at right now" apart from "the note I'm actually recording
+   * for".
+   */
+  const [recordingOwnerNoteId, setRecordingOwnerNoteId] = useState<number | null>(null);
+  const isForeignRecording = recordingOwnerNoteId !== null && recordingOwnerNoteId !== noteId;
+
   const discardOnStopRef = useRef(false);
   // Set when "send" is clicked WHILE recording — see the effect below and
   // this file's own top-comment update. MediaRecorder.stop() is
@@ -108,6 +134,19 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
   // synchronous handler — this flag is what carries the person's intent
   // across that async gap.
   const uploadOnStopRef = useRef(false);
+
+  /*
+   * The only place `recorder.reset()` should be called — pairs it with
+   * clearing ownership so a resolved recording (sent OR discarded) frees
+   * this component back up for whichever note is on screen next. Calling
+   * `recorder.reset()` directly anywhere else would leave
+   * `recordingOwnerNoteId` stale, permanently locking the mic to a note
+   * that no longer has anything in flight.
+   */
+  function resetRecording() {
+    recorder.reset();
+    setRecordingOwnerNoteId(null);
+  }
 
   function startUpload(blob: Blob, durationSeconds: number) {
     setProgress(0);
@@ -119,7 +158,7 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
       },
       {
         onSuccess: () => {
-          recorder.reset();
+          resetRecording();
           setElapsed(0);
           onUploaded?.();
         },
@@ -127,12 +166,88 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
     );
   }
 
+  /*
+   * Auto-pause on the way out, WhatsApp-style: leaving the note that owns
+   * the in-flight recording pauses it rather than letting it keep
+   * capturing audio for a note the person isn't even looking at. Coming
+   * back later shows it exactly as left — still paused, still there,
+   * still tied to the right note — rather than continuing unattended or,
+   * before this fix, ending up attached to whatever note happened to be
+   * open at send time.
+   *
+   * Keyed on `noteId` alone: this must fire on every note switch, not on
+   * every recorder status change (an ordinary pause/resume click while
+   * STAYING on the same note must not re-trigger it).
+   */
+  const previousNoteIdRef = useRef(noteId);
+  useEffect(() => {
+    if (previousNoteIdRef.current === noteId) return;
+    const leftNoteId = previousNoteIdRef.current;
+    previousNoteIdRef.current = noteId;
+
+    if (
+      recordingOwnerNoteId === leftNoteId &&
+      recorder.status.state === 'recording' &&
+      !recorder.status.paused
+    ) {
+      recorder.pause();
+    }
+    // recorder is stable (useMediaRecorderState never returns a new
+    // object identity worth re-running this for); recordingOwnerNoteId and
+    // recorder.status are read, not depended on, the same way the elapsed-
+    // timer effect below already does — only the NOTE SWITCH should ever
+    // fire this, not a status change on its own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noteId]);
+
+  /*
+   * The dock element itself — see the transition-suppression effect right
+   * below for why this needs a direct handle rather than going through
+   * React state/class alone.
+   */
+  const dockRef = useRef<HTMLDivElement>(null);
+
+  /*
+   * Suppresses the dock's own inline-size transition for a NOTE SWITCH
+   * specifically — not for a real state change on the note currently on
+   * screen.
+   *
+   * Without this: `isForeignRecording` flips true/false exactly like a
+   * genuine start/stop does (both toggle `isActive`), so navigating away
+   * from a recording note "folds" the dock shut, and navigating back
+   * "unfolds" it again — the CSS transition plays both times. WhatsApp's
+   * bar never animates open or closed just because you switched chats; it
+   * is simply already in whatever state it's in the instant you arrive.
+   * Pressing the mic, sending, or discarding on the note you're actually
+   * looking at should still animate — only a `noteId` change should not.
+   *
+   * useLayoutEffect (not useEffect) because it must run — and finish —
+   * before the browser paints the new noteId's render, in time to disable
+   * the transition before that first paint rather than after it.
+   */
+  const previousNoteIdForTransitionRef = useRef(noteId);
+  useLayoutEffect(() => {
+    if (previousNoteIdForTransitionRef.current === noteId) return;
+    previousNoteIdForTransitionRef.current = noteId;
+
+    const dock = dockRef.current;
+    if (!dock) return;
+
+    dock.style.transition = 'none';
+    // Forces the browser to apply the transition:none style immediately —
+    // without reading a layout property here, removing the override on
+    // the next line can get batched into the same frame and the browser
+    // transitions anyway.
+    void dock.offsetWidth;
+    dock.style.transition = '';
+  }, [noteId]);
+
   useEffect(() => {
     if (recorder.status.state !== 'stopped') return;
 
     if (discardOnStopRef.current) {
       discardOnStopRef.current = false;
-      recorder.reset();
+      resetRecording();
       return;
     }
 
@@ -169,7 +284,7 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
     if (confirmingDiscard === 'recording') {
       handleDiscardWhileRecording();
     } else if (confirmingDiscard === 'stopped') {
-      recorder.reset();
+      resetRecording();
     }
     setConfirmingDiscard(null);
   }
@@ -212,7 +327,15 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
     startUpload(recorder.status.blob, recorder.status.durationSeconds);
   }
 
-  if (recorder.status.state === 'unsupported') {
+  /*
+   * Every branch below that reflects the recorder's REAL state (as opposed
+   * to the idle mic button, which is the one thing every note is allowed
+   * to show) is additionally gated on `!isForeignRecording` — otherwise a
+   * note that isn't recording anything would render another note's
+   * unsupported/permission/error/recording/stopped state as if it were
+   * its own.
+   */
+  if (!isForeignRecording && recorder.status.state === 'unsupported') {
     return (
       <p className="voice-recorder__message" role="alert">
         Recording isn&apos;t supported in this browser.
@@ -220,7 +343,7 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
     );
   }
 
-  if (recorder.status.state === 'permission-denied') {
+  if (!isForeignRecording && recorder.status.state === 'permission-denied') {
     return (
       <div className="voice-recorder__message" role="alert">
         <p>Notare needs microphone access to record a voice note.</p>
@@ -237,22 +360,26 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
     );
   }
 
-  if (recorder.status.state === 'error') {
+  if (!isForeignRecording && recorder.status.state === 'error') {
     return (
       <div className="voice-recorder__message" role="alert">
         <p>{recorder.status.message}</p>
-        <Button variant="secondary" size="sm" onClick={recorder.reset}>
+        <Button variant="secondary" size="sm" onClick={resetRecording}>
           Dismiss
         </Button>
       </div>
     );
   }
 
-  const isActive = recorder.status.state === 'recording' || recorder.status.state === 'stopped';
+  const isActive =
+    !isForeignRecording && (recorder.status.state === 'recording' || recorder.status.state === 'stopped');
 
   return (
-    <div className={`voice-recorder__dock${isActive ? ' voice-recorder__dock--active' : ''}`}>
-      {recorder.status.state === 'recording' ? (
+    <div
+      ref={dockRef}
+      className={`voice-recorder__dock${isActive ? ' voice-recorder__dock--active' : ''}`}
+    >
+      {!isForeignRecording && recorder.status.state === 'recording' ? (
         <>
           <button
             type="button"
@@ -301,7 +428,7 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
         </>
       ) : null}
 
-      {recorder.status.state === 'stopped' ? (
+      {!isForeignRecording && recorder.status.state === 'stopped' ? (
         <>
           <button
             type="button"
@@ -343,16 +470,24 @@ export function VoiceRecorder({ upload, onUploaded }: VoiceRecorderProps) {
         </>
       ) : null}
 
-      {recorder.status.state === 'idle' || recorder.status.state === 'requesting-permission' ? (
+      {isForeignRecording ||
+      recorder.status.state === 'idle' ||
+      recorder.status.state === 'requesting-permission' ? (
         <button
           type="button"
           className="voice-recorder__bar-btn voice-recorder__bar-btn--mic"
-          disabled={recorder.status.state === 'requesting-permission'}
+          disabled={isForeignRecording || recorder.status.state === 'requesting-permission'}
           onClick={() => {
+            if (isForeignRecording) return;
             setElapsed(0);
+            setRecordingOwnerNoteId(noteId);
             void recorder.start();
           }}
-          aria-label="Record a voice note"
+          aria-label={
+            isForeignRecording
+              ? 'Finish the recording on your other note first'
+              : 'Record a voice note'
+          }
         >
           <Mic aria-hidden="true" color="var(--color-text-on-accent)" />
         </button>

@@ -181,6 +181,7 @@ function SharedNoteView({ noteId }: { noteId: number }) {
       {showVoiceRecorder ? (
         <VoiceRecorder
           upload={uploadVoiceNote}
+          noteId={noteId}
           onUploaded={() => {
             void voiceNotes.refetch();
           }}

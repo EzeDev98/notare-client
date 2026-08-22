@@ -34,6 +34,22 @@ beforeAll(() => {
 });
 
 /*
+ * jsdom implements the DOM, not scrolling — window.scrollTo is a no-op stub
+ * there, but Element.prototype.scrollTo does not exist at all. RouteFocus
+ * calls it on real scroll containers (`.note-detail__scroll`,
+ * `.app-shell__main`) after every route change; without this stub, every
+ * test that navigates past the first render throws
+ * "scrollTo is not a function" from inside that effect. Real browsers
+ * implement it natively, so this only ever matters under jsdom.
+ */
+beforeAll(() => {
+  if (typeof Element.prototype.scrollTo !== 'function') {
+    // no-op: jsdom has no layout, so there is nothing to actually scroll.
+    Element.prototype.scrollTo = () => {};
+  }
+});
+
+/*
  * onUnhandledRequest: 'error' is what makes the mock server trustworthy.
  *
  * The default lets an unmatched request through to the REAL network, so a

@@ -37,7 +37,7 @@ describe('the local note detail view', () => {
 
   it('has no automatically detectable accessibility violations', async () => {
     await seedNotes(
-      makeRow({ localId: 'local-abc', serverId: null, clientId: 'local-abc', title: 'Draft' }),
+      makeRow({ localId: 'local-abc', serverId: null, clientId: 'local-abc', content: 'Draft' }),
     );
 
     const { container } = renderLocal();
@@ -61,7 +61,7 @@ describe('the local note detail view', () => {
         localId: 'local-abc',
         serverId: null,
         clientId: 'local-abc',
-        title: 'Written offline',
+        content: 'Written offline',
       }),
     );
 

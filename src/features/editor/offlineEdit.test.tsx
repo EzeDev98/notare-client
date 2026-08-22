@@ -51,7 +51,7 @@ describe('editing an existing note with no connection (8B)', () => {
   it('queues an UPDATE carrying the note\u2019s current version', async () => {
     server.use(
       http.get(`${BASE}/notes/:noteId`, () =>
-        HttpResponse.json(makeNote({ id: 1, title: 'Note', content: '', version: 4 })),
+        HttpResponse.json(makeNote({ id: 1, content: '', version: 4 })),
       ),
       http.patch(`${BASE}/notes/:noteId`, () => HttpResponse.error()),
     );
@@ -77,7 +77,7 @@ describe('editing an existing note with no connection (8B)', () => {
   it('coalesces further offline edits into the same queued row rather than appending', async () => {
     server.use(
       http.get(`${BASE}/notes/:noteId`, () =>
-        HttpResponse.json(makeNote({ id: 1, title: 'Note', content: '', version: 4 })),
+        HttpResponse.json(makeNote({ id: 1, content: '', version: 4 })),
       ),
       http.patch(`${BASE}/notes/:noteId`, () => HttpResponse.error()),
     );

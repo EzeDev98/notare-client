@@ -51,6 +51,42 @@ import './AppLayout.css';
  * already was, so mobile/tablet — which has no folders panel at all —
  * are untouched.
  */
+/*
+ * A deliberate beat around every note creation and every auto-delete of an
+ * abandoned empty note — both act on Dexie, and the sidebar's FLIP
+ * animation (AnimatedSidebarNoteList) is entirely reactive to THAT write,
+ * so writing instantly made the slide read as an abrupt cut rather than
+ * something that just happened.
+ *
+ * THE SAME DELAY, BUT PLACED ON OPPOSITE SIDES of the write, and that's
+ * deliberate, not an inconsistency — the goal in both cases is that the
+ * INSTANT change (an editor swapping to a different note — unavoidably
+ * abrupt, there is no good way to animate that) and the ANIMATED change
+ * (a row sliding in or out of the sidebar) never land on the same frame.
+ * Landing together is what reads as jankier than either looks alone.
+ *
+ * Auto-delete already had the right shape without trying: navigating to
+ * the note you actually clicked is instant and unrelated to this delay at
+ * all, so by construction it happens first; delaying the write (below)
+ * just holds the OLD note's exit animation back until well after that
+ * settles, so the two never compete for attention at once.
+ *
+ * Creation has no such note to instantly reveal — there is nothing to
+ * navigate to before the write happens. So here the write goes first,
+ * unblocked, and starts the sidebar's enter animation immediately; THIS
+ * delay instead sits between that write and the navigate() that swaps the
+ * main pane over to it, so the instant swap lands while the sidebar
+ * animation is already a beat into its own motion rather than starting in
+ * the same frame as it.
+ */
+const NOTE_LIFECYCLE_DELAY_MS = 220;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 const desktopOnlyItems: NavItem[] = [
   {
     to: '/archived',
@@ -230,12 +266,41 @@ export function AppLayout() {
    * comment), and it must be just as deletable as one that has synced.
    *
    * Share only needed the id (to build a Link). Delete needs the actual row
-   * — useDeleteNote takes a NoteView, which carries title/version/updatedAt
-   * for the trash toast and the server PATCH — so this reads Dexie directly
+   * — useDeleteNote takes a NoteView, which carries version/updatedAt for
+   * the trash toast and the server PATCH — so this reads Dexie directly
    * rather than re-deriving a NoteView from a bare id string.
    */
   const localNoteMatch = useMatch('/notes/local/:localId');
   const activeLocalId = localNoteMatch?.params['localId'] ?? null;
+
+  /*
+   * The sidebar's "which note is open" highlight (SidebarNoteItem's own
+   * `[aria-current='page']` CSS) is normally computed purely from the
+   * route via NavLink — exactly right the rest of the time. It stops
+   * being right during a pending creation: NOTE_LIFECYCLE_DELAY_MS holds
+   * navigate() back on purpose (its own comment above explains why), so
+   * for that whole window the route STILL points at whichever note is
+   * being pushed down, and route-driven highlighting would keep that
+   * note lavender all the way through its own slide-down instead of the
+   * new note sliding in already highlighted.
+   *
+   * Set the instant the new row is written (so the highlight appears with
+   * the row, not after), cleared the instant the real route catches up to
+   * it — see the effect below. `null` means "no override, use the route
+   * like normal," which is every moment other than this one.
+   */
+  const [pendingActiveLocalId, setPendingActiveLocalId] = useState<string | null>(null);
+
+  const activeRouteKey = activeLocalId ?? activeNoteId;
+  const previousActiveRouteKeyForPendingRef = useRef(activeRouteKey);
+  useEffect(() => {
+    if (previousActiveRouteKeyForPendingRef.current === activeRouteKey) return;
+    previousActiveRouteKeyForPendingRef.current = activeRouteKey;
+    // Whatever just settled — our own delayed navigate() landing on the
+    // new note, or the user navigating somewhere else entirely during the
+    // delay — the override has done its job or is now stale either way.
+    setPendingActiveLocalId(null);
+  }, [activeRouteKey]);
 
   /*
    * A newly-created local note is disposable until the user actually puts
@@ -253,22 +318,30 @@ export function AppLayout() {
 
   useEffect(() => {
     const previousLocalId = previousActiveLocalIdRef.current;
+    previousActiveLocalIdRef.current = activeLocalId;
 
-    if (previousLocalId !== null && previousLocalId !== activeLocalId) {
+    if (previousLocalId === null || previousLocalId === activeLocalId) {
+      return;
+    }
+
+    /*
+     * The delay lives around the deletion only, not the ref update above —
+     * that has to stay synchronous so the NEXT navigation still computes
+     * the right "previous" id. A rapid second navigation away before this
+     * timer fires cancels it via the cleanup below rather than deleting a
+     * note that may no longer even be the blank one this effect first saw.
+     */
+    const timer = setTimeout(() => {
       void noteRepository.getByLocalId(previousLocalId).then((row) => {
-        if (
-          row &&
-          row.serverId === null &&
-          row.deleted === 0 &&
-          row.title.trim() === '' &&
-          row.content.trim() === ''
-        ) {
+        if (row && row.serverId === null && row.deleted === 0 && isEmptyNote(row)) {
           void noteRepository.hardDelete(previousLocalId);
         }
       });
-    }
+    }, NOTE_LIFECYCLE_DELAY_MS);
 
-    previousActiveLocalIdRef.current = activeLocalId;
+    return () => {
+      clearTimeout(timer);
+    };
   }, [activeLocalId]);
 
   const activeNoteRow = useLiveQuery(async () => {
@@ -325,10 +398,42 @@ export function AppLayout() {
   const notificationsRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
+  /*
+   * Mirrors of the two state values above, kept current on every render
+   * (a plain assignment during render, not an effect — mutating a ref this
+   * way takes effect immediately and does not itself trigger a re-render,
+   * so it's safe here). Read by requestNotificationsClose BELOW instead of
+   * closing over notificationsOpen/notificationsClosing directly, which is
+   * what lets that callback keep an empty dependency array and a genuinely
+   * stable identity across renders.
+   *
+   * That stability is load-bearing, not cosmetic: the route-change effect
+   * further down lists requestNotificationsClose in its own dependency
+   * array (so it always calls the latest version, per the exhaustive-deps
+   * rule) but is only MEANT to re-run when location.pathname actually
+   * changes. Before these refs existed, requestNotificationsClose was a
+   * useCallback keyed on [notificationsOpen, notificationsClosing] — a
+   * brand new function identity every time either state changed. Opening
+   * the panel (setNotificationsOpen(true)) is itself one of those state
+   * changes, so the moment the panel opened, the route effect saw its
+   * "requestNotificationsClose" dependency change, reran on that basis
+   * alone (pathname hadn't moved at all), and immediately called the
+   * now-passing-its-guard requestNotificationsClose() — closing the panel
+   * in the same tick it opened. That's the "just flashes" bug: the enter
+   * animation never got to play because the exit animation was already
+   * queued a frame later. Keeping requestNotificationsClose stable removes
+   * the false trigger, so the route effect now only ever fires on a real
+   * pathname change, exactly as intended.
+   */
+  const notificationsOpenRef = useRef(notificationsOpen);
+  notificationsOpenRef.current = notificationsOpen;
+  const notificationsClosingRef = useRef(notificationsClosing);
+  notificationsClosingRef.current = notificationsClosing;
+
   const requestNotificationsClose = useCallback(() => {
-    if (!notificationsOpen || notificationsClosing) return;
+    if (!notificationsOpenRef.current || notificationsClosingRef.current) return;
     setNotificationsClosing(true);
-  }, [notificationsOpen, notificationsClosing]);
+  }, []);
 
   function handleNotificationsAnimationEnd(event: AnimationEvent<HTMLDivElement>) {
     if (
@@ -578,7 +683,20 @@ export function AppLayout() {
                 syncState: 'synced' as const,
               };
 
+              // Unblocked — this is what starts the sidebar's own enter
+              // animation for the new row, immediately on click.
               await noteRepository.put(row);
+
+              // See pendingActiveLocalId's own comment above: the new row
+              // should slide in already highlighted, not pick up the
+              // highlight only once navigate() below actually lands.
+              setPendingActiveLocalId(row.localId);
+
+              // See NOTE_LIFECYCLE_DELAY_MS's own comment above: held here,
+              // between the write and the navigate, so the main pane's
+              // instant swap to the new note lands a beat into the
+              // sidebar's animation rather than on its very first frame.
+              await delay(NOTE_LIFECYCLE_DELAY_MS);
 
               void navigate(`/notes/local/${row.localId}`, {
                 replace: true,
@@ -759,7 +877,12 @@ export function AppLayout() {
             every single authenticated page load.
           */}
           {notes && notes.length > 0 ? (
-            <AnimatedSidebarNoteList notes={notes} />
+            <AnimatedSidebarNoteList
+              notes={notes}
+              activeLocalId={activeLocalId}
+              activeNoteId={activeNoteId}
+              pendingActiveLocalId={pendingActiveLocalId}
+            />
           ) : null}
 
           {notes && notes.length === 0 ? (

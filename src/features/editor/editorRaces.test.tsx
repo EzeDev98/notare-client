@@ -48,7 +48,7 @@ describe('one request at a time', () => {
 
     server.use(
       http.get(`${BASE}/notes/:noteId`, () =>
-        HttpResponse.json(makeNote({ id: 1, title: 'Note', content: '', version: 0 })),
+        HttpResponse.json(makeNote({ id: 1, content: '', version: 0 })),
       ),
       http.patch(`${BASE}/notes/:noteId`, async ({ request }) => {
         outstanding += 1;
@@ -153,7 +153,6 @@ describe('switching notes', () => {
         HttpResponse.json(
           makeNote({
             id: Number(params['noteId']),
-            title: `Note ${String(params['noteId'])}`,
             content: `Body ${String(params['noteId'])}`,
           }),
         ),

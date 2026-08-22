@@ -64,7 +64,7 @@ export const noteService = {
   },
 
   /**
-   * Keyword search over title and content.
+   * Keyword search over content.
    *
    * The parameter is `query`. It is required — a blank string means "match
    * everything" for notes, but the parameter itself must be present.
@@ -111,7 +111,7 @@ export const noteService = {
   /**
    * FULL REPLACEMENT. Both fields are sent and null CLEARS.
    *
-   * The dangerous one. Sending { title: 'x', content: null } erases the body.
+   * The dangerous one. Sending { content: null } erases the body.
    * The type makes that explicit rather than accidental: both fields are
    * required, so you cannot omit content and hope.
    */
@@ -185,8 +185,8 @@ export const noteService = {
    * All four return the full note so the caller can adopt the new version.
    * Owner-only: there is deliberately no shared-notes counterpart.
    *
-   * NOT AVAILABLE OFFLINE. The sync protocol carries title, content and
-   * version only, so a pin made offline cannot be queued. Step 8 disables
+   * NOT AVAILABLE OFFLINE. The sync protocol carries content and version
+   * only, so a pin made offline cannot be queued. Step 8 disables
    * these rather than applying them locally and losing them on the next pull.
    */
   setPinned(noteId: number, pinned: boolean, { signal }: Cancellable = {}): Promise<NoteResponse> {

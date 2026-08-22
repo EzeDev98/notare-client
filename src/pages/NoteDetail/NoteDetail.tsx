@@ -1,4 +1,3 @@
-
 import { Link, useParams } from 'react-router';
 
 import { useAuth } from '@/app/providers/auth-context';
@@ -10,14 +9,35 @@ import { VoiceRecorder, type VoiceUploadHandle } from '@/features/voice/componen
 import { useUploadVoiceNote } from '@/features/voice/hooks/useVoiceNoteMutations';
 import { useVoiceNotesByNote } from '@/features/voice/hooks/useVoiceNotes';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
+import { useDelayedFlag } from '@/shared/hooks/useDelayedFlag';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './NoteDetail.css';
+
+/*
+ * A note switch that lands on this route fresh (local <-> server, or the
+ * very first note opened this session) remounts this page — see
+ * RouteTransition's own comment on why local and server notes are
+ * different route DEFINITIONS even though they're the same editor
+ * visually. useNote's Dexie query always takes at least one render tick to
+ * answer, even for a note already cached on this device, so a fresh mount
+ * always passes through `status: 'loading'` at least once however briefly.
+ * For an already-synced note that tick resolves fast enough that showing
+ * the spinner immediately just reads as a flash — appear, disappear,
+ * nothing gained. Waiting this long before actually revealing it means a
+ * fast resolution (the common case) never shows it at all, while a
+ * genuinely slow one (offline, never-cached) still does.
+ */
+const LOADING_SPINNER_DELAY_MS = 150;
 
 export function NoteDetailPage() {
   const { noteId: noteIdParam } = useParams();
   const serverId = parseNoteId(noteIdParam);
 
   const state = useNote(serverId);
+  const showLoadingSpinner = useDelayedFlag(
+    state.status === 'loading',
+    LOADING_SPINNER_DELAY_MS,
+  );
   const { state: authState } = useAuth();
   const currentUserId =
     authState.status === 'authenticated' || authState.status === 'refreshing'
@@ -72,7 +92,7 @@ export function NoteDetailPage() {
           <Link to="/notes">← All notes</Link>
         </nav>
 
-        {state.status === 'loading' ? (
+        {state.status === 'loading' && showLoadingSpinner ? (
           <div className="note-detail__centre">
             <Spinner label="Loading this note" />
           </div>
@@ -148,7 +168,7 @@ export function NoteDetailPage() {
         scrolled — "firm and intact", not shaky.
       */}
       {state.status === 'ready' && state.row.serverId !== null ? (
-        <VoiceRecorder upload={upload} />
+        <VoiceRecorder upload={upload} noteId={state.row.serverId} />
       ) : null}
     </article>
   );

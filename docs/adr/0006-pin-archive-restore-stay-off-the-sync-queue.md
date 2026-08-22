@@ -26,7 +26,7 @@ action, and every type added is another branch in the batch handler and
 another conflict case. This is a decision already made, not a gap to patch.
 
 Checked directly before deciding this: `SyncOperationRequest`, the DTO an
-`UPDATE` operation actually carries, has fields for `title`, `content`, and
+`UPDATE` operation actually carries, has fields for `content` and
 `version` only. There is no field for `pinned` or `archived`. "Fold it into
 UPDATE" is not a free option — it requires the same DTO change, on the same
 server, as adding dedicated operation types would. Both routes reopen the
@@ -62,7 +62,7 @@ its real job") — it was never going to be 8A's.
 
 ## Consequences
 
-- `listDirty()` needs to distinguish "dirty from an unsent content/title
+- `listDirty()` needs to distinguish "dirty from an unsent content
   change" (the outbox's concern) from "dirty only from an unsent
   pin/archive/restore" (8F's concern) before 8A's schema is finalized — a
   single `dirty: 0 | 1` bit cannot answer that question today. This is 8A's

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -194,9 +194,11 @@ describe('notifications list', () => {
     expect(dialog).toHaveTextContent('Delete this notification?');
     expect(dialog).toHaveTextContent("This can't be undone.");
 
-    await user.click(
-      dialog.querySelector('button[data-variant="danger"]') as HTMLButtonElement,
-    );
+    // Modal.tsx's confirm button always renders as the "primary" variant —
+    // there is no "danger" one to select on. Query it the same way every
+    // other confirmation dialog in this app does: by its accessible name,
+    // scoped to the dialog so it can't match the row's own "Delete" button.
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
 
     await waitFor(() => {
       expect(screen.queryByText('Q3 Plan', { exact: false })).not.toBeInTheDocument();

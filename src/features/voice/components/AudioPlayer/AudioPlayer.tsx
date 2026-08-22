@@ -17,7 +17,21 @@ interface AudioPlayerProps {
  * trade-off.
  */
 export function AudioPlayer({ voiceNoteId }: AudioPlayerProps) {
-  const blob = useAudioBlob(voiceNoteId);
+  /*
+   * `enabled: true` — this component IS the dedicated player (native
+   * `<audio controls>`, always visible once mounted, no separate play
+   * button of its own gating it). `useAudioBlob`'s `enabled` parameter
+   * defaults to `false` specifically so a lazy consumer like
+   * `InlineVoiceNote` can defer the download until its own play button is
+   * pressed; leaving it at that default here meant the effect's own
+   * `if (voiceNoteId === null || !enabled)` guard was true on every
+   * render, so `voiceService.downloadVoiceNoteBlob` was never called at
+   * all — `blob.status` sat at `'idle'` forever, which this component
+   * renders identically to `'loading'` (see the check below), producing
+   * exactly the "loads indefinitely, never plays" symptom: no network
+   * request for the audio ever went out because none was ever asked for.
+   */
+  const blob = useAudioBlob(voiceNoteId, true);
 
   if (blob.status !== 'ready') {
     if (blob.status === 'error') {

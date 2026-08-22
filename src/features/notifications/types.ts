@@ -3,7 +3,7 @@ import type { ServerDateTime } from '@/lib/http/types';
 /**
  * NOTARE-SERVER.md §10: "A notification is a historical record, not a live
  * view." Everything here follows from that — `targetLabel` is a SNAPSHOT
- * taken at write time (e.g. a note's title at the moment it was shared),
+ * taken at write time (e.g. a note's name at the moment it was shared),
  * not a live join. If the note is later renamed or deleted, this string
  * does not change and does not go missing — reading it fresh each time
  * would silently rewrite history.

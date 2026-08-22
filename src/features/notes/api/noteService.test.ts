@@ -73,7 +73,7 @@ describe('reads', () => {
     const page = await noteService.searchNotes('meeting');
 
     expect(lastRequest?.url).toContain('query=meeting');
-    expect(page.content[0]?.title).toBe('meeting');
+    expect(page.content[0]?.contentPreview).toBe('meeting');
   });
 
   it('percent-encodes a wildcard so it reaches the server literally', async () => {
@@ -102,18 +102,19 @@ describe('reads', () => {
 
 describe('auto-save', () => {
   it('sends only the fields being changed', async () => {
-    await noteService.autoSaveNote(1, { title: 'New title', version: 3 });
+    await noteService.autoSaveNote(1, { version: 3 });
 
     const body = lastBody as Record<string, unknown>;
 
-    // An omitted field means "leave it alone". Sending content here — even as
-    // null — would clear the note body, because that is PUT's verb.
-    expect(body).toEqual({ title: 'New title', version: 3 });
+    // An omitted field means "leave it alone" — content is the only other
+    // field auto-save carries, and skipping it here confirms it never rides
+    // along uninvited.
+    expect(body).toEqual({ version: 3 });
     expect(body).not.toHaveProperty('content');
   });
 
   it('returns the server version for the caller to adopt', async () => {
-    const note = await noteService.autoSaveNote(1, { title: 'x', version: 3 });
+    const note = await noteService.autoSaveNote(1, { content: 'x', version: 3 });
 
     /*
      * ECHOED, NEVER COUNTED. The client quotes the version it last received;
@@ -126,7 +127,7 @@ describe('auto-save', () => {
     server.use(http.patch(`${BASE}/notes/:noteId`, () => noteConflict(9)));
 
     const error = await noteService
-      .autoSaveNote(1, { title: 'x', version: 3 })
+      .autoSaveNote(1, { content: 'x', version: 3 })
       .catch((e: unknown) => e);
 
     expect(isConflict(error)).toBe(true);
@@ -143,7 +144,7 @@ describe('auto-save', () => {
     server.use(http.patch(`${BASE}/notes/:noteId`, () => bareConflict()));
 
     const error = await noteService
-      .autoSaveNote(1, { title: 'x', version: 3 })
+      .autoSaveNote(1, { content: 'x', version: 3 })
       .catch((e: unknown) => e);
 
     expect(isConflict(error)).toBe(true);
@@ -153,20 +154,20 @@ describe('auto-save', () => {
 
 describe('writes', () => {
   it('creates a note', async () => {
-    const note = await noteService.createNote({ title: 'Fresh' });
+    const note = await noteService.createNote({ content: 'Fresh' });
 
-    expect(note.title).toBe('Fresh');
+    expect(note.content).toBe('Fresh');
     expect(note.version).toBe(0);
   });
 
-  it('sends both fields on a full update, where null clears', async () => {
-    await noteService.updateNote(1, { title: 'Kept', content: null, version: 2 });
+  it('sends content and version on a full update, where null clears', async () => {
+    await noteService.updateNote(1, { content: null, version: 2 });
 
     const body = lastBody as Record<string, unknown>;
 
     // Explicit null, not omission. The type requires both fields precisely so
     // this cannot happen by accident.
-    expect(body).toEqual({ title: 'Kept', content: null, version: 2 });
+    expect(body).toEqual({ content: null, version: 2 });
   });
 
   it('resolves with nothing for a 204 permanent delete', async () => {

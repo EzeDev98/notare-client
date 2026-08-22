@@ -18,7 +18,7 @@
 4. **NOT_FOUND.** The outbox row is cleared and the local note is hard
    deleted.
 5. **INVALID.** The outbox row is cleared (never retried); the note is
-   stamped `syncState: 'invalid'`; title and content are left untouched.
+   stamped `syncState: 'invalid'`; content is left untouched.
 
 ## Context
 

@@ -21,13 +21,13 @@ describe('keepBoth', () => {
   it('merges both versions, losing nobody’s words', async () => {
     server.use(
       http.get(`${BASE}/notes/:noteId`, () =>
-        HttpResponse.json(makeNote({ id: 1, title: 'Shared', content: 'their words', version: 7 })),
+        HttpResponse.json(makeNote({ id: 1, content: 'their words', version: 7 })),
       ),
       http.patch(`${BASE}/notes/:noteId`, () => noteConflict(7)),
     );
 
     const { result } = renderHook(() =>
-      useNoteEditor(makeRow({ serverId: 1, title: 'Shared', content: 'original', version: 0 })),
+      useNoteEditor(makeRow({ serverId: 1, content: 'original', version: 0 })),
     );
 
     act(() => {
