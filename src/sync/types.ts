@@ -26,7 +26,6 @@ export interface SyncOperationRequest {
   type: SyncOperationType;
   clientId?: string;
   noteId?: number;
-  title?: string;
   content?: string;
   version?: number;
 }

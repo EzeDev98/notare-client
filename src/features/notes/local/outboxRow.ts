@@ -1,7 +1,7 @@
 /*
  * The outbox's row shape lives with the notes feature, for the same reason
- * noteRow.ts does: it describes titles, versions, and server ids, and none of
- * that is infrastructure lib/db could own without importing a note.
+ * noteRow.ts does: it describes content, versions, and server ids, and none
+ * of that is infrastructure lib/db could own without importing a note.
  */
 
 /**
@@ -54,8 +54,13 @@ export interface OutboxRow {
   /** UPDATE and DELETE only. Null for CREATE — the note has no server id yet. */
   noteId: number | null;
 
-  /** CREATE and UPDATE. Null for DELETE, which carries no content. */
-  title: string | null;
+  /**
+   * CREATE and UPDATE. Null for DELETE, which carries no content.
+   *
+   * No `title` field alongside it (5A) — the note domain has none, and
+   * dropping it here means it was never re-added by the one path that could
+   * have smuggled it back in: a queued operation waiting to be pushed.
+   */
   content: string | null;
 
   /** UPDATE only — the version this edit was based on, echoed for the conflict check. */

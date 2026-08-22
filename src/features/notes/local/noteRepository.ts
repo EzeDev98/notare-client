@@ -65,26 +65,6 @@ function byRecent(a: NoteRow, b: NoteRow): number {
   return b.localUpdatedAt - a.localUpdatedAt;
 }
 
-/**
- * Ranks a title match above a content-only match, then falls back to recency.
- *
- * `needle` is already lower-cased by the caller — done once per search
- * rather than once per comparison.
- *
- * Content-only results are not excluded, but a note whose TITLE contains the
- * term is what a user typing a word is almost always looking for, and burying
- * it under a dozen notes that merely mention the word in passing would make
- * the ranking feel broken even though every result is technically correct.
- */
-function bySearchRank(needle: string) {
-  return (a: NoteRow, b: NoteRow): number => {
-    const aTitleMatch = a.title.toLowerCase().includes(needle);
-    const bTitleMatch = b.title.toLowerCase().includes(needle);
-    if (aTitleMatch !== bTitleMatch) return aTitleMatch ? -1 : 1;
-    return b.localUpdatedAt - a.localUpdatedAt;
-  };
-}
-
 export const noteRepository = {
   /** The main list: mine, not trashed, not archived. */
   async listActive(ownerId: number): Promise<NoteRow[]> {
@@ -137,7 +117,12 @@ export const noteRepository = {
   },
 
   /**
-   * Searches title and content, locally. (7G)
+   * Searches content, locally. (7G)
+   *
+   * CONTENT ONLY — 1B/4F: the note domain has no title field to search
+   * separately any more, and there is no longer a title-match-ranks-first
+   * tier (`bySearchRank`, removed) to apply on top of it. Recency (`byRecent`)
+   * is the whole ordering now, same as the trash and conflicts lists.
    *
    * A SUBSTRING SCAN, not an inverted index. This is one person's own notes,
    * not a search engine over a shared corpus — the realistic dataset size
@@ -163,12 +148,10 @@ export const noteRepository = {
         [ownerId, 0, 0],
         [ownerId, 0, 1],
       ])
-      .filter(
-        (row) => row.title.toLowerCase().includes(needle) || row.content.toLowerCase().includes(needle),
-      )
+      .filter((row) => row.content.toLowerCase().includes(needle))
       .toArray();
 
-    return rows.sort(bySearchRank(needle));
+    return rows.sort(byRecent);
   },
 
   getByLocalId(localId: string): Promise<NoteRow | undefined> {
@@ -204,7 +187,7 @@ export const noteRepository = {
    */
   applyLocalEdit(
     localId: string,
-    changes: Partial<Pick<NoteRow, 'title' | 'content' | 'pinned' | 'archived'>>,
+    changes: Partial<Pick<NoteRow, 'content' | 'pinned' | 'archived'>>,
   ): Promise<void> {
     return db.transaction('rw', db.notes, async () => {
       const existing = await db.notes.get(localId);
@@ -357,8 +340,8 @@ export const noteRepository = {
    *
    * "Do not retry" (architecture doc) means the outbox row is gone — the
    * CALLER (push.ts) removes it, same as every other terminal outcome. This
-   * method's job is narrower and just as important: `content` and `title`
-   * are NOT touched. The operation was rejected, not the user's text, and
+   * method's job is narrower and just as important: `content` is NOT
+   * touched. The operation was rejected, not the user's text, and
    * "never silently discard the user's text" is the one line in the spec
    * this method exists to honour. The row stays dirty and visible as
    * Unsaved; syncState: 'invalid' is what lets a future screen tell "still
@@ -377,8 +360,8 @@ export const noteRepository = {
    * Rows with local edits the server has not accepted.
    *
    * NOT simply "what Step 8's push reads" (ADR-006). `dirty` is one bit
-   * covering two different obligations: an unsent title/content
-   * edit-or-create, which the outbox (8A-8C) owns, and an unsent
+   * covering two different obligations: an unsent content edit-or-create,
+   * which the outbox (8A-8C) owns, and an unsent
    * pin/archive/restore, which 8F's reconnect retry owns instead — the
    * server's SyncOperationType has no room for the latter, deliberately.
    *
@@ -448,8 +431,8 @@ export const noteRepository = {
         const existing = await db.notes.where('serverId').equals(summary.id).first();
 
         // A summary carries no content, so a dirty row must not be touched at
-        // all — fromNoteSummary preserves content, but overwriting title and
-        // version on a row with unsent edits would lose them.
+        // all — fromNoteSummary preserves content, but overwriting version on
+        // a row with unsent edits would lose it.
         if (existing?.dirty === 1) continue;
 
         await db.notes.put(fromNoteSummary(summary, ownerId, existing));
@@ -535,21 +518,20 @@ export const outboxRepository = {
    * Called when a save attempt for a note with no serverId fails offline.
    * If this note already has a queued CREATE — a previous offline attempt,
    * or the user kept typing before this attempt's fetch even failed — its
-   * title/content are overwritten IN PLACE, same row, same operationId. A
-   * second row would violate the one-row invariant for no benefit: only the
-   * latest content will ever be worth sending.
+   * content is overwritten IN PLACE, same row, same operationId. A second
+   * row would violate the one-row invariant for no benefit: only the latest
+   * content will ever be worth sending.
    */
   async enqueueCreate(note: {
     localId: string;
     clientId: string;
-    title: string;
     content: string;
   }): Promise<void> {
     await db.transaction('rw', db.outbox, async () => {
       const existing = await db.outbox.where('localId').equals(note.localId).first();
 
       if (existing?.type === 'CREATE') {
-        await db.outbox.update(existing.id, { title: note.title, content: note.content });
+        await db.outbox.update(existing.id, { content: note.content });
         return;
       }
 
@@ -566,7 +548,6 @@ export const outboxRepository = {
         localId: note.localId,
         clientId: note.clientId,
         noteId: null,
-        title: note.title,
         content: note.content,
         version: null,
         queuedAt: Date.now(),
@@ -594,14 +575,13 @@ export const outboxRepository = {
     localId: string;
     noteId: number;
     version: number | null;
-    title: string;
     content: string;
   }): Promise<void> {
     await db.transaction('rw', db.outbox, async () => {
       const existing = await db.outbox.where('localId').equals(note.localId).first();
 
       if (existing?.type === 'UPDATE') {
-        await db.outbox.update(existing.id, { title: note.title, content: note.content });
+        await db.outbox.update(existing.id, { content: note.content });
         return;
       }
 
@@ -621,7 +601,6 @@ export const outboxRepository = {
         localId: note.localId,
         clientId: null,
         noteId: note.noteId,
-        title: note.title,
         content: note.content,
         version: note.version,
         queuedAt: Date.now(),
@@ -659,7 +638,6 @@ export const outboxRepository = {
         localId: note.localId,
         clientId: null,
         noteId: note.noteId,
-        title: null,
         content: null,
         version: null,
         queuedAt: Date.now(),
@@ -707,8 +685,8 @@ export const outboxRepository = {
   },
 
   /**
-   * Keeps an ALREADY-QUEUED row's title/content current as further local
-   * edits happen — a no-op if nothing is queued for this note.
+   * Keeps an ALREADY-QUEUED row's content current as further local edits
+   * happen — a no-op if nothing is queued for this note.
    *
    * Called from `setDraft` on EVERY edit, unconditionally, rather than
    * gated on `saveState.status === 'offline'`. That gate looks right but
@@ -724,11 +702,11 @@ export const outboxRepository = {
    * something a plain existence check on the outbox table answers
    * directly, with no window at all.
    */
-  async syncQueuedContent(localId: string, title: string, content: string): Promise<void> {
+  async syncQueuedContent(localId: string, content: string): Promise<void> {
     await db.transaction('rw', db.outbox, async () => {
       const existing = await db.outbox.where('localId').equals(localId).first();
       if (!existing) return;
-      await db.outbox.update(existing.id, { title, content });
+      await db.outbox.update(existing.id, { content });
     });
   },
 };

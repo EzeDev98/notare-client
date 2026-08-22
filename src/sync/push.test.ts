@@ -22,7 +22,6 @@ describe('pushOutbox — APPLIED', () => {
     await outboxRepository.enqueueCreate({
       localId: row.localId,
       clientId: row.clientId,
-      title: row.title,
       content: row.content,
     });
 
@@ -98,11 +97,10 @@ describe('pushOutbox — CONFLICT', () => {
       localId: row.localId,
       noteId: 7,
       version: 4,
-      title: row.title,
       content: row.content,
     });
 
-    const theirs = makeNote({ id: 7, version: 6, title: 'edited elsewhere' });
+    const theirs = makeNote({ id: 7, version: 6, content: 'edited elsewhere' });
     server.use(
       http.post(`${BASE}/sync/batch`, async ({ request }) => {
         const body = (await request.json()) as { operations: { operationId: string }[] };
@@ -133,7 +131,6 @@ describe('pushOutbox — CONFLICT', () => {
       localId: row.localId,
       noteId: 7,
       version: 4,
-      title: row.title,
       content: 'still queued',
     });
 
@@ -187,7 +184,6 @@ describe('pushOutbox — INVALID', () => {
     const row = makeRow({
       serverId: 3,
       localId: 'local-6',
-      title: 'Keep me',
       content: 'never discard this',
       dirty: 1,
     });
@@ -196,7 +192,6 @@ describe('pushOutbox — INVALID', () => {
       localId: row.localId,
       noteId: 3,
       version: 0,
-      title: 'Keep me',
       content: 'never discard this',
     });
 
@@ -208,7 +203,7 @@ describe('pushOutbox — INVALID', () => {
             {
               operationId: body.operations[0]?.operationId,
               status: 'INVALID',
-              message: 'title too long',
+              message: 'content too long',
             },
           ],
           appliedCount: 0,
@@ -222,7 +217,6 @@ describe('pushOutbox — INVALID', () => {
 
     const updated = await noteRepository.getByLocalId('local-6');
     expect(updated?.syncState).toBe('invalid');
-    expect(updated?.title).toBe('Keep me');
     expect(updated?.content).toBe('never discard this');
     expect(updated?.dirty).toBe(1); // still shown as Unsaved, not silently clean
     await expect(outboxRepository.count()).resolves.toBe(0); // not retried
@@ -236,7 +230,6 @@ describe('pushOutbox — transport failure', () => {
     await outboxRepository.enqueueCreate({
       localId: row.localId,
       clientId: row.clientId,
-      title: row.title,
       content: row.content,
     });
 

@@ -56,11 +56,6 @@
     color: var(--color-text-secondary);
   }
 
-  .conflict__title {
-    margin: var(--space-2) 0 0;
-    font-weight: var(--font-weight-medium);
-  }
-
   .conflict__body {
     margin-block-start: var(--space-3);
     max-block-size: 18rem;

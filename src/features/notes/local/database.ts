@@ -173,7 +173,6 @@ export class NotareDatabase extends Dexie {
               localId: note.localId,
               clientId: note.clientId,
               noteId: null,
-              title: note.title,
               content: note.content,
               version: null,
               queuedAt: now,
@@ -188,7 +187,6 @@ export class NotareDatabase extends Dexie {
               localId: note.localId,
               clientId: null,
               noteId: note.serverId,
-              title: null,
               content: null,
               version: null,
               queuedAt: now,
@@ -202,6 +200,45 @@ export class NotareDatabase extends Dexie {
         if (seeded.length > 0) {
           await tx.table<OutboxRow, number>('outbox').bulkAdd(seeded);
         }
+      });
+
+    /*
+     * VERSION 3 (5A). Drops the `title` column.
+     *
+     * No entry in `.stores({})` below — `title` was never an INDEX (the
+     * `notes` index list above never named it), so there is no index
+     * definition to remove. What this version exists for is the `.upgrade()`
+     * beneath it: `title` was removed from `NoteRow` and `OutboxRow`'s own
+     * TYPES back in 1B/5A, but IndexedDB stores whatever object it was given
+     * — a device that has had this app open since before that change still
+     * has a real `title` string sitting on every note and outbox row on
+     * disk, invisible to the type system but very much still there. A
+     * schema version bump is what runs code exactly once against every
+     * existing database below it; without one, "drop the title column"
+     * would only ever mean "stop writing it going forward," which is a
+     * different, weaker thing than what 1B/5A actually decided.
+     *
+     * `.modify()`, not a manual toArray/put loop like version 2 used —
+     * Dexie's own documented pattern for deleting an obsolete property, and
+     * it updates each record in place without reading the whole table into
+     * memory first.
+     */
+    this.version(3)
+      .stores({})
+      .upgrade(async (tx) => {
+        await tx
+          .table('notes')
+          .toCollection()
+          .modify((note: Record<string, unknown>) => {
+            delete note.title;
+          });
+
+        await tx
+          .table('outbox')
+          .toCollection()
+          .modify((row: Record<string, unknown>) => {
+            delete row.title;
+          });
       });
   }
 }

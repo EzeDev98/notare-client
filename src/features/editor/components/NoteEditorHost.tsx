@@ -57,7 +57,7 @@ export function NoteEditorHost({ row, currentUserId, contentAccessory }: NoteEdi
         <SaveIndicator state={editor.saveState} />
         <ConflictPanel
           conflict={editor.conflict}
-          mine={{ title: editor.row.title, content: editor.row.content }}
+          mine={{ content: editor.row.content }}
           byAnotherDevice={
             currentUserId !== null &&
             editor.conflict.status === 'ready' &&
@@ -94,13 +94,8 @@ export function NoteEditorHost({ row, currentUserId, contentAccessory }: NoteEdi
       </div>
 
       <EditorSurface
-        title={editor.row.title}
         content={editor.row.content}
-        hideTitle
-        onTitleChange={(value) => {
-          editor.setDraft({ title: value });
-          editor.markEdited();
-        }}
+        focusKey={editor.row.localId}
         onContentChange={(value) => {
           editor.setDraft({ content: value });
           editor.markEdited();

@@ -53,7 +53,7 @@ describe('Shared with me', () => {
     server.use(
       http.get(`${BASE}/shared-notes`, () =>
         HttpResponse.json(
-          makePage([makeSharedNoteSummary({ note: makeNoteSummary({ title: 'Cooking' }) })]),
+          makePage([makeSharedNoteSummary({ note: makeNoteSummary({ contentPreview: 'Cooking' }) })]),
         ),
       ),
       http.get(`${BASE}/shared-voice-notes`, () => HttpResponse.json(makePage([]))),
@@ -94,7 +94,7 @@ describe('Shared with me', () => {
       http.get(`${BASE}/shared-notes`, () =>
         HttpResponse.json(
           makePage([
-            makeSharedNoteSummary({ note: makeNoteSummary({ id: 42, title: 'Cooking' }) }),
+            makeSharedNoteSummary({ note: makeNoteSummary({ id: 42, contentPreview: 'Cooking' }) }),
           ]),
         ),
       ),
@@ -125,7 +125,7 @@ describe('Shared with me', () => {
         HttpResponse.json(
           makePage([
             makeSharedNoteSummary({
-              note: makeNoteSummary({ title: 'Older note' }),
+              note: makeNoteSummary({ contentPreview: 'Older note' }),
               sharedAt: '2026-08-01T09:00:00.000',
             }),
           ]),
@@ -177,7 +177,7 @@ describe('Shared with me', () => {
     server.use(
       http.get(`${BASE}/shared-notes`, () =>
         HttpResponse.json(
-          makePage([makeSharedNoteSummary({ note: makeNoteSummary({ title: 'Cooking' }) })]),
+          makePage([makeSharedNoteSummary({ note: makeNoteSummary({ contentPreview: 'Cooking' }) })]),
         ),
       ),
       http.get(`${BASE}/shared-voice-notes`, () => problemDetail(500)),
@@ -229,7 +229,7 @@ describe('Shared with me', () => {
       http.get(`${BASE}/shared-notes`, () =>
         HttpResponse.json(
           makePage([
-            makeSharedNoteSummary({ note: makeNoteSummary({ id: 42, title: 'Cooking' }) }),
+            makeSharedNoteSummary({ note: makeNoteSummary({ id: 42, contentPreview: 'Cooking' }) }),
           ]),
         ),
       ),

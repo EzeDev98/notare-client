@@ -21,7 +21,7 @@ import type { ServerDateTime } from '@/lib/http/types';
  * strings, so a future third permission level cannot silently slot into the
  * wrong place in a comparison we invented here.
  *
- * `WRITE` = edit title and content only. Never pin, archive, or delete — the
+ * `WRITE` = edit content only. Never pin, archive, or delete — the
  * server does not expose those actions on this path at all, and the UI must
  * not render those affordances for a shared note regardless of permission.
  */
@@ -66,11 +66,12 @@ export type SharedNoteDetailResponse = NoteResponse;
 /**
  * Full replacement — the body for `PUT /shared-notes/{noteId}`.
  *
- * Same shape as the owner's `UpdateNoteRequest` (both fields required, null
+ * Same shape as the owner's `UpdateNoteRequest` (content required, null
  * clears) because it is the SAME server-side write path under the hood:
  * `updateAuthorizedNote` is "character-for-character identical to
  * `updateNote` below the lookup" (NOTARE-SERVER.md §9) so the body it will
- * accept cannot differ from the owner's.
+ * accept cannot differ from the owner's. No `title` field — 1B/2D: the note
+ * domain has none.
  *
  * THERE IS NO PATCH EQUIVALENT. G7
  * (NOTARE-CLIENT-ARCHITECTURE.md §1.3): recipients get PUT only — the server
@@ -82,7 +83,6 @@ export type SharedNoteDetailResponse = NoteResponse;
  * on a timer.
  */
 export interface UpdateSharedNoteRequest {
-  title: string | null;
   content: string | null;
   version: number;
 }

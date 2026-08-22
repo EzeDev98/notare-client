@@ -1,0 +1,624 @@
+diff --git a/src/features/editor/components/ConflictPanel/ConflictPanel.css b/src/features/editor/components/ConflictPanel/ConflictPanel.css
+index f889156..496fa8f 100644
+--- a/src/features/editor/components/ConflictPanel/ConflictPanel.css
++++ b/src/features/editor/components/ConflictPanel/ConflictPanel.css
+@@ -56,11 +56,6 @@
+     color: var(--color-text-secondary);
+   }
+ 
+-  .conflict__title {
+-    margin: var(--space-2) 0 0;
+-    font-weight: var(--font-weight-medium);
+-  }
+-
+   .conflict__body {
+     margin-block-start: var(--space-3);
+     max-block-size: 18rem;
+diff --git a/src/features/editor/components/ConflictPanel/ConflictPanel.tsx b/src/features/editor/components/ConflictPanel/ConflictPanel.tsx
+index ef3458c..da581f7 100644
+--- a/src/features/editor/components/ConflictPanel/ConflictPanel.tsx
++++ b/src/features/editor/components/ConflictPanel/ConflictPanel.tsx
+@@ -8,11 +8,13 @@ import './ConflictPanel.css';
+  *
+  * Declared HERE rather than imported, because 7C deleted useNoteDraft — the
+  * draft now lives in Dexie and the editor reads it from the row. This panel
+- * needs the two fields it displays and nothing else, so a local type is
+- * honest: it no longer depends on how the draft is held, only on what it is.
++ * needs the field it displays and nothing else, so a local type is honest:
++ * it no longer depends on how the draft is held, only on what it is.
++ *
++ * No `title` — 1B/4D: the note domain has none, so there is nothing left
++ * to label each pane with beyond its own full content below.
+  */
+ interface ConflictSide {
+-  title: string;
+   content: string;
+ }
+ 
+@@ -91,8 +93,9 @@ export function ConflictPanel({
+         <article className="conflict__pane">
+           <h3 className="conflict__pane-title">Your version</h3>
+           {/* pre-wrap, matching the read view: the text is text, and newlines
+-              are preserved by CSS rather than by markup. */}
+-          <p className="conflict__title">{mine.title.trim() === '' ? 'Untitled' : mine.title}</p>
++              are preserved by CSS rather than by markup. No separate title
++              line above this (1B/4D) — it would just repeat the content's
++              own first line. */}
+           <div className="conflict__body">{mine.content}</div>
+         </article>
+ 
+@@ -100,9 +103,6 @@ export function ConflictPanel({
+           <h3 className="conflict__pane-title">
+             {byAnotherDevice ? 'Version on the server' : 'Their version'}
+           </h3>
+-          <p className="conflict__title">
+-            {(theirs.title ?? '').trim() === '' ? 'Untitled' : theirs.title}
+-          </p>
+           <div className="conflict__body">{theirs.content ?? ''}</div>
+         </article>
+       </div>
+diff --git a/src/features/notes/hooks/useDeleteNote.ts b/src/features/notes/hooks/useDeleteNote.ts
+index 07d9d57..0f25e1a 100644
+--- a/src/features/notes/hooks/useDeleteNote.ts
++++ b/src/features/notes/hooks/useDeleteNote.ts
+@@ -3,6 +3,7 @@ import { useCallback } from 'react';
+ import { useToast } from '@/app/providers/toast-context';
+ import { noteService } from '@/features/notes/api/noteService';
+ import type { NoteView } from '@/features/notes/local/noteMappers';
++import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
+ import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
+ import { isOffline } from '@/lib/http/errors';
+ 
+@@ -40,14 +41,17 @@ export function useDeleteNote() {
+ 
+   return useCallback(
+     async (note: NoteView) => {
+-      const label = note.title.trim();
++      // 1C: no title field — the note domain has none. deriveNoteLabel
++      // always returns something (falling back to "New Note"), so there is
++      // no "Note moved to trash." fallback case left to special-case here.
++      const label = deriveNoteLabel(note.content).label;
+ 
+       await noteRepository.setDeleted(note.localId, true);
+ 
+       const written = await noteRepository.getByLocalId(note.localId);
+ 
+       toast.show({
+-        message: label === '' ? 'Note moved to trash.' : `"${label}" moved to trash.`,
++        message: `"${label}" moved to trash.`,
+         action: {
+           label: 'Undo',
+           onAction: () => {
+diff --git a/src/features/notes/local/noteRepository.ts b/src/features/notes/local/noteRepository.ts
+index c279809..8b57601 100644
+--- a/src/features/notes/local/noteRepository.ts
++++ b/src/features/notes/local/noteRepository.ts
+@@ -65,26 +65,6 @@ function byRecent(a: NoteRow, b: NoteRow): number {
+   return b.localUpdatedAt - a.localUpdatedAt;
+ }
+ 
+-/**
+- * Ranks a title match above a content-only match, then falls back to recency.
+- *
+- * `needle` is already lower-cased by the caller — done once per search
+- * rather than once per comparison.
+- *
+- * Content-only results are not excluded, but a note whose TITLE contains the
+- * term is what a user typing a word is almost always looking for, and burying
+- * it under a dozen notes that merely mention the word in passing would make
+- * the ranking feel broken even though every result is technically correct.
+- */
+-function bySearchRank(needle: string) {
+-  return (a: NoteRow, b: NoteRow): number => {
+-    const aTitleMatch = a.title.toLowerCase().includes(needle);
+-    const bTitleMatch = b.title.toLowerCase().includes(needle);
+-    if (aTitleMatch !== bTitleMatch) return aTitleMatch ? -1 : 1;
+-    return b.localUpdatedAt - a.localUpdatedAt;
+-  };
+-}
+-
+ export const noteRepository = {
+   /** The main list: mine, not trashed, not archived. */
+   async listActive(ownerId: number): Promise<NoteRow[]> {
+@@ -137,7 +117,12 @@ export const noteRepository = {
+   },
+ 
+   /**
+-   * Searches title and content, locally. (7G)
++   * Searches content, locally. (7G)
++   *
++   * CONTENT ONLY — 1B/4F: the note domain has no title field to search
++   * separately any more, and there is no longer a title-match-ranks-first
++   * tier (`bySearchRank`, removed) to apply on top of it. Recency (`byRecent`)
++   * is the whole ordering now, same as the trash and conflicts lists.
+    *
+    * A SUBSTRING SCAN, not an inverted index. This is one person's own notes,
+    * not a search engine over a shared corpus — the realistic dataset size
+@@ -163,12 +148,10 @@ export const noteRepository = {
+         [ownerId, 0, 0],
+         [ownerId, 0, 1],
+       ])
+-      .filter(
+-        (row) => row.title.toLowerCase().includes(needle) || row.content.toLowerCase().includes(needle),
+-      )
++      .filter((row) => row.content.toLowerCase().includes(needle))
+       .toArray();
+ 
+-    return rows.sort(bySearchRank(needle));
++    return rows.sort(byRecent);
+   },
+ 
+   getByLocalId(localId: string): Promise<NoteRow | undefined> {
+diff --git a/src/pages/Conflicts/Conflicts.css b/src/pages/Conflicts/Conflicts.css
+index e1b3eb5..21d7ec4 100644
+--- a/src/pages/Conflicts/Conflicts.css
++++ b/src/pages/Conflicts/Conflicts.css
+@@ -60,11 +60,6 @@
+     color: var(--color-text-secondary);
+   }
+ 
+-  .conflicts__title {
+-    margin: var(--space-2) 0 0;
+-    font-weight: var(--font-weight-medium);
+-  }
+-
+   .conflicts__body {
+     margin-block-start: var(--space-3);
+     max-block-size: 14rem;
+diff --git a/src/pages/Conflicts/Conflicts.tsx b/src/pages/Conflicts/Conflicts.tsx
+index 35302ed..fd900b4 100644
+--- a/src/pages/Conflicts/Conflicts.tsx
++++ b/src/pages/Conflicts/Conflicts.tsx
+@@ -1,6 +1,7 @@
+ import { useAuth } from '@/app/providers/auth-context';
+ import { Button } from '@/design-system/components/Button/Button';
+ import { useConflicts } from '@/features/notes/hooks/useConflicts';
++import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
+ import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
+ import './Conflicts.css';
+ 
+@@ -51,23 +52,21 @@ export function ConflictsPage() {
+       {conflicts !== undefined && conflicts.length > 0 ? (
+         <ul className="conflicts__list" role="list">
+           {conflicts.map(({ note, theirs }) => {
+-            const mineTitle = note.title.trim() === '' ? 'Untitled' : note.title;
+-            const theirTitle = (theirs.title ?? '').trim() === '' ? 'Untitled' : theirs.title;
++            // 1C/4D: no title field — the note domain has none.
++            const mineLabel = deriveNoteLabel(note.content).label;
+ 
+             return (
+               <li className="conflicts__item" key={note.localId}>
+-                <h2 className="conflicts__item-heading">{mineTitle}</h2>
++                <h2 className="conflicts__item-heading">{mineLabel}</h2>
+ 
+                 <div className="conflicts__panes">
+                   <article className="conflicts__pane">
+                     <h3 className="conflicts__pane-title">Your version</h3>
+-                    <p className="conflicts__title">{mineTitle}</p>
+                     <div className="conflicts__body">{note.content}</div>
+                   </article>
+ 
+                   <article className="conflicts__pane">
+                     <h3 className="conflicts__pane-title">Version on the server</h3>
+-                    <p className="conflicts__title">{theirTitle}</p>
+                     <div className="conflicts__body">{theirs.content ?? ''}</div>
+                   </article>
+                 </div>
+diff --git a/src/pages/NoteDetail/LocalNoteDetail.tsx b/src/pages/NoteDetail/LocalNoteDetail.tsx
+index 5b0f8cd..7fb030f 100644
+--- a/src/pages/NoteDetail/LocalNoteDetail.tsx
++++ b/src/pages/NoteDetail/LocalNoteDetail.tsx
+@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router';
+ import { useAuth } from '@/app/providers/auth-context';
+ import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
+ import { useLocalNote } from '@/features/notes/hooks/useLocalNote';
++import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
+ import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
+ import './NoteDetail.css';
+ 
+@@ -37,8 +38,10 @@ export function LocalNoteDetailPage() {
+       ? authState.user.id
+       : null;
+ 
+-  const title = state.status === 'ready' ? state.row.title.trim() : '';
+-  useDocumentTitle(title === '' ? 'Untitled note' : title);
++  // 1C/4G: no title field — the note domain has none. Same pattern as
++  // NoteDetailPage's document title.
++  const label = state.status === 'ready' ? deriveNoteLabel(state.row.content).label : null;
++  useDocumentTitle(label ?? 'Note');
+ 
+ 
+   return (
+diff --git a/src/pages/NoteDetail/NoteDetail.tsx b/src/pages/NoteDetail/NoteDetail.tsx
+index 55d0127..ea7bd9d 100644
+--- a/src/pages/NoteDetail/NoteDetail.tsx
++++ b/src/pages/NoteDetail/NoteDetail.tsx
+@@ -5,6 +5,7 @@ import { useAuth } from '@/app/providers/auth-context';
+ import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
+ import { InlineVoiceNotes } from '@/features/voice/components/InlineVoiceNote/InlineVoiceNote';
+ import { parseNoteId, useNote } from '@/features/notes/hooks/useNote';
++import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
+ import { VoiceRecorder, type VoiceUploadHandle } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
+ import { useUploadVoiceNote } from '@/features/voice/hooks/useVoiceNoteMutations';
+ import { useVoiceNotesByNote } from '@/features/voice/hooks/useVoiceNotes';
+@@ -43,8 +44,11 @@ export function NoteDetailPage() {
+     isError: uploadMutation.isError,
+   };
+ 
+-  const title = state.status === 'ready' ? state.row.title.trim() : '';
+-  useDocumentTitle(title === '' ? 'Untitled note' : title);
++  // 1C/4G: no title field — the note domain has none. label is null only
++  // while the note hasn't loaded yet; deriveNoteLabel always returns
++  // something once ready, so there is no more separate "Untitled" case.
++  const label = state.status === 'ready' ? deriveNoteLabel(state.row.content).label : null;
++  useDocumentTitle(label ?? 'Note');
+ 
+ 
+   return (
+diff --git a/src/pages/Search/Search.test.tsx b/src/pages/Search/Search.test.tsx
+index 8cc05db..b92983a 100644
+--- a/src/pages/Search/Search.test.tsx
++++ b/src/pages/Search/Search.test.tsx
+@@ -29,27 +29,27 @@ function renderSearch(path = '/search') {
+ describe('searching', () => {
+   it('prompts rather than listing everything before a term is entered', async () => {
+     await resetDatabase();
+-    await seedNotes(makeRow({ title: 'Meeting notes' }));
++    await seedNotes(makeRow({ content: 'Meeting notes' }));
+ 
+     renderSearch();
+     await screen.findByRole('heading', { name: /search/i });
+ 
+-    expect(screen.getByText(/search across the titles/i)).toBeInTheDocument();
++    expect(screen.getByText(/search across the contents/i)).toBeInTheDocument();
+     expect(screen.queryByRole('link', { name: /meeting notes/i })).not.toBeInTheDocument();
+   });
+ 
+   it('runs a search from a term in the URL', async () => {
+     await resetDatabase();
+-    await seedNotes(makeRow({ title: 'Meeting notes' }));
++    await seedNotes(makeRow({ content: 'Meeting notes' }));
+ 
+     renderSearch('/search?q=meeting');
+ 
+     expect(await screen.findByRole('link', { name: /meeting notes/i })).toBeInTheDocument();
+   });
+ 
+-  it('matches on content as well as title', async () => {
++  it('matches on content beyond the label', async () => {
+     await resetDatabase();
+-    await seedNotes(makeRow({ title: 'Groceries', content: 'discuss budget in the meeting' }));
++    await seedNotes(makeRow({ content: 'Groceries\ndiscuss budget in the meeting' }));
+ 
+     const user = userEvent.setup();
+     renderSearch();
+@@ -60,7 +60,7 @@ describe('searching', () => {
+ 
+   it('reports the result count for a screen reader', async () => {
+     await resetDatabase();
+-    await seedNotes(makeRow({ title: 'Meeting notes' }));
++    await seedNotes(makeRow({ content: 'Meeting notes' }));
+ 
+     const user = userEvent.setup();
+     renderSearch();
+@@ -86,7 +86,7 @@ describe('searching', () => {
+ 
+   it('offers real actions, since a result is now a real local row', async () => {
+     await resetDatabase();
+-    await seedNotes(makeRow({ title: 'Meeting notes', pinned: 0 }));
++    await seedNotes(makeRow({ content: 'Meeting notes', pinned: 0 }));
+ 
+     const user = userEvent.setup();
+     renderSearch();
+@@ -101,7 +101,7 @@ describe('searching', () => {
+ 
+   it('drops a result from the list once it is deleted from here', async () => {
+     await resetDatabase();
+-    await seedNotes(makeRow({ title: 'Meeting notes' }));
++    await seedNotes(makeRow({ content: 'Meeting notes' }));
+ 
+     const user = userEvent.setup();
+     renderSearch();
+diff --git a/src/pages/Search/Search.tsx b/src/pages/Search/Search.tsx
+index f7e7cbb..6cbeaf3 100644
+--- a/src/pages/Search/Search.tsx
++++ b/src/pages/Search/Search.tsx
+@@ -78,7 +78,7 @@ export function SearchPage() {
+       </div>
+ 
+       {state.status === 'idle' ? (
+-        <p className="search__hint">Search across the titles and contents of all your notes.</p>
++        <p className="search__hint">Search across the contents of all your notes.</p>
+       ) : null}
+ 
+       {state.status === 'ready' ? (
+diff --git a/src/pages/ShareNote/ShareNote.css b/src/pages/ShareNote/ShareNote.css
+index e14cfa8..5e32308 100644
+--- a/src/pages/ShareNote/ShareNote.css
++++ b/src/pages/ShareNote/ShareNote.css
+@@ -13,11 +13,6 @@
+     margin: 0 0 var(--space-6);
+   }
+ 
+-  .share-note__untitled {
+-    color: var(--color-text-secondary);
+-    font-weight: var(--font-weight-normal);
+-  }
+-
+   .share-note__list {
+     display: grid;
+     gap: var(--space-3);
+diff --git a/src/pages/ShareNote/ShareNote.tsx b/src/pages/ShareNote/ShareNote.tsx
+index 89e453d..ed99705 100644
+--- a/src/pages/ShareNote/ShareNote.tsx
++++ b/src/pages/ShareNote/ShareNote.tsx
+@@ -5,6 +5,7 @@ import { UserX } from 'lucide-react';
+ import { useSentCollaborations } from '@/features/collaboration/hooks/useCollaborations';
+ import type { CollaborationResponse } from '@/features/collaboration/types';
+ import { parseNoteId, useNote } from '@/features/notes/hooks/useNote';
++import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
+ import { useCreateShare, useRevokeShare, useUpdateShare } from '@/features/sharing/hooks/useShareMutations';
+ import { useShares } from '@/features/sharing/hooks/useShares';
+ import type { NoteShareResponse, SharePermission } from '@/features/sharing/types';
+@@ -34,8 +35,12 @@ export function ShareNotePage() {
+   const noteId = parseNoteId(noteIdParam);
+ 
+   const noteState = useNote(noteId);
+-  const title = noteState.status === 'ready' ? noteState.row.title.trim() : '';
+-  useDocumentTitle(title === '' ? 'Share note' : `Share "${title}"`);
++  // 1C/4E: no title field — the note domain has none. `label` is null only
++  // while the note hasn't loaded yet; once ready, deriveNoteLabel always
++  // returns something (falling back to "New Note"), so there is no longer
++  // a separate "Untitled" case to special-case here.
++  const label = noteState.status === 'ready' ? deriveNoteLabel(noteState.row.content).label : null;
++  useDocumentTitle(label === null ? 'Share note' : `Share "${label}"`);
+ 
+   if (noteId === null) {
+     return (
+@@ -52,9 +57,7 @@ export function ShareNotePage() {
+   return (
+     <section className="share-note">
+       <ShareNoteChrome noteId={noteId} />
+-      <h1 className="share-note__title">
+-        Share {title === '' ? <span className="share-note__untitled">Untitled</span> : `"${title}"`}
+-      </h1>
++      <h1 className="share-note__title">{label === null ? 'Share' : `Share "${label}"`}</h1>
+       <ShareManager noteId={noteId} />
+     </section>
+   );
+diff --git a/src/pages/Trash/Trash.test.tsx b/src/pages/Trash/Trash.test.tsx
+index 6ed833a..d8090aa 100644
+--- a/src/pages/Trash/Trash.test.tsx
++++ b/src/pages/Trash/Trash.test.tsx
+@@ -30,7 +30,7 @@ describe('the trash', () => {
+   it('lists locally trashed notes without promising they expire', async () => {
+     // serverId 91, not 9: the default handler's trash page holds note 9, and a
+     // clean row would be overwritten by it mid-test.
+-    await seedNotes(makeRow({ serverId: 91, title: 'Old draft', deleted: 1 }));
++    await seedNotes(makeRow({ serverId: 91, content: 'Old draft', deleted: 1 }));
+ 
+     renderTrash();
+ 
+@@ -54,7 +54,7 @@ describe('the trash', () => {
+      */
+     server.use(http.get(`${BASE}/notes/trash`, () => HttpResponse.error()));
+ 
+-    await seedNotes(makeRow({ serverId: null, title: 'Written on a plane', deleted: 1, dirty: 1 }));
++    await seedNotes(makeRow({ serverId: null, content: 'Written on a plane', deleted: 1, dirty: 1 }));
+ 
+     renderTrash();
+ 
+@@ -75,7 +75,7 @@ describe('the trash', () => {
+         HttpResponse.json(
+           makePage([
+             {
+-              note: makeNoteSummary({ id: 21, title: 'From the server' }),
++              note: makeNoteSummary({ id: 21, contentPreview: 'From the server' }),
+               deletedAt: '2026-08-05T14:00:00.000',
+             },
+           ]),
+@@ -85,12 +85,19 @@ describe('the trash', () => {
+ 
+     renderTrash();
+ 
+-    expect(await screen.findByText('From the server')).toBeInTheDocument();
+-
+-    const stored = await noteRepository.getByServerId(21);
+-    expect(stored?.ownerId).toBe(1);
+-    expect(stored?.deleted).toBe(1);
+-    expect(stored?.deletedAt).toBe('2026-08-05T14:00:00.000');
++    // Waits on the row landing in Dexie directly, rather than on rendered
++    // text: a brand-new row synced from a trash SUMMARY has no local
++    // `content` yet (fromNoteSummary only ever backfills from `existing`,
++    // never from `contentPreview` — a separate, pre-existing gap outside
++    // title removal's scope), so there is no label text here to assert on.
++    const stored = await waitFor(async () => {
++      const row = await noteRepository.getByServerId(21);
++      if (!row) throw new Error('row not synced yet');
++      return row;
++    });
++    expect(stored.ownerId).toBe(1);
++    expect(stored.deleted).toBe(1);
++    expect(stored.deletedAt).toBe('2026-08-05T14:00:00.000');
+   });
+ 
+   it('requires a second click before deleting forever', async () => {
+@@ -102,7 +109,7 @@ describe('the trash', () => {
+       }),
+     );
+ 
+-    await seedNotes(makeRow({ serverId: 9, title: 'Note 9', deleted: 1 }));
++    await seedNotes(makeRow({ serverId: 9, content: 'Note 9', deleted: 1 }));
+ 
+     const user = userEvent.setup();
+     renderTrash();
+@@ -127,7 +134,7 @@ describe('the trash', () => {
+   it('keeps the note when a permanent delete fails, because there is no undo', async () => {
+     server.use(http.delete(`${BASE}/notes/:noteId/permanent`, () => HttpResponse.error()));
+ 
+-    await seedNotes(makeRow({ serverId: 9, title: 'Note 9', deleted: 1 }));
++    await seedNotes(makeRow({ serverId: 9, content: 'Note 9', deleted: 1 }));
+ 
+     const user = userEvent.setup();
+     renderTrash();
+@@ -144,7 +151,7 @@ describe('the trash', () => {
+   it('restores locally first, so it works with no connection', async () => {
+     server.use(http.post(`${BASE}/notes/:noteId/restore`, () => HttpResponse.error()));
+ 
+-    const row = makeRow({ serverId: 9, title: 'Note 9', deleted: 1 });
++    const row = makeRow({ serverId: 9, content: 'Note 9', deleted: 1 });
+     await seedNotes(row);
+ 
+     const user = userEvent.setup();
+@@ -167,7 +174,7 @@ describe('the trash', () => {
+   it('cancels a queued DELETE when a note is restored before that delete ever reached the server (8B)', async () => {
+     server.use(http.post(`${BASE}/notes/:noteId/restore`, () => HttpResponse.error()));
+ 
+-    const row = makeRow({ serverId: 9, title: 'Note 9', deleted: 1 });
++    const row = makeRow({ serverId: 9, content: 'Note 9', deleted: 1 });
+     await seedNotes(row);
+     await outboxRepository.enqueueDelete({ localId: row.localId, noteId: 9 });
+ 
+@@ -182,7 +189,7 @@ describe('the trash', () => {
+   });
+ 
+   it('adopts the version the server returns on a successful restore', async () => {
+-    const row = makeRow({ serverId: 9, title: 'Note 9', deleted: 1, version: 3 });
++    const row = makeRow({ serverId: 9, content: 'Note 9', deleted: 1, version: 3 });
+     await seedNotes(row);
+ 
+     const user = userEvent.setup();
+diff --git a/src/pages/Trash/Trash.tsx b/src/pages/Trash/Trash.tsx
+index 5bbcc90..66a9a7e 100644
+--- a/src/pages/Trash/Trash.tsx
++++ b/src/pages/Trash/Trash.tsx
+@@ -3,6 +3,7 @@ import { NotebookPen } from 'lucide-react';
+ 
+ import { NoteTabs } from '@/features/notes/components/NoteTabs/NoteTabs';
+ import { useTrash } from '@/features/notes/hooks/useTrash';
++import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
+ import { Button } from '@/design-system/components/Button/Button';
+ import { Modal } from '@/design-system/components/Modal/Modal';
+ import { formatServerDateTimeRelative } from '@/lib/time';
+@@ -64,8 +65,8 @@ export function TrashPage() {
+       {notes !== undefined && notes.length > 0 ? (
+         <ul className="trash__list" role="list">
+           {notes.map((note) => {
+-            const title = note.title.trim();
+-            const label = title === '' ? 'Untitled' : title;
++            // 1C/4D: no title field — the note domain has none.
++            const label = deriveNoteLabel(note.content).label;
+ 
+             return (
+               <li className="trash__item" key={note.localId}>
+@@ -113,7 +114,7 @@ export function TrashPage() {
+           icon={<NotebookPen aria-hidden="true" />}
+           description={
+             <>
+-              Delete <strong>{confirmingNote.title.trim() || 'Untitled'}</strong>{' '}
++              Delete <strong>{deriveNoteLabel(confirmingNote.content).label}</strong>{' '}
+               forever? This action cannot be undone.
+             </>
+           }
+diff --git a/src/sync/conflicts.test.ts b/src/sync/conflicts.test.ts
+index e231a1b..c65b95a 100644
+--- a/src/sync/conflicts.test.ts
++++ b/src/sync/conflicts.test.ts
+@@ -35,13 +35,12 @@ function acceptAnyPush() {
+ 
+ describe('resolveKeepMine', () => {
+   it('adopts the server version, clears the conflict, and requeues the row for push', async () => {
+-    const theirs = makeNote({ id: 30, version: 5, title: 'Server title', content: 'Server body' });
++    const theirs = makeNote({ id: 30, version: 5, content: 'Server body' });
+     const row = makeRow({
+       serverId: 30,
+       localId: 'local-30',
+       dirty: 1,
+       version: 3,
+-      title: 'My title',
+       content: 'My body',
+       syncState: 'conflict',
+       conflictNote: theirs,
+@@ -52,7 +51,9 @@ describe('resolveKeepMine', () => {
+     await resolveKeepMine('local-30');
+ 
+     const resolved = await noteRepository.getByLocalId('local-30');
+-    expect(resolved?.title).toBe('My title');
++    // 1B/4F: keeping mine leaves the row's own content untouched — no
++    // title exists to have carried over separately.
++    expect(resolved?.content).toBe('My body');
+     /*
+      * NOT theirs.version (5). resolveKeepMine sets that as an intermediate
+      * step so the requeued push isn't stale against it, but requeue() awaits
+@@ -79,13 +80,12 @@ describe('resolveKeepMine', () => {
+ 
+ describe('resolveUseTheirs', () => {
+   it('replaces the row with the server copy and drops anything queued for it', async () => {
+-    const theirs = makeNote({ id: 40, version: 7, title: 'Server title', content: 'Server body' });
++    const theirs = makeNote({ id: 40, version: 7, content: 'Server body' });
+     const row = makeRow({
+       serverId: 40,
+       localId: 'local-40',
+       dirty: 1,
+       version: 3,
+-      title: 'My title',
+       content: 'My body',
+       syncState: 'conflict',
+       conflictNote: theirs,
+@@ -102,7 +102,9 @@ describe('resolveUseTheirs', () => {
+     await resolveUseTheirs('local-40');
+ 
+     const resolved = await noteRepository.getByLocalId('local-40');
+-    expect(resolved?.title).toBe('Server title');
++    // 1B/4F: using theirs replaces the row wholesale — content is the
++    // only field left carrying the server's version.
++    expect(resolved?.content).toBe('Server body');
+     expect(resolved?.dirty).toBe(0);
+     expect(resolved?.syncState).toBe('synced');
+     expect(resolved?.conflictNote).toBeNull();
+@@ -115,7 +117,6 @@ describe('resolveKeepBoth', () => {
+     const theirs = makeNote({
+       id: 50,
+       version: 2,
+-      title: 'Server title',
+       content: 'Server body',
+     });
+     const row = makeRow({
+@@ -123,7 +124,6 @@ describe('resolveKeepBoth', () => {
+       localId: 'local-50',
+       dirty: 1,
+       version: 1,
+-      title: 'My title',
+       content: 'My body',
+       syncState: 'conflict',
+       conflictNote: theirs,
+@@ -135,7 +135,6 @@ describe('resolveKeepBoth', () => {
+ 
+     const resolved = await noteRepository.getByLocalId('local-50');
+     expect(resolved?.content).toBe('Server body\n\n--- Your version ---\n\nMy body');
+-    expect(resolved?.title).toBe('Server title / My title');
+     // Same reasoning as resolveKeepMine's test: requeue() awaits the push,
+     // and acceptAnyPush() fixes the applied version at 9 regardless of what
+     // was sent — not theirs.version (2), which is only an intermediate value.
+@@ -144,13 +143,12 @@ describe('resolveKeepBoth', () => {
+   });
+ 
+   it('keeps mine outright when their content is blank', async () => {
+-    const theirs = makeNote({ id: 51, version: 2, title: '', content: '' });
++    const theirs = makeNote({ id: 51, version: 2, content: '' });
+     const row = makeRow({
+       serverId: 51,
+       localId: 'local-51',
+       dirty: 1,
+       version: 1,
+-      title: 'My title',
+       content: 'My body',
+       syncState: 'conflict',
+       conflictNote: theirs,
+@@ -162,6 +160,5 @@ describe('resolveKeepBoth', () => {
+ 
+     const resolved = await noteRepository.getByLocalId('local-51');
+     expect(resolved?.content).toBe('My body');
+-    expect(resolved?.title).toBe('My title');
+   });
+ });

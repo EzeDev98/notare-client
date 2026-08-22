@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { NavLink } from 'react-router';
 
 import type { NoteView } from '@/features/notes/local/noteMappers';
+import { deriveNoteLabel, EMPTY_NOTE_REMAINDER } from '@/features/notes/local/noteLabel';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
 import './SidebarNoteItem.css';
 
@@ -13,7 +14,7 @@ interface SidebarNoteItemProps {
  * One row in the desktop sidebar's live note list (AppLayout.tsx,
  * ≥1024px only). Deliberately NOT `NoteCard` — that component carries
  * pin/archive/delete actions sized for a full-width list in the main
- * content area, where a 240px rail only has room for a title and a
+ * content area, where a 240px rail only has room for a label and a
  * one-line preview.
  *
  * `NavLink`, not `Link` — the same `aria-current="page"` + CSS-attribute
@@ -21,13 +22,12 @@ interface SidebarNoteItemProps {
  * already uses, so the open note highlights in the list for free, with
  * no separate "which note is active" state to keep in sync by hand.
  *
- * TITLE AND PREVIEW, the reference app's own convention: a note with no
- * explicit title borrows its first non-blank line as the title (so a note
- * is never labelled by a blank field the person never filled in), and the
- * second line previews whatever text follows it. A note that is entirely
- * empty — no title, no content — reads as "New Note" / "No additional
- * text", never "Untitled": nothing has been left blank so much as not yet
- * written.
+ * LABEL AND PREVIEW (1C): there is no title field any more, so
+ * `deriveNoteLabel` (shared with NoteCard) is the ONLY source of what a
+ * note is called — this used to be a fallback for a note with no explicit
+ * title; now it's unconditional. A note that is entirely empty reads as
+ * "New Note" / "No additional text", never "Untitled": nothing has been
+ * left blank so much as not yet written.
  */
 export function SidebarNoteItem({
   note,
@@ -42,25 +42,8 @@ export function SidebarNoteItem({
     height: number;
   } | undefined;
 }) {
-  const titleTrimmed = note.title.trim();
-  const contentTrimmed = note.content.trim();
-  const lines = contentTrimmed.split('\n');
-  const firstLineIndex = lines.findIndex((line) => line.trim() !== '');
-  const firstLine = firstLineIndex === -1 ? '' : (lines[firstLineIndex] ?? '').trim();
-
-  const displayTitle =
-    titleTrimmed !== '' ? titleTrimmed : firstLine !== '' ? firstLine : 'New Note';
-
-  // An explicit title leaves the WHOLE content free to preview. Without
-  // one, the first line has already been borrowed as the title above, so
-  // the preview picks up from the line after it — otherwise the title and
-  // its own preview would just repeat each other.
-  const remainder =
-    titleTrimmed === '' && firstLineIndex !== -1
-      ? lines.slice(firstLineIndex + 1).join(' ')
-      : contentTrimmed;
-  const previewText = remainder.replace(/\s+/g, ' ').trim();
-  const preview = previewText === '' ? 'No additional text' : previewText.slice(0, 80);
+  const { label: displayTitle, remainder } = deriveNoteLabel(note.content);
+  const preview = remainder === '' ? EMPTY_NOTE_REMAINDER : remainder.slice(0, 80);
 
   const dateLabel =
     note.updatedAt !== null ? formatServerDateTimeRelative(note.updatedAt) : 'Not saved yet';

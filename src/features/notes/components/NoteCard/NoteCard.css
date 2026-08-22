@@ -76,11 +76,6 @@
     white-space: nowrap;
   }
 
-  .note-card__untitled {
-    color: var(--color-text-secondary);
-    font-weight: var(--font-weight-normal);
-  }
-
   .note-card__preview {
     margin: var(--space-2) 0 0;
     color: var(--color-text-secondary);

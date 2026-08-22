@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { useToast } from '@/app/providers/toast-context';
 import { noteService } from '@/features/notes/api/noteService';
 import type { NoteView } from '@/features/notes/local/noteMappers';
+import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import { isOffline } from '@/lib/http/errors';
 
@@ -40,14 +41,17 @@ export function useDeleteNote() {
 
   return useCallback(
     async (note: NoteView) => {
-      const label = note.title.trim();
+      // 1C: no title field — the note domain has none. deriveNoteLabel
+      // always returns something (falling back to "New Note"), so there is
+      // no "Note moved to trash." fallback case left to special-case here.
+      const label = deriveNoteLabel(note.content).label;
 
       await noteRepository.setDeleted(note.localId, true);
 
       const written = await noteRepository.getByLocalId(note.localId);
 
       toast.show({
-        message: label === '' ? 'Note moved to trash.' : `“${label}” moved to trash.`,
+        message: `“${label}” moved to trash.`,
         action: {
           label: 'Undo',
           onAction: () => {

@@ -1,6 +1,7 @@
 import { useAuth } from '@/app/providers/auth-context';
 import { Button } from '@/design-system/components/Button/Button';
 import { useConflicts } from '@/features/notes/hooks/useConflicts';
+import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Conflicts.css';
 
@@ -51,23 +52,21 @@ export function ConflictsPage() {
       {conflicts !== undefined && conflicts.length > 0 ? (
         <ul className="conflicts__list" role="list">
           {conflicts.map(({ note, theirs }) => {
-            const mineTitle = note.title.trim() === '' ? 'Untitled' : note.title;
-            const theirTitle = (theirs.title ?? '').trim() === '' ? 'Untitled' : theirs.title;
+            // 1C/4D: no title field — the note domain has none.
+            const mineLabel = deriveNoteLabel(note.content).label;
 
             return (
               <li className="conflicts__item" key={note.localId}>
-                <h2 className="conflicts__item-heading">{mineTitle}</h2>
+                <h2 className="conflicts__item-heading">{mineLabel}</h2>
 
                 <div className="conflicts__panes">
                   <article className="conflicts__pane">
                     <h3 className="conflicts__pane-title">Your version</h3>
-                    <p className="conflicts__title">{mineTitle}</p>
                     <div className="conflicts__body">{note.content}</div>
                   </article>
 
                   <article className="conflicts__pane">
                     <h3 className="conflicts__pane-title">Version on the server</h3>
-                    <p className="conflicts__title">{theirTitle}</p>
                     <div className="conflicts__body">{theirs.content ?? ''}</div>
                   </article>
                 </div>

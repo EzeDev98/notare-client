@@ -30,13 +30,23 @@ interface SharedVoiceCardProps {
  * handed only note shares.
  */
 export function SharedVoiceCard({ shared, ownerName }: SharedVoiceCardProps) {
-  const title = (shared.originalFilename ?? '').trim();
+  /*
+   * NOT a note title — the note domain has none (1B). This is the
+   * recording's own filename (`VoiceNote.originalFilename`); whether that
+   * mechanism survives at all is Step 9E's decision, not this one's — kept
+   * exactly as it was, just renamed so nothing here reads as a title.
+   */
+  const filename = (shared.originalFilename ?? '').trim();
 
   return (
     <li className="shared-note-card shared-voice-card">
       <Link className="shared-note-card__link" to={`/shared-voice/${String(shared.voiceNoteId)}`}>
         <h2 className="shared-note-card__title">
-          {title === '' ? <span className="shared-note-card__untitled">Voice note</span> : title}
+          {filename === '' ? (
+            <span className="shared-note-card__untitled">Voice note</span>
+          ) : (
+            filename
+          )}
         </h2>
 
         <p className="shared-note-card__preview shared-voice-card__preview">

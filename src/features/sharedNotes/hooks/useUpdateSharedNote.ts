@@ -17,9 +17,9 @@ import type { PagedResponse } from '@/lib/http/types';
  * On success, writes the server's response straight into BOTH this note's
  * detail cache and its row in the list cache, rather than invalidating and
  * refetching either. The response already carries the adopted version and
- * the saved title/content — a refetch would ask the server to confirm
- * something it just told us, for the cost of a round trip the version
- * conflict check exists specifically to avoid needing.
+ * the saved content — a refetch would ask the server to confirm something
+ * it just told us, for the cost of a round trip the version conflict check
+ * exists specifically to avoid needing.
  */
 export function useUpdateSharedNote(noteId: number) {
   const queryClient = useQueryClient();
@@ -37,7 +37,7 @@ export function useUpdateSharedNote(noteId: number) {
             ...page,
             content: page.content.map((row) =>
               row.note.id === noteId
-                ? { ...row, note: { ...row.note, title: updated.title, version: updated.version } }
+                ? { ...row, note: { ...row.note, version: updated.version } }
                 : row,
             ),
           };

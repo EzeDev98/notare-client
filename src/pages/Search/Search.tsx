@@ -78,7 +78,7 @@ export function SearchPage() {
       </div>
 
       {state.status === 'idle' ? (
-        <p className="search__hint">Search across the titles and contents of all your notes.</p>
+        <p className="search__hint">Search across the contents of all your notes.</p>
       ) : null}
 
       {state.status === 'ready' ? (

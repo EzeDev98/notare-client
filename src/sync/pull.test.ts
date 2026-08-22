@@ -78,17 +78,17 @@ describe('pullChanges — merging changed notes', () => {
   });
 
   it('updates a clean row outright with the server copy', async () => {
-    const row = makeRow({ serverId: 10, localId: 'local-10', dirty: 0, version: 0, title: 'Old' });
+    const row = makeRow({ serverId: 10, localId: 'local-10', dirty: 0, version: 0, content: 'Old' });
     await noteRepository.put(row);
 
     pullOnce({
-      changed: [{ note: makeNote({ id: 10, version: 1, title: 'New' }), clientId: null }],
+      changed: [{ note: makeNote({ id: 10, version: 1, content: 'New' }), clientId: null }],
     });
 
     await pullChanges(1);
 
     const updated = await noteRepository.getByLocalId('local-10');
-    expect(updated?.title).toBe('New');
+    expect(updated?.content).toBe('New');
     expect(updated?.version).toBe(1);
   });
 
@@ -99,18 +99,18 @@ describe('pullChanges — merging changed notes', () => {
       dirty: 1,
       syncState: 'pending',
       version: 0,
-      title: 'My unsent edit',
+      content: 'My unsent edit',
     });
     await noteRepository.put(row);
 
     pullOnce({
-      changed: [{ note: makeNote({ id: 11, version: 0, title: 'Same as before' }), clientId: null }],
+      changed: [{ note: makeNote({ id: 11, version: 0, content: 'Same as before' }), clientId: null }],
     });
 
     await pullChanges(1);
 
     const untouched = await noteRepository.getByLocalId('local-11');
-    expect(untouched?.title).toBe('My unsent edit');
+    expect(untouched?.content).toBe('My unsent edit');
     expect(untouched?.dirty).toBe(1);
     expect(untouched?.syncState).toBe('pending');
   });
@@ -121,20 +121,20 @@ describe('pullChanges — merging changed notes', () => {
       localId: 'local-12',
       dirty: 1,
       version: 0,
-      title: 'My unsent edit',
+      content: 'My unsent edit',
     });
     await noteRepository.put(row);
 
-    const theirs = { note: makeNote({ id: 12, version: 3, title: 'Someone else edited' }), clientId: null };
+    const theirs = { note: makeNote({ id: 12, version: 3, content: 'Someone else edited' }), clientId: null };
     pullOnce({ changed: [theirs] });
 
     await pullChanges(1);
 
     const conflicted = await noteRepository.getByLocalId('local-12');
     expect(conflicted?.syncState).toBe('conflict');
-    expect(conflicted?.title).toBe('My unsent edit');
+    expect(conflicted?.content).toBe('My unsent edit');
     expect(conflicted?.dirty).toBe(1);
-    expect(conflicted?.conflictNote?.title).toBe('Someone else edited');
+    expect(conflicted?.conflictNote?.content).toBe('Someone else edited');
   });
 });
 
@@ -146,7 +146,6 @@ describe('pullChanges — tombstones', () => {
       localId: row.localId,
       noteId: 20,
       version: 0,
-      title: row.title,
       content: row.content,
     });
 

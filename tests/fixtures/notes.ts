@@ -72,7 +72,6 @@ export function makeNoteSummary(overrides: Partial<NoteSummaryResponse> = {}): N
 
   return {
     id,
-    title: `Note ${String(id)}`,
     contentPreview: 'Body text.',
     pinned: false,
     archived: false,

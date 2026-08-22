@@ -5,6 +5,7 @@ import { UserX } from 'lucide-react';
 import { useSentCollaborations } from '@/features/collaboration/hooks/useCollaborations';
 import type { CollaborationResponse } from '@/features/collaboration/types';
 import { parseNoteId, useNote } from '@/features/notes/hooks/useNote';
+import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { useCreateShare, useRevokeShare, useUpdateShare } from '@/features/sharing/hooks/useShareMutations';
 import { useShares } from '@/features/sharing/hooks/useShares';
 import type { NoteShareResponse, SharePermission } from '@/features/sharing/types';
@@ -34,8 +35,12 @@ export function ShareNotePage() {
   const noteId = parseNoteId(noteIdParam);
 
   const noteState = useNote(noteId);
-  const title = noteState.status === 'ready' ? noteState.row.title.trim() : '';
-  useDocumentTitle(title === '' ? 'Share note' : `Share “${title}”`);
+  // 1C/4E: no title field — the note domain has none. `label` is null only
+  // while the note hasn't loaded yet; once ready, deriveNoteLabel always
+  // returns something (falling back to "New Note"), so there is no longer
+  // a separate "Untitled" case to special-case here.
+  const label = noteState.status === 'ready' ? deriveNoteLabel(noteState.row.content).label : null;
+  useDocumentTitle(label === null ? 'Share note' : `Share “${label}”`);
 
   if (noteId === null) {
     return (
@@ -52,9 +57,7 @@ export function ShareNotePage() {
   return (
     <section className="share-note">
       <ShareNoteChrome noteId={noteId} />
-      <h1 className="share-note__title">
-        Share {title === '' ? <span className="share-note__untitled">Untitled</span> : `“${title}”`}
-      </h1>
+      <h1 className="share-note__title">{label === null ? 'Share' : `Share “${label}”`}</h1>
       <ShareManager noteId={noteId} />
     </section>
   );

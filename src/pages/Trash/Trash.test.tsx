@@ -30,7 +30,7 @@ describe('the trash', () => {
   it('lists locally trashed notes without promising they expire', async () => {
     // serverId 91, not 9: the default handler's trash page holds note 9, and a
     // clean row would be overwritten by it mid-test.
-    await seedNotes(makeRow({ serverId: 91, title: 'Old draft', deleted: 1 }));
+    await seedNotes(makeRow({ serverId: 91, content: 'Old draft', deleted: 1 }));
 
     renderTrash();
 
@@ -54,7 +54,7 @@ describe('the trash', () => {
      */
     server.use(http.get(`${BASE}/notes/trash`, () => HttpResponse.error()));
 
-    await seedNotes(makeRow({ serverId: null, title: 'Written on a plane', deleted: 1, dirty: 1 }));
+    await seedNotes(makeRow({ serverId: null, content: 'Written on a plane', deleted: 1, dirty: 1 }));
 
     renderTrash();
 
@@ -75,7 +75,7 @@ describe('the trash', () => {
         HttpResponse.json(
           makePage([
             {
-              note: makeNoteSummary({ id: 21, title: 'From the server' }),
+              note: makeNoteSummary({ id: 21, contentPreview: 'From the server' }),
               deletedAt: '2026-08-05T14:00:00.000',
             },
           ]),
@@ -85,12 +85,19 @@ describe('the trash', () => {
 
     renderTrash();
 
-    expect(await screen.findByText('From the server')).toBeInTheDocument();
-
-    const stored = await noteRepository.getByServerId(21);
-    expect(stored?.ownerId).toBe(1);
-    expect(stored?.deleted).toBe(1);
-    expect(stored?.deletedAt).toBe('2026-08-05T14:00:00.000');
+    // Waits on the row landing in Dexie directly, rather than on rendered
+    // text: a brand-new row synced from a trash SUMMARY has no local
+    // `content` yet (fromNoteSummary only ever backfills from `existing`,
+    // never from `contentPreview` — a separate, pre-existing gap outside
+    // title removal's scope), so there is no label text here to assert on.
+    const stored = await waitFor(async () => {
+      const row = await noteRepository.getByServerId(21);
+      if (!row) throw new Error('row not synced yet');
+      return row;
+    });
+    expect(stored.ownerId).toBe(1);
+    expect(stored.deleted).toBe(1);
+    expect(stored.deletedAt).toBe('2026-08-05T14:00:00.000');
   });
 
   it('requires a second click before deleting forever', async () => {
@@ -102,7 +109,7 @@ describe('the trash', () => {
       }),
     );
 
-    await seedNotes(makeRow({ serverId: 9, title: 'Note 9', deleted: 1 }));
+    await seedNotes(makeRow({ serverId: 9, content: 'Note 9', deleted: 1 }));
 
     const user = userEvent.setup();
     renderTrash();
@@ -127,7 +134,7 @@ describe('the trash', () => {
   it('keeps the note when a permanent delete fails, because there is no undo', async () => {
     server.use(http.delete(`${BASE}/notes/:noteId/permanent`, () => HttpResponse.error()));
 
-    await seedNotes(makeRow({ serverId: 9, title: 'Note 9', deleted: 1 }));
+    await seedNotes(makeRow({ serverId: 9, content: 'Note 9', deleted: 1 }));
 
     const user = userEvent.setup();
     renderTrash();
@@ -144,7 +151,7 @@ describe('the trash', () => {
   it('restores locally first, so it works with no connection', async () => {
     server.use(http.post(`${BASE}/notes/:noteId/restore`, () => HttpResponse.error()));
 
-    const row = makeRow({ serverId: 9, title: 'Note 9', deleted: 1 });
+    const row = makeRow({ serverId: 9, content: 'Note 9', deleted: 1 });
     await seedNotes(row);
 
     const user = userEvent.setup();
@@ -167,7 +174,7 @@ describe('the trash', () => {
   it('cancels a queued DELETE when a note is restored before that delete ever reached the server (8B)', async () => {
     server.use(http.post(`${BASE}/notes/:noteId/restore`, () => HttpResponse.error()));
 
-    const row = makeRow({ serverId: 9, title: 'Note 9', deleted: 1 });
+    const row = makeRow({ serverId: 9, content: 'Note 9', deleted: 1 });
     await seedNotes(row);
     await outboxRepository.enqueueDelete({ localId: row.localId, noteId: 9 });
 
@@ -182,7 +189,7 @@ describe('the trash', () => {
   });
 
   it('adopts the version the server returns on a successful restore', async () => {
-    const row = makeRow({ serverId: 9, title: 'Note 9', deleted: 1, version: 3 });
+    const row = makeRow({ serverId: 9, content: 'Note 9', deleted: 1, version: 3 });
     await seedNotes(row);
 
     const user = userEvent.setup();

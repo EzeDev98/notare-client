@@ -5,6 +5,7 @@ import { Button } from '@/design-system/components/Button/Button';
 import { Modal } from '@/design-system/components/Modal/Modal';
 import { NotebookPen } from 'lucide-react';
 import type { NoteView } from '@/features/notes/local/noteMappers';
+import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
 import './NoteCard.css';
 
@@ -35,8 +36,13 @@ interface NoteCardProps {
  */
 export function NoteCard({ note, actions }: NoteCardProps) {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const title = note.title.trim();
-  const label = title === '' ? 'Untitled' : title;
+  /*
+   * 1C: the note's first line of content IS the label now — there is no
+   * title field. `remainder` (everything after that line) feeds the
+   * preview below instead of the raw content, so the heading and its own
+   * preview don't just repeat each other.
+   */
+  const { label, remainder } = deriveNoteLabel(note.content);
 
   return (
     <li className="note-card">
@@ -50,13 +56,9 @@ export function NoteCard({ note, actions }: NoteCardProps) {
             : `/notes/${String(note.serverId)}`
         }
       >
-        <h2 className="note-card__title">
-          {title === '' ? <span className="note-card__untitled">Untitled</span> : title}
-        </h2>
+        <h2 className="note-card__title">{label}</h2>
 
-        {note.content.trim() !== '' ? (
-          <p className="note-card__preview">{note.content.slice(0, 200)}</p>
-        ) : null}
+        {remainder !== '' ? <p className="note-card__preview">{remainder.slice(0, 200)}</p> : null}
 
         <p className="note-card__meta">
           {note.pinned ? <span className="note-card__badge">Pinned</span> : null}

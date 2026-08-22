@@ -5,6 +5,7 @@ import { useAuth } from '@/app/providers/auth-context';
 import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
 import { InlineVoiceNotes } from '@/features/voice/components/InlineVoiceNote/InlineVoiceNote';
 import { parseNoteId, useNote } from '@/features/notes/hooks/useNote';
+import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { VoiceRecorder, type VoiceUploadHandle } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
 import { useUploadVoiceNote } from '@/features/voice/hooks/useVoiceNoteMutations';
 import { useVoiceNotesByNote } from '@/features/voice/hooks/useVoiceNotes';
@@ -43,8 +44,11 @@ export function NoteDetailPage() {
     isError: uploadMutation.isError,
   };
 
-  const title = state.status === 'ready' ? state.row.title.trim() : '';
-  useDocumentTitle(title === '' ? 'Untitled note' : title);
+  // 1C/4G: no title field — the note domain has none. label is null only
+  // while the note hasn't loaded yet; deriveNoteLabel always returns
+  // something once ready, so there is no more separate "Untitled" case.
+  const label = state.status === 'ready' ? deriveNoteLabel(state.row.content).label : null;
+  useDocumentTitle(label ?? 'Note');
 
 
   return (

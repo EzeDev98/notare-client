@@ -35,13 +35,12 @@ function acceptAnyPush() {
 
 describe('resolveKeepMine', () => {
   it('adopts the server version, clears the conflict, and requeues the row for push', async () => {
-    const theirs = makeNote({ id: 30, version: 5, title: 'Server title', content: 'Server body' });
+    const theirs = makeNote({ id: 30, version: 5, content: 'Server body' });
     const row = makeRow({
       serverId: 30,
       localId: 'local-30',
       dirty: 1,
       version: 3,
-      title: 'My title',
       content: 'My body',
       syncState: 'conflict',
       conflictNote: theirs,
@@ -52,7 +51,9 @@ describe('resolveKeepMine', () => {
     await resolveKeepMine('local-30');
 
     const resolved = await noteRepository.getByLocalId('local-30');
-    expect(resolved?.title).toBe('My title');
+    // 1B/4F: keeping mine leaves the row's own content untouched — no
+    // title exists to have carried over separately.
+    expect(resolved?.content).toBe('My body');
     /*
      * NOT theirs.version (5). resolveKeepMine sets that as an intermediate
      * step so the requeued push isn't stale against it, but requeue() awaits
@@ -79,13 +80,12 @@ describe('resolveKeepMine', () => {
 
 describe('resolveUseTheirs', () => {
   it('replaces the row with the server copy and drops anything queued for it', async () => {
-    const theirs = makeNote({ id: 40, version: 7, title: 'Server title', content: 'Server body' });
+    const theirs = makeNote({ id: 40, version: 7, content: 'Server body' });
     const row = makeRow({
       serverId: 40,
       localId: 'local-40',
       dirty: 1,
       version: 3,
-      title: 'My title',
       content: 'My body',
       syncState: 'conflict',
       conflictNote: theirs,
@@ -95,14 +95,15 @@ describe('resolveUseTheirs', () => {
       localId: 'local-40',
       noteId: 40,
       version: 3,
-      title: 'My title',
       content: 'My body',
     });
 
     await resolveUseTheirs('local-40');
 
     const resolved = await noteRepository.getByLocalId('local-40');
-    expect(resolved?.title).toBe('Server title');
+    // 1B/4F: using theirs replaces the row wholesale — content is the
+    // only field left carrying the server's version.
+    expect(resolved?.content).toBe('Server body');
     expect(resolved?.dirty).toBe(0);
     expect(resolved?.syncState).toBe('synced');
     expect(resolved?.conflictNote).toBeNull();
@@ -115,7 +116,6 @@ describe('resolveKeepBoth', () => {
     const theirs = makeNote({
       id: 50,
       version: 2,
-      title: 'Server title',
       content: 'Server body',
     });
     const row = makeRow({
@@ -123,7 +123,6 @@ describe('resolveKeepBoth', () => {
       localId: 'local-50',
       dirty: 1,
       version: 1,
-      title: 'My title',
       content: 'My body',
       syncState: 'conflict',
       conflictNote: theirs,
@@ -135,7 +134,6 @@ describe('resolveKeepBoth', () => {
 
     const resolved = await noteRepository.getByLocalId('local-50');
     expect(resolved?.content).toBe('Server body\n\n--- Your version ---\n\nMy body');
-    expect(resolved?.title).toBe('Server title / My title');
     // Same reasoning as resolveKeepMine's test: requeue() awaits the push,
     // and acceptAnyPush() fixes the applied version at 9 regardless of what
     // was sent — not theirs.version (2), which is only an intermediate value.
@@ -144,13 +142,12 @@ describe('resolveKeepBoth', () => {
   });
 
   it('keeps mine outright when their content is blank', async () => {
-    const theirs = makeNote({ id: 51, version: 2, title: '', content: '' });
+    const theirs = makeNote({ id: 51, version: 2, content: '' });
     const row = makeRow({
       serverId: 51,
       localId: 'local-51',
       dirty: 1,
       version: 1,
-      title: 'My title',
       content: 'My body',
       syncState: 'conflict',
       conflictNote: theirs,
@@ -162,6 +159,5 @@ describe('resolveKeepBoth', () => {
 
     const resolved = await noteRepository.getByLocalId('local-51');
     expect(resolved?.content).toBe('My body');
-    expect(resolved?.title).toBe('My title');
   });
 });

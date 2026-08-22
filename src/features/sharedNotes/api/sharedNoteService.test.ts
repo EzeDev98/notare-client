@@ -79,19 +79,17 @@ describe('getSharedNote', () => {
 });
 
 describe('updateSharedNote', () => {
-  it('sends both fields — full replacement, same as the owner path', async () => {
+  it('sends the full replacement body — content and version, same as the owner path', async () => {
     await sharedNoteService.updateSharedNote(5, {
-      title: 'Updated title',
       content: null,
       version: 2,
     });
 
-    expect(lastBody).toEqual({ title: 'Updated title', content: null, version: 2 });
+    expect(lastBody).toEqual({ content: null, version: 2 });
   });
 
   it('returns the server version for the caller to adopt', async () => {
     const note = await sharedNoteService.updateSharedNote(5, {
-      title: 'x',
       content: 'y',
       version: 2,
     });
@@ -110,7 +108,7 @@ describe('updateSharedNote', () => {
     );
 
     const error = await sharedNoteService
-      .updateSharedNote(5, { title: 'x', content: 'y', version: 2 })
+      .updateSharedNote(5, { content: 'y', version: 2 })
       .catch((e: unknown) => e);
 
     // NOTARE-SERVER.md §3.2: 403 means the caller can already see the
@@ -123,7 +121,7 @@ describe('updateSharedNote', () => {
     server.use(http.put(`${BASE}/shared-notes/:noteId`, () => noteConflict(9)));
 
     const error = await sharedNoteService
-      .updateSharedNote(5, { title: 'x', content: 'y', version: 2 })
+      .updateSharedNote(5, { content: 'y', version: 2 })
       .catch((e: unknown) => e);
 
     expect(isConflict(error)).toBe(true);
@@ -134,7 +132,7 @@ describe('updateSharedNote', () => {
     server.use(http.put(`${BASE}/shared-notes/:noteId`, () => bareConflict()));
 
     const error = await sharedNoteService
-      .updateSharedNote(5, { title: 'x', content: 'y', version: 2 })
+      .updateSharedNote(5, { content: 'y', version: 2 })
       .catch((e: unknown) => e);
 
     expect(isConflict(error)).toBe(true);

@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router';
 import { useAuth } from '@/app/providers/auth-context';
 import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
 import { useLocalNote } from '@/features/notes/hooks/useLocalNote';
+import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './NoteDetail.css';
 
@@ -37,8 +38,10 @@ export function LocalNoteDetailPage() {
       ? authState.user.id
       : null;
 
-  const title = state.status === 'ready' ? state.row.title.trim() : '';
-  useDocumentTitle(title === '' ? 'Untitled note' : title);
+  // 1C/4G: no title field — the note domain has none. Same pattern as
+  // NoteDetailPage's document title.
+  const label = state.status === 'ready' ? deriveNoteLabel(state.row.content).label : null;
+  useDocumentTitle(label ?? 'Note');
 
 
   return (

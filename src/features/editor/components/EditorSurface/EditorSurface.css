@@ -3,7 +3,7 @@
    * §30: the note should read like a clean document. No borders, no boxes, no
    * visible field chrome — the interface disappears and the text is the page.
    */
-  .editor-surface__title,
+  .editor-surface__heading,
   .editor-surface__content {
     inline-size: 100%;
     background: transparent;
@@ -14,7 +14,14 @@
     font-family: inherit;
   }
 
-  .editor-surface__title {
+  /*
+   * The one remaining caller (SharedVoiceDetail, read-only) — NOT a note
+   * title field. Same visual weight the title field used to carry, kept so
+   * a standalone voice share still reads as "the same note interface" per
+   * `EditorSurface.tsx`'s own doc comment, not because this is titling
+   * anything.
+   */
+  .editor-surface__heading {
     font-size: var(--font-size-2xl);
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-tight);
@@ -44,7 +51,7 @@
     overflow-y: hidden;
   }
 
-  .editor-surface__title::placeholder,
+  .editor-surface__heading::placeholder,
   .editor-surface__content::placeholder {
     /* Secondary, not disabled — a placeholder is text the user reads. */
     color: var(--color-text-secondary);
@@ -63,7 +70,7 @@
    * caret is visible and blinking, which is a stronger focus signal than a
    * ring. Nowhere else in the app gets this treatment.
    */
-  .editor-surface__title:focus-visible,
+  .editor-surface__heading:focus-visible,
   .editor-surface__content:focus-visible {
     outline: none;
   }

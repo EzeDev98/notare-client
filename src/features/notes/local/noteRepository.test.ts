@@ -14,32 +14,32 @@ beforeEach(async () => {
 describe('listing', () => {
   it('separates active, archived and trashed', async () => {
     await db.notes.bulkPut([
-      { ...createLocalNote(1, { title: 'active' }) },
-      { ...createLocalNote(1, { title: 'archived' }), archived: 1 },
-      { ...createLocalNote(1, { title: 'trashed' }), deleted: 1 },
+      { ...createLocalNote(1, { content: 'active' }) },
+      { ...createLocalNote(1, { content: 'archived' }), archived: 1 },
+      { ...createLocalNote(1, { content: 'trashed' }), deleted: 1 },
       // Archived AND trashed: the flags are orthogonal, so this belongs in the
       // bin and must not be hidden by the archived filter.
-      { ...createLocalNote(1, { title: 'both' }), archived: 1, deleted: 1 },
-      { ...createLocalNote(2, { title: 'someone else' }) },
+      { ...createLocalNote(1, { content: 'both' }), archived: 1, deleted: 1 },
+      { ...createLocalNote(2, { content: 'someone else' }) },
     ]);
 
-    await expect(noteRepository.listActive(1).then(titles)).resolves.toEqual(['active']);
-    await expect(noteRepository.listArchived(1).then(titles)).resolves.toEqual(['archived']);
-    await expect(noteRepository.listTrashed(1).then(titles)).resolves.toEqual(
+    await expect(noteRepository.listActive(1).then(contents)).resolves.toEqual(['active']);
+    await expect(noteRepository.listArchived(1).then(contents)).resolves.toEqual(['archived']);
+    await expect(noteRepository.listTrashed(1).then(contents)).resolves.toEqual(
       expect.arrayContaining(['trashed', 'both']),
     );
   });
 
   it('puts pinned notes first, then the most recently touched', async () => {
     await db.notes.bulkPut([
-      { ...createLocalNote(1, { title: 'old' }), localUpdatedAt: 1_000 },
-      { ...createLocalNote(1, { title: 'recent' }), localUpdatedAt: 3_000 },
-      { ...createLocalNote(1, { title: 'pinned' }), pinned: 1, localUpdatedAt: 2_000 },
+      { ...createLocalNote(1, { content: 'old' }), localUpdatedAt: 1_000 },
+      { ...createLocalNote(1, { content: 'recent' }), localUpdatedAt: 3_000 },
+      { ...createLocalNote(1, { content: 'pinned' }), pinned: 1, localUpdatedAt: 2_000 },
     ]);
 
     // Sorted in memory: a two-key sort with different directions cannot be one
     // IndexedDB index without storing an inverted key.
-    await expect(noteRepository.listActive(1).then(titles)).resolves.toEqual([
+    await expect(noteRepository.listActive(1).then(contents)).resolves.toEqual([
       'pinned',
       'recent',
       'old',
@@ -48,52 +48,45 @@ describe('listing', () => {
 });
 
 describe('searching', () => {
-  it('matches title or content, case-insensitively', async () => {
+  it('matches content, case-insensitively', async () => {
+    // 1B/4F/5C: no title field — the note domain has none, so search has
+    // been content-only since 4F. This no longer needs two rows to prove
+    // "title OR content" is searched (there is only content); it proves the
+    // match works regardless of where in the content the term sits, and
+    // regardless of case.
     await db.notes.bulkPut([
-      { ...createLocalNote(1, { title: 'Meeting notes', content: 'agenda' }) },
-      { ...createLocalNote(1, { title: 'Groceries', content: 'discussed the MEETING room' }) },
-      { ...createLocalNote(1, { title: 'Unrelated', content: 'nothing here' }) },
+      { ...createLocalNote(1, { content: 'Meeting notes: set the agenda' }) },
+      { ...createLocalNote(1, { content: 'Groceries: discussed the MEETING room' }) },
+      { ...createLocalNote(1, { content: 'Unrelated: nothing here' }) },
     ]);
 
-    await expect(noteRepository.search('meeting', 1).then(titles)).resolves.toEqual(
-      expect.arrayContaining(['Meeting notes', 'Groceries']),
+    await expect(noteRepository.search('meeting', 1).then(contents)).resolves.toEqual(
+      expect.arrayContaining(['Meeting notes: set the agenda', 'Groceries: discussed the MEETING room']),
     );
-  });
-
-  it('ranks a title match above a content-only match', async () => {
-    await db.notes.bulkPut([
-      { ...createLocalNote(1, { title: 'Old but has meeting in the title', content: '' }),
-        localUpdatedAt: 1_000 },
-      { ...createLocalNote(1, { title: 'Recent', content: 'mentions meeting in passing' }),
-        localUpdatedAt: 5_000 },
-    ]);
-
-    const results = await noteRepository.search('meeting', 1);
-    expect(results[0]?.title).toBe('Old but has meeting in the title');
   });
 
   it('excludes another owner, and excludes trashed notes', async () => {
     await db.notes.bulkPut([
-      { ...createLocalNote(1, { title: 'mine, meeting' }) },
-      { ...createLocalNote(2, { title: 'someone else, meeting' }) },
-      { ...createLocalNote(1, { title: 'trashed meeting' }), deleted: 1 },
+      { ...createLocalNote(1, { content: 'mine, meeting' }) },
+      { ...createLocalNote(2, { content: 'someone else, meeting' }) },
+      { ...createLocalNote(1, { content: 'trashed meeting' }), deleted: 1 },
     ]);
 
-    await expect(noteRepository.search('meeting', 1).then(titles)).resolves.toEqual([
+    await expect(noteRepository.search('meeting', 1).then(contents)).resolves.toEqual([
       'mine, meeting',
     ]);
   });
 
   it('includes archived notes — archiving from search must not hide the result', async () => {
-    await db.notes.bulkPut([{ ...createLocalNote(1, { title: 'archived meeting' }), archived: 1 }]);
+    await db.notes.bulkPut([{ ...createLocalNote(1, { content: 'archived meeting' }), archived: 1 }]);
 
-    await expect(noteRepository.search('meeting', 1).then(titles)).resolves.toEqual([
+    await expect(noteRepository.search('meeting', 1).then(contents)).resolves.toEqual([
       'archived meeting',
     ]);
   });
 
   it('returns nothing for a blank term rather than the whole list', async () => {
-    await db.notes.bulkPut([{ ...createLocalNote(1, { title: 'anything' }) }]);
+    await db.notes.bulkPut([{ ...createLocalNote(1, { content: 'anything' }) }]);
 
     await expect(noteRepository.search('   ', 1)).resolves.toEqual([]);
   });
@@ -101,7 +94,7 @@ describe('searching', () => {
 
 describe('local edits', () => {
   it('marks a row dirty so the sync engine will push it', async () => {
-    const row = createLocalNote(1, { title: 'draft' });
+    const row = createLocalNote(1);
     await db.notes.put({ ...row, dirty: 0, syncState: 'synced' });
 
     await noteRepository.applyLocalEdit(row.localId, { content: 'written offline' });
@@ -128,11 +121,11 @@ describe('local edits', () => {
 
   it('finds dirty rows for the push', async () => {
     await db.notes.bulkPut([
-      createLocalNote(1, { title: 'unsent' }),
+      createLocalNote(1, { content: 'unsent' }),
       { ...fromNoteResponse(makeNote({ id: 5 })), dirty: 0 },
     ]);
 
-    await expect(noteRepository.listDirty().then(titles)).resolves.toEqual(['unsent']);
+    await expect(noteRepository.listDirty().then(contents)).resolves.toEqual(['unsent']);
   });
 });
 
@@ -143,15 +136,15 @@ describe('applying server state', () => {
   });
 
   it('updates a clean row and keeps its local identity', async () => {
-    const first = fromNoteResponse(makeNote({ id: 8, title: 'before' }));
+    const first = fromNoteResponse(makeNote({ id: 8, content: 'before' }));
     await db.notes.put(first);
 
     await expect(
-      noteRepository.upsertFromServer(makeNote({ id: 8, title: 'after', version: 2 })),
+      noteRepository.upsertFromServer(makeNote({ id: 8, content: 'after', version: 2 })),
     ).resolves.toBe('updated');
 
     const row = await noteRepository.getByServerId(8);
-    expect(row?.title).toBe('after');
+    expect(row?.content).toBe('after');
     // Same note, not a new one — the open editor and the outbox both reference
     // this localId.
     expect(row?.localId).toBe(first.localId);
@@ -176,12 +169,20 @@ describe('applying server state', () => {
   });
 
   it('leaves dirty rows alone when applying a list page', async () => {
-    const local = fromNoteResponse(makeNote({ id: 3, title: 'my rename' }));
+    // 5C: a summary carries only `contentPreview`, and fromNoteSummary does
+    // not fold that into `content` (a separate, pre-existing gap noted back
+    // in step 4 — out of scope here). This test's actual point survives
+    // regardless: a DIRTY row's content must not be touched by an incoming
+    // list page at all, whatever that page contains.
+    const local = fromNoteResponse(makeNote({ id: 3, content: 'my rename' }));
     await db.notes.put({ ...local, dirty: 1 });
 
-    await noteRepository.upsertSummaries([makeNoteSummary({ id: 3, title: 'server title' })], 1);
+    await noteRepository.upsertSummaries(
+      [makeNoteSummary({ id: 3, contentPreview: 'server update' })],
+      1,
+    );
 
-    expect((await noteRepository.getByServerId(3))?.title).toBe('my rename');
+    expect((await noteRepository.getByServerId(3))?.content).toBe('my rename');
   });
 
   it('stamps the owner on rows a list page inserts', async () => {
@@ -241,13 +242,13 @@ describe('transactions', () => {
 
       await db.notes.put({
         ...existing,
-        title: 'updated inside transaction',
+        content: 'updated inside transaction',
       });
     });
 
     await expect(db.notes.get(row.localId)).resolves.toMatchObject({
       localId: row.localId,
-      title: 'updated inside transaction',
+      content: 'updated inside transaction',
     });
   });
 });
@@ -264,7 +265,7 @@ describe('meta', () => {
 });
 
 describe('the outbox (8B)', () => {
-  const note = { localId: 'local-1', clientId: 'client-1', title: 'Draft', content: 'Body' };
+  const note = { localId: 'local-1', clientId: 'client-1', content: 'Body' };
 
   describe('enqueueCreate', () => {
     it('queues one CREATE', async () => {
@@ -276,7 +277,7 @@ describe('the outbox (8B)', () => {
         type: 'CREATE',
         localId: note.localId,
         clientId: note.clientId,
-        title: 'Draft',
+        content: 'Body',
         noteId: null,
       });
     });
@@ -285,18 +286,18 @@ describe('the outbox (8B)', () => {
       await outboxRepository.enqueueCreate(note);
       const [first] = await outboxRepository.listForNote(note.localId);
 
-      await outboxRepository.enqueueCreate({ ...note, title: 'Revised', content: 'New body' });
+      await outboxRepository.enqueueCreate({ ...note, content: 'New body' });
 
       const rows = await outboxRepository.listForNote(note.localId);
       expect(rows).toHaveLength(1);
       expect(rows[0]!.id).toBe(first!.id);
-      expect(rows[0]).toMatchObject({ title: 'Revised', content: 'New body' });
+      expect(rows[0]).toMatchObject({ content: 'New body' });
       expect(rows[0]!.operationId).toBe(first!.operationId);
     });
   });
 
   describe('enqueueUpdate', () => {
-    const update = { localId: 'local-2', noteId: 7, version: 3, title: 'Edited', content: 'Body' };
+    const update = { localId: 'local-2', noteId: 7, version: 3, content: 'Body' };
 
     it('queues one UPDATE, carrying the base version', async () => {
       await outboxRepository.enqueueUpdate(update);
@@ -310,12 +311,12 @@ describe('the outbox (8B)', () => {
       await outboxRepository.enqueueUpdate(update);
       const [first] = await outboxRepository.listForNote(update.localId);
 
-      await outboxRepository.enqueueUpdate({ ...update, title: 'Edited again' });
+      await outboxRepository.enqueueUpdate({ ...update, content: 'Edited again' });
 
       const rows = await outboxRepository.listForNote(update.localId);
       expect(rows).toHaveLength(1);
       expect(rows[0]!.id).toBe(first!.id);
-      expect(rows[0]!.title).toBe('Edited again');
+      expect(rows[0]!.content).toBe('Edited again');
     });
   });
 
@@ -325,7 +326,7 @@ describe('the outbox (8B)', () => {
 
       const rows = await outboxRepository.listForNote('local-3');
       expect(rows).toHaveLength(1);
-      expect(rows[0]).toMatchObject({ type: 'DELETE', noteId: 9, title: null, content: null });
+      expect(rows[0]).toMatchObject({ type: 'DELETE', noteId: 9, content: null });
     });
 
     it('discards a queued UPDATE for the same note — the final state is deleted, content no longer matters', async () => {
@@ -333,7 +334,6 @@ describe('the outbox (8B)', () => {
         localId: 'local-4',
         noteId: 9,
         version: 1,
-        title: 'x',
         content: 'y',
       });
 
@@ -359,7 +359,6 @@ describe('the outbox (8B)', () => {
         localId: 'local-5',
         noteId: 1,
         version: 1,
-        title: 'x',
         content: 'y',
       });
 
@@ -405,7 +404,6 @@ describe('the outbox (8B)', () => {
         localId: row.localId,
         noteId: 4,
         version: row.version,
-        title: row.title,
         content: row.content,
       });
 
@@ -422,8 +420,8 @@ describe('the outbox (8B)', () => {
   it('never holds more than one row per note across a create-then-edit-then-delete lifecycle', async () => {
     const localId = 'local-lifecycle';
 
-    await outboxRepository.enqueueCreate({ localId, clientId: 'c1', title: 'v1', content: '' });
-    await outboxRepository.enqueueCreate({ localId, clientId: 'c1', title: 'v2', content: '' });
+    await outboxRepository.enqueueCreate({ localId, clientId: 'c1', content: 'v1' });
+    await outboxRepository.enqueueCreate({ localId, clientId: 'c1', content: 'v2' });
     await outboxRepository.enqueueDelete({ localId, noteId: 42 });
 
     const rows = await outboxRepository.listForNote(localId);
@@ -432,6 +430,8 @@ describe('the outbox (8B)', () => {
   });
 });
 
-function titles(rows: { title: string }[]): string[] {
-  return rows.map((row) => row.title);
+// 1B/5C: no title field — the note domain has none, so every list/search
+// assertion above reads content, which is the only label a note has left.
+function contents(rows: { content: string }[]): string[] {
+  return rows.map((row) => row.content);
 }

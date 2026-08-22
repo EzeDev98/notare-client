@@ -47,11 +47,12 @@ describe('a shared voice note (recipient side)', () => {
 
     const { container } = renderSharedVoiceDetail();
 
-    // The title now renders through the same `EditorSurface` used by
-    // `/shared/:id` — a read-only "Note title" field, not a heading.
-    const titleField = await screen.findByLabelText('Note title');
-    expect(titleField).toHaveValue('Memo.webm');
-    expect(titleField).toHaveAttribute('readonly');
+    // Renders through the same `EditorSurface` used by `/shared/:id`, in
+    // its read-only heading-only mode — the recording's filename, not a
+    // note title (the note domain has none).
+    const headingField = await screen.findByLabelText('Voice note name');
+    expect(headingField).toHaveValue('Memo.webm');
+    expect(headingField).toHaveAttribute('readonly');
 
     expect(screen.getByText(/Read only/)).toBeInTheDocument();
 
@@ -105,6 +106,6 @@ describe('a shared voice note (recipient side)', () => {
     failing = false;
     await user.click(screen.getByRole('button', { name: 'Try again' }));
 
-    expect(await screen.findByLabelText('Note title')).toHaveValue('Memo.webm');
+    expect(await screen.findByLabelText('Voice note name')).toHaveValue('Memo.webm');
   });
 });

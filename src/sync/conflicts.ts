@@ -44,7 +44,6 @@ async function requeue(row: NoteRow): Promise<void> {
     await outboxRepository.enqueueCreate({
       localId: row.localId,
       clientId: row.clientId,
-      title: row.title,
       content: row.content,
     });
   } else {
@@ -52,7 +51,6 @@ async function requeue(row: NoteRow): Promise<void> {
       localId: row.localId,
       noteId: row.serverId,
       version: row.version,
-      title: row.title,
       content: row.content,
     });
   }
@@ -117,15 +115,8 @@ export async function resolveKeepBoth(localId: string): Promise<void> {
       ? row.content
       : `${theirContent}\n\n--- Your version ---\n\n${row.content}`;
 
-  const theirTitle = (theirs.title ?? '').trim();
-  const mergedTitle =
-    theirTitle === '' || theirTitle === row.title.trim()
-      ? row.title
-      : `${theirTitle} / ${row.title}`;
-
   const merged: NoteRow = {
     ...row,
-    title: mergedTitle.slice(0, 255),
     content: mergedContent.slice(0, 20_000),
     version: theirs.version,
     dirty: 1,

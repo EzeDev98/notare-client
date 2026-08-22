@@ -29,27 +29,27 @@ function renderSearch(path = '/search') {
 describe('searching', () => {
   it('prompts rather than listing everything before a term is entered', async () => {
     await resetDatabase();
-    await seedNotes(makeRow({ title: 'Meeting notes' }));
+    await seedNotes(makeRow({ content: 'Meeting notes' }));
 
     renderSearch();
     await screen.findByRole('heading', { name: /search/i });
 
-    expect(screen.getByText(/search across the titles/i)).toBeInTheDocument();
+    expect(screen.getByText(/search across the contents/i)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /meeting notes/i })).not.toBeInTheDocument();
   });
 
   it('runs a search from a term in the URL', async () => {
     await resetDatabase();
-    await seedNotes(makeRow({ title: 'Meeting notes' }));
+    await seedNotes(makeRow({ content: 'Meeting notes' }));
 
     renderSearch('/search?q=meeting');
 
     expect(await screen.findByRole('link', { name: /meeting notes/i })).toBeInTheDocument();
   });
 
-  it('matches on content as well as title', async () => {
+  it('matches on content beyond the label', async () => {
     await resetDatabase();
-    await seedNotes(makeRow({ title: 'Groceries', content: 'discuss budget in the meeting' }));
+    await seedNotes(makeRow({ content: 'Groceries\ndiscuss budget in the meeting' }));
 
     const user = userEvent.setup();
     renderSearch();
@@ -60,7 +60,7 @@ describe('searching', () => {
 
   it('reports the result count for a screen reader', async () => {
     await resetDatabase();
-    await seedNotes(makeRow({ title: 'Meeting notes' }));
+    await seedNotes(makeRow({ content: 'Meeting notes' }));
 
     const user = userEvent.setup();
     renderSearch();
@@ -86,7 +86,7 @@ describe('searching', () => {
 
   it('offers real actions, since a result is now a real local row', async () => {
     await resetDatabase();
-    await seedNotes(makeRow({ title: 'Meeting notes', pinned: 0 }));
+    await seedNotes(makeRow({ content: 'Meeting notes', pinned: 0 }));
 
     const user = userEvent.setup();
     renderSearch();
@@ -101,7 +101,7 @@ describe('searching', () => {
 
   it('drops a result from the list once it is deleted from here', async () => {
     await resetDatabase();
-    await seedNotes(makeRow({ title: 'Meeting notes' }));
+    await seedNotes(makeRow({ content: 'Meeting notes' }));
 
     const user = userEvent.setup();
     renderSearch();

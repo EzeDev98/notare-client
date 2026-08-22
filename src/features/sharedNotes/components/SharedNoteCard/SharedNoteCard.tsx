@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 
+import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import type { SharedNoteSummaryResponse } from '@/features/sharedNotes/types';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
 import './SharedNoteCard.css';
@@ -44,24 +45,23 @@ interface SharedNoteCardProps {
  */
 export function SharedNoteCard({ shared, ownerName }: SharedNoteCardProps) {
   /*
-   * `.trim()` needs a `string`, not `string | null` — unlike `NoteCard`,
-   * which reads `NoteView` (noteMappers.ts already normalises a null server
-   * title to `''` on the way into Dexie), this card reads
-   * `SharedNoteSummaryResponse` straight off the wire. There is no local
-   * row sitting between this component and the raw response to have done
-   * that normalising already.
+   * 1C/4C: no title field — the note domain has none. The list endpoint
+   * only ever sends `contentPreview` (not full content), so the
+   * label/remainder split runs on that instead of full content the way
+   * NoteCard/SidebarNoteItem get to — `deriveNoteLabel` only needs enough
+   * text to find the first line, and a preview is always longer than any
+   * real label.
    */
-  const title = (shared.note.title ?? '').trim();
-  const preview = (shared.note.contentPreview ?? '').trim();
+  const { label, remainder } = deriveNoteLabel(shared.note.contentPreview ?? '');
 
   return (
     <li className="shared-note-card">
       <Link className="shared-note-card__link" to={`/shared/${String(shared.note.id)}`}>
-        <h2 className="shared-note-card__title">
-          {title === '' ? <span className="shared-note-card__untitled">Untitled</span> : title}
-        </h2>
+        <h2 className="shared-note-card__title">{label}</h2>
 
-        {preview !== '' ? <p className="shared-note-card__preview">{preview}</p> : null}
+        {remainder !== '' ? (
+          <p className="shared-note-card__preview">{remainder.slice(0, 200)}</p>
+        ) : null}
 
         <p className="shared-note-card__meta">
           {/*

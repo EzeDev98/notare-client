@@ -26,7 +26,7 @@ import '@/pages/SharedNote/SharedNote.css';
  * is a text note, a note with attached recordings, or "just" a voice note,
  * opening it should look like opening a note. This page reuses
  * `SharedNote.css` and `EditorSurface` (in `hideBody` mode, since there is
- * no text body to show) so the title, back-link, and "Shared by X · time"
+ * no text body to show) so the heading, back-link, and "Shared by X · time"
  * status line all read identically to `/shared/:id` rather than a bespoke
  * `.shared-voice-detail__*` layout.
  *
@@ -146,19 +146,14 @@ export function SharedVoiceDetailPage() {
 
             {/*
               `hideBody`: there is no text content behind a standalone voice
-              share, so the note surface stops at the title — same title
-              styling and placeholder behaviour as `/shared/:id`, just without
+              share, so the note surface stops at a heading — same visual
+              weight as `/shared/:id`'s (former) title, just without
               reserving the editor's 60vh body for an empty, read-only field.
+              This is NOT a note title (the note domain has none, 1B/2A) —
+              it's the recording's own filename, always read-only here.
             */}
             <EditorSurface
-              title={filename === '' ? 'Voice note' : filename}
-              content=""
-              onTitleChange={() => {
-                /* Voice shares are read-only; the title field never accepts edits. */
-              }}
-              onContentChange={() => {
-                /* No body to edit in a voice-only share. */
-              }}
+              heading={filename === '' ? 'Voice note' : filename}
               readOnly
               hideBody
             />

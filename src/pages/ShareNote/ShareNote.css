@@ -13,11 +13,6 @@
     margin: 0 0 var(--space-6);
   }
 
-  .share-note__untitled {
-    color: var(--color-text-secondary);
-    font-weight: var(--font-weight-normal);
-  }
-
   .share-note__list {
     display: grid;
     gap: var(--space-3);

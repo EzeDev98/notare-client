@@ -2,42 +2,68 @@ import { useLayoutEffect, useRef, type ReactNode } from 'react';
 
 import './EditorSurface.css';
 
-interface EditorSurfaceProps {
-  title: string;
-  content: string;
-  onTitleChange: (value: string) => void;
-  onContentChange: (value: string) => void;
-  /** Read-only for a READ collaborator (Step 9). */
+interface EditorSurfaceSharedProps {
+  /** Read-only for a READ collaborator, or a voice share (always read-only today). */
   readOnly?: boolean;
   onBlur?: () => void;
+}
+
+interface EditorSurfaceBodyProps extends EditorSurfaceSharedProps {
+  hideBody?: false;
+  content: string;
+  onContentChange: (value: string) => void;
   /** Optional content rendered in document flow around the body text. */
   contentAccessory?: ReactNode;
   /**
-   * Skips the body textarea entirely.
+   * 1A: identifies which note is currently loaded, so the body can be
+   * refocused whenever the surface switches to a DIFFERENT note — not just
+   * on first mount. `autoFocus` alone only ever fires once: NoteEditorHost
+   * stays mounted across note switches (see useNoteEditor.ts's note on why
+   * it stopped remounting via `key={row.localId}`), so without this a
+   * plain `autoFocus` prop would only focus the very first note opened in
+   * a session.
    *
-   * For a standalone shared voice note there is no text body — it is a
-   * note container holding only a title and a recording. Rendering an
-   * empty, read-only textarea there would reserve `.editor-surface__body`'s
-   * 60vh of blank space and show a "Start writing…" placeholder the
-   * recipient can never act on. `hideBody` keeps the title (so the surface
-   * still reads as the same note interface) while letting the caller place
-   * voice content directly below via its own markup.
+   * Pass the caller's stable note identity (NoteEditorHost passes
+   * `row.localId`). Omit it to opt out of auto-focus entirely.
    */
-  hideBody?: boolean;
-  /**
-   * Skips the title input.
-   *
-   * Regular notes (NoteEditorHost) pass this as true — the note interface
-   * is body-only, no title concept at all. Voice-note surfaces (VoiceDetail,
-   * SharedVoiceDetail) do NOT pass this: for them the title field is the
-   * only thing rendered (paired with hideBody), showing the recording's
-   * filename. Removing the input outright would have broken those screens.
-   */
-  hideTitle?: boolean;
+  focusKey?: string | null;
 }
 
+interface EditorSurfaceHeadingProps extends EditorSurfaceSharedProps {
+  /**
+   * Skips the body textarea entirely, showing `heading` instead.
+   *
+   * The ONLY remaining caller is SharedVoiceDetail: a standalone voice
+   * share has no text body, so the note surface stops at a heading — same
+   * visual treatment `/shared/:id`'s body view gets, just without
+   * reserving the editor's 60vh body for an empty, read-only field.
+   */
+  hideBody: true;
+  /**
+   * NOT a note title — the note domain has none (1B/2A). This is
+   * SharedVoiceDetail's read-only display of the recording's filename
+   * (`VoiceNote.originalFilename`), reusing this component purely for its
+   * chrome. Whether that mechanism survives at all is Step 9E's decision,
+   * not this one's — it stays narrowly named `heading` so nothing here
+   * reads as a title field waiting to come back.
+   *
+   * No `onHeadingChange`: every current caller passes `readOnly`. If a
+   * future caller needs to edit it, add the handler then rather than
+   * plumbing an unused one now.
+   */
+  heading: string;
+}
+
+type EditorSurfaceProps = EditorSurfaceBodyProps | EditorSurfaceHeadingProps;
+
 /**
- * The writing surface: a title field and a body, and nothing else.
+ * The writing surface.
+ *
+ * Two mutually exclusive shapes, not one component with optional pieces:
+ * every real caller is either "a body to write in" (NoteEditorHost,
+ * SharedNote) or "a single read-only heading and nothing else"
+ * (SharedVoiceDetail) — never both, not since 1B/2A removed the note title
+ * that used to sit above the body. `hideBody` is the discriminant.
  *
  * ISOLATED FROM THE STATUS on purpose. This re-renders on every keystroke,
  * which is unavoidable for a controlled input; the save indicator and page
@@ -50,17 +76,9 @@ interface EditorSurfaceProps {
  * micro-optimisation; if a very long note lags, this component is already the
  * unit to optimise.
  */
-export function EditorSurface({
-  title,
-  content,
-  onTitleChange,
-  onContentChange,
-  readOnly = false,
-  onBlur,
-  contentAccessory,
-  hideBody = false,
-  hideTitle = false,
-}: EditorSurfaceProps) {
+export function EditorSurface(props: EditorSurfaceProps) {
+  const { readOnly = false, onBlur } = props;
+
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
   /*
@@ -79,6 +97,10 @@ export function EditorSurface({
    * `field-sizing: content` does all of this in one CSS line and is
    * Chrome-only for now.
    */
+  // `content` only exists on the body variant; undefined (heading-only) is
+  // a no-op height reset below, harmless and cheap.
+  const contentForHeightEffect = props.hideBody ? null : props.content;
+
   useLayoutEffect(() => {
     const element = contentRef.current;
     if (!element) return;
@@ -90,51 +112,71 @@ export function EditorSurface({
      */
     element.style.height = 'auto';
     element.style.height = `${String(element.scrollHeight)}px`;
-  }, [content]);
+  }, [contentForHeightEffect]);
+
+  /*
+   * 1A: focus follows note identity, not mount.
+   *
+   * Gated on `focusKey` CHANGING (compared against the previous value in a
+   * ref), not merely being present — `content` changes on every keystroke,
+   * which re-renders this component, and re-focusing then would yank the
+   * caret to the end of the field mid-word. Keying off `localId` instead
+   * means this only fires on genuine note switches (and on first mount,
+   * since the ref starts at `null`).
+   */
+  const previousFocusKeyRef = useRef<string | null>(null);
+  // `focusKey` only exists on the body variant; undefined (heading-only)
+  // never matches a real key, so the effect below just no-ops for it.
+  const focusKeyForFocusEffect = props.hideBody ? null : (props.focusKey ?? null);
+
+  useLayoutEffect(() => {
+    if (props.hideBody || readOnly) return;
+    if (focusKeyForFocusEffect === null || focusKeyForFocusEffect === previousFocusKeyRef.current) {
+      return;
+    }
+    previousFocusKeyRef.current = focusKeyForFocusEffect;
+
+    const element = contentRef.current;
+    if (!element) return;
+
+    element.focus();
+    const end = element.value.length;
+    element.setSelectionRange(end, end);
+  }, [focusKeyForFocusEffect, props.hideBody, readOnly]);
+
+  if (props.hideBody) {
+    return (
+      <div className="editor-surface">
+        <input
+          className="editor-surface__heading"
+          aria-label="Voice note name"
+          value={props.heading}
+          readOnly
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="editor-surface">
-      {hideTitle ? null : (
-        <input
-          className="editor-surface__title"
-          aria-label="Note title"
-          placeholder="Untitled"
-          value={title}
+      <div className="editor-surface__body">
+        <textarea
+          ref={contentRef}
+          className="editor-surface__content"
+          aria-label="Note content"
+          placeholder=""
+          value={props.content}
           readOnly={readOnly}
-          maxLength={255}
+          maxLength={20_000}
+          rows={1}
           onChange={(event) => {
-            onTitleChange(event.target.value);
+            props.onContentChange(event.target.value);
           }}
           onBlur={onBlur}
         />
-      )}
 
-      {hideBody ? null : (
-        <div className="editor-surface__body">
-          <textarea
-            ref={contentRef}
-            className="editor-surface__content"
-            aria-label="Note content"
-            placeholder=""
-            value={content}
-            readOnly={readOnly}
-            maxLength={20_000}
-            rows={1}
-            /*
-             * Autofocus only on the title-less (regular note) surface.
-             * Voice-note surfaces keep hideTitle=false and are frequently
-             * read-only, so they must not steal focus on mount.
-             */
-            autoFocus={hideTitle && !readOnly}
-            onChange={(event) => {
-              onContentChange(event.target.value);
-            }}
-            onBlur={onBlur}
-          />
-
-          {contentAccessory}
-        </div>
-      )}
+        {props.contentAccessory}
+      </div>
     </div>
   )
 }

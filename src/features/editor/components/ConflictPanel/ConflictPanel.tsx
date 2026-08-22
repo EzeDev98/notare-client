@@ -8,11 +8,13 @@ import './ConflictPanel.css';
  *
  * Declared HERE rather than imported, because 7C deleted useNoteDraft — the
  * draft now lives in Dexie and the editor reads it from the row. This panel
- * needs the two fields it displays and nothing else, so a local type is
- * honest: it no longer depends on how the draft is held, only on what it is.
+ * needs the field it displays and nothing else, so a local type is honest:
+ * it no longer depends on how the draft is held, only on what it is.
+ *
+ * No `title` — 1B/4D: the note domain has none, so there is nothing left
+ * to label each pane with beyond its own full content below.
  */
 interface ConflictSide {
-  title: string;
   content: string;
 }
 
@@ -91,8 +93,9 @@ export function ConflictPanel({
         <article className="conflict__pane">
           <h3 className="conflict__pane-title">Your version</h3>
           {/* pre-wrap, matching the read view: the text is text, and newlines
-              are preserved by CSS rather than by markup. */}
-          <p className="conflict__title">{mine.title.trim() === '' ? 'Untitled' : mine.title}</p>
+              are preserved by CSS rather than by markup. No separate title
+              line above this (1B/4D) — it would just repeat the content's
+              own first line. */}
           <div className="conflict__body">{mine.content}</div>
         </article>
 
@@ -100,9 +103,6 @@ export function ConflictPanel({
           <h3 className="conflict__pane-title">
             {byAnotherDevice ? 'Version on the server' : 'Their version'}
           </h3>
-          <p className="conflict__title">
-            {(theirs.title ?? '').trim() === '' ? 'Untitled' : theirs.title}
-          </p>
           <div className="conflict__body">{theirs.content ?? ''}</div>
         </article>
       </div>

@@ -3,6 +3,7 @@ import { NotebookPen } from 'lucide-react';
 
 import { NoteTabs } from '@/features/notes/components/NoteTabs/NoteTabs';
 import { useTrash } from '@/features/notes/hooks/useTrash';
+import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { Button } from '@/design-system/components/Button/Button';
 import { Modal } from '@/design-system/components/Modal/Modal';
 import { formatServerDateTimeRelative } from '@/lib/time';
@@ -64,8 +65,8 @@ export function TrashPage() {
       {notes !== undefined && notes.length > 0 ? (
         <ul className="trash__list" role="list">
           {notes.map((note) => {
-            const title = note.title.trim();
-            const label = title === '' ? 'Untitled' : title;
+            // 1C/4D: no title field — the note domain has none.
+            const label = deriveNoteLabel(note.content).label;
 
             return (
               <li className="trash__item" key={note.localId}>
@@ -113,7 +114,7 @@ export function TrashPage() {
           icon={<NotebookPen aria-hidden="true" />}
           description={
             <>
-              Delete <strong>{confirmingNote.title.trim() || 'Untitled'}</strong>{' '}
+              Delete <strong>{deriveNoteLabel(confirmingNote.content).label}</strong>{' '}
               forever? This action cannot be undone.
             </>
           }

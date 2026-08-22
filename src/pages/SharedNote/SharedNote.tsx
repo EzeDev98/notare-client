@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 
 import { EditorSurface } from '@/features/editor/components/EditorSurface/EditorSurface';
 import { parseNoteId } from '@/features/notes/hooks/useNote';
+import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { SharedInlineVoiceNotes } from '@/features/sharedNotes/components/SharedInlineVoiceNotes/SharedInlineVoiceNotes';
 import { useAttachedVoiceNotes } from '@/features/sharedNotes/hooks/useAttachedVoiceNotes';
 import { useUploadAttachedVoiceNote } from '@/features/sharedNotes/hooks/useUploadAttachedVoiceNote';
@@ -53,12 +54,12 @@ import './SharedNote.css';
  * of them.
  *
  * WRITE:
- *   - edit title/content
+ *   - edit content
  *   - record a voice note against this note
  *   - listen to attached voice notes
  *
  * READ:
- *   - view title/content
+ *   - view content
  *   - listen to attached voice notes
  *   - no editing
  *   - no voice recorder
@@ -101,8 +102,15 @@ export function SharedNotePage() {
  */
 function SharedNoteView({ noteId }: { noteId: number }) {
   const query = useSharedNote(noteId);
-  const title = (query.data?.title ?? '').trim();
-  useDocumentTitle(title === '' ? 'Shared note' : title);
+  /*
+   * 2D: no title field — the note domain has none (1B). The tab label is
+   * derived the same way every other "what is this note called" surface
+   * is (1C's `deriveNoteLabel`): the first line of content, falling back
+   * to a placeholder only while the note hasn't loaded yet at all.
+   */
+  useDocumentTitle(
+    query.data ? deriveNoteLabel(query.data.content ?? '').label : 'Shared note',
+  );
 
   const [triedEditing, setTriedEditing] = useState(false);
   const cachedPermission = useSharedNotePermission(noteId);
@@ -159,7 +167,6 @@ function SharedNoteView({ noteId }: { noteId: number }) {
           <SharedNoteEditor
             noteId={noteId}
             note={{
-              title: query.data.title ?? '',
               content: query.data.content ?? '',
               version: query.data.version,
             }}
@@ -194,7 +201,6 @@ function SharedNoteChrome() {
 interface SharedNoteEditorProps {
   noteId: number;
   note: {
-    title: string;
     content: string;
     version: number;
   };
@@ -213,7 +219,6 @@ function SharedNoteEditor({
   onTriedEditingChange,
   voiceNotes,
 }: SharedNoteEditorProps) {
-  const [title, setTitle] = useState(note.title);
   const [content, setContent] = useState(note.content);
   const [version, setVersion] = useState(note.version);
   const [conflictMessage, setConflictMessage] = useState<string | null>(null);
@@ -226,9 +231,7 @@ function SharedNoteEditor({
     knownReadOnly ||
     (cachedPermission === undefined && !triedEditing);
 
-  const dirty =
-    title !== note.title ||
-    content !== note.content;
+  const dirty = content !== note.content;
 
   function handleBlur(): void {
     if (readOnly || !dirty || update.isPending) {
@@ -239,7 +242,6 @@ function SharedNoteEditor({
 
     update.mutate(
       {
-        title,
         content,
         version,
       },
@@ -313,9 +315,7 @@ function SharedNoteEditor({
       ) : null}
 
       <EditorSurface
-        title={title}
         content={content}
-        onTitleChange={setTitle}
         onContentChange={setContent}
         readOnly={readOnly}
         onBlur={handleBlur}

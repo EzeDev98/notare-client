@@ -18,7 +18,7 @@ beforeEach(async () => {
 
 describe('the notes table', () => {
   it('stores a note created offline, with no server id', async () => {
-    const row = createLocalNote(1, { title: 'Offline', content: 'written on a train' });
+    const row = createLocalNote(1, { content: 'written on a train' });
     await db.notes.put(row);
 
     const stored = await db.notes.get(row.localId);
@@ -30,7 +30,7 @@ describe('the notes table', () => {
      * before any server has seen it.
      */
     expect(stored?.serverId).toBeNull();
-    expect(stored?.title).toBe('Offline');
+    expect(stored?.content).toBe('written on a train');
     expect(stored?.dirty).toBe(1);
   });
 
@@ -55,10 +55,10 @@ describe('the notes table', () => {
 
   it('queries the main list through the compound index', async () => {
     await db.notes.bulkPut([
-      { ...createLocalNote(1, { title: 'visible' }), deleted: 0, archived: 0 },
-      { ...createLocalNote(1, { title: 'archived' }), deleted: 0, archived: 1 },
-      { ...createLocalNote(1, { title: 'trashed' }), deleted: 1, archived: 0 },
-      { ...createLocalNote(2, { title: 'someone else' }), deleted: 0, archived: 0 },
+      { ...createLocalNote(1, { content: 'visible' }), deleted: 0, archived: 0 },
+      { ...createLocalNote(1, { content: 'archived' }), deleted: 0, archived: 1 },
+      { ...createLocalNote(1, { content: 'trashed' }), deleted: 1, archived: 0 },
+      { ...createLocalNote(2, { content: 'someone else' }), deleted: 0, archived: 0 },
     ]);
 
     const mine = await db.notes.where('[ownerId+deleted+archived]').equals([1, 0, 0]).toArray();
@@ -73,12 +73,12 @@ describe('the notes table', () => {
      * perfectly valid TypeScript type for a field IndexedDB will quietly
      * refuse to index.
      */
-    expect(mine.map((row) => row.title)).toEqual(['visible']);
+    expect(mine.map((row) => row.content)).toEqual(['visible']);
   });
 
   it('finds dirty rows for Step 8 to push', async () => {
     await db.notes.bulkPut([
-      createLocalNote(1, { title: 'unsent' }),
+      createLocalNote(1, { content: 'unsent' }),
       { ...fromNoteResponse(makeNote({ id: 3 })), dirty: 0 },
     ]);
 
@@ -90,16 +90,16 @@ describe('the notes table', () => {
      * empty result, and a sync engine that silently never pushes.
      */
     expect(pending).toHaveLength(1);
-    expect(pending[0]?.title).toBe('unsent');
+    expect(pending[0]?.content).toBe('unsent');
   });
 });
 
 describe('mapping', () => {
   it('keeps local identity when a server response updates an existing row', async () => {
-    const local = createLocalNote(1, { title: 'draft' });
+    const local = createLocalNote(1);
     await db.notes.put(local);
 
-    const updated = fromNoteResponse(makeNote({ id: 9, title: 'draft' }), local);
+    const updated = fromNoteResponse(makeNote({ id: 9 }), local);
 
     /*
      * The same note, not a new one. Replacing localId would orphan every
@@ -112,16 +112,17 @@ describe('mapping', () => {
   });
 
   it('does not blank content when a list summary updates a row', () => {
-    const existing = fromNoteResponse(makeNote({ id: 4, content: 'the whole note' }));
-    const merged = fromNoteSummary(makeNoteSummary({ id: 4, title: 'Renamed' }), 1, existing);
+    const existing = fromNoteResponse(makeNote({ id: 4, content: 'the whole note', pinned: false }));
+    const merged = fromNoteSummary(makeNoteSummary({ id: 4, pinned: true }), 1, existing);
 
     /*
      * A summary carries no content. Overwriting with '' would empty every note
      * the moment a list load touched it — data loss that looks exactly like
-     * the list working correctly.
+     * the list working correctly. Other summary-carried fields, like `pinned`,
+     * DO get overwritten — that's the contrast this test makes.
      */
     expect(merged.content).toBe('the whole note');
-    expect(merged.title).toBe('Renamed');
+    expect(merged.pinned).toBe(1);
   });
 });
 
@@ -169,7 +170,7 @@ describe('the version 1 -> 2 migration (8A)', () => {
   }
 
   it('queues a CREATE for a note that has never reached the server', async () => {
-    const offline = createLocalNote(1, { title: 'Written on a train' });
+    const offline = createLocalNote(1, { content: 'Written on a train' });
 
     const outbox = await migrateFromV1([offline]);
 
@@ -178,7 +179,7 @@ describe('the version 1 -> 2 migration (8A)', () => {
       type: 'CREATE',
       localId: offline.localId,
       clientId: offline.clientId,
-      title: 'Written on a train',
+      content: 'Written on a train',
       noteId: null,
     });
   });
@@ -193,14 +194,16 @@ describe('the version 1 -> 2 migration (8A)', () => {
       type: 'DELETE',
       localId: trashed.localId,
       noteId: 5,
-      title: null,
+      // DELETE carries no content (OutboxRow) — nothing else to assert here
+      // now that title (5A) is gone from the row entirely.
+      content: null,
     });
   });
 
   it('does NOT queue anything for a synced, non-deleted, dirty note — the genuinely ambiguous case', async () => {
-    // Could be an unsent title/content edit, or could be nothing but an
-    // unsent pin. v1 recorded only that SOMETHING changed, not which. See the
-    // comment above `this.version(2)` in database.ts.
+    // Could be an unsent content edit, or could be nothing but an unsent pin.
+    // v1 recorded only that SOMETHING changed, not which. See the comment
+    // above `this.version(2)` in database.ts.
     const ambiguous = { ...fromNoteResponse(makeNote({ id: 8 })), dirty: 1 as const };
 
     const outbox = await migrateFromV1([ambiguous]);
@@ -217,7 +220,7 @@ describe('the version 1 -> 2 migration (8A)', () => {
   });
 
   it('preserves insertion order across mixed operations, since id IS the push order', async () => {
-    const created = createLocalNote(1, { title: 'first, offline create' });
+    const created = createLocalNote(1, { content: 'first, offline create' });
     const deleted = {
       ...fromNoteResponse(makeNote({ id: 6 })),
       deleted: 1 as const,

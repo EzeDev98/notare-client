@@ -29,7 +29,6 @@ function toOperationRequest(row: OutboxRow): SyncOperationRequest {
   const request: SyncOperationRequest = { operationId: row.operationId, type: row.type };
   if (row.clientId !== null) request.clientId = row.clientId;
   if (row.noteId !== null) request.noteId = row.noteId;
-  if (row.title !== null) request.title = row.title;
   if (row.content !== null) request.content = row.content;
   if (row.version !== null) request.version = row.version;
   return request;
@@ -172,8 +171,8 @@ async function run(): Promise<void> {
         case 'INVALID': {
           // "Do not retry — quarantine, log, surface as a client bug, never
           // silently discard the user's text." Removing the outbox row is
-          // the "do not retry"; markInvalid deliberately leaves title and
-          // content untouched — see its own doc comment for why.
+          // the "do not retry"; markInvalid deliberately leaves content
+          // untouched — see its own doc comment for why.
           await outboxRepository.clearForNote(row.localId);
           await noteRepository.markInvalid(row.localId);
           console.error('[sync] operation rejected as INVALID, not retrying', {
