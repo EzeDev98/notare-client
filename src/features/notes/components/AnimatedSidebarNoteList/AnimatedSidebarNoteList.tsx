@@ -16,6 +16,13 @@ interface AnimatedSidebarNoteListProps {
   /** Set only during a pending note creation — see AppLayout's own
    * pendingActiveLocalId comment for why. */
   pendingActiveLocalId: string | null;
+  /** Forwarded straight to every row — see SidebarNoteItem's own comment on
+   * why one native event covers right-click, trackpad, and long-press
+   * alike. */
+  onNoteContextMenu: (note: NoteView, x: number, y: number) => void;
+  /** The note whose context menu AppLayout currently has open, if any —
+   * used only to add `isMenuOpen` to the one matching row. */
+  contextMenuNoteLocalId: string | null;
 }
 
 /**
@@ -64,6 +71,8 @@ export function AnimatedSidebarNoteList({
   activeLocalId,
   activeNoteId,
   pendingActiveLocalId,
+  onNoteContextMenu,
+  contextMenuNoteLocalId,
 }: AnimatedSidebarNoteListProps) {
   const listRef = useRef<HTMLUListElement>(null);
   const pendingMoveRef = useRef<PendingMove | null>(null);
@@ -368,6 +377,8 @@ export function AnimatedSidebarNoteList({
           key={item.note.localId}
           note={item.note}
           isActive={isRowActive(item.note, activeLocalId, activeNoteId, pendingActiveLocalId)}
+          onContextMenu={onNoteContextMenu}
+          isMenuOpen={contextMenuNoteLocalId === item.note.localId}
           animationState={item.animationState}
           exitStyle={item.exitStyle}
         />

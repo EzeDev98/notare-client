@@ -13,6 +13,12 @@ import './NoteTabs.css';
  * Links, not buttons: they navigate. Styling them as tabs is presentation;
  * making them <button role="tab"> would mean reimplementing arrow-key
  * navigation and losing middle-click, for no gain.
+ *
+ * Rendered only on the Notes page (/notes). Archived and Trash are each a
+ * single, self-contained view of their own collection — once you're on one
+ * of them, switching views again goes through the folders panel (desktop)
+ * or back through Notes (mobile/tablet), not a second set of tabs repeated
+ * on every screen.
  */
 export function NoteTabs() {
   return (

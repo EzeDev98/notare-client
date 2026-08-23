@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { NotebookPen } from 'lucide-react';
 
-import { NoteTabs } from '@/features/notes/components/NoteTabs/NoteTabs';
 import { useTrash } from '@/features/notes/hooks/useTrash';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { Button } from '@/design-system/components/Button/Button';
@@ -41,7 +40,6 @@ export function TrashPage() {
   return (
     <section className="trash">
       <h1>Trash</h1>
-      <NoteTabs />
 
       <p className="trash__lead">
         Notes stay here until you delete them permanently.

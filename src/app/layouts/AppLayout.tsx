@@ -30,11 +30,16 @@ import { useAuth } from '@/app/providers/auth-context';
 import { useFoldersPanel } from '@/app/layouts/useFoldersPanel';
 import { useSidebarWidth } from '@/app/layouts/useSidebarWidth';
 import { AnimatedSidebarNoteList } from '@/features/notes/components/AnimatedSidebarNoteList/AnimatedSidebarNoteList';
+import {
+  NoteContextMenu,
+  type NoteContextMenuActions,
+} from '@/features/notes/components/NoteContextMenu/NoteContextMenu';
 import { useDeleteNote } from '@/features/notes/hooks/useDeleteNote';
+import { useNoteActions } from '@/features/notes/hooks/useNoteActions';
 import { useNotes } from '@/features/notes/hooks/useNotes';
-import { createLocalNote, toView } from '@/features/notes/local/noteMappers';
+import { createLocalNote, toView, type NoteView } from '@/features/notes/local/noteMappers';
 import { isEmptyNote } from '@/features/notes/local/isEmptyNote';
-import { noteRepository } from '@/features/notes/local/noteRepository';
+import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import { NotificationsPanel } from '@/features/notifications/components/NotificationsPanel/NotificationsPanel';
 import { useSync } from '@/sync/useSync';
 import { useConflictCount } from '@/sync/useConflicts';
@@ -355,21 +360,165 @@ export function AppLayout() {
   }, [activeLocalId, activeNoteId]);
 
   const deleteNote = useDeleteNote();
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const { togglePin, setArchived } = useNoteActions();
 
-  async function handleDeleteActiveNote() {
-    if (!activeNoteRow) return;
+  /*
+   * WHICH note a pending delete confirmation is for — not a bare boolean
+   * any more. Before the sidebar's own context menu existed, this dialog
+   * could only ever be opened for the toolbar's own "whatever note is
+   * currently open" (activeNoteRow), so a boolean plus that one ambient row
+   * was enough. The context menu's Delete item can now ask for confirmation
+   * on ANY row in the list, including one that is not open at all — so the
+   * note itself has to travel with the "confirm?" state, not be re-derived
+   * from whatever happens to be active once the user clicks through.
+   */
+  const [noteToDelete, setNoteToDelete] = useState<NoteView | null>(null);
 
-    await deleteNote(toView(activeNoteRow));
+  async function handleConfirmDelete() {
+    if (!noteToDelete) return;
 
-    // The route the user was just on now points at a trashed note — same
-    // "something left the screen" case setArchived's toast comment already
-    // names, except here there is nowhere left on this route to redraw.
-    // /notes always has somewhere sane to land, whichever of the two note
-    // routes the icon was clicked from.
-    navigate('/notes');
-    setDeleteModalOpen(false);
+    // Capture before the delete/navigate below can change what "active"
+    // means (deleting the open note through useDeleteNote does not itself
+    // navigate anywhere).
+    const deletingActiveNote =
+      noteToDelete.serverId !== null
+        ? String(noteToDelete.serverId) === activeNoteId
+        : noteToDelete.localId === activeLocalId;
+
+    await deleteNote(noteToDelete);
+    setNoteToDelete(null);
+
+    /*
+     * Only navigate away when the note that was just trashed is the one
+     * currently on screen — the route it was just on now points at a
+     * trashed note, same "something left the screen" case setArchived's
+     * toast comment already names, except here there is nowhere left on
+     * this route to redraw. /notes always has somewhere sane to land.
+     *
+     * A delete from the context menu on some OTHER row must NOT do this:
+     * the user is reading or writing a completely different note and has
+     * no reason to be bounced off it because a DIFFERENT row in the
+     * sidebar was just deleted.
+     */
+    if (deletingActiveNote) {
+      navigate('/notes');
+    }
   }
+
+  /*
+   * Shared by the toolbar's own "New note" icon AND the sidebar context
+   * menu's "New note" item — the exact same action regardless of which
+   * note (if any) was right-clicked to reach it, matching the reference:
+   * "New note" in a note's own menu still just creates a fresh note, it
+   * is not "duplicate this note" (that is its own, separate item below).
+   */
+  async function handleCreateNote() {
+    if (hasEmptyNote) return;
+    if (authState.status !== 'authenticated' && authState.status !== 'refreshing') return;
+
+    const row = {
+      ...createLocalNote(authState.user.id),
+      dirty: 0 as const,
+      syncState: 'synced' as const,
+    };
+
+    // Unblocked — this is what starts the sidebar's own enter animation for
+    // the new row, immediately on click.
+    await noteRepository.put(row);
+
+    // See pendingActiveLocalId's own comment above: the new row should
+    // slide in already highlighted, not pick up the highlight only once
+    // navigate() below actually lands.
+    setPendingActiveLocalId(row.localId);
+
+    // See NOTE_LIFECYCLE_DELAY_MS's own comment above: held here, between
+    // the write and the navigate, so the main pane's instant swap to the
+    // new note lands a beat into the sidebar's animation rather than on its
+    // very first frame.
+    await delay(NOTE_LIFECYCLE_DELAY_MS);
+
+    void navigate(`/notes/local/${row.localId}`, {
+      replace: true,
+      state: { skipEnterAnimation: true },
+    });
+  }
+
+  /*
+   * Duplicate note — a NEW note that starts out as a copy of an existing
+   * one's content, not a reference to it (editing the copy afterward never
+   * touches the original). Unlike New note, this one DOES carry real
+   * content from the moment it's created, so unlike New note's row above it
+   * is NOT written as already-synced: `createLocalNote`'s own default
+   * (dirty: 1, syncState: 'pending') is exactly right here, and
+   * `outboxRepository.enqueueCreate` queues the actual CREATE — the same
+   * path an offline-created note's first save already takes (see that
+   * method's own doc comment) — so the background sync engine picks it up
+   * and pushes it to the server on its own, online or off, without this
+   * handler needing to know or care which.
+   */
+  async function handleDuplicateNote(note: NoteView) {
+    if (authState.status !== 'authenticated' && authState.status !== 'refreshing') return;
+    // Duplicating an empty note would produce a second empty note while one
+    // already exists — the same "only one empty note at a time" invariant
+    // the toolbar's own New note icon enforces via hasEmptyNote above.
+    if (isEmptyNote(note) && hasEmptyNote) return;
+
+    const row = createLocalNote(authState.user.id, { content: note.content });
+
+    await noteRepository.put(row);
+    await outboxRepository.enqueueCreate({
+      localId: row.localId,
+      clientId: row.clientId,
+      content: row.content,
+    });
+
+    setPendingActiveLocalId(row.localId);
+    await delay(NOTE_LIFECYCLE_DELAY_MS);
+
+    void navigate(`/notes/local/${row.localId}`, {
+      replace: true,
+      state: { skipEnterAnimation: true },
+    });
+  }
+
+  /*
+   * The sidebar's per-row context menu — right-click, a two-finger click on
+   * a Mac trackpad, or a touch long-press, all raised as the browser's own
+   * `contextmenu` event by SidebarNoteItem (its own comment explains why
+   * one handler covers all three). A single slot, not a list keyed by note:
+   * opening a menu for one row while another's is already open simply
+   * replaces it, matching how every native context menu on the platform
+   * behaves — there is never more than one open at once.
+   */
+  const [contextMenu, setContextMenu] = useState<{ note: NoteView; x: number; y: number } | null>(
+    null,
+  );
+
+  function handleNoteContextMenu(note: NoteView, x: number, y: number) {
+    setContextMenu({ note, x, y });
+  }
+
+  const noteContextMenuActions: NoteContextMenuActions = {
+    onNewNote: () => {
+      void handleCreateNote();
+    },
+    onDuplicate: (note) => {
+      void handleDuplicateNote(note);
+    },
+    onShare: (note) => {
+      if (note.serverId === null) return;
+      void navigate(`/notes/${String(note.serverId)}/share`);
+    },
+    onTogglePin: (note) => {
+      void togglePin(note);
+    },
+    onToggleArchive: (note) => {
+      void setArchived(note, !note.archived);
+    },
+    onDelete: (note) => {
+      setNoteToDelete(note);
+    },
+  };
 
   /*
    * Uncontrolled would be simpler, but the field must be CLEARABLE from
@@ -643,7 +792,8 @@ export function AppLayout() {
             aria-label="Delete note"
             disabled={activeNoteRow == null}
             onClick={() => {
-              setDeleteModalOpen(true);
+              if (!activeNoteRow) return;
+              setNoteToDelete(toView(activeNoteRow));
             }}
           >
             <Trash2 aria-hidden="true" />
@@ -665,43 +815,8 @@ export function AppLayout() {
             aria-label="New note"
             aria-disabled={hasEmptyNote}
             data-unavailable={hasEmptyNote || undefined}
-            onClick={async () => {
-              if (hasEmptyNote) {
-                return;
-              }
-
-              if (
-                authState.status !== 'authenticated' &&
-                authState.status !== 'refreshing'
-              ) {
-                return;
-              }
-
-              const row = {
-                ...createLocalNote(authState.user.id),
-                dirty: 0 as const,
-                syncState: 'synced' as const,
-              };
-
-              // Unblocked — this is what starts the sidebar's own enter
-              // animation for the new row, immediately on click.
-              await noteRepository.put(row);
-
-              // See pendingActiveLocalId's own comment above: the new row
-              // should slide in already highlighted, not pick up the
-              // highlight only once navigate() below actually lands.
-              setPendingActiveLocalId(row.localId);
-
-              // See NOTE_LIFECYCLE_DELAY_MS's own comment above: held here,
-              // between the write and the navigate, so the main pane's
-              // instant swap to the new note lands a beat into the
-              // sidebar's animation rather than on its very first frame.
-              await delay(NOTE_LIFECYCLE_DELAY_MS);
-
-              void navigate(`/notes/local/${row.localId}`, {
-                replace: true,
-                state: { skipEnterAnimation: true },
-              });
+            onClick={() => {
+              void handleCreateNote();
             }}
           >
             <SquarePen aria-hidden="true" />
@@ -882,6 +997,8 @@ export function AppLayout() {
               activeLocalId={activeLocalId}
               activeNoteId={activeNoteId}
               pendingActiveLocalId={pendingActiveLocalId}
+              onNoteContextMenu={handleNoteContextMenu}
+              contextMenuNoteLocalId={contextMenu?.note.localId ?? null}
             />
           ) : null}
 
@@ -910,7 +1027,7 @@ export function AppLayout() {
         onPointerUp={handleResizePointerUp}
       />
 
-      {deleteModalOpen ? (
+      {noteToDelete ? (
         <Modal
           title=""
           description={
@@ -924,17 +1041,29 @@ export function AppLayout() {
           secondaryAction={{
             label: 'Cancel',
             onClick: () => {
-              setDeleteModalOpen(false);
+              setNoteToDelete(null);
             },
           }}
           primaryAction={{
             label: 'Delete',
             onClick: () => {
-              void handleDeleteActiveNote();
+              void handleConfirmDelete();
             },
           }}
           onClose={() => {
-            setDeleteModalOpen(false);
+            setNoteToDelete(null);
+          }}
+        />
+      ) : null}
+
+      {contextMenu ? (
+        <NoteContextMenu
+          note={contextMenu.note}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          actions={noteContextMenuActions}
+          onClose={() => {
+            setContextMenu(null);
           }}
         />
       ) : null}

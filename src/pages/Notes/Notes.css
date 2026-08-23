@@ -5,6 +5,13 @@
     padding: var(--space-8) var(--space-4);
   }
 
+  /*
+   * `justify-content: space-between` with the Archived header's single
+   * child (no `notes__header-actions` sibling — Search / New note are
+   * Notes-only) simply packs that one child to the flex-start edge, which
+   * is exactly the left-aligned heading Sessions' own plain, unstyled `h1`
+   * already has — no separate centered variant needed here to match it.
+   */
   .notes__header {
     display: flex;
     align-items: center;
@@ -27,6 +34,59 @@
     gap: var(--space-3);
     margin-block-start: var(--space-6);
     padding: 0;
+  }
+
+  /*
+   * Archived only — reshapes the shared NoteCard (see NoteCard.css) into the
+   * same compact row Trash and Sessions both already use: title + meta on
+   * the left, actions on the right, in a plain bordered box, title
+   * left-aligned and never enlarged past body text. This layer beats
+   * `components` (global.css's layer order), so a handful of plain
+   * declarations here are enough to override NoteCard's own rules with no
+   * specificity fight and, critically, without touching NoteCard itself —
+   * the active `/notes` list keeps its own larger, hover-actions card
+   * exactly as it was.
+   */
+  .notes--archived .note-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-4);
+  }
+
+  .notes--archived .note-card__link {
+    flex: 1 1 auto;
+    /* Lets the ellipsis/nowrap rules below actually have a box to truncate
+       against — a flex item's default min-inline-size is auto (its content
+       size), which is what let a long title push past the card's edge
+       instead of truncating in the first place. */
+    min-inline-size: 0;
+    padding: 0;
+  }
+
+  .notes--archived .note-card__title {
+    color: var(--color-text);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .notes--archived .note-card__preview {
+    display: none;
+  }
+
+  .notes--archived .note-card__meta {
+    margin-block-start: var(--space-1);
+  }
+
+  .notes--archived .note-card__actions {
+    position: relative;
+    inset-block-start: 0;
+    inset-inline-end: 0;
+    z-index: 1;
+    display: flex;
+    opacity: 1;
   }
 
   .notes__centre {

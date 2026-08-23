@@ -5,16 +5,35 @@
     padding: var(--space-8) var(--space-4);
   }
 
+  .trash h1 {
+    margin-block-start: var(--space-4) !important;
+  }
+
   .trash__lead,
   .trash__meta {
     color: var(--color-text-secondary);
     font-size: var(--font-size-sm);
   }
 
+  /*
+   * Left-aligned under the heading, same as Sessions' own lead paragraph —
+   * with room above (separating it from "Trash") and below (separating it
+   * from the list of trashed notes) — the two margins are set independently
+   * rather than relying on the list's own margin-block-start, so the lead's
+   * spacing reads correctly even on the empty-trash state, which has no list
+   * to supply a top margin at all.
+   *
+   * !important: forcing this past whatever else is currently winning the
+   * cascade for this element, since the un-important version of these same
+   * rules was visibly not taking effect.
+   */
+  .trash__lead {
+    margin-block: var(--space-8) var(--space-15) !important;
+  }
+
   .trash__list {
     display: grid;
     gap: var(--space-3);
-    margin-block-start: var(--space-6);
     padding: 0;
   }
 

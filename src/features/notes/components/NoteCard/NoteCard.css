@@ -6,9 +6,28 @@
     border: var(--border-width) solid var(--color-border);
     border-radius: var(--radius-md);
     transition: border-color var(--transition-fast);
+
+    /*
+     * Without these, a touch-and-hold on iOS Safari triggers the browser's
+     * OWN text-selection loupe over the card's title/preview text before
+     * (or instead of) `useLongPressContextMenu`'s timer ever fires — the
+     * two gestures compete for the same hold. `-webkit-touch-callout` is
+     * the iOS-specific "don't offer Copy/Look Up on long-press" switch;
+     * `user-select: none` stops the card from becoming a text selection at
+     * all, which is what the loupe needs to appear in the first place.
+     */
+    -webkit-touch-callout: none;
+    user-select: none;
   }
 
   .note-card:hover {
+    border-color: var(--color-border-strong);
+  }
+
+  /* Visual echo of the context menu this card opened — same treatment
+     SidebarNoteItem uses for its own equivalent state. */
+  .note-card--menu-open {
+    background-color: var(--color-accent-subtle);
     border-color: var(--color-border-strong);
   }
 

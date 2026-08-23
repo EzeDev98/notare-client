@@ -7,6 +7,7 @@ import { NotebookPen } from 'lucide-react';
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
+import { useLongPressContextMenu } from '@/shared/hooks/useLongPressContextMenu';
 import './NoteCard.css';
 
 export interface NoteCardActions {
@@ -25,6 +26,21 @@ interface NoteCardProps {
    * rendering them. Absence of the prop is absence of the affordance.
    */
   actions?: NoteCardActions;
+  /**
+   * Raised on right-click, a two-finger click on a Mac trackpad (both via
+   * the native `contextmenu` event), and a touch-and-hold long press (via
+   * `useLongPressContextMenu`'s own timer — see that hook's doc comment for
+   * why a long press needs its own path rather than riding the native
+   * event, same as `SidebarNoteItem`'s copy of this same prop). Optional
+   * for the same reason `actions` is: a page with nothing to do about the
+   * menu (e.g. a future read-only list) simply omits it and gets no
+   * long-press affordance rather than a menu with no working items.
+   */
+  onContextMenu?: (note: NoteView, x: number, y: number) => void;
+  /** True while THIS card's own context menu is open — a visual echo of the
+   * menu's presence, since the menu itself renders wherever the page that
+   * owns this list puts it, not as this card's child. */
+  isMenuOpen?: boolean;
 }
 
 /**
@@ -34,7 +50,7 @@ interface NoteCardProps {
  * difference that matters: `serverId` may be null for a note created offline,
  * and routing uses `localId`, which exists from the moment the note does.
  */
-export function NoteCard({ note, actions }: NoteCardProps) {
+export function NoteCard({ note, actions, onContextMenu, isMenuOpen = false }: NoteCardProps) {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   /*
    * 1C: the note's first line of content IS the label now — there is no
@@ -44,8 +60,21 @@ export function NoteCard({ note, actions }: NoteCardProps) {
    */
   const { label, remainder } = deriveNoteLabel(note.content);
 
+  // Always called (rules of hooks) — the `onOpen` callback itself no-ops
+  // when `onContextMenu` was never passed, and the handlers below are only
+  // spread onto the card when it was, so a page that opted out (Search
+  // results, today) gets neither the native-event suppression nor the
+  // long-press timer running for nothing.
+  const longPress = useLongPressContextMenu((x, y) => {
+    onContextMenu?.(note, x, y);
+  });
+
   return (
-    <li className="note-card">
+    <li
+      data-note-card-id={note.localId}
+      className={['note-card', isMenuOpen ? 'note-card--menu-open' : ''].filter(Boolean).join(' ')}
+      {...(onContextMenu ? longPress : {})}
+    >
       <Link
         className="note-card__link"
         // localId, not serverId: an offline-created note has no server id and

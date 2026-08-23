@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { deriveNoteLabel, EMPTY_NOTE_REMAINDER } from '@/features/notes/local/noteLabel';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
+import { useLongPressContextMenu } from '@/shared/hooks/useLongPressContextMenu';
 import './SidebarNoteItem.css';
 
 interface SidebarNoteItemProps {
@@ -12,6 +13,19 @@ interface SidebarNoteItemProps {
    * list rather than left to route-matching here; see
    * AnimatedSidebarNoteList's own isRowActive comment for why. */
   isActive: boolean;
+  /**
+   * Raised on right-click, a two-finger click on a Mac trackpad (both via
+   * the native `contextmenu` event), and a touch-and-hold long press (via
+   * `useLongPressContextMenu`'s own timer — the native event doesn't fire
+   * from a long press on plain elements in every browser, iOS Safari
+   * chief among them). `x`/`y` are viewport coordinates either way —
+   * `NoteContextMenu` is `position: fixed` and wants exactly that.
+   */
+  onContextMenu: (note: NoteView, x: number, y: number) => void;
+  /** True while THIS row's own context menu is open — a visual echo of the
+   * menu's presence on the row it belongs to, since the menu itself renders
+   * elsewhere in the tree (AppLayout), not as this row's child. */
+  isMenuOpen?: boolean;
 }
 
 /**
@@ -45,6 +59,8 @@ interface SidebarNoteItemProps {
 export function SidebarNoteItem({
   note,
   isActive,
+  onContextMenu,
+  isMenuOpen = false,
   animationState,
   exitStyle,
 }: SidebarNoteItemProps & {
@@ -67,6 +83,13 @@ export function SidebarNoteItem({
   const to =
     note.serverId === null ? `/notes/local/${note.localId}` : `/notes/${String(note.serverId)}`;
 
+  // Covers right-click and a two-finger Mac trackpad click via the native
+  // `contextmenu` event, AND a touch-and-hold long press via its own timer
+  // — see the hook's own doc comment for why touch needs that second path.
+  const longPress = useLongPressContextMenu((x, y) => {
+    onContextMenu(note, x, y);
+  });
+
   return (
     <li
       data-sidebar-note-id={note.localId}
@@ -84,9 +107,11 @@ export function SidebarNoteItem({
         'sidebar-note-item',
         animationState === 'enter' ? 'sidebar-note-item--enter' : '',
         animationState === 'exit' ? 'sidebar-note-item--exit' : '',
+        isMenuOpen ? 'sidebar-note-item--menu-open' : '',
       ]
         .filter(Boolean)
         .join(' ')}
+      {...longPress}
     >
       <Link to={to} className="sidebar-note-item__link" aria-current={isActive ? 'page' : undefined}>
         <span className="sidebar-note-item__title">{displayTitle}</span>

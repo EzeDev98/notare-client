@@ -1,0 +1,84 @@
+@layer components {
+  /*
+   * `position: fixed`, not `absolute` — this menu is rendered from
+   * AppLayout as a plain sibling wherever `contextMenu` state happens to be
+   * non-null, not inside the row that opened it (that row can be anywhere
+   * in a scrolled sidebar list). Fixed positioning needs no ancestor to set
+   * up a containing block for, and `top`/`left` below are already viewport
+   * coordinates — exactly what a `contextmenu` event's `clientX`/`clientY`
+   * give you.
+   */
+  .note-context-menu {
+    position: fixed;
+    z-index: var(--z-dropdown);
+    display: flex;
+    flex-direction: column;
+    min-inline-size: 200px;
+    max-inline-size: min(280px, calc(100vw - var(--space-4)));
+    padding: var(--space-2);
+    background-color: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    animation: ds-note-context-menu-enter var(--motion-duration-fast) var(--motion-ease-enter);
+  }
+
+  @keyframes ds-note-context-menu-enter {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .note-context-menu__item {
+    display: block;
+    inline-size: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--font-size-sm);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .note-context-menu__item:hover:not(:disabled) {
+    background-color: var(--color-accent-subtle);
+  }
+
+  .note-context-menu__item:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: -2px;
+  }
+
+  /* Share note, when the note has no serverId yet — see canShare in the
+     component. Dimmed rather than removed: it tells a keyboard/screen-reader
+     user the action exists but isn't available yet, same reasoning the
+     toolbar's own disabled Share icon (AppLayout.tsx) already follows. */
+  .note-context-menu__item:disabled {
+    color: var(--color-text-secondary);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .note-context-menu__item--danger {
+    color: var(--color-danger);
+  }
+
+  /* Neutral tint, not a red one — matches the restrained treatment
+     `.shared-notes__partial-error` already uses for a danger-toned surface
+     against this design system's tokens (there is no --color-danger-subtle
+     token to reach for instead). The "Delete" label's own red text already
+     carries "this is destructive" (§36 — colour never carries meaning
+     alone, but the word itself does the rest of the work here). */
+  .note-context-menu__item--danger:hover:not(:disabled) {
+    background-color: var(--color-surface-sunken);
+  }
+}

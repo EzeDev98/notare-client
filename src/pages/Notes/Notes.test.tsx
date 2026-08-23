@@ -1,10 +1,11 @@
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
 import { ToastProvider } from '@/app/providers/ToastProvider';
+import { outboxRepository } from '@/features/notes/local/noteRepository';
 import { NotesPage } from '@/pages/Notes/Notes';
 import { expectNoAxeViolations } from '~/a11y';
 import { makePage, makeRow } from '~/fixtures/notes';
@@ -188,5 +189,102 @@ describe('the notes list', () => {
     await user.click(await screen.findByRole('button', { name: /archive note 1/i }));
 
     await screen.findByRole('heading', { name: /nothing here yet/i });
+  });
+});
+
+/*
+ * The same long-press / right-click / two-finger-click menu AppLayout's
+ * desktop sidebar rail already has (AppLayout.test.tsx's own "the sidebar
+ * note context menu" describe block), wired here too because THIS list —
+ * not the rail — is what actually renders below the 1024px sidebar
+ * breakpoint, and remains the primary list above it. `fireEvent.contextMenu`
+ * stands in for right-click, a two-finger trackpad click, and a touch
+ * long-press alike; all three raise the identical native `contextmenu` DOM
+ * event, so there is nothing gesture-specific left to test per input device.
+ */
+describe('the note card context menu', () => {
+  function openContextMenu(localId: string) {
+    const card = document.querySelector(`[data-note-card-id="${localId}"]`);
+    if (!card) throw new Error(`No note card found for localId ${localId}`);
+    fireEvent.contextMenu(card);
+  }
+
+  it('opens with every action for the right-clicked note', async () => {
+    serverHasNoNotes();
+    await seedNotes(
+      makeRow({ serverId: 1, localId: 'local-1', content: 'Note 1', ownerId: TEST_USER.id }),
+    );
+    renderNotes();
+
+    await screen.findByRole('link', { name: /note 1/i });
+    openContextMenu('local-1');
+
+    expect(await screen.findByRole('menu', { name: 'Actions for Note 1' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'New note' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Duplicate note' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Share note' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Pin note' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Archive note' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Delete' })).toBeInTheDocument();
+  });
+
+  it('pins the note it was opened for, same effect as the card\'s own inline Pin button', async () => {
+    serverHasNoNotes();
+    await seedNotes(
+      makeRow({
+        serverId: 1,
+        localId: 'local-1',
+        content: 'Note 1',
+        pinned: 0,
+        ownerId: TEST_USER.id,
+      }),
+    );
+    const user = userEvent.setup();
+    renderNotes();
+
+    await screen.findByRole('link', { name: /note 1/i });
+    openContextMenu('local-1');
+    await user.click(await screen.findByRole('menuitem', { name: 'Pin note' }));
+
+    expect(await screen.findByRole('button', { name: /unpin note 1/i })).toBeInTheDocument();
+  });
+
+  it('duplicates the note it was opened for into a new note with the same content', async () => {
+    serverHasNoNotes();
+    await seedNotes(
+      makeRow({ serverId: 1, localId: 'local-1', content: 'Note 1', ownerId: TEST_USER.id }),
+    );
+    const user = userEvent.setup();
+    renderNotes();
+
+    await screen.findByRole('link', { name: /note 1/i });
+    openContextMenu('local-1');
+    await user.click(await screen.findByRole('menuitem', { name: 'Duplicate note' }));
+
+    await waitFor(async () => {
+      const outbox = await outboxRepository.list();
+      expect(
+        outbox.some((entry) => entry.type === 'CREATE' && entry.content === 'Note 1'),
+      ).toBe(true);
+    });
+  });
+
+  it('closes on Escape without changing anything', async () => {
+    serverHasNoNotes();
+    await seedNotes(
+      makeRow({ serverId: 1, localId: 'local-1', content: 'Note 1', ownerId: TEST_USER.id }),
+    );
+    const user = userEvent.setup();
+    renderNotes();
+
+    await screen.findByRole('link', { name: /note 1/i });
+    openContextMenu('local-1');
+    await screen.findByRole('menu');
+
+    await user.keyboard('{Escape}');
+
+    await waitFor(() => {
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    });
   });
 });
