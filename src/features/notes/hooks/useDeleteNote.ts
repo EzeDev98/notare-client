@@ -45,13 +45,18 @@ export function useDeleteNote() {
       // always returns something (falling back to "New Note"), so there is
       // no "Note moved to trash." fallback case left to special-case here.
       const label = deriveNoteLabel(note.content).label;
+      // Same fixed 18-character cutoff as Archived and Trash (NoteCard's
+      // `titleMaxLength` / Trash.tsx's own copy of the same rule) — a toast
+      // is a fixed-width strip, not a resizable card, so it gets the same
+      // hard character count rather than a CSS ellipsis.
+      const toastLabel = label.length > 18 ? `${label.slice(0, 18)}…` : label;
 
       await noteRepository.setDeleted(note.localId, true);
 
       const written = await noteRepository.getByLocalId(note.localId);
 
       toast.show({
-        message: `“${label}” moved to trash.`,
+        message: `“${toastLabel}” moved to trash.`,
         action: {
           label: 'Undo',
           onAction: () => {

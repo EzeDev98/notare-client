@@ -8,6 +8,18 @@
     transition: border-color var(--transition-fast);
 
     /*
+     * `.notes__list` is a grid, and grid items default to `min-width: auto`
+     * — sized to their content's intrinsic (unwrapped) width, not the
+     * track. A title long enough to hit `white-space: nowrap` below then
+     * grows the whole card past the grid track instead of being clipped by
+     * it, so `text-overflow: ellipsis` never gets a constrained box to
+     * truncate against. Same failure mode `.notes--archived .note-card__link`
+     * already works around for its own flex child; this is the one above it
+     * that lets the *card itself* shrink.
+     */
+    min-inline-size: 0;
+
+    /*
      * Without these, a touch-and-hold on iOS Safari triggers the browser's
      * OWN text-selection loupe over the card's title/preview text before
      * (or instead of) `useLongPressContextMenu`'s timer ever fires — the

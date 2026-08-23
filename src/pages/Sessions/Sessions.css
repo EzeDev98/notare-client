@@ -62,7 +62,39 @@
 
   .sessions__all {
     margin-block-start: var(--space-8);
-    padding-block-start: var(--space-6);
-    border-block-start: var(--border-width) solid var(--color-border);
+  }
+
+  /*
+   * Plain text below the button, revealed on hover — NOT a native `title`
+   * tooltip (browsers delay those, which read as sluggish here) and NOT a
+   * bubble/box floating over other content. `visibility`, not `opacity`
+   * alone: keeps it out of the tab order and un-selectable while hidden,
+   * same reasoning `.note-card__actions` uses opacity instead of `display`
+   * for hover reveals elsewhere — except this one has no keyboard
+   * equivalent to preserve, so there is nothing it needs to stay reachable
+   * for.
+   *
+   * `opacity` fades alongside `visibility` rather than replacing it:
+   * `visibility` alone snaps instantly and can't be transitioned smoothly
+   * on its own, and `opacity` alone would leave the hidden text tabbable
+   * and selectable. `transition-behavior: allow-discrete` is what lets
+   * `visibility` (normally an instant, non-interpolable jump) actually
+   * take part in the transition's timing instead of flipping the moment
+   * the fade starts — so hidden text doesn't briefly become interactive
+   * before it's even visible, or vice versa on the way out.
+   */
+  .sessions__all-hint {
+    margin: var(--space-1) 0 0;
+    visibility: hidden;
+    opacity: 0;
+    transition:
+      opacity var(--transition-fast),
+      visibility var(--transition-fast);
+    transition-behavior: allow-discrete;
+  }
+
+  .sessions__all:hover .sessions__all-hint {
+    visibility: visible;
+    opacity: 1;
   }
 }

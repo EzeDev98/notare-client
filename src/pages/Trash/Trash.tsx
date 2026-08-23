@@ -65,11 +65,16 @@ export function TrashPage() {
           {notes.map((note) => {
             // 1C/4D: no title field — the note domain has none.
             const label = deriveNoteLabel(note.content).label;
+            // Same fixed 18-character cutoff as Archived (NoteCard's
+            // `titleMaxLength`) — Trash renders its own markup rather than
+            // NoteCard, so the truncation is repeated here rather than
+            // shared, but the rule is the same: 18 characters, then "…".
+            const displayLabel = label.length > 18 ? `${label.slice(0, 18)}…` : label;
 
             return (
               <li className="trash__item" key={note.localId}>
                 <div>
-                  <p className="trash__title">{label}</p>
+                  <p className="trash__title">{displayLabel}</p>
 
                   {note.deletedAt !== null ? (
                     <p className="trash__meta">

@@ -41,6 +41,17 @@ interface NoteCardProps {
    * menu's presence, since the menu itself renders wherever the page that
    * owns this list puts it, not as this card's child. */
   isMenuOpen?: boolean;
+  /**
+   * Caps the VISIBLE title to this many characters, ellipsis after — a
+   * fixed character count rather than the CSS width-based ellipsis
+   * `.note-card__title` normally relies on. Archived passes 18: unlike the
+   * active list (one card per row, full card width to work with), Archived
+   * packs rows tightly and wants every title cut at the same fixed point
+   * regardless of how wide the card happens to render. Omitted everywhere
+   * else, where the CSS ellipsis (sized to the actual box) is the better
+   * fit.
+   */
+  titleMaxLength?: number;
 }
 
 /**
@@ -50,7 +61,13 @@ interface NoteCardProps {
  * difference that matters: `serverId` may be null for a note created offline,
  * and routing uses `localId`, which exists from the moment the note does.
  */
-export function NoteCard({ note, actions, onContextMenu, isMenuOpen = false }: NoteCardProps) {
+export function NoteCard({
+  note,
+  actions,
+  onContextMenu,
+  isMenuOpen = false,
+  titleMaxLength,
+}: NoteCardProps) {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   /*
    * 1C: the note's first line of content IS the label now — there is no
@@ -59,6 +76,14 @@ export function NoteCard({ note, actions, onContextMenu, isMenuOpen = false }: N
    * preview don't just repeat each other.
    */
   const { label, remainder } = deriveNoteLabel(note.content);
+
+  // The full `label` still drives every aria-label below (§36 — "Pin
+  // dhdhcemveqf…" tells a screen-reader user less than the un-truncated
+  // title would); only what's actually painted in the `<h2>` gets cut.
+  const displayLabel =
+    titleMaxLength !== undefined && label.length > titleMaxLength
+      ? `${label.slice(0, titleMaxLength)}…`
+      : label;
 
   // Always called (rules of hooks) — the `onOpen` callback itself no-ops
   // when `onContextMenu` was never passed, and the handlers below are only
@@ -85,7 +110,7 @@ export function NoteCard({ note, actions, onContextMenu, isMenuOpen = false }: N
             : `/notes/${String(note.serverId)}`
         }
       >
-        <h2 className="note-card__title">{label}</h2>
+        <h2 className="note-card__title">{displayLabel}</h2>
 
         {remainder !== '' ? <p className="note-card__preview">{remainder.slice(0, 200)}</p> : null}
 

@@ -45,6 +45,7 @@ export function VoiceNoteCard({ voiceNote, onDelete, deleting = false }: VoiceNo
         <Button
           variant="ghost"
           size="sm"
+          className="voice-note-card__delete"
           loading={deleting}
           disabled={deleting}
           onClick={() => {

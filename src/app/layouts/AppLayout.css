@@ -183,13 +183,42 @@
     font-weight: var(--font-weight-medium);
   }
 
+  /*
+   * The subtle bordered "chip" around every nav icon (Reference: macOS
+   * Notes' toolbar buttons — a hairline border quietly defining a
+   * background square behind each icon, not a solid filled button).
+   *
+   * On `.app-shell__nav-icon` itself, not a new wrapper element: this is
+   * the one span already shared by BOTH the <1024px compact rail and the
+   * >=1024px folders panel (AppLayout.tsx renders the same
+   * `<span className="app-shell__nav-icon">` in both), so one rule here
+   * reaches every nav icon at every breakpoint without touching either
+   * layout's own markup or its own copy of this class.
+   */
   .app-shell__nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-1);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-sm);
     color: var(--color-icon);
   }
 
   .app-shell__nav-icon svg {
     inline-size: 1.5rem;
     block-size: 1.5rem;
+  }
+
+  /*
+   * The active item's border picks up the accent colour too — not just the
+   * icon fill below — so the "chip" itself reads as selected, the same
+   * §36 reasoning already given for the fill: colour is not the only
+   * signal, but where colour IS used, the border and the fill should not
+   * disagree about which item is current.
+   */
+  .app-shell__nav-link[aria-current='page'] .app-shell__nav-icon {
+    border-color: var(--color-accent);
   }
 
   .app-shell__nav-link[aria-current='page'] .app-shell__nav-icon svg {
@@ -438,7 +467,7 @@
       inline-size: 220px;
       block-size: 32px;
       padding-inline: var(--space-3);
-      border-radius: var(--radius-full);
+      border-radius: 7px;
       background-color: var(--color-surface-sunken);
       color: var(--color-text-secondary);
     }
@@ -504,10 +533,17 @@
      * `activeNoteId`) — a real :disabled button, not just visually dimmed
      * text, so it's neither clickable nor a tab stop announced as
      * actionable.
+     *
+     * `cursor: default`, not `not-allowed`: this is disabled because there
+     * is no note selected to share, not because of an error — see
+     * Button.css's `.ds-button:disabled` for the fuller reasoning, which
+     * applies identically here. Still needs an explicit override, not just
+     * a removed line: the base rule above sets `cursor: pointer`
+     * unconditionally, and without this it would leak through on hover.
      */
     .app-shell__toolbar-icon-btn:disabled {
       color: var(--color-text-disabled);
-      cursor: not-allowed;
+      cursor: default;
     }
 
     .app-shell__toolbar-icon-btn:disabled:hover {

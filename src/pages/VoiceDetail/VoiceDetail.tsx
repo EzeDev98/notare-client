@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { Mic, Share } from 'lucide-react';
+import { Mic } from 'lucide-react';
 
 import { AudioPlayer } from '@/features/voice/components/AudioPlayer/AudioPlayer';
 import { TranscriptionPanel } from '@/features/voice/components/TranscriptionPanel/TranscriptionPanel';
@@ -117,24 +117,7 @@ export function VoiceDetailPage() {
           data-animate={contentHasMounted.current ? 'true' : undefined}
         >
           <header className="voice-detail__header">
-            <div className="voice-detail__header-row">
-              <h1>Voice note</h1>
-              {/*
-                No toolbar-level Share icon exists for voice notes the way
-                AppLayout's does for the active NOTE (that one is wired to
-                `/notes/:noteId` specifically via `useMatch`, not a general
-                mechanism) — this in-page link is voice's own attachment
-                point instead, same destination pattern (`/share`) as the
-                note side's toolbar icon.
-              */}
-              <Link
-                to={`/voice/${String(voiceNote.data.id)}/share`}
-                className="voice-detail__share-link"
-              >
-                <Share aria-hidden="true" />
-                Share
-              </Link>
-            </div>
+            <h1>Voice note</h1>
             <p className="voice-detail__muted">
               Recorded{' '}
               <time dateTime={voiceNote.data.createdAt}>

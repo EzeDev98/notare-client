@@ -100,9 +100,17 @@
   }
 
   .ds-button:disabled {
-    /* Colour is not the only signal — the cursor changes too, and the
-     * disabled attribute is announced. §36. */
-    cursor: not-allowed;
+    /* `default` (plain arrow), not `not-allowed`: `not-allowed` reads as
+     * "you did something wrong," which is misleading on a Previous/Next-
+     * style button that's disabled simply because there's no more data in
+     * that direction, not because of an error. It can't be left unset
+     * either — the base `.ds-button` rule above sets `cursor: pointer`
+     * unconditionally, and without an override here that leaks through on
+     * hover, falsely suggesting a disabled button is still clickable.
+     * Opacity and the `disabled` attribute (announced to assistive tech)
+     * remain as the other two signals §36 asked for.
+     */
+    cursor: default;
     opacity: 0.5;
   }
 

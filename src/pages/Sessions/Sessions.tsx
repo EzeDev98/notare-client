@@ -149,7 +149,7 @@ export function SessionsPage() {
           Sign out everywhere
         </Button>
 
-        <p className="sessions__meta">
+        <p className="sessions__meta sessions__all-hint">
           Ends every session, including this one. Use this if you have lost a
           device.
         </p>

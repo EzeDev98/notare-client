@@ -14,44 +14,6 @@
     margin-block-end: var(--space-6);
   }
 
-  .voice-detail__header-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-  }
-
-  .voice-detail__share-link {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    color: var(--color-accent);
-    text-decoration: none;
-  }
-
-  .voice-detail__share-link:hover {
-    text-decoration: underline;
-  }
-
-  /*
-   * Deliberate size exception: this icon sits inline with small text
-   * inside a link, so it doesn't use the standard 20px default.
-   *
-   * `color: inherit` is needed too: `.lucide` sets `color` directly on
-   * the svg, which blocks inheritance from an ancestor's `color`. This
-   * link is a deliberate accent/brand exception to the muted default
-   * icon color, so without this line the Share icon would fall back to
-   * flat --color-icon gray instead of matching the accent-purple text
-   * next to it.
-   */
-  .voice-detail__share-link svg {
-    inline-size: 16px;
-    block-size: 16px;
-    color: inherit;
-  }
-
   .voice-detail__muted {
     color: var(--color-text-secondary);
     font-size: var(--font-size-sm);

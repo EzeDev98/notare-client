@@ -265,6 +265,21 @@ export function AppLayout() {
     matchedNoteIdParam !== undefined && /^\d+$/.test(matchedNoteIdParam) ? matchedNoteIdParam : null;
 
   /*
+   * Same reach as activeNoteId above, for the voice note detail route
+   * instead — /voice/:voiceNoteId only, not /voice/:voiceNoteId/share
+   * itself (sharing "the recording you're already sharing" isn't a real
+   * action, same reasoning as the note side). This is what lets the
+   * toolbar's one Share icon serve VoiceDetailPage too, so that page no
+   * longer needs its own in-page Share link.
+   */
+  const voiceDetailMatch = useMatch('/voice/:voiceNoteId');
+  const matchedVoiceNoteIdParam = voiceDetailMatch?.params['voiceNoteId'];
+  const activeVoiceNoteId =
+    matchedVoiceNoteIdParam !== undefined && /^\d+$/.test(matchedVoiceNoteIdParam)
+      ? matchedVoiceNoteIdParam
+      : null;
+
+  /*
    * The toolbar's Delete icon needs the same "whatever note is currently
    * open" reach as Share above, but for BOTH note routes — a note without a
    * serverId yet lives at /notes/local/:localId (see NoteCard's routing
@@ -875,6 +890,14 @@ export function AppLayout() {
                 to={`/notes/${activeNoteId}/share`}
                 className="app-shell__toolbar-icon-btn"
                 aria-label="Share this note"
+              >
+                <Share aria-hidden="true" />
+              </Link>
+            ) : activeVoiceNoteId !== null ? (
+              <Link
+                to={`/voice/${activeVoiceNoteId}/share`}
+                className="app-shell__toolbar-icon-btn"
+                aria-label="Share this recording"
               >
                 <Share aria-hidden="true" />
               </Link>

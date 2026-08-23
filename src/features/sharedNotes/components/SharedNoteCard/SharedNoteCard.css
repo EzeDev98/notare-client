@@ -19,6 +19,23 @@
 
   .shared-note-card__title {
     margin: 0;
+    /*
+     * Matches the badge's own inline padding (`--space-2`, on
+     * `.shared-note-card__badge` below) so the title's text and the badge's
+     * text start at the same x-position — the badge box's background makes
+     * its OWN edge line up with the title already, but the label text
+     * inside it is inset by that padding, which is what actually reads as
+     * misaligned.
+     */
+    padding-inline-start: var(--space-2);
+    /*
+     * Explicit, not inherited through `.shared-note-card__link`'s
+     * `color: inherit` — an anchor's default (and, worse, :visited) colour
+     * can still win that inheritance chain in some engines. NoteCard's own
+     * archived variant sets this explicitly for the same reason; this is
+     * the one other title on the same page that needs to match it.
+     */
+    color: var(--color-text);
     font-size: var(--font-size-lg);
     line-height: var(--line-height-snug);
     overflow: hidden;

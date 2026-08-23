@@ -1,5 +1,9 @@
 @layer components {
   .voice-note-card {
+    /* Containing block for the stretched link's ::after — same technique
+     * NoteCard and SharedNoteCard use, so the whole row is clickable
+     * rather than just the duration/meta text the Link itself wraps. */
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -20,6 +24,17 @@
     color: inherit;
   }
 
+  /*
+   * The stretched link: an absolutely positioned pseudo-element covering
+   * the whole card, making it all clickable — without nesting the Delete
+   * button inside the anchor, which would be invalid HTML.
+   */
+  .voice-note-card__link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
   .voice-note-card__link:hover .voice-note-card__duration {
     color: var(--color-accent);
   }
@@ -35,5 +50,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* Above the stretched ::after, or the link would swallow the click
+   * before it ever reaches Delete. */
+  .voice-note-card__delete {
+    position: relative;
+    z-index: 1;
   }
 }

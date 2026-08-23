@@ -10,7 +10,16 @@
 
 .invite-collaborator__back a {
   color: inherit;
-  text-decoration: none;
+  /*
+   * `!important`: same reason `tokens/colors.css` needed it for the
+   * global focus-ring reset — this codebase's `@layer` precedence isn't
+   * reliably honoured by Vite's dev-mode CSS injection order, and this
+   * file in particular was never migrated into the `@layer pages`
+   * convention the rest of the app uses, so a plain override here isn't
+   * guaranteed to beat the global `a { text-decoration: none }` in
+   * `tokens/colors.css` regardless of which one is more specific.
+   */
+  text-decoration: none !important;
   font-size: 14px;
   font-weight: 500;
 }

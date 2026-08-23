@@ -168,6 +168,15 @@ export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
               actions={actions}
               onContextMenu={handleNoteContextMenu}
               isMenuOpen={contextMenu?.note.localId === note.localId}
+              // Conditionally spread, not `titleMaxLength={archived ? 18 :
+              // undefined}` — NoteCardProps declares `titleMaxLength?:
+              // number`, and under `exactOptionalPropertyTypes: true` that
+              // means the prop may be OMITTED, not explicitly set to
+              // `undefined`. Omitting it here (rather than widening the
+              // prop's type to `number | undefined`) keeps that distinction
+              // meaningful for every other caller of NoteCard, instead of
+              // loosening the type everywhere to accommodate one call site.
+              {...(archived ? { titleMaxLength: 18 } : {})}
             />
           ))}
         </ul>

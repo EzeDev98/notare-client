@@ -53,11 +53,15 @@ export function SharedNoteCard({ shared, ownerName }: SharedNoteCardProps) {
    * real label.
    */
   const { label, remainder } = deriveNoteLabel(shared.note.contentPreview ?? '');
+  // Same fixed 18-character cutoff as Archived (NoteCard's `titleMaxLength`)
+  // and Trash — a hard character count rather than a CSS width-based
+  // ellipsis, so a long garbled first line can't run past the card edge.
+  const displayLabel = label.length > 18 ? `${label.slice(0, 18)}…` : label;
 
   return (
     <li className="shared-note-card">
       <Link className="shared-note-card__link" to={`/shared/${String(shared.note.id)}`}>
-        <h2 className="shared-note-card__title">{label}</h2>
+        <h2 className="shared-note-card__title">{displayLabel}</h2>
 
         {remainder !== '' ? (
           <p className="shared-note-card__preview">{remainder.slice(0, 200)}</p>
