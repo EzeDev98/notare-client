@@ -794,7 +794,7 @@ export function AppLayout() {
           */}
           <button
             type="button"
-            className="app-shell__toolbar-icon-btn"
+            className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined"
             aria-label={isFoldersOpen ? 'Hide folders' : 'Show folders'}
             aria-pressed={isFoldersOpen}
             onClick={toggleFolders}
@@ -803,7 +803,7 @@ export function AppLayout() {
           </button>
           <button
             type="button"
-            className="app-shell__toolbar-icon-btn"
+            className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined"
             aria-label="Delete note"
             disabled={activeNoteRow == null}
             onClick={() => {
@@ -826,7 +826,7 @@ export function AppLayout() {
         <div className="app-shell__toolbar-main">
           <button
             type="button"
-            className="app-shell__toolbar-icon-btn"
+            className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined"
             aria-label="New note"
             aria-disabled={hasEmptyNote}
             data-unavailable={hasEmptyNote || undefined}
@@ -857,7 +857,7 @@ export function AppLayout() {
             <div className="app-shell__notifications" ref={notificationsRef}>
               <button
                 type="button"
-                className="app-shell__toolbar-icon-btn"
+                className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined"
                 aria-label="Notifications"
                 aria-haspopup="dialog"
                 aria-expanded={notificationsOpen}
@@ -888,7 +888,7 @@ export function AppLayout() {
             {activeNoteId !== null ? (
               <Link
                 to={`/notes/${activeNoteId}/share`}
-                className="app-shell__toolbar-icon-btn"
+                className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined"
                 aria-label="Share this note"
               >
                 <Share aria-hidden="true" />
@@ -896,7 +896,7 @@ export function AppLayout() {
             ) : activeVoiceNoteId !== null ? (
               <Link
                 to={`/voice/${activeVoiceNoteId}/share`}
-                className="app-shell__toolbar-icon-btn"
+                className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined"
                 aria-label="Share this recording"
               >
                 <Share aria-hidden="true" />
@@ -904,7 +904,7 @@ export function AppLayout() {
             ) : (
               <button
                 type="button"
-                className="app-shell__toolbar-icon-btn"
+                className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined"
                 aria-label="Share this note"
                 disabled
               >

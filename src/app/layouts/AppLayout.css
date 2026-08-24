@@ -200,7 +200,6 @@
     align-items: center;
     justify-content: center;
     padding: var(--space-1);
-    border: var(--border-width) solid var(--color-border);
     border-radius: var(--radius-sm);
     color: var(--color-icon);
   }
@@ -512,15 +511,20 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      inline-size: 32px;
-      block-size: 32px;
+      inline-size: 30px;
+      block-size: 27px;
       padding: 0;
       border: none;
-      border-radius: var(--radius-md);
+      border-radius: 13px;
       background: none;
       color: var(--color-icon);
       text-decoration: none;
       cursor: pointer;
+    }
+
+    .app-shell__toolbar-icon-btn--outlined {
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--radius-sm);
     }
 
     .app-shell__toolbar-icon-btn:hover {
