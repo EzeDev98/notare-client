@@ -1,4 +1,3 @@
-
 import { Link, useParams } from 'react-router';
 
 import { useAuth } from '@/app/providers/auth-context';
@@ -47,10 +46,6 @@ export function LocalNoteDetailPage() {
   return (
     <article className="note-detail">
       <div className="note-detail__scroll">
-        <nav className="note-detail__back">
-          <Link to="/notes">← All notes</Link>
-        </nav>
-
         {state.status === 'not-found' ? (
           <div className="note-detail__centre">
             <h1>Note not found</h1>

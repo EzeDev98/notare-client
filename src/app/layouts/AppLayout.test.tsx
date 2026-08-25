@@ -131,9 +131,57 @@ describe('the folders panel — Shared with me', () => {
     renderAt('/archived');
 
     await user.click(await screen.findByRole('button', { name: 'Show folders' }));
-    await user.click(screen.getByRole('link', { name: 'Collaborations' }));
+
+    // Scoped to the folders panel, same as the sibling test above — the
+    // compact nav (Step 5 of the responsive layout plan) renders its own
+    // "Collaborations" link too, and with no breakpoint CSS gating them
+    // apart yet (that's Step 6), both are simultaneously in the DOM here.
+    // Unscoped, "Collaborations" is now ambiguous between the two.
+    const folders = screen.getByRole('navigation', { name: 'Folders' });
+    await user.click(within(folders).getByRole('link', { name: 'Collaborations' }));
 
     expect(await screen.findByRole('heading', { name: 'Collaborations' })).toBeInTheDocument();
+  });
+});
+
+/*
+ * Step 5's addition to .app-shell__nav (responsive layout plan) — the
+ * compact nav (icon rail 640-1023px, bottom bar below 640px; no
+ * breakpoint-scoped CSS exists yet, so it renders unconditionally here,
+ * same as jsdom has no viewport to gate it by regardless) mirrors the
+ * folders panel's six destinations exactly, via the same compactNavItems /
+ * foldersNavItems alias — see AppLayout.tsx's own comment on that constant.
+ */
+describe('the compact nav', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it('renders all six destinations with the same names and hrefs as the folders panel', async () => {
+    renderAt('/notes');
+
+    const compactNav = await screen.findByRole('list', { name: 'Primary navigation' });
+    const linkNames = within(compactNav)
+      .getAllByRole('link')
+      .map((link) => link.textContent);
+
+    expect(linkNames).toEqual([
+      'Voice notes',
+      'Shared with me',
+      'Collaborations',
+      'Archived',
+      'Trash',
+      'Accounts',
+    ]);
+
+    expect(within(compactNav).getByRole('link', { name: 'Shared with me' })).toHaveAttribute(
+      'href',
+      '/shared',
+    );
+    expect(within(compactNav).getByRole('link', { name: 'Collaborations' })).toHaveAttribute(
+      'href',
+      '/collaborations',
+    );
   });
 });
 

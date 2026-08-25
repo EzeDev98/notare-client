@@ -1,0 +1,122 @@
+@layer components {
+  /*
+   * Fixed, not absolute/relative to anything in .app-shell — a full-screen
+   * takeover, same z-index tier as Modal's own dialog (--z-modal, above
+   * --z-overlay/--z-dropdown/--z-sticky) since this sits above the sticky
+   * toolbar and bottom bar entirely while open. See MobileNotesPanel.tsx's
+   * own comment for why this doesn't need a portal the way Modal does.
+   */
+  .mobile-notes-panel {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-surface);
+    animation: ds-mobile-notes-panel-enter var(--motion-duration-base) var(--motion-ease-enter);
+  }
+
+  .mobile-notes-panel[data-closing='true'] {
+    animation:
+      ds-mobile-notes-panel-exit
+      var(--motion-duration-fast)
+      var(--motion-ease-exit)
+      forwards;
+  }
+
+  @keyframes ds-mobile-notes-panel-enter {
+    from {
+      opacity: 0;
+      transform: translateY(0.75rem);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes ds-mobile-notes-panel-exit {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+  }
+
+  .mobile-notes-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    block-size: 52px;
+    min-block-size: 52px;
+    padding-inline: var(--space-4);
+    border-block-end: var(--border-width) solid var(--color-border);
+  }
+
+  /* Same title styling NotificationsPanel's own header already uses. */
+  .mobile-notes-panel__title {
+    margin: 0;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+  }
+
+  /* Same 44px touch-target reasoning as every other icon-only control
+     below 1024px (.app-shell__nav-link's own comment). */
+  .mobile-notes-panel__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 44px;
+    block-size: 44px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-icon);
+    cursor: pointer;
+  }
+
+  .mobile-notes-panel__close:hover {
+    background-color: var(--color-accent-faint);
+    color: var(--color-text);
+  }
+
+  .mobile-notes-panel__body {
+    flex: 1;
+    min-block-size: 0;
+    overflow-y: auto;
+    padding-block: var(--space-2);
+    /* Same iOS home-indicator clearance reasoning as .app-shell__nav's own
+       padding-block-end (AppLayout.css). */
+    padding-block-end: max(var(--space-4), env(safe-area-inset-bottom));
+  }
+
+  .mobile-notes-panel__empty {
+    margin: 0;
+    padding: var(--space-6) var(--space-4);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    text-align: center;
+  }
+
+  /*
+   * Desktop never renders this panel's trigger (AppLayout.css hides the
+   * button that opens it below 1024px only), so `isMobileNotesOpen` can
+   * never actually be true at >=1024px in practice — but if it somehow
+   * were (a stale value surviving a resize, say), this is the hard
+   * backstop that keeps the takeover from ever painting over the desktop
+   * sidebar it was never meant to replace there.
+   */
+  @media (min-width: 1024px) {
+    .mobile-notes-panel {
+      display: none !important;
+    }
+  }
+}

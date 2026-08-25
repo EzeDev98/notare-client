@@ -82,16 +82,6 @@ export function NoteDetailPage() {
         live in the normal scrolling flow.
       */}
       <div className="note-detail__scroll">
-        {/*
-          Just the back link now — no inline "Share" link here anymore.
-          Sharing moved to the toolbar's Share icon (AppLayout.tsx), which
-          acts on whichever note is currently open via a route match, so
-          there is exactly one Share entry point instead of two.
-        */}
-        <nav className="note-detail__back">
-          <Link to="/notes">← All notes</Link>
-        </nav>
-
         {state.status === 'loading' && showLoadingSpinner ? (
           <div className="note-detail__centre">
             <Spinner label="Loading this note" />

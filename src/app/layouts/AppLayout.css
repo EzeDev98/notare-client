@@ -68,20 +68,268 @@
     inset-block-start: var(--space-4);
   }
 
-  /* ---- Toolbar (desktop only — see AppLayout.tsx's own comment) -------- */
+  /* ---- Toolbar (visible at every breakpoint — see AppLayout.tsx's own
+     comment) ------------------------------------------------------------ */
 
   /*
-   * Nothing below 1024px. The mobile bottom bar and tablet icon rail have
-   * no full-width row above them to speak of — this element exists purely
-   * for the >=1024px sidebar layout, where it becomes the bar spanning
-   * both the sidebar and the content.
+   * The top action navbar must never disappear at any width (product
+   * requirement). This base rule is the default for <640px, where
+   * .app-shell is a column flex container and the toolbar is simply the
+   * first item in that column — no grid needed here, unlike the 640px+
+   * ranges below, where nav and main sit BESIDE each other and the
+   * toolbar needs its own full-width row above both (see the 640px and
+   * 1024px blocks' own comments on why those use CSS Grid for that).
    */
   .app-shell__toolbar {
-    display: none;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    block-size: 52px;
+    min-block-size: 52px;
+    border-block-end: var(--border-width) solid var(--color-border);
+    background-color: var(--color-surface);
   }
 
   .app-shell__toolbar-nav,
   .app-shell__toolbar-main {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding-inline: var(--space-3);
+  }
+
+  .app-shell__toolbar-main {
+    flex: 1;
+    justify-content: space-between;
+  }
+
+  /*
+   * Below 1024px only — the >=1024px block further down redeclares both
+   * of these with its own layout (a fixed-width left segment matching
+   * the sidebar, notifications/share/search right-aligned against the
+   * trailing edge). Without a base rule here at all, `.app-shell__toolbar-
+   * actions` and `.app-shell__notifications` fell back to block-level
+   * default display below 1024px — the notifications button, Share, and
+   * the search toggle would stack instead of sitting in a row.
+   */
+  .app-shell__toolbar-actions {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  /*
+   * Deliberately NOT `position: relative` below 1024px, unlike the
+   * >=1024px override further down (which keeps the bell as its own
+   * positioning context on purpose — see that rule's own comment). The
+   * bell is the FIRST of up to four icons in this row (notifications,
+   * share, search, theme — AppLayout.tsx's own markup order), so
+   * anchoring `.notifications-panel` to this wrapper's own narrow width
+   * put the panel's right edge under the bell itself rather than under
+   * the row's true trailing edge — on a narrow viewport the panel (up to
+   * ~380px) then ran off the LEFT edge of the screen, its text clipped.
+   * Leaving this un-positioned lets `.notifications-panel`'s
+   * `position: absolute` resolve against `.app-shell__toolbar-actions`
+   * above instead (the next positioned ancestor up), whose trailing edge
+   * sits at the row's actual right edge regardless of which icon
+   * triggered it.
+   */
+  .app-shell__notifications {
+    display: flex;
+    align-items: center;
+  }
+
+  /*
+   * 44px touch targets below 1024px — same reasoning `.app-shell__nav-
+   * link` already gives for its own identical minimum (a fingertip has
+   * far less precision than a cursor). The >=1024px block below keeps
+   * its existing tighter 30x27 mouse-sized version; nothing here changes
+   * that, since these are the same selector and the later, more specific
+   * media query wins for that range.
+   */
+  .app-shell__toolbar-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 44px;
+    block-size: 44px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-icon);
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .app-shell__toolbar-icon-btn--outlined {
+    border: var(--border-width) solid var(--color-border);
+  }
+
+  .app-shell__toolbar-icon-btn:hover {
+    background-color: var(--color-accent-faint);
+    color: var(--color-text);
+  }
+
+  .app-shell__toolbar-icon-btn:disabled {
+    color: var(--color-text-disabled);
+    cursor: default;
+  }
+
+  .app-shell__toolbar-icon-btn:disabled:hover {
+    background-color: transparent;
+  }
+
+  .app-shell__toolbar-icon-btn svg {
+    color: inherit;
+  }
+
+  /*
+   * Step 13 — >=1024px only (overridden visible in that block below).
+   * .app-shell__folders is desktop-only by design, so this button (which
+   * opens it) has nothing to do below 1024px; its <1024px-only sibling
+   * (the notes-toggle button right next to it in the markup, no CSS
+   * class of its own needed here — .app-shell__toolbar-icon-btn's base
+   * rule already shows it, this rule just doesn't hide it) takes over
+   * that same visual slot down there instead.
+   */
+  .app-shell__toolbar-folders-toggle {
+    display: none;
+  }
+
+  /*
+   * Step 13 — the toolbar's theme control, <1024px only (hidden
+   * wholesale at >=1024px, below — ThemeToggle already lives permanently
+   * in the folders panel there). Anchored popover, not an inline expand
+   * like search: three small icons don't need a whole row's width, and
+   * .app-shell__notifications right above already proves this exact
+   * position:relative-wrapper + position:absolute-popover shape works at
+   * every breakpoint.
+   */
+  .app-shell__toolbar-theme-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  /*
+   * inline-size explicit, not left to shrink-wrap ThemeToggle's own
+   * content — that's the bug this rule fixes. On desktop, ThemeToggle
+   * sits in the folders panel as an ordinary block-level child, so it
+   * inherits that ~200px column's full width for free and its three
+   * flex:1 buttons spread out to fill it, which is what makes it read
+   * clearly there. Here it's the sole child of a position:absolute box
+   * with no width of its own to inherit, so without an explicit size
+   * this collapses toward its own min-content instead — three icons
+   * crushed together with almost no breathing room. 200px matches
+   * .app-shell__folders' own effective content width (its 200px default
+   * minus its padding-inline), so the SAME component ends up the same
+   * size in both places instead of two different-looking controls.
+   * Padding/border/background/shadow mirror NotificationsPanel's own
+   * popover-card treatment, for the same reason: a floating control
+   * needs its own visible edge, not just its child's inner styling.
+   */
+  .app-shell__toolbar-theme-unfold {
+    position: absolute;
+    inset-block-start: calc(100% + var(--space-2));
+    inset-inline-end: 0;
+    z-index: var(--z-dropdown);
+    inline-size: 200px;
+    padding: var(--space-3);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-md);
+  }
+
+  /*
+   * STEP 2B — the icon-triggered search expand, below 1024px only. A
+   * 220px input plus five other icons doesn't fit a 320px toolbar (see
+   * isToolbarSearchExpanded's own comment in AppLayout.tsx for the exact
+   * math). Collapsed by default: the toggle button shows, the form
+   * doesn't. Expanded: the reverse, and the other icons in this row step
+   * aside so the input gets the full row.
+   */
+  .app-shell__toolbar-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .app-shell__toolbar-search {
+    display: none;
+  }
+
+  .app-shell__toolbar-main[data-search-expanded] .app-shell__toolbar-search-wrap {
+    flex: 1;
+  }
+
+  .app-shell__toolbar-main[data-search-expanded] .app-shell__toolbar-search-toggle {
+    display: none;
+  }
+
+  .app-shell__toolbar-main[data-search-expanded] .app-shell__toolbar-search {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: 1;
+    inline-size: 100%;
+    block-size: 40px;
+    padding-inline: var(--space-3);
+    border-radius: 7px;
+    background-color: var(--color-surface-sunken);
+    color: var(--color-text-secondary);
+  }
+
+  .app-shell__toolbar-main[data-search-expanded] .app-shell__toolbar-search svg:first-child {
+    flex-shrink: 0;
+    inline-size: 1rem;
+    block-size: 1rem;
+  }
+
+  .app-shell__toolbar-search input {
+    flex: 1;
+    min-inline-size: 0;
+    border: none;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: var(--font-size-sm);
+  }
+
+  .app-shell__toolbar-search input:focus-visible {
+    outline: none;
+  }
+
+  .app-shell__toolbar-search input::placeholder {
+    color: var(--color-text-secondary);
+  }
+
+  .app-shell__toolbar-search input::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  .app-shell__toolbar-search-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    inline-size: 32px;
+    block-size: 32px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--color-icon);
+    cursor: pointer;
+  }
+
+  /* The other toolbar-main icons step aside while search is expanded, so
+     the input gets the whole row instead of fighting them for space. */
+  .app-shell__toolbar-main[data-search-expanded] .app-shell__toolbar-new-note,
+  .app-shell__toolbar-main[data-search-expanded] .app-shell__notifications,
+  .app-shell__toolbar-main[data-search-expanded] .app-shell__toolbar-share {
     display: none;
   }
 
@@ -99,25 +347,48 @@
 
   /* ---- Nav ------------------------------------------------------------- */
 
+  /*
+   * Toolbar height accounting: the toolbar reserves a fixed 52px at
+   * every breakpoint (block-size above), and .app-shell__main always
+   * takes flex:1/min-block-size:0 (below) to claim exactly what's left
+   * over. Below 640px that's ordinary column-flex math; at 640px+ the
+   * same accounting happens instead via the grid's own row track
+   * (`grid-template-rows: 52px minmax(0, 1fr)`, in the 640px block
+   * below) — .app-shell__nav's height comes from that same row track
+   * too, NOT from its own block-size (a leftover height bug this used
+   * to have — see the "Fix the mobile height leak" audit finding).
+   */
   .app-shell__nav {
-    order: 0;
+    /*
+     * Bottom bar (Step 8): DOM order is toolbar, nav, main (see
+     * AppLayout.tsx), so without this, plain source order would put nav
+     * ABOVE main in this column flex layout — wrong for a bar that's
+     * supposed to sit under the content. `order: 1` (main and toolbar
+     * are both left at the default 0) pushes nav after main instead. At
+     * 640px+ this is a no-op: nav and main both get explicit grid-row
+     * placement there, which overrides order.
+     */
+    order: 1;
     position: sticky;
-    inset-block-start: 0;
-    inset-block-end: auto;
+    inset-block-start: auto;
+    inset-block-end: 0;
     z-index: var(--z-sticky);
 
     display: flex !important;
     flex-direction: column;
 
-    inline-size: 56px;
-    min-inline-size: 56px;
-    block-size: 100dvh;
-
-    flex-shrink: 0;
+    /*
+     * No inline-size here (was a stray 56px rail width leftover from
+     * before the compact nav existed) — a full-width bottom bar needs to
+     * fill .app-shell's own inline-size, which flex's default
+     * align-items:stretch already gives it for free. The 640px+ rail
+     * still gets its own 56px explicitly, scoped to that block below
+     * (redundant with that range's `grid-template-columns: 56px 1fr`,
+     * but kept explicit rather than relying on the grid track alone).
+     */
 
     background-color: var(--color-surface);
-    border-inline-end: var(--border-width) solid var(--color-border);
-    border-block-start: none;
+    border-block-start: var(--border-width) solid var(--color-border);
 
     padding-block: var(--space-4);
     padding-block-end: max(
@@ -129,19 +400,30 @@
     opacity: 1 !important;
   }
   /*
-   * COMPACT NAV — the original four-item nav (Notes/Voice/Notifications/
-   * Account), unchanged. Governs the mobile bottom bar and tablet icon
-   * rail; hidden at the >=1024px sidebar breakpoint, where
-   * .app-shell__sidebar takes over (see AppLayout.tsx's own top comment
-   * on why: no room for a live note list at those sizes).
+   * COMPACT NAV — visible below 1024px only (icon rail 640-1023px,
+   * bottom bar below 640px; each layout's own direction/spacing/
+   * positioning is Steps 7-8 of the responsive layout plan — this rule
+   * only gates visibility by breakpoint, mirroring .app-shell__sidebar's
+   * opposite rule directly below). Renders the same six destinations as
+   * the desktop folders panel — see AppLayout.tsx's own comment on
+   * compactNavItems for why it's a direct alias of foldersNavItems.
    */
+  .app-shell__compact-nav {
+    display: flex;
+    /* Default flex-direction (row): correct as-is for the <640px bottom
+       bar — icons side-by-side, spread evenly across the full-width bar
+       .app-shell__nav now stretches to (Step 8). The 640px+ block below
+       flips this to a vertical rail instead. */
+    justify-content: space-around;
+    inline-size: 100%;
+    margin: 0;
+  }
 
   /* Hidden below the sidebar breakpoint — nothing to show until there's
-     room for the note list this contains. */
+     room for the note list this contains. Its >=1024px override sits
+     alongside .app-shell__compact-nav's own opposite override, below. */
   .app-shell__sidebar {
-    display: flex;
-    flex-direction: column;
-    min-block-size: 0;
+    display: none;
   }
 
   .app-shell__nav-link {
@@ -168,6 +450,24 @@
 
   .app-shell__nav-link:hover {
     color: var(--color-text);
+  }
+
+  /*
+   * Icon-only below 1024px (Step 8: the bottom bar is icon-only same as
+   * the rail, per the target architecture's own wording) — labels
+   * clipped but PRESENT, the same VisuallyHidden-equivalent technique
+   * Step 7 already used for the 640-1023px rail, now the default here
+   * instead of scoped inside that block, since it needs to hold for
+   * <640px too. Undone again at >=1024px (that block's own
+   * .app-shell__nav-label rule already sets clip-path: none).
+   */
+  .app-shell__nav-label {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   /*
@@ -315,25 +615,84 @@
   /* ---- 640px+ : icon rail --------------------------------------------- */
 
   @media (min-width: 640px) {
+    /*
+     * Flex row -> grid, same reasoning the >=1024px block below already
+     * gives for its own identical switch: a third full-width sibling
+     * (the toolbar) cannot sit "above" nav+main in a single-row flex
+     * container — grid gives it its own row spanning both columns, with
+     * nav and main dropping into row 2. Two columns here, not three —
+     * there is no folders panel at this range (that's >=1024px only).
+     */
     .app-shell {
-      flex-direction: row;
+      display: grid;
+      grid-template-columns: 56px 1fr;
+      grid-template-rows: 52px minmax(0, 1fr);
+      block-size: 100dvh;
+      max-block-size: 100dvh;
+      overflow: hidden;
     }
 
+    .app-shell__toolbar {
+      grid-column: 1 / -1;
+      grid-row: 1;
+    }
 
+    .app-shell__nav {
+      grid-column: 1;
+      grid-row: 2;
+      /*
+       * NOT block-size: 100dvh here — that was correct for the old
+       * single-row flex layout (nav was the only thing setting its own
+       * full-page height), but in a grid this item's height is already
+       * bounded by row 2's own track, and an explicit 100dvh would
+       * overflow past that track instead of filling it. min-block-size:
+       * 0 is what actually matters — it's what lets this item's own
+       * content shrink/scroll within the row rather than forcing the
+       * row to grow around it (same reasoning .app-shell__main already
+       * uses below, and the >=1024px block uses for this same element).
+       */
+      min-block-size: 0;
+
+      /*
+       * Rail width + side border, explicit here rather than left to
+       * inherit from the base rule (Step 8 removed both from base so the
+       * <640px bottom bar can stretch full-width instead). Redundant
+       * with the grid's own `56px 1fr` column track above, but kept
+       * explicit so this element's own box doesn't depend on reading the
+       * grid definition to know its size. Border flips from the bottom
+       * bar's top edge back to a right edge, separating the rail from
+       * main the same way it always has at this range.
+       */
+      inline-size: 56px;
+      min-inline-size: 56px;
+      border-block-start: none;
+      border-inline-end: var(--border-width) solid var(--color-border);
+    }
+
+    .app-shell__main {
+      grid-column: 2;
+      grid-row: 2;
+      min-block-size: 0;
+    }
 
     /*
-     * Labels hidden but PRESENT — the same clip technique as VisuallyHidden,
-     * not display:none. The link's accessible name must survive; an icon-only
-     * link with no text is announced as nothing at all.
+     * Icon rail: stacked vertically, not the base rule's row direction
+     * (which is only correct for the <640px bottom bar — Step 8). Each
+     * <li> stretches to the rail's own 56px width by flex's default
+     * align-items, and .app-shell__nav-link centers its own icon+label
+     * within that — so no explicit align-items is needed here, just the
+     * direction flip and breathing room between items.
      */
-    .app-shell__nav-label {
-      position: absolute;
-      inline-size: 1px;
-      block-size: 1px;
-      overflow: hidden;
-      clip-path: inset(50%);
-      white-space: nowrap;
+    .app-shell__compact-nav {
+      flex-direction: column;
+      gap: var(--space-2);
     }
+
+    /*
+     * Label clipping itself is now the base rule's job (Step 8 — it has
+     * to hold below 640px too, for the bottom bar), so there is nothing
+     * left to add here for it; this range just inherits that unchanged.
+     */
   }
 
   /* ---- 1024px+ : sidebar with labels ---------------------------------- */
@@ -459,6 +818,27 @@
       align-items: center;
     }
 
+    /*
+     * Step 13, reversed for this range: the folders-toggle button comes
+     * back (.app-shell__folders is desktop-only, this is the button that
+     * opens it), and its <1024px-only sibling plus the theme-toggle wrap
+     * both go away entirely — desktop reaches Notes via the always-
+     * visible sidebar and reaches theme via the folders panel, neither
+     * needs a toolbar control here. `!important` because the base rule's
+     * `display: flex` (inherited from .app-shell__toolbar-icon-btn) and
+     * `display: flex` (the theme-wrap's own base rule) both have equal
+     * specificity to this override otherwise, same reasoning the search
+     * toggle's own identical override just below already documents.
+     */
+    .app-shell__toolbar-folders-toggle {
+      display: flex;
+    }
+
+    .app-shell__toolbar-notes-toggle,
+    .app-shell__toolbar-theme-wrap {
+      display: none !important;
+    }
+
     .app-shell__toolbar-search {
       display: flex;
       align-items: center;
@@ -475,6 +855,36 @@
       flex-shrink: 0;
       inline-size: 1rem;
       block-size: 1rem;
+    }
+
+    /*
+     * STEP 2B belt-and-suspenders: the search-expand toggle can only be
+     * clicked below 1024px (it's display:none up here, a few rules
+     * down), so isToolbarSearchExpanded should never be true at this
+     * width in normal use. These overrides make that true regardless —
+     * matching or exceeding the specificity of the base [data-search-
+     * expanded] rules — so desktop's search pill, its fixed 220px width,
+     * and the other toolbar icons can never be hidden or resized by
+     * state that was only ever meant to affect smaller widths.
+     */
+    .app-shell__toolbar-main[data-search-expanded] .app-shell__toolbar-search-wrap {
+      flex: initial;
+    }
+
+    .app-shell__toolbar-main[data-search-expanded] .app-shell__toolbar-search {
+      inline-size: 220px;
+      flex: initial;
+    }
+
+    .app-shell__toolbar-main[data-search-expanded] .app-shell__toolbar-new-note,
+    .app-shell__toolbar-main[data-search-expanded] .app-shell__notifications,
+    .app-shell__toolbar-main[data-search-expanded] .app-shell__toolbar-share {
+      display: flex;
+    }
+
+    .app-shell__toolbar-search-toggle,
+    .app-shell__toolbar-search-close {
+      display: none !important;
     }
 
     .app-shell__toolbar-search input {
@@ -608,8 +1018,12 @@
       min-block-size: 0;
     }
 
-    /* Keep the compact navigation visible at every viewport width. */
-
+    /* Sidebar and compact nav swap places at exactly this breakpoint —
+       never both, never neither. See the base (mobile/tablet) rules
+       above for each element's opposite state. */
+    .app-shell__compact-nav {
+      display: none;
+    }
 
     .app-shell__sidebar {
       display: flex;
@@ -808,54 +1222,6 @@
       background-color: var(--color-accent-faint);
     }
   }
-}
-
-/* -------------------------------------------------------------------------
-   NAVIGATION VISIBILITY OVERRIDE
-   The app navigation must remain visible at every viewport width.
-   Responsive layouts may change its shape, but must never remove it.
-   ------------------------------------------------------------------------- */
-
-.app-shell__nav {
-  display: block !important;
-}
-
-
-
-/*
- * TEMPORARY NAVIGATION VISIBILITY OVERRIDE
- *
- * Keep the main navigation visible at every viewport width while we
- * stabilize the responsive layout. This intentionally overrides the
- * desktop-only hiding behavior so resizing the browser or opening
- * DevTools cannot make the navbar disappear.
- */
-.app-shell__nav {
-  display: flex !important;
-}
-
-
-
-/* FORCE NAVBAR VISIBLE AT ALL VIEWPORT SIZES */
-.app-shell__nav {
-  display: flex !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  position: sticky !important;
-  inset-block-start: 0 !important;
-  inset-block-end: auto !important;
-  inset-inline-start: 0 !important;
-  z-index: var(--z-sticky) !important;
-  flex-shrink: 0 !important;
-}
-
-
-
-
-
-.app-shell__nav-link {
-  visibility: visible !important;
-  opacity: 1 !important;
 }
 
 /*

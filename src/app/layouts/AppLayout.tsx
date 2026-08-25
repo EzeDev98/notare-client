@@ -14,21 +14,27 @@ import {
   Archive,
   Bell,
   Handshake,
+  Moon,
+  NotebookText,
   PanelLeft,
   Search,
   Share,
   SquarePen,
+  Sun,
   Trash2,
   NotebookPen,
   Users,
+  X,
 } from 'lucide-react';
 
 import { navItems, type NavItem } from '@/app/layouts/navItems';
 import { RouteFocus } from '@/app/RouteFocus';
 import { RouteTransition } from '@/app/RouteTransition';
 import { useAuth } from '@/app/providers/auth-context';
+import { useTheme } from '@/app/providers/theme-context';
 import { useFoldersPanel } from '@/app/layouts/useFoldersPanel';
 import { useSidebarWidth } from '@/app/layouts/useSidebarWidth';
+import { MobileNotesPanel } from '@/app/layouts/MobileNotesPanel';
 import { AnimatedSidebarNoteList } from '@/features/notes/components/AnimatedSidebarNoteList/AnimatedSidebarNoteList';
 import {
   NoteContextMenu,
@@ -51,10 +57,11 @@ import './AppLayout.css';
 /*
  * Archived, Trash, Voice, Shared with me, Collaboration, Account — the FOLDERS PANEL's
  * contents now (moved out of the note-list sidebar's own footer). Still
- * defined here rather than in navItems.tsx, same reasoning as before:
- * navItems.tsx drives the <1024px compact nav and stays exactly as it
- * already was, so mobile/tablet — which has no folders panel at all —
- * are untouched.
+ * defined here rather than in navItems.tsx: navItems.tsx no longer drives
+ * any rendered nav — the <1024px compact nav mirrors this same six-item
+ * list instead (see compactNavItems, below foldersNavItems). navItems.tsx
+ * is only read from, below, to reuse two of its existing icon/label pairs
+ * (Voice, Account) rather than redefining them.
  */
 /*
  * A deliberate beat around every note creation and every auto-delete of an
@@ -107,15 +114,16 @@ const desktopOnlyItems: NavItem[] = [
 
 // Everything BUT Notes, plus Archived/Trash — the folders panel's full
 // contents. Derived here rather than edited into navItems.tsx: navItems
-// itself stays untouched and still exactly matches what the compact nav
-// below renders, so there is no second four-item list to keep in sync by
-// hand, and mobile/tablet cannot silently grow past four icons.
+// itself stays untouched, still exactly the historical four-item list
+// (Notes/Voice/Notifications/Account) it always was — it no longer drives
+// any nav on its own (see compactNavItems' own comment, below
+// foldersNavItems, for what does).
 //
-// Shared with me is NOT part of navItems (that array drives the <1024px
-// compact nav too, and Shared has no place in that unchanged four-item
-// list) — it's inserted here directly, between Shared with me and Account, so it
+// Shared with me is NOT part of navItems (that array never had it, and
+// isn't edited to add it) — it's inserted here directly, between
+// voiceNotesItem and collaborationItem in foldersNavItems below, so it
 // picks up the same NavLink rendering as everything else in this panel
-// without navItems.tsx growing a fifth entry mobile/tablet never asked for.
+// without touching navItems.tsx at all.
 const sharedWithMeItem: NavItem = {
   to: '/shared',
   label: 'Shared with me',
@@ -146,6 +154,20 @@ const foldersNavItems = [
   accountItem,
 ];
 
+/*
+ * The compact nav (icon rail at 640-1023px, bottom bar below 640px - see
+ * Step 5) renders these same six destinations, in the same order, as the
+ * desktop folders panel. This is a deliberate product decision (responsive
+ * layout plan, Step 3): a single source of truth for "what are the six
+ * destinations" shared between the two, so mobile/tablet nav can never
+ * silently drift out of sync with desktop's folders panel the way the old,
+ * now-deleted four-item compact nav did against navItems.tsx. If the two
+ * ever need to diverge, replace this alias with its own item list built the
+ * same way foldersNavItems is above - do not fork the six item objects
+ * themselves.
+ */
+const compactNavItems = foldersNavItems;
+
 /**
  * The authenticated application shell.
  *
@@ -169,15 +191,24 @@ const foldersNavItems = [
  *
  * ONLY at >=1024px. A live, scrollable note list cannot fit in a 56px
  * icon rail or a mobile bottom bar without redesigning those layouts
- * outright — so <1024px keeps the ORIGINAL four-item nav (Notes/Voice/
- * Notifications/Account) completely unchanged, via
- * `.app-shell__compact-nav`. The underlying routes (`/notes`, `/archived`,
- * `/trash`) are untouched too and still fully reachable by direct URL —
- * nothing about them was removed, only which nav links point where at
- * the one breakpoint that now shows the notes inline instead.
+ * outright — so <1024px shows `.app-shell__compact-nav` instead: the same
+ * six destinations as the desktop folders panel (Voice, Shared with me,
+ * Collaborations, Archived, Trash, Account — see compactNavItems above),
+ * not the historical four-item navItems.tsx list. `/notifications` and
+ * `/search` have no persistent nav entry at any breakpoint (reached via
+ * the toolbar's bell/search controls instead) but remain fully reachable
+ * by direct URL, same as every other route — nothing was removed, only
+ * which nav links point where.
  */
 export function AppLayout() {
   const navigate = useNavigate();
+
+  // `resolved`, not `preference` — the toolbar's collapsed theme-toggle
+  // button icon (Step 13) should show what's actually on screen right now
+  // (ThemeContextValue's own doc comment: "what an icon toggle reflects"),
+  // not the three-way preference ThemeToggle's own radiogroup shows once
+  // unfolded.
+  const { resolved: resolvedTheme } = useTheme();
 
   /*
    * Drag-to-resize (>=1024px only — the handle below is hidden at every
@@ -416,7 +447,7 @@ export function AppLayout() {
      * sidebar was just deleted.
      */
     if (deletingActiveNote) {
-      navigate('/notes');
+      void navigate('/notes');
     }
   }
 
@@ -544,6 +575,56 @@ export function AppLayout() {
   const [toolbarSearchTerm, setToolbarSearchTerm] = useState('');
 
   /*
+   * STEP 2B. Below 1024px the toolbar has no room for an always-visible
+   * 220px search pill alongside five other icons — the pill alone
+   * doesn't fit a 320px viewport next to everything else. Below 1024px
+   * only, Search collapses to an icon; tapping it expands the SAME
+   * form/input/handler above (toolbarSearchTerm, handleToolbarSearchSubmit
+   * are completely unchanged — this only adds a visibility toggle around
+   * them). At >=1024px this state is inert: the toggle button that sets
+   * it is itself hidden there via CSS, and the search form's >=1024px
+   * CSS rule is unconditional, so nothing here can affect desktop.
+   */
+  const [isToolbarSearchExpanded, setIsToolbarSearchExpanded] = useState(false);
+  const toolbarSearchWrapRef = useRef<HTMLDivElement>(null);
+  const toolbarSearchInputRef = useRef<HTMLInputElement>(null);
+
+  // Land focus in the input the moment it becomes visible — otherwise a
+  // keyboard/AT user who just activated the toggle has no indication
+  // anything happened.
+  useEffect(() => {
+    if (isToolbarSearchExpanded) {
+      toolbarSearchInputRef.current?.focus();
+    }
+  }, [isToolbarSearchExpanded]);
+
+  // Same outside-click + Escape pattern as the notifications panel below
+  // (see that state's own comment) — collapse back to the icon on
+  // either, not just on submit.
+  useEffect(() => {
+    if (!isToolbarSearchExpanded) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (toolbarSearchWrapRef.current?.contains(event.target as Node)) return;
+      setIsToolbarSearchExpanded(false);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsToolbarSearchExpanded(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isToolbarSearchExpanded]);
+
+  /*
    * Step 1 (notifications rework). The bell used to be a bare
    * `<Link to="/notifications">` — nothing to toggle, so a second click
    * did nothing and the only way "out" was navigating elsewhere or a full
@@ -641,11 +722,128 @@ export function AppLayout() {
     requestNotificationsClose();
   }, [location.pathname, requestNotificationsClose]);
 
+  // Same idea for the expanded search toggle (2B) — landing on a new
+  // route with the search overlay still open from a previous page reads
+  // as stuck, not intentional.
+  useEffect(() => {
+    setIsToolbarSearchExpanded(false);
+  }, [location.pathname]);
+
   function handleToolbarSearchSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = toolbarSearchTerm.trim();
-    navigate(trimmed === '' ? '/search' : `/search?q=${encodeURIComponent(trimmed)}`);
+    void navigate(trimmed === '' ? '/search' : `/search?q=${encodeURIComponent(trimmed)}`);
+    setIsToolbarSearchExpanded(false);
   }
+
+  /*
+   * Responsive layout plan, Step 13. Same "collapses to an icon below
+   * 1024px, tap to unfold in place" shape as isToolbarSearchExpanded just
+   * above — reusing that pattern deliberately rather than inventing a
+   * second one. Unlike search, though, this toggle button doesn't exist
+   * at all at >=1024px (AppLayout.css hides the whole wrap there): the
+   * theme toggle already has a permanent home in the folders panel on
+   * desktop (see .app-shell__theme-toggle below), so there's no
+   * "collapsed vs unfolded" state to reconcile there — only mobile ever
+   * sees this control.
+   *
+   * Deliberately does NOT auto-collapse when a theme is picked (unlike
+   * search, which submits and closes in one action) — ThemeToggle's own
+   * onClick is internal to that component and isn't touched here, and
+   * leaving the row open lets someone flip between Light/Dark/System a
+   * few times to compare before dismissing it themselves.
+   */
+  const [isThemeToggleExpanded, setIsThemeToggleExpanded] = useState(false);
+  const themeToggleWrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isThemeToggleExpanded) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (themeToggleWrapRef.current?.contains(event.target as Node)) return;
+      setIsThemeToggleExpanded(false);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsThemeToggleExpanded(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isThemeToggleExpanded]);
+
+  // Same reasoning as the search toggle's identical effect just above —
+  // landing on a new route with this still unfolded reads as stuck.
+  useEffect(() => {
+    setIsThemeToggleExpanded(false);
+  }, [location.pathname]);
+
+  /*
+   * Responsive layout plan, Step 13. Below 1024px there was no way to
+   * reach the live note list at all (.app-shell__sidebar is desktop-only
+   * by design) — this is the toggle for MobileNotesPanel, the full-screen
+   * takeover that fills that gap. Mirrors notificationsOpen/
+   * notificationsClosing's own open/closing-animation shape exactly (see
+   * that state's own comment above for why the two booleans and the ref
+   * mirrors exist) rather than a third variant of the same pattern.
+   *
+   * No outside-pointerdown-to-close effect, unlike notifications and the
+   * search toggle: MobileNotesPanel is a full-screen takeover, not an
+   * anchored popover — there is no "outside" to click while it's open.
+   * Escape, its own close button, and picking a note (which navigates,
+   * caught by the route-change effect below) are the three ways out.
+   */
+  const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false);
+  const [isMobileNotesClosing, setIsMobileNotesClosing] = useState(false);
+  const isMobileNotesOpenRef = useRef(isMobileNotesOpen);
+  isMobileNotesOpenRef.current = isMobileNotesOpen;
+  const isMobileNotesClosingRef = useRef(isMobileNotesClosing);
+  isMobileNotesClosingRef.current = isMobileNotesClosing;
+
+  const requestMobileNotesClose = useCallback(() => {
+    if (!isMobileNotesOpenRef.current || isMobileNotesClosingRef.current) return;
+    setIsMobileNotesClosing(true);
+  }, []);
+
+  function handleMobileNotesAnimationEnd(event: AnimationEvent<HTMLDivElement>) {
+    if (
+      event.animationName !== 'ds-mobile-notes-panel-exit' ||
+      event.target !== event.currentTarget
+    ) {
+      return;
+    }
+
+    setIsMobileNotesOpen(false);
+    setIsMobileNotesClosing(false);
+  }
+
+  useEffect(() => {
+    if (!isMobileNotesOpen) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        requestMobileNotesClose();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMobileNotesOpen, requestMobileNotesClose]);
+
+  // Picking a note navigates — same "route change closes the overlay"
+  // reasoning as notifications' and search's own identical effects above.
+  useEffect(() => {
+    requestMobileNotesClose();
+  }, [location.pathname, requestMobileNotesClose]);
 
   /*
    * Here, not in AuthProvider: this component only ever mounts for an
@@ -791,15 +989,52 @@ export function AppLayout() {
             toolbar's top-left corner regardless of the panel's own
             state, matching the reference exactly: this button's
             position never moves, only what's behind it does.
+
+            >=1024px only (Step 13, AppLayout.css) — .app-shell__folders
+            is desktop-only by design, so below 1024px this button would
+            open a panel with nothing to show. Its sibling right below
+            takes the same visual slot at every OTHER width instead, for
+            a destination that actually exists there.
           */}
           <button
             type="button"
-            className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined"
+            className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined app-shell__toolbar-folders-toggle"
             aria-label={isFoldersOpen ? 'Hide folders' : 'Show folders'}
             aria-pressed={isFoldersOpen}
             onClick={toggleFolders}
           >
             <PanelLeft aria-hidden="true" />
+          </button>
+
+          {/*
+            Its <1024px-only sibling (Step 13) — same visual slot, same
+            icon-button styling, different job: .app-shell__sidebar's live
+            note list has no other entry point below 1024px at all (the
+            compact nav's six destinations are folders-panel content, not
+            the notes themselves — desktop doesn't nav-link to "Notes"
+            either, the sidebar just always shows it). Opens
+            MobileNotesPanel, a full-screen takeover reusing that same
+            note list.
+          */}
+          <button
+            type="button"
+            className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined app-shell__toolbar-notes-toggle"
+            aria-label="Browse notes"
+            aria-haspopup="dialog"
+            aria-expanded={isMobileNotesOpen}
+            onClick={() => {
+              if (isMobileNotesClosing) return;
+
+              if (isMobileNotesOpen) {
+                requestMobileNotesClose();
+                return;
+              }
+
+              setIsMobileNotesClosing(false);
+              setIsMobileNotesOpen(true);
+            }}
+          >
+            <NotebookText aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -823,10 +1058,13 @@ export function AppLayout() {
           sidebar's own "New note" button already points at it, so there is
           no reason for this one to be inert too.
         */}
-        <div className="app-shell__toolbar-main">
+        <div
+          className="app-shell__toolbar-main"
+          data-search-expanded={isToolbarSearchExpanded || undefined}
+        >
           <button
             type="button"
-            className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined"
+            className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined app-shell__toolbar-new-note"
             aria-label="New note"
             aria-disabled={hasEmptyNote}
             data-unavailable={hasEmptyNote || undefined}
@@ -839,12 +1077,14 @@ export function AppLayout() {
 
           {/*
             Right-aligned group, reference order: notifications, then
-            share, then search last against the toolbar's own trailing
-            edge. Notifications is a toggle button now, not a Link — see
-            the `notificationsOpen` state and its two effects above for
-            why. The full `/notifications` page this used to link to
-            directly still exists and is still reachable, both by URL and
-            via the panel's own "View all" link.
+            share, then search against the toolbar's own trailing edge —
+            Step 13 adds one more, mobile-only, AFTER search rather than
+            disturbing that three-item order. Notifications is a toggle
+            button now, not a Link — see the `notificationsOpen` state
+            and its two effects above for why. The full `/notifications`
+            page this used to link to directly still exists and is still
+            reachable, both by URL and via the panel's own "View all"
+            link.
 
             Share now does what NoteDetail's old inline "Share" text link
             used to (that link is gone — this icon replaces it entirely,
@@ -888,7 +1128,7 @@ export function AppLayout() {
             {activeNoteId !== null ? (
               <Link
                 to={`/notes/${activeNoteId}/share`}
-                className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined"
+                className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined app-shell__toolbar-share"
                 aria-label="Share this note"
               >
                 <Share aria-hidden="true" />
@@ -896,7 +1136,7 @@ export function AppLayout() {
             ) : activeVoiceNoteId !== null ? (
               <Link
                 to={`/voice/${activeVoiceNoteId}/share`}
-                className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined"
+                className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined app-shell__toolbar-share"
                 aria-label="Share this recording"
               >
                 <Share aria-hidden="true" />
@@ -904,7 +1144,7 @@ export function AppLayout() {
             ) : (
               <button
                 type="button"
-                className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined"
+                className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined app-shell__toolbar-share"
                 aria-label="Share this note"
                 disabled
               >
@@ -912,22 +1152,92 @@ export function AppLayout() {
               </button>
             )}
 
-            <form
-              className="app-shell__toolbar-search"
-              role="search"
-              onSubmit={handleToolbarSearchSubmit}
-            >
-              <Search aria-hidden="true" />
-              <input
-                type="search"
-                placeholder="Search"
+            {/*
+              STEP 2B — below 1024px only (see isToolbarSearchExpanded's own
+              comment above). At >=1024px this toggle button is hidden via
+              CSS and the form below is unconditionally visible, exactly as
+              it always was — nothing here changes desktop behavior.
+            */}
+            <div className="app-shell__toolbar-search-wrap" ref={toolbarSearchWrapRef}>
+              <button
+                type="button"
+                className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined app-shell__toolbar-search-toggle"
                 aria-label="Search your notes"
-                value={toolbarSearchTerm}
-                onChange={(event) => {
-                  setToolbarSearchTerm(event.target.value);
+                aria-expanded={isToolbarSearchExpanded}
+                onClick={() => {
+                  setIsToolbarSearchExpanded(true);
                 }}
-              />
-            </form>
+              >
+                <Search aria-hidden="true" />
+              </button>
+
+              <form
+                className="app-shell__toolbar-search"
+                role="search"
+                onSubmit={handleToolbarSearchSubmit}
+              >
+                <Search aria-hidden="true" />
+                <input
+                  type="search"
+                  placeholder="Search"
+                  aria-label="Search your notes"
+                  value={toolbarSearchTerm}
+                  onChange={(event) => {
+                    setToolbarSearchTerm(event.target.value);
+                  }}
+                  ref={toolbarSearchInputRef}
+                />
+                {/*
+                  Only meaningful below 1024px (hidden via CSS at
+                  >=1024px, same as the toggle button above) — desktop's
+                  search pill is always visible and was never something
+                  you "close".
+                */}
+                <button
+                  type="button"
+                  className="app-shell__toolbar-search-close"
+                  aria-label="Close search"
+                  onClick={() => {
+                    setIsToolbarSearchExpanded(false);
+                  }}
+                >
+                  <X aria-hidden="true" />
+                </button>
+              </form>
+            </div>
+
+            {/*
+              Step 13, <1024px only (AppLayout.css hides this whole wrap
+              at >=1024px — desktop already has ThemeToggle permanently in
+              the folders panel, see below). Same collapsed-icon/unfold-
+              in-place shape as the search toggle just above, reusing that
+              established pattern rather than a new one — see
+              isThemeToggleExpanded's own comment for why it doesn't
+              auto-collapse on selection the way search does on submit.
+            */}
+            <div className="app-shell__toolbar-theme-wrap" ref={themeToggleWrapRef}>
+              <button
+                type="button"
+                className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined app-shell__toolbar-theme-toggle"
+                aria-label="Change theme"
+                aria-expanded={isThemeToggleExpanded}
+                onClick={() => {
+                  setIsThemeToggleExpanded((expanded) => !expanded);
+                }}
+              >
+                {resolvedTheme === 'dark' ? (
+                  <Moon aria-hidden="true" />
+                ) : (
+                  <Sun aria-hidden="true" />
+                )}
+              </button>
+
+              {isThemeToggleExpanded ? (
+                <div className="app-shell__toolbar-theme-unfold">
+                  <ThemeToggle />
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
@@ -999,11 +1309,33 @@ export function AppLayout() {
       */}
       <nav className="app-shell__nav" aria-label="Main">
         {/*
-          COMPACT NAV — <1024px only. The original four items, completely
-          unchanged, so the mobile bottom bar and tablet icon rail behave
-          exactly as they did before this file's own top comment describes
-          why: no room for a note list at those sizes.
+          COMPACT NAV — visible <1024px only (icon rail 640-1023px, bottom
+          bar below 640px; gated by AppLayout.css, not this markup — see
+          the responsive layout plan's Steps 6-8 for each range's own
+          direction/spacing/positioning rules).
+
+          Same six destinations as the desktop folders panel below
+          (compactNavItems, aliased directly to foldersNavItems — see that
+          constant's own comment above), rendered with the identical
+          NavLink/aria-current pattern the folders panel already uses, so
+          active-route highlighting can't drift between the two navs.
+
+          `aria-label` is set on this <ul> itself rather than wrapping it in
+          a second, nested <nav> — this element already has one landmark
+          ("Main"), and the sidebar note list below is ALSO a list of links,
+          so the <ul> needs its own accessible name to stay unambiguous to
+          assistive tech and to test queries alike.
         */}
+        <ul className="app-shell__compact-nav" role="list" aria-label="Primary navigation">
+          {compactNavItems.map((item) => (
+            <li key={item.to}>
+              <NavLink to={item.to} className="app-shell__nav-link">
+                <span className="app-shell__nav-icon">{item.icon}</span>
+                <span className="app-shell__nav-label">{item.label}</span>
+              </NavLink>
+            </li>
+          ))}
+        </ul>
 
         {/* DESKTOP SIDEBAR — >=1024px only. See this file's own top comment. */}
         <div className="app-shell__sidebar">
@@ -1049,6 +1381,26 @@ export function AppLayout() {
         onPointerMove={handleResizePointerMove}
         onPointerUp={handleResizePointerUp}
       />
+
+      {/*
+        Step 13 — the toolbar's notes-toggle button's own panel, a
+        full-screen takeover below 1024px only. Mounted only while open or
+        animating closed, same "open || closing" condition
+        NotificationsPanel's identical render just below already uses.
+      */}
+      {isMobileNotesOpen || isMobileNotesClosing ? (
+        <MobileNotesPanel
+          notes={notes}
+          activeLocalId={activeLocalId}
+          activeNoteId={activeNoteId}
+          pendingActiveLocalId={pendingActiveLocalId}
+          onNoteContextMenu={handleNoteContextMenu}
+          contextMenuNoteLocalId={contextMenu?.note.localId ?? null}
+          onClose={requestMobileNotesClose}
+          isClosing={isMobileNotesClosing}
+          onAnimationEnd={handleMobileNotesAnimationEnd}
+        />
+      ) : null}
 
       {noteToDelete ? (
         <Modal
