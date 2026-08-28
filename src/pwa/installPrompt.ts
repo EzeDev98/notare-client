@@ -12,7 +12,8 @@
  * debugging as the ground truth for that question.
  *
  * Not fired at all, ever, on iOS Safari — there is no such event there.
- * See InstallBanner's own doc comment for how iOS is handled instead.
+ * See InstallPage's InstallInstructions for how iOS is handled instead
+ * (Step 5b: InstallBanner, which used to hold this note, is deleted).
  */
 
 // Minimal shape of the (non-standard, Chromium-only) BeforeInstallPromptEvent.
@@ -54,9 +55,10 @@ export function onInstallAvailable(listener: InstallListener): () => void {
  * orchestration (App.tsx's bootPhase computation) needs this value on
  * the very first render — before any effect has had a chance to run —
  * so it doesn't render one frame of the wrong phase (e.g. flashing
- * `ready` before flipping to `install`). `InstallBanner`-style
- * consumers should keep using `onInstallAvailable`/`useInstallPrompt`;
- * this getter exists for the boot path only.
+ * `ready` before flipping to `install`). Effect-based consumers
+ * (InstallPage, via useInstallPrompt) should keep subscribing through
+ * `onInstallAvailable`/`useInstallPrompt` instead; this getter exists
+ * for the boot path only.
  */
 export function getInstallAvailability(): boolean {
   return deferredEvent !== null && !dismissedOrInstalled;

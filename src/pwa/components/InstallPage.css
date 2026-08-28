@@ -1,0 +1,168 @@
+@layer components {
+  /*
+   * Step 3a. Full-viewport, like AppSplash's own .app-splash — this is a
+   * boot-time state AppBoot swaps the splash OUT for (Step 4), not a
+   * routed page sitting in normal document flow the way PublicLayout's
+   * pages do. Fixed positioning matches that: it replaces the splash
+   * in place rather than pushing page content below a scroll position.
+   *
+   * overflow-y: auto for the same reason PublicLayout's .public-shell
+   * has it — this page carries more content than the splash (headline,
+   * bullets, a button), so a small viewport needs to be able to scroll
+   * it instead of clipping the CTA off the bottom.
+   */
+  .install-page {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-bg);
+    padding: var(--space-6) var(--space-4);
+    padding-block-end: max(var(--space-6), env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
+
+  /*
+   * Mirrors .public-shell__panel exactly: same narrow measure, same
+   * no-card-on-mobile / bordered-surface-on-tablet+ split. Reusing the
+   * PATTERN rather than importing PublicLayout.css directly — this page
+   * isn't a child of <PublicLayout>, so it owns its own rule under its
+   * own class name, but the visual language stays identical on purpose.
+   */
+  .install-page__panel {
+    inline-size: 100%;
+    max-inline-size: var(--measure-narrow);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    text-align: center;
+  }
+
+  @media (min-width: 640px) {
+    .install-page__panel {
+      padding: var(--space-8);
+      background-color: var(--color-surface);
+      border: var(--border-width) solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+  }
+
+  /* Larger than an in-app placement, same reasoning as .app-splash__logo:
+   * the mark is a meaningful fraction of this screen's content, not a
+   * corner accent, so it earns real size. Mark only, no wordmark — the
+   * heading directly below already says "Notare" in words. */
+  .install-page__logo .ds-logo__mark {
+    inline-size: 3rem;
+    block-size: 3rem;
+  }
+
+  .install-page__heading {
+    font-size: var(--font-size-xl);
+    line-height: var(--line-height-snug);
+    color: var(--color-text);
+    margin: 0;
+  }
+
+  .install-page__description {
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  /*
+   * Step 3b. Icon + text per row, left-aligned as a block even though
+   * the panel itself is centred — a checklist reads top-to-bottom, and
+   * centring each line individually would make the rows wrap raggedly
+   * and lose the list rhythm the reference (Image 2) has.
+   */
+  .install-page__benefits {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    align-items: stretch;
+    align-self: stretch;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .install-page__benefits li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    text-align: start;
+  }
+
+  /*
+   * --color-accent, not green: colors.css is deliberate about having no
+   * --color-success token ("Colour is reserved for things worth
+   * interrupting someone over"), and a checkmark here is decorative
+   * identity, not a status outcome — the same job --color-accent-soft
+   * already does elsewhere (see colors.css's own accent-soft comment).
+   * Sized down from the icons.css default (20px): at 20px against
+   * font-size-sm text these read heavier than the text they sit next
+   * to; 16px lines up with the cap-height instead.
+   */
+  .install-page__benefit-icon {
+    flex-shrink: 0;
+    inline-size: 16px;
+    block-size: 16px;
+    margin-block-start: 0.15em;
+    color: var(--color-accent);
+  }
+
+  .install-page__cta {
+    inline-size: 100%;
+  }
+
+  /*
+   * Step 3d. Shared by both status messages (waiting-for-availability
+   * and the isStandalone done state) — deliberately quiet styling
+   * (text-disabled, no icon, no colour). Neither is an error and
+   * neither needs to compete with the heading/button for attention;
+   * it's context for why the button looks the way it does, read right
+   * after it.
+   */
+  /*
+   * Step 3e. Same icon+text row shape as .install-page__benefits above
+   * (and reuses .install-page__benefit-icon for sizing/colour) — a
+   * numbered instruction and a benefit bullet read the same way
+   * visually, one action per line. Kept as a separate class rather than
+   * sharing .install-page__benefits directly since a <ul> of features
+   * and an <ol> of ordered steps are semantically different lists that
+   * happen to look alike, and a future change to one's spacing
+   * shouldn't silently move the other's.
+   */
+  .install-page__steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    align-items: stretch;
+    align-self: stretch;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .install-page__steps li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    text-align: start;
+  }
+
+  .install-page__status {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-disabled);
+    line-height: var(--line-height-normal);
+    margin: 0;
+  }
+}
