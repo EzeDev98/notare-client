@@ -49,6 +49,20 @@ export function onInstallAvailable(listener: InstallListener): () => void {
 }
 
 /**
+ * Step 1b. Synchronous read of the same availability state
+ * `onInstallAvailable` replays asynchronously via listener. Boot
+ * orchestration (App.tsx's bootPhase computation) needs this value on
+ * the very first render — before any effect has had a chance to run —
+ * so it doesn't render one frame of the wrong phase (e.g. flashing
+ * `ready` before flipping to `install`). `InstallBanner`-style
+ * consumers should keep using `onInstallAvailable`/`useInstallPrompt`;
+ * this getter exists for the boot path only.
+ */
+export function getInstallAvailability(): boolean {
+  return deferredEvent !== null && !dismissedOrInstalled;
+}
+
+/**
  * Shows the browser's native install dialog using the captured event.
  * Can only be called from a user gesture (a click handler) — the spec
  * requires it; calling it elsewhere silently does nothing.
