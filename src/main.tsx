@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from '@/app/App';
+import { initInstallPrompt } from '@/pwa/installPrompt';
 import { registerServiceWorker } from '@/pwa/registerServiceWorker';
 import '@/design-system/global.css';
 
@@ -21,6 +22,10 @@ if (!rootElement) {
 // Step 11. Fire-and-forget at startup — see registerServiceWorker.ts's own
 // doc comment for what this does and does not block on.
 registerServiceWorker();
+
+// Captures beforeinstallprompt before React ever renders, so the event
+// can't fire and go unheard during initial mount. See installPrompt.ts.
+initInstallPrompt();
 
 createRoot(rootElement).render(
   <StrictMode>
