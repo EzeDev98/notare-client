@@ -14,6 +14,7 @@ import {
   Archive,
   Bell,
   Handshake,
+  Monitor,
   Moon,
   NotebookText,
   PanelLeft,
@@ -33,6 +34,7 @@ import { RouteFocus } from '@/app/RouteFocus';
 import { RouteTransition } from '@/app/RouteTransition';
 import { useAuth } from '@/app/providers/auth-context';
 import { useTheme } from '@/app/providers/theme-context';
+import type { ThemePreference } from '@/lib/theme/theme';
 import { useFoldersPanel } from '@/app/layouts/useFoldersPanel';
 import { useSidebarWidth } from '@/app/layouts/useSidebarWidth';
 import { MobileNotesPanel } from '@/app/layouts/MobileNotesPanel';
@@ -202,15 +204,24 @@ const compactNavItems = foldersNavItems;
  * by direct URL, same as every other route — nothing was removed, only
  * which nav links point where.
  */
+
+/*
+ * The tablet rail's theme button (below) cycles through these in order on
+ * each click, wrapping back to the start after System — module scope
+ * since it's a fixed constant, not something that needs to be recreated
+ * every render.
+ */
+const THEME_CYCLE: ThemePreference[] = ['light', 'dark', 'system'];
+
 export function AppLayout() {
   const navigate = useNavigate();
 
-  // `resolved`, not `preference` — the toolbar's collapsed theme-toggle
-  // button icon (Step 13) should show what's actually on screen right now
-  // (ThemeContextValue's own doc comment: "what an icon toggle reflects"),
-  // not the three-way preference ThemeToggle's own radiogroup shows once
-  // unfolded.
-  const { resolved: resolvedTheme } = useTheme();
+  // `preference`, not `resolved` — the tablet rail's theme button (Step 13)
+  // is a direct 3-way cycle now (Light -> Dark -> System -> Light), and
+  // cycling needs to know which of the three is currently picked, not just
+  // which of the two is on screen (ThemeContextValue's own doc comment:
+  // `resolved` only ever says "light" or "dark", never "system").
+  const { preference: themePreference, setPreference: setThemePreference } = useTheme();
 
   /*
    * Drag-to-resize (>=1024px only — the handle below is hidden at every
@@ -739,53 +750,13 @@ export function AppLayout() {
   }
 
   /*
-   * Responsive layout plan, Step 13. Same "collapses to an icon below
-   * 1024px, tap to unfold in place" shape as isToolbarSearchExpanded just
-   * above — reusing that pattern deliberately rather than inventing a
-   * second one. Unlike search, though, this toggle button doesn't exist
-   * at all at >=1024px (AppLayout.css hides the whole wrap there): the
-   * theme toggle already has a permanent home in the folders panel on
-   * desktop (see .app-shell__theme-toggle below), so there's no
-   * "collapsed vs unfolded" state to reconcile there — only mobile ever
-   * sees this control.
-   *
-   * Deliberately does NOT auto-collapse when a theme is picked (unlike
-   * search, which submits and closes in one action) — ThemeToggle's own
-   * onClick is internal to that component and isn't touched here, and
-   * leaving the row open lets someone flip between Light/Dark/System a
-   * few times to compare before dismissing it themselves.
+   * Responsive layout plan, Step 13, reworked: the tablet rail's theme
+   * button used to unfold a popover in place (isThemeToggleExpanded +
+   * themeToggleWrapRef + the click-outside/Escape machinery that used to
+   * live here) — it's now a direct 3-way cycle instead (see the button's
+   * own onClick, below), which needs no open/closed state at all, so all
+   * of that is gone with it.
    */
-  const [isThemeToggleExpanded, setIsThemeToggleExpanded] = useState(false);
-  const themeToggleWrapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isThemeToggleExpanded) return;
-
-    function handlePointerDown(event: PointerEvent) {
-      if (themeToggleWrapRef.current?.contains(event.target as Node)) return;
-      setIsThemeToggleExpanded(false);
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setIsThemeToggleExpanded(false);
-      }
-    }
-
-    document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isThemeToggleExpanded]);
-
-  // Same reasoning as the search toggle's identical effect just above —
-  // landing on a new route with this still unfolded reads as stuck.
-  useEffect(() => {
-    setIsThemeToggleExpanded(false);
-  }, [location.pathname]);
 
   /*
    * Responsive layout plan, Step 13. Below 1024px there was no way to
@@ -815,8 +786,16 @@ export function AppLayout() {
   }, []);
 
   function handleMobileNotesAnimationEnd(event: AnimationEvent<HTMLDivElement>) {
+    // Two different close animations can fire here depending on width:
+    // `-exit` at 640-1023px (the original full-screen dialog, unchanged),
+    // `-slide-out` below 640px (MobileNotesPanel.css's newer 50%-width
+    // left slide-in). Recognizing only one of them meant the other left
+    // isMobileNotesClosing stuck at `true` forever below 640px, which
+    // permanently blocked the toolbar button's own `if (isMobileNotesClosing)
+    // return;` guard from ever reopening the panel after the first close.
     if (
-      event.animationName !== 'ds-mobile-notes-panel-exit' ||
+      (event.animationName !== 'ds-mobile-notes-panel-exit' &&
+        event.animationName !== 'ds-mobile-notes-panel-slide-out') ||
       event.target !== event.currentTarget
     ) {
       return;
@@ -1409,39 +1388,46 @@ export function AppLayout() {
         </ul>
 
         {/*
-          The tablet rail's own theme-toggle trigger — 640-1023px only
+          The tablet rail's own theme control — 640-1023px only
           (AppLayout.css). The theme control's toolbar home is gone at
           every width now: >=1024px always kept ThemeToggle live in the
-          folders panel below, and <640px now reaches it through the new
+          folders panel below, and <640px now reaches it through the
           Settings slide-in instead (SettingsPanel). This fills the one
-          remaining gap — the icon-only rail, which has neither of those
-          — with a single icon trigger "immediately after the account
-          icon", reusing the exact popover state/behaviour the toolbar's
-          old control already had (isThemeToggleExpanded and
-          themeToggleWrapRef are unchanged, just relocated here).
+          remaining gap — the icon-only rail, which has neither of those.
+
+          No popover any more: a single button that cycles
+          Light -> Dark -> System -> Light on each click (THEME_CYCLE,
+          below), applying immediately via setPreference exactly the way
+          picking an option in ThemeToggle's own radiogroup does — rather
+          than opening a menu to choose from. The icon reflects
+          `preference`, not `resolved` (module comment above), so System
+          gets its own Monitor icon instead of silently reading as
+          whichever of light/dark it currently resolves to.
         */}
-        <div className="app-shell__rail-theme-wrap" ref={themeToggleWrapRef}>
+        <div className="app-shell__rail-theme-wrap">
           <button
             type="button"
             className="app-shell__nav-link app-shell__rail-theme-toggle"
-            aria-label="Change theme"
-            aria-haspopup="true"
-            aria-expanded={isThemeToggleExpanded}
+            aria-label={`Change theme (currently ${themePreference})`}
             onClick={() => {
-              setIsThemeToggleExpanded((expanded) => !expanded);
+              const nextIndex = (THEME_CYCLE.indexOf(themePreference) + 1) % THEME_CYCLE.length;
+              // Non-null assertion: nextIndex is always 0..THEME_CYCLE.length-1
+              // via the modulo above, so this index is never actually out of
+              // bounds — noUncheckedIndexedAccess just can't see that statically.
+              setThemePreference(THEME_CYCLE[nextIndex]!);
             }}
           >
             <span className="app-shell__nav-icon">
-              {resolvedTheme === 'dark' ? <Moon aria-hidden="true" /> : <Sun aria-hidden="true" />}
+              {themePreference === 'system' ? (
+                <Monitor aria-hidden="true" />
+              ) : themePreference === 'dark' ? (
+                <Moon aria-hidden="true" />
+              ) : (
+                <Sun aria-hidden="true" />
+              )}
             </span>
             <span className="app-shell__nav-label">Theme</span>
           </button>
-
-          {isThemeToggleExpanded ? (
-            <div className="app-shell__rail-theme-unfold">
-              <ThemeToggle />
-            </div>
-          ) : null}
         </div>
 
         {/* DESKTOP SIDEBAR — >=1024px only. See this file's own top comment. */}

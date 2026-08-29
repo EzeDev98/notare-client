@@ -1,5 +1,5 @@
 import type { AnimationEventHandler } from 'react';
-import { Plus, Trash2, X } from 'lucide-react';
+import { SquarePen, Trash2, X } from 'lucide-react';
 
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { AnimatedSidebarNoteList } from '@/features/notes/components/AnimatedSidebarNoteList/AnimatedSidebarNoteList';
@@ -106,7 +106,7 @@ export function MobileNotesPanel({
               aria-label="New note"
               onClick={onCreateNote}
             >
-              <Plus aria-hidden="true" />
+              <SquarePen aria-hidden="true" />
             </button>
             <button
               type="button"

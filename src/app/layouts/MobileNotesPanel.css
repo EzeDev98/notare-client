@@ -192,45 +192,6 @@
   }
 
   /*
-   * 640-1023px (the icon rail) keeps this panel's ORIGINAL full-screen
-   * takeover, entirely unchanged from before this file's mobile slide-in
-   * rework above — only the <640px bottom-bar range got the new 50%-width
-   * behavior. Title + close come back; New note/Delete/Cancel go away
-   * (that range's toolbar still carries New note and Delete itself, so
-   * this panel doesn't need to duplicate them).
-   */
-  @media (min-width: 640px) {
-    .mobile-notes-panel {
-      inset: 0;
-      inline-size: auto;
-      block-size: auto;
-      border-inline-end: none;
-      box-shadow: none;
-      animation: ds-mobile-notes-panel-enter var(--motion-duration-base) var(--motion-ease-enter);
-    }
-
-    .mobile-notes-panel[data-closing='true'] {
-      animation:
-        ds-mobile-notes-panel-exit
-        var(--motion-duration-fast)
-        var(--motion-ease-exit)
-        forwards;
-    }
-
-    .mobile-notes-panel__title {
-      display: block;
-    }
-
-    .mobile-notes-panel__close {
-      display: flex;
-    }
-
-    .mobile-notes-panel__mobile-header {
-      display: none;
-    }
-  }
-
-  /*
    * Desktop never renders this panel's trigger (AppLayout.css hides the
    * button that opens it below 1024px only), so `isMobileNotesOpen` can
    * never actually be true at >=1024px in practice — but if it somehow

@@ -141,6 +141,34 @@
   }
 
   /*
+   * Mobile bottom bar layout: with Share/New note/Delete gone from this
+   * row (the rule above), only the bell and search are left in
+   * `.app-shell__toolbar-actions`, which still gets the row's own
+   * flex-grow (below) so its box spans the full width from the nav's
+   * expand-note button to the toolbar's trailing edge. The bell is then
+   * pinned to the EXACT horizontal and vertical center of that box via
+   * `position: absolute` on the icon button itself (not the
+   * `.app-shell__notifications` wrapper — that stays un-positioned/in-
+   * flow on purpose, so `.notifications-panel`, its child, keeps
+   * anchoring to `.app-shell__toolbar-actions` as designed above, not to
+   * this narrower box). Search is pinned right after it — see its own
+   * rule further down — at a fixed, compact width rather than
+   * stretching to fill the row. Undone at 640px+ (that block below),
+   * where Share/New note come back and this row goes back to its
+   * original content-sized, left-aligned icon cluster.
+   */
+  .app-shell__toolbar-actions {
+    flex: 1 1 0;
+  }
+
+  .app-shell__notifications > .app-shell__toolbar-icon-btn {
+    position: absolute;
+    inset-inline-start: 50%;
+    inset-block-start: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /*
    * 44px touch targets below 1024px — same reasoning `.app-shell__nav-
    * link` already gives for its own identical minimum (a fingertip has
    * far less precision than a cursor). The >=1024px block below keeps
@@ -199,6 +227,59 @@
   }
 
   /*
+   * The tablet rail's own theme control — hidden by default (base = the
+   * <640px bottom bar, which reaches theme via the Settings slide-in
+   * instead, below), shown only at 640-1023px (the 640px block below),
+   * hidden again at >=1024px (already done — ThemeToggle already lives
+   * permanently in the folders panel there). Reuses .app-shell__nav-link/
+   * .app-shell__nav-icon for its own button (AppLayout.tsx), so it
+   * matches every other rail item for free without its own icon/label
+   * styling here. A direct 3-way click-to-cycle button now, not a
+   * popover — .app-shell__rail-theme-unfold (the old popover card) and
+   * the isThemeToggleExpanded state that opened it are both gone;
+   * AppLayout.tsx's own comment on the button explains the cycle.
+   */
+  .app-shell__rail-theme-wrap {
+    display: none;
+  }
+
+  /*
+   * The bottom bar's Account slot, CSS-swapped by breakpoint (see
+   * AppLayout.tsx's own comment on why this item renders twice). Below
+   * 640px, Settings shows instead of a direct Account link — Account
+   * itself is still reachable from inside the Settings panel. Restored
+   * at 640px+ below, where .app-shell__settings-toggle hides instead.
+   * Compound selector (not just `.app-shell__account-link`) so this wins
+   * over `.app-shell__nav-link`'s own `display: flex` regardless of
+   * which rule happens to come first in the file.
+   */
+  .app-shell__nav-link.app-shell__account-link {
+    display: none;
+  }
+
+  /*
+   * Mobile bottom bar decluttering (responsive layout plan, next step):
+   * below 640px the toolbar keeps only the expand-note button (far
+   * left), notifications, and search — Share, Delete, and New note all
+   * move out of it. Delete and New note are still reachable at that
+   * width from MobileNotesPanel's own new mobile header; Share has no
+   * replacement at that width (it wasn't asked for one) but stays
+   * reachable from the note's own context menu. Restored at 640px+
+   * below, where the toolbar has room for all three again.
+   *
+   * !important because plain source order isn't reliable here — Vite's
+   * dev-mode CSS injection doesn't always honor it for @layer rules
+   * (this file already notes the same caveat elsewhere, e.g.
+   * .app-shell__toolbar-notes-toggle below, which already uses
+   * !important for the identical reason).
+   */
+  .app-shell__toolbar-delete,
+  .app-shell__toolbar-new-note,
+  .app-shell__toolbar-share {
+    display: none !important;
+  }
+
+  /*
    * Step 13 — the toolbar's theme control, <1024px only (hidden
    * wholesale at >=1024px, below — ThemeToggle already lives permanently
    * in the folders panel there). Anchored popover, not an inline expand
@@ -244,32 +325,34 @@
   }
 
   /*
-   * STEP 2B — the icon-triggered search expand, below 1024px only. A
-   * 220px input plus five other icons doesn't fit a 320px toolbar (see
-   * isToolbarSearchExpanded's own comment in AppLayout.tsx for the exact
-   * math). Collapsed by default: the toggle button shows, the form
-   * doesn't. Expanded: the reverse, and the other icons in this row step
-   * aside so the input gets the full row.
+   * Search is always visible now — no collapsed-behind-an-icon state at
+   * any width below 1024px any more (this used to differ by breakpoint;
+   * now it matches how it already behaved at 1024px+, that block further
+   * down, unchanged). Below 640px it's pinned immediately after the
+   * centered bell (the rule above) — `inset-inline-start` picks up right
+   * where the bell's own 44px-wide button ends (half its width, plus the
+   * row's usual gap) — at a fixed, compact width rather than stretching
+   * across the row. A fixed moderate width on the tablet rail (640px
+   * block below) and 220px fixed on desktop (1024px block below), both
+   * back in normal flow rather than pinned like this.
+   *
+   * The toggle/close buttons that used to drive the old collapse are
+   * hidden unconditionally now, below. isToolbarSearchExpanded
+   * (AppLayout.tsx) is left in place but inert — nothing here reads it
+   * any more, and ripping the state out is a separate, riskier change
+   * than this one.
    */
   .app-shell__toolbar-search-wrap {
-    position: relative;
+    position: absolute;
+    inset-inline-start: calc(50% + 22px + var(--space-2));
+    inset-block-start: 50%;
+    transform: translateY(-50%);
+    inline-size: 170px;
     display: flex;
     align-items: center;
   }
 
   .app-shell__toolbar-search {
-    display: none;
-  }
-
-  .app-shell__toolbar-main[data-search-expanded] .app-shell__toolbar-search-wrap {
-    flex: 1;
-  }
-
-  .app-shell__toolbar-main[data-search-expanded] .app-shell__toolbar-search-toggle {
-    display: none;
-  }
-
-  .app-shell__toolbar-main[data-search-expanded] .app-shell__toolbar-search {
     display: flex;
     align-items: center;
     gap: var(--space-2);
@@ -282,10 +365,15 @@
     color: var(--color-text-secondary);
   }
 
-  .app-shell__toolbar-main[data-search-expanded] .app-shell__toolbar-search svg:first-child {
+  .app-shell__toolbar-search svg:first-child {
     flex-shrink: 0;
     inline-size: 1rem;
     block-size: 1rem;
+  }
+
+  .app-shell__toolbar-search-toggle,
+  .app-shell__toolbar-search-close {
+    display: none !important;
   }
 
   .app-shell__toolbar-search input {
@@ -450,6 +538,24 @@
 
   .app-shell__nav-link:hover {
     color: var(--color-text);
+  }
+
+  /*
+   * .app-shell__nav-link is normally an <a>/NavLink, which has no default
+   * chrome to begin with — but .app-shell__settings-toggle and
+   * .app-shell__rail-theme-toggle are real <button>s reusing this same
+   * class, and buttons DO come with a browser-default border/background
+   * neither this class nor .app-shell__nav-label ever had reason to
+   * reset before now. Without this, those two look boxed compared to
+   * every other item in the same row/rail, which is otherwise identical
+   * markup apart from the element type.
+   */
+  button.app-shell__nav-link {
+    appearance: none;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font: inherit;
   }
 
   /*
@@ -693,6 +799,76 @@
      * to hold below 640px too, for the bottom bar), so there is nothing
      * left to add here for it; this range just inherits that unchanged.
      */
+
+    /* The toolbar has room for all three again at this width — see the
+       base rule's own comment on why they're hidden below 640px. */
+    .app-shell__toolbar-delete,
+    .app-shell__toolbar-new-note,
+    .app-shell__toolbar-share {
+      display: flex !important;
+    }
+
+    /* Undoes the <640px-only bell-centering/search-pinning above —
+       Share and New note are back in this row at this width, so it goes
+       back to a plain content-sized, left-aligned icon cluster like it
+       always was: the bell button and the search wrap both come out of
+       `position: absolute` and back into normal flow, with the
+       transforms that positioned them cleared too (transform applies
+       regardless of position, so leaving it would still visually shift
+       them even once un-positioned). */
+    .app-shell__toolbar-actions {
+      flex: initial;
+    }
+
+    .app-shell__notifications {
+      flex: initial;
+    }
+
+    .app-shell__notifications > .app-shell__toolbar-icon-btn {
+      position: static;
+      transform: none;
+    }
+
+    .app-shell__toolbar-search-wrap {
+      position: relative;
+      inset-inline-start: auto;
+      inset-block-start: auto;
+      transform: none;
+      inline-size: auto;
+      flex: initial;
+      justify-content: flex-start;
+    }
+
+    /* A fixed, more moderate width here than 220px (that's desktop, the
+       1024px block below) — this range's toolbar shares the row with
+       five other icons, unlike mobile's flex-fill (the base rule above)
+       or desktop's much wider toolbar. Adjust this number if it reads
+       too wide or narrow once you see it. */
+    .app-shell__toolbar-search {
+      flex: initial;
+      inline-size: 180px;
+    }
+
+    /* Account/Settings swap back the other way — see the base rule's own
+       comment on why this item renders twice. */
+    .app-shell__nav-link.app-shell__account-link {
+      display: flex;
+    }
+
+    .app-shell__nav-link.app-shell__settings-toggle {
+      display: none;
+    }
+
+    /* The rail's theme-toggle trigger — see its own comment above for why
+       it lives here and nowhere else. Hidden again at >=1024px (already
+       done). */
+    .app-shell__rail-theme-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-block-start: var(--space-2);
+    }
   }
 
   /* ---- 1024px+ : sidebar with labels ---------------------------------- */
@@ -839,7 +1015,15 @@
       display: none !important;
     }
 
+    /* Desktop reaches theme via the folders panel's own permanent
+       ThemeToggle (.app-shell__theme-toggle, below) — the rail's trigger
+       has nothing to do at this width. */
+    .app-shell__rail-theme-wrap {
+      display: none;
+    }
+
     .app-shell__toolbar-search {
+      flex: initial;
       display: flex;
       align-items: center;
       gap: var(--space-2);
