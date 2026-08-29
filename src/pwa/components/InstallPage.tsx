@@ -32,57 +32,32 @@ import './InstallPage.css';
  *    and a gate that treated them the same would either declare victory
  *    on a dismissal or keep nagging after a real install. The
  *    `display-mode` media query is the one signal that only changes
- *    when installation actually succeeds (displayMode.ts's own doc
- *    comment describes exactly this "installs from InstallPage without
- *    a full reload" case) — so THAT is what decides whether to show a
- *    done state, not `available`.
+ *    when installation actually succeeds — so THAT is what decides
+ *    whether to show a done state, not `available`.
  *
  * `available` still has its own, narrower job here: while it's false
  * (event not yet captured, or already consumed by a prior click), the
- * button is disabled rather than silently doing nothing — see
- * installPrompt.ts, the event is single-use — with copy that tells the
- * user their one recovery path (reload) instead of leaving a dead
- * button with no explanation. `prompting` covers the in-flight moment
- * between click and userChoice resolving, same loading-button pattern
- * as LoginPage's submit.
+ * button is disabled rather than silently doing nothing, with copy
+ * that tells the user their one recovery path (reload) instead of
+ * leaving a dead button with no explanation. `prompting` covers the
+ * in-flight moment between click and userChoice resolving.
  *
- * Still no iOS/unsupported fallback (Step 3e) — this native-flow gate
- * is exactly what 3e's instructional variant exists to replace on
- * platforms where none of the above ever fires.
+ * Step 9. Icon badge + bordered benefits box added around the same
+ * content, for a more intentional mobile layout — see InstallPage.css.
+ * No logic changed here, only the wrapping markup.
  */
 
 /**
  * Step 3e. The instructional variant. `installSupport.ts` collapses
  * every non-native case into one 'instructional' bucket — iOS Safari,
- * iOS Chrome/Firefox/Edge (all WebKit under the hood, per its own
- * isIOS() comment), AND non-iOS browsers that simply lack
- * beforeinstallprompt (desktop Safari, Firefox everywhere). Those
- * aren't the same instructions ("tap the Share icon" means nothing on
- * desktop Firefox), and installSupport.ts doesn't export anything more
- * specific than the 'native' | 'instructional' pair — adding a new
- * export for finer detection is a bigger change than this step, so
- * rather than guess at a browser-specific instruction set this leads
- * with the single most common real case (iOS Safari, "Add to Home
- * Screen") and closes with a deliberately generic line covering
- * everyone else in that bucket, instead of asserting a confident
- * step-by-step for a platform it hasn't actually detected.
- *
- * Step 4b addendum: there is no in-tab path to 'ready' on this branch
- * at all — unlike the native flow, nothing here can observe a
- * completed manual "Add to Home Screen" (no event fires for it, and
- * unlike an actual install, it doesn't flip this SAME tab's
- * display-mode — only a fresh launch from the new home-screen icon
- * does). So "Continue" doesn't hand off to the app in this tab; it
- * closes it, on the assumption the person just finished the steps
- * above and will reopen from the icon they created.
+ * iOS Chrome/Firefox/Edge, AND non-iOS browsers that simply lack
+ * beforeinstallprompt. This leads with the single most common real
+ * case (iOS Safari, "Add to Home Screen") and closes with a
+ * deliberately generic line covering everyone else in that bucket.
  *
  * window.close() is NOT guaranteed here — most browsers only allow a
- * script to close a tab it opened itself (via window.open()), and a
- * tab reached by typing a URL, tapping a bookmark, or following a
- * link was not. Where the browser blocks it, calling it is simply a
- * silent no-op: nothing throws, the tab just stays open and the person
- * closes it themselves. Implemented as asked, with that caveat flagged
- * rather than papered over.
+ * script to close a tab it opened itself. Where the browser blocks it,
+ * calling it is simply a silent no-op.
  */
 function InstallInstructions() {
   return (
@@ -140,7 +115,9 @@ export function InstallPage() {
   return (
     <div className="install-page" role="status" aria-live="polite">
       <div className="install-page__panel">
-        <Logo className="install-page__logo" />
+        <div className="install-page__icon">
+          <Logo />
+        </div>
 
         {isStandalone ? (
           /*
@@ -160,20 +137,22 @@ export function InstallPage() {
               opens like any other app.
             </p>
 
-            <ul className="install-page__benefits">
-              <li>
-                <Check aria-hidden="true" className="install-page__benefit-icon" />
-                <span>Works offline — your notes and voice memos are always there</span>
-              </li>
-              <li>
-                <Check aria-hidden="true" className="install-page__benefit-icon" />
-                <span>Opens instantly from your home screen, full-screen</span>
-              </li>
-              <li>
-                <Check aria-hidden="true" className="install-page__benefit-icon" />
-                <span>Syncs and shares with collaborators the moment you're back online</span>
-              </li>
-            </ul>
+            <div className="install-page__benefits-box">
+              <ul className="install-page__benefits">
+                <li>
+                  <Check aria-hidden="true" className="install-page__benefit-icon" />
+                  <span>Works offline — your notes and voice memos are always there</span>
+                </li>
+                <li>
+                  <Check aria-hidden="true" className="install-page__benefit-icon" />
+                  <span>Opens instantly from your home screen, full-screen</span>
+                </li>
+                <li>
+                  <Check aria-hidden="true" className="install-page__benefit-icon" />
+                  <span>Syncs and shares with collaborators the moment you're back online</span>
+                </li>
+              </ul>
+            </div>
 
             {flowSupport === 'native' ? (
               <>

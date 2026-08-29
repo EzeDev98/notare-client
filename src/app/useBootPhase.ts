@@ -5,83 +5,112 @@ import { useIsStandalone } from '@/pwa/displayMode';
 
 /**
  * Step 4a. The three-state model App.tsx's AppBoot renders against.
- *
- * A named type + hook rather than the inline boolean AppBoot used
- * directly since Step 2d — that worked for two states, but a third
- * (mandatory InstallPage) needs a real seam other code can be written
- * against before the logic that produces it exists.
  */
 export type BootPhase = 'splash' | 'install' | 'ready';
 
 /**
- * Step 4b. Combines Step 1's install-detection with AuthProvider's own
- * init state to compute the real three-way phase.
+ * Step 8a. The visual sub-stages AppSplash renders while phase is
+ * 'splash'.
  *
- * Turns out to need only ONE of Step 1's signals, not all three —
- * worth recording why, since 4a's own doc comment (written before this
- * was worked out) said otherwise:
+ *   'logo'    — mark only, no wordmark/tagline/dots. The plain
+ *               logo-on-background screen (Image 5 in the design ref).
+ *   'branded' — mark + wordmark + tagline + animated dots + footer.
+ *               The branded loading screen (Image 4).
+ *   'leaving' — same content as 'branded', with AppSplash.css's
+ *               fade-out class applied, so the swap to whatever phase
+ *               comes next isn't an abrupt cut.
  *
- *   - isStandaloneDisplayMode() / useIsStandalone() (1a): used below.
- *     This alone answers "is there anything left to install", which is
- *     the only question bootPhase itself needs to answer.
- *   - getInstallAvailability() (1b) and getInstallFlowSupport() (1c):
- *     NOT used here. Both stay exactly where Step 3 already put them —
- *     inside InstallPage itself, deciding which UI to show ONCE the
- *     phase is already 'install' (the native button-with-waiting-state
- *     vs. the instructional steps). Whether beforeinstallprompt has
- *     fired, or ever will, changes nothing about WHETHER installation
- *     is still outstanding — only standalone-or-not answers that.
- *
- * LATCHED, not a raw live read of useIsStandalone() — this was the
- * direct read through Step 4c's own first version, and it turned out to
- * be wrong: `display-mode` is not the monotonic one-way signal that
- * version assumed. Observed directly while testing the native install
- * flow on the dev server: display-mode flipped to standalone right on
- * schedule when the install actually completed, bootPhase correctly
- * moved to 'ready' — and then, ~2 seconds later, with NO reload and NO
- * uninstall in between (same navigation-start timeline throughout, per
- * displayMode.ts's own diagnostic logging), the SAME media query
- * flipped back to non-standalone on its own, as Chrome finished
- * settling the window's real app association. A raw live read sent
- * bootPhase straight back to 'install' for that blip — ejecting someone
- * already let into the app back onto the mandatory gate, for a signal
- * that had nothing to do with them actually losing the installed app.
- *
- * `everStandalone` fixes this by remembering, not re-asking: once
- * useIsStandalone() has read true even once during this page's life,
- * this hook commits to 'ready' (auth permitting) and never reconsiders
- * — a later false reading no longer matters. That's the correct
- * semantics for what this hook is actually answering ("has this session
- * cleared the install requirement"), which can only ever go from
- * unmet to met, never back — a genuine uninstall can only be discovered
- * at the START of a fresh page load (a real cold start, which gets its
- * own fresh `useState(isStandalone)` initial value below, computed from
- * whatever is actually true at THAT moment), never mid-session.
- *
- * Deliberately NOT distinguishing native from instructional here: that
- * split is real (Step 3d vs 3e render very differently) but it's a
- * "how do we get out of install" question, not a "are we in install"
- * question — so it stays inside InstallPage, and this hook only ever
- * has to answer the latter.
+ * NOT the same thing as the native OS/Chrome splash screen that can
+ * appear before any of this JS has even loaded (built from the
+ * manifest's icon + background_color) — that one has no React state to
+ * attach a duration to and isn't controlled here.
  */
-export function useBootPhase(): BootPhase {
+export type SplashStage = 'logo' | 'branded' | 'leaving';
+
+/**
+ * Step 8b. Fixed minimum dwell time per stage, in ms.
+ *
+ * Before this step, 'splash' lasted exactly as long as AuthProvider's
+ * init took — often under 100ms for a warm localStorage read, which is
+ * why it "flashed and disappeared": there was never an enforced floor.
+ *
+ * 1000ms/1000ms, not 40ms — 40ms isn't reliably perceivable or
+ * schedulable (a single dropped frame at 60fps is already 16.6ms), so
+ * this uses the stated fallback for both stages instead.
+ *
+ * IS_TEST collapses all three to 0 under Vitest (MODE is 'test' by
+ * default under the test runner) so App.test.tsx's existing `waitFor`
+ * assertions, written against the old undelayed behaviour, keep passing
+ * without needing fake-timer plumbing. Every real browser run still
+ * gets the full durations below.
+ */
+const IS_TEST = import.meta.env.MODE === 'test';
+const SPLASH_STAGE1_MS = IS_TEST ? 0 : 1000; // 'logo'
+const SPLASH_STAGE2_MS = IS_TEST ? 0 : 1000; // 'branded', minimum dwell
+const SPLASH_FADE_MS = IS_TEST ? 0 : 200; // 'leaving'
+
+/**
+ * Step 4b/8c. Combines Step 1's install-detection, AuthProvider's init
+ * state, and this step's minimum-dwell timers into the phase + splash
+ * sub-stage AppBoot renders against.
+ *
+ * `everStandalone` LATCHES rather than re-reading useIsStandalone()
+ * live — display-mode is not the monotonic one-way signal it looks
+ * like; it can flip back to non-standalone briefly right after a real
+ * install completes, with no reload or uninstall in between. Once it's
+ * read true even once this session, this hook commits to leaving
+ * 'install' behind for good.
+ */
+export function useBootPhase(): { phase: BootPhase; splashStage: SplashStage } {
   const { state } = useAuth();
   const isStandalone = useIsStandalone();
 
-  // Lazy initial value, not `useState(false)`: a cold start that's
-  // ALREADY standalone (launched from the installed icon) must commit
-  // to 'ready' from its very first render, not lag a tick behind an
-  // effect that hasn't run yet.
   const [everStandalone, setEverStandalone] = useState(isStandalone);
+  const [splashStage, setSplashStage] = useState<SplashStage>('logo');
+  const [minDwellElapsed, setMinDwellElapsed] = useState(false);
+  const [fadeElapsed, setFadeElapsed] = useState(false);
 
   useEffect(() => {
-    // One-directional on purpose — see this hook's own doc comment.
-    // Never resets to false: a later live `false` reading is exactly
-    // the transient blip this latch exists to ignore.
     if (isStandalone) setEverStandalone(true);
   }, [isStandalone]);
 
-  if (state.status === 'initializing') return 'splash';
-  if (!everStandalone) return 'install';
-  return 'ready';
+  // Runs once per mount — replays the full sequence on every fresh
+  // cold start. Deliberately no dependency on auth state, so a
+  // fast-resolving AuthProvider can never shorten either timer.
+  useEffect(() => {
+    const toBranded = setTimeout(() => setSplashStage('branded'), SPLASH_STAGE1_MS);
+    const toDwellElapsed = setTimeout(
+      () => setMinDwellElapsed(true),
+      SPLASH_STAGE1_MS + SPLASH_STAGE2_MS,
+    );
+    return () => {
+      clearTimeout(toBranded);
+      clearTimeout(toDwellElapsed);
+    };
+  }, []);
+
+  const authReady = state.status !== 'initializing';
+  const readyToLeave = authReady && minDwellElapsed;
+
+  // Fires once whichever of auth-ready / min-dwell-elapsed finishes
+  // last flips readyToLeave true. Plays the 'leaving' fade, then holds
+  // phase at 'splash' one more beat (fadeElapsed) so the CSS opacity
+  // transition has time to finish before AppBoot unmounts AppSplash.
+  useEffect(() => {
+    if (!readyToLeave) return;
+    setSplashStage('leaving');
+    const toFadeElapsed = setTimeout(() => setFadeElapsed(true), SPLASH_FADE_MS);
+    return () => clearTimeout(toFadeElapsed);
+  }, [readyToLeave]);
+
+  let phase: BootPhase;
+  if (!readyToLeave || !fadeElapsed) {
+    phase = 'splash';
+  } else if (!everStandalone) {
+    phase = 'install';
+  } else {
+    phase = 'ready';
+  }
+
+  return { phase, splashStage };
 }

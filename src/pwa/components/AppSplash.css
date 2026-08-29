@@ -1,9 +1,11 @@
 @layer components {
   /*
-   * Step 2a. Full-viewport, centred — matches the reference splash
-   * (Image 5): nothing else on screen, mark dead-centre. --color-bg,
-   * not --color-surface: this is the app's own background, the same
-   * warm neutral it boots into, not a card floating on top of one.
+   * Full-viewport, centred. --color-bg, not --color-surface: this is
+   * the app's own background, not a card floating on top of one.
+   *
+   * The opacity transition only actually plays going into
+   * [data-stage='leaving'] — at 'logo'/'branded' opacity stays 1, so
+   * there's no unwanted fade on mount.
    */
   .app-splash {
     position: fixed;
@@ -14,15 +16,18 @@
     justify-content: center;
     gap: var(--space-4);
     background-color: var(--color-bg);
+    opacity: 1;
+    transition: opacity var(--motion-duration-base) var(--motion-ease-exit);
   }
 
-  /*
-   * Larger than any in-app placement (sidebar rail, header) — a splash
-   * is the one context where the mark is the entire screen's content
-   * rather than a corner accent, so it earns real size. Logo's own
-   * --ds-logo styling still supplies colour/wordmark typography; this
-   * just scales the mark up for the hero treatment.
-   */
+  .app-splash[data-stage='leaving'] {
+    opacity: 0;
+  }
+
+  /* Larger than any in-app placement — a splash is the one context
+   * where the mark is the entire screen's content, not a corner
+   * accent. Stays the same size/position across both stages so it
+   * never jumps when the brand block appears below it. */
   .app-splash__logo {
     font-size: var(--font-size-2xl);
   }
@@ -32,11 +37,28 @@
     block-size: 4rem;
   }
 
-  /*
-   * Step 2b. Primary tagline, directly under the wordmark — same job as
-   * "Offline Payments. Instantly." in the SyncPoint reference: state
-   * what the product does, in two short beats, at rest under the mark.
-   */
+  /* Wordmark + tagline + dots + footer, revealed together once the
+   * 'branded' stage begins. */
+  .app-splash__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    animation: app-splash-brand-enter var(--motion-duration-base) var(--motion-ease-enter);
+  }
+
+  @keyframes app-splash-brand-enter {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   .app-splash__tagline {
     font-size: var(--font-size-md);
     color: var(--color-text-secondary);
@@ -44,21 +66,6 @@
     margin: 0;
   }
 
-  /*
-   * Step 2c. Three-dot loading indicator, staggered opacity pulse — the
-   * "still working" signal under the tagline (Image 4's animated dots).
-   * Uses --color-accent-soft (lavender), the decorative/non-text token,
-   * since these dots carry no text and only need to clear 3:1 as a
-   * non-text UI element, not the 4.5:1 text floor.
-   *
-   * --motion-duration-slow/--motion-ease-standard, not new numbers: a
-   * looping pulse has no enter/exit asymmetry, so the symmetric
-   * -standard curve is the correct one (see motion.css's own reasoning
-   * for when to reach for -standard vs -enter/-exit). No manual
-   * prefers-reduced-motion guard needed — reset.css's global block
-   * already collapses animation-duration to near-zero for anyone who
-   * has that OS setting on.
-   */
   .app-splash__dots {
     display: inline-flex;
     gap: var(--space-2);
@@ -94,13 +101,9 @@
     }
   }
 
-  /*
-   * Step 2b. Footer micro-tagline, pinned near the bottom of the
-   * splash — mirrors "Reliable • Secure • Offline First" in the
-   * reference. Absolutely positioned rather than pushed down by flex
-   * gap so it holds its place regardless of how tall the logo+tagline
-   * block above ends up being.
-   */
+  /* position: absolute here resolves against .app-splash (fixed), the
+   * nearest positioned ancestor, regardless of the static
+   * .app-splash__brand wrapper in between. */
   .app-splash__footer {
     position: absolute;
     bottom: var(--space-8);

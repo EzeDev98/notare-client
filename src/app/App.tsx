@@ -11,11 +11,8 @@ import { InstallPage } from '@/pwa/components/InstallPage';
 import { UpdateAvailableModal } from '@/pwa/components/UpdateAvailableModal';
 
 /**
- * Step 2d/4a-4c. Renders against useBootPhase()'s three-state BootPhase
- * rather than checking AuthProvider's status directly the way this
- * function did before Step 4a — same underlying signal today (see
- * useBootPhase's own doc comment), just switched through the named
- * seam Step 4b/4c built out.
+ * Step 2d/4a-4c/8c. Renders against useBootPhase()'s phase + splashStage
+ * rather than checking AuthProvider's status directly.
  *
  * A child of AuthProvider, not a sibling before it: useBootPhase()
  * needs useAuth()'s context, and AuthProvider's init effect fires on
@@ -26,23 +23,18 @@ import { UpdateAvailableModal } from '@/pwa/components/UpdateAvailableModal';
  * QueryProvider/ToastProvider/RouterProvider only mount once boot is
  * over: nothing under the router needs a query client or a toast host
  * while the splash or the mandatory InstallPage is the only thing on
- * screen. RequireAuth's own `initializing` branch (RouteFallback) was
- * only ever a same-tab fallback for a route change, never the first
- * paint — this is the first paint now.
+ * screen.
  *
- * 'install' is a real, reachable case as of 4b/4c, not the placeholder
- * it was through 4a: useBootPhase() returns it whenever
- * useIsStandalone() is false, and this now renders the actual
- * InstallPage rather than AppSplash for it — see InstallPage's own doc
+ * 'install' renders the actual InstallPage — see InstallPage's own doc
  * comments for why it is a hard gate (no skip/dismiss) and how it tells
  * "installed" apart from "prompt dismissed".
  */
 function AppBoot() {
-  const bootPhase = useBootPhase();
+  const { phase, splashStage } = useBootPhase();
 
-  switch (bootPhase) {
+  switch (phase) {
     case 'splash':
-      return <AppSplash />;
+      return <AppSplash stage={splashStage} />;
     case 'install':
       return <InstallPage />;
     case 'ready':
@@ -67,16 +59,7 @@ function AppBoot() {
  * offerable whether or not anyone is signed in (the login screen itself is
  * served by the same service worker).
  *
- * Step 5a/5b. InstallBanner no longer mounts here, and its component/
- * stylesheet (InstallBanner.tsx, InstallBanner.css) are deleted -
- * InstallPage/bootPhase (Steps 3-4) fully replace what it did, and the two
- * together would have meant a person on the 'install' phase could see
- * InstallPage's full-screen gate AND InstallBanner's own "Install Notare"
- * banner over the top of it, both reading the same underlying signal.
- * useInstallPrompt.ts (the hook InstallBanner used) stays - InstallPage
- * itself still calls it.
- *
- * AppBoot (Step 2d/4a) is what actually decides, on every cold start,
+ * AppBoot (Step 2d/4a/8c) is what actually decides, on every cold start,
  * between AppSplash, InstallPage, and the real app - see its own doc
  * comment.
  */

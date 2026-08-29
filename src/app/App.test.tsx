@@ -152,7 +152,7 @@ describe('7a — Android Chrome, not installed', () => {
      * — this assertion has to win the race against that resolving, which
      * is exactly why it comes before any `await`/`waitFor` in this test.
      */
-    expect(screen.getByText('Write Anywhere. Sync Everywhere.')).toBeInTheDocument();
+    expect(screen.getByTestId('app-splash')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Ready to install' })).not.toBeInTheDocument();
 
     /*
@@ -240,7 +240,7 @@ describe('7b — Android Chrome, already installed/standalone', () => {
     // SPLASH FIRST — same race-with-async-restore reasoning as 7a: this has
     // to be asserted before any await, or AuthProvider's restore may have
     // already resolved by the time this line runs.
-    expect(screen.getByText('Write Anywhere. Sync Everywhere.')).toBeInTheDocument();
+    expect(screen.getByTestId('app-splash')).toBeInTheDocument();
 
     // → LOGIN directly. isStandalone is true from the start, so bootPhase
     // never has a reason to land on 'install' — nothing here should ever
@@ -283,7 +283,7 @@ describe('7b — Android Chrome, already installed/standalone', () => {
 
     render(<App />);
 
-    expect(screen.getByText('Write Anywhere. Sync Everywhere.')).toBeInTheDocument();
+    expect(screen.getByTestId('app-splash')).toBeInTheDocument();
 
     // → NOTES directly, past login entirely. Empty Dexie + an empty /notes
     // page means NotesLandingPage's empty state, not a redirect to a note
@@ -332,7 +332,7 @@ describe('7c — iOS Safari', () => {
 
     render(<App />);
 
-    expect(screen.getByText('Write Anywhere. Sync Everywhere.')).toBeInTheDocument();
+    expect(screen.getByTestId('app-splash')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Ready to install' })).toBeInTheDocument();
@@ -409,7 +409,7 @@ describe('7d — app killed and reopened', () => {
 
     // FIRST OPEN.
     const first = render(<App />);
-    expect(screen.getByText('Write Anywhere. Sync Everywhere.')).toBeInTheDocument();
+    expect(screen.getByTestId('app-splash')).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'No notes yet' })).toBeInTheDocument();
     });
@@ -422,7 +422,7 @@ describe('7d — app killed and reopened', () => {
     // again, because it comes from AuthProvider's fresh 'initializing'
     // status on mount, not anything remembered from the previous visit.
     render(<App />);
-    expect(screen.getByText('Write Anywhere. Sync Everywhere.')).toBeInTheDocument();
+    expect(screen.getByTestId('app-splash')).toBeInTheDocument();
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'No notes yet' })).toBeInTheDocument();
     });
