@@ -1,12 +1,4 @@
 @layer components {
-  /*
-   * Full-viewport, centred. --color-bg, not --color-surface: this is
-   * the app's own background, not a card floating on top of one.
-   *
-   * The opacity transition only actually plays going into
-   * [data-stage='leaving'] — at 'logo'/'branded' opacity stays 1, so
-   * there's no unwanted fade on mount.
-   */
   .app-splash {
     position: fixed;
     inset: 0;
@@ -22,41 +14,6 @@
 
   .app-splash[data-stage='leaving'] {
     opacity: 0;
-  }
-
-  /* Larger than any in-app placement — a splash is the one context
-   * where the mark is the entire screen's content, not a corner
-   * accent. Stays the same size/position across both stages so it
-   * never jumps when the brand block appears below it. */
-  .app-splash__logo {
-    font-size: var(--font-size-2xl);
-  }
-
-  .app-splash__logo .ds-logo__mark {
-    inline-size: 4rem;
-    block-size: 4rem;
-  }
-
-  /* Wordmark + tagline + dots + footer, revealed together once the
-   * 'branded' stage begins. */
-  .app-splash__brand {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-4);
-    animation: app-splash-brand-enter var(--motion-duration-base) var(--motion-ease-enter);
-  }
-
-  @keyframes app-splash-brand-enter {
-    from {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
   }
 
   .app-splash__tagline {
@@ -101,9 +58,6 @@
     }
   }
 
-  /* position: absolute here resolves against .app-splash (fixed), the
-   * nearest positioned ancestor, regardless of the static
-   * .app-splash__brand wrapper in between. */
   .app-splash__footer {
     position: absolute;
     bottom: var(--space-8);

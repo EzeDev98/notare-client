@@ -101,3 +101,34 @@ export function useIsStandalone(): boolean {
 
   return standalone;
 }
+
+/**
+ * Step 8d/10a. Latches useIsStandalone() rather than exposing the live
+ * value directly. Two separate call sites need "has this session ever
+ * been confirmed as the installed app" rather than "is it standalone
+ * RIGHT NOW":
+ *
+ *   - useBootPhase.ts: once install is confirmed, a later transient
+ *     `false` reading (a known Chrome quirk right after a real install
+ *     completes) must not eject someone back onto the mandatory
+ *     InstallPage.
+ *   - App.tsx's UpdateAvailableModal placement: a first-time visitor on
+ *     the install gate has nothing installed to update, so the modal
+ *     must never appear for them — but once this reads true, it should
+ *     keep offering updates even through a later transient blip.
+ *
+ * Lazy initial value, not `useState(false)`: a cold start that's ALREADY
+ * standalone must commit from its very first render, not lag a tick
+ * behind an effect that hasn't run yet.
+ */
+export function useEverStandalone(): boolean {
+  const isStandalone = useIsStandalone();
+  const [everStandalone, setEverStandalone] = useState(isStandalone);
+
+  useEffect(() => {
+    // One-directional on purpose — never resets to false.
+    if (isStandalone) setEverStandalone(true);
+  }, [isStandalone]);
+
+  return everStandalone;
+}

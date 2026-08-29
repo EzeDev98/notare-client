@@ -9,6 +9,7 @@ import { useBootPhase } from '@/app/useBootPhase';
 import { AppSplash } from '@/pwa/components/AppSplash';
 import { InstallPage } from '@/pwa/components/InstallPage';
 import { UpdateAvailableModal } from '@/pwa/components/UpdateAvailableModal';
+import { useEverStandalone } from '@/pwa/displayMode';
 
 /**
  * Step 2d/4a-4c/8c. Renders against useBootPhase()'s phase + splashStage
@@ -55,18 +56,24 @@ function AppBoot() {
  * ThemeProvider is outermost: an error boundary rendering inside the router
  * should still be themed.
  *
- * UpdateAvailableModal sits OUTSIDE AuthProvider - a new version is
- * offerable whether or not anyone is signed in (the login screen itself is
- * served by the same service worker).
+ * Step 11. UpdateAvailableModal only renders once this session has
+ * confirmed it IS the installed app (useEverStandalone() — the same
+ * latch useBootPhase.ts uses for the install gate itself). A first-time
+ * visitor still on the install gate, or just browsing in an ordinary
+ * tab, has nothing installed for a newer version to matter to. Still
+ * sits outside AuthProvider: offerable whether or not anyone is signed
+ * in, once it's actually the installed app asking.
  *
  * AppBoot (Step 2d/4a/8c) is what actually decides, on every cold start,
  * between AppSplash, InstallPage, and the real app - see its own doc
  * comment.
  */
 export function App() {
+  const everStandalone = useEverStandalone();
+
   return (
     <ThemeProvider>
-      <UpdateAvailableModal />
+      {everStandalone ? <UpdateAvailableModal /> : null}
       <AuthProvider>
         <AppBoot />
       </AuthProvider>
