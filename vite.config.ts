@@ -5,6 +5,7 @@ import { defineConfig } from 'vitest/config';
 import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
+import { serviceWorkerVersionPlugin } from './vite-plugins/serviceWorkerVersion';
 
 export default defineConfig(({ mode }) => {
   /*
@@ -18,7 +19,11 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = nodeEnv['NOTARE_DEV_PROXY_TARGET'] ?? 'http://localhost:2001';
 
   return {
-    plugins: [react()],
+    // serviceWorkerVersionPlugin only ever runs for `vite build` (its own
+    // `apply: 'build'`) — see service-worker/sw.js and
+    // vite-plugins/serviceWorkerVersion.ts for why sw.js needs a plugin at
+    // all instead of just living in /public like every other static file.
+    plugins: [react(), serviceWorkerVersionPlugin()],
 
     resolve: {
       alias: {

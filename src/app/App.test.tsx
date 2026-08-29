@@ -175,11 +175,26 @@ describe('7a — Android Chrome, not installed', () => {
       window.dispatchEvent(bip);
     });
 
-    const installButton = await screen.findByRole('button', { name: 'Install now' });
-    expect(installButton).toBeEnabled();
+    /*
+     * A prior version of this asserted findByRole(...) then toBeEnabled()
+     * as two separate steps — a real, if intermittent, race: findByRole
+     * resolves the moment a button with this accessible NAME exists,
+     * regardless of its disabled state (InstallPage always renders this
+     * button; only the `disabled` attribute depends on `available`). It
+     * could resolve in the gap between the button appearing (still
+     * disabled) and the beforeinstallprompt-triggered state update
+     * actually flushing to `available: true`. waitFor here polls the
+     * ENABLED condition itself, not just existence, so it can't return
+     * before the state update it's meant to be waiting for has landed.
+     */
+    let installButton: HTMLElement;
+    await waitFor(() => {
+      installButton = screen.getByRole('button', { name: 'Install now' });
+      expect(installButton).toBeEnabled();
+    });
 
     const user = userEvent.setup();
-    await user.click(installButton);
+    await user.click(installButton!);
     expect(bip.prompt).toHaveBeenCalledOnce();
 
     /*
@@ -347,5 +362,69 @@ describe('7c — iOS Safari', () => {
     await user.click(continueButton);
 
     expect(closeSpy).toHaveBeenCalledOnce();
+  });
+});
+
+/**
+ * Step 7d. App killed and reopened → full splash sequence replays every
+ * time.
+ *
+ * Rather than reload the module (the only way to truly imitate a killed
+ * process, and not something Vitest can do mid-test), this unmounts and
+ * re-renders <App /> within the SAME test — which is actually a STRICTER
+ * check than a real restart: a real kill also clears any module-level
+ * JS state, but unmount/remount here does not. So if a future change
+ * introduced a module-level "already shown this session" flag instead
+ * of something genuinely tied to a fresh boot, this test would still
+ * catch it, where a full process restart might not exercise the same
+ * code path convincingly in a unit test. bootPhase's actual guarantee
+ * (useBootPhase.ts, useAuth's 'initializing' status) is that every fresh
+ * AuthProvider mount starts there again with no memory of a previous
+ * one, which is exactly what makes this true on a real device too.
+ *
+ * Reuses the SAME already-installed/standalone-with-session scenario as
+ * 7b's second test — the point here isn't a new boot path, it's that
+ * the existing one is not a one-time thing.
+ */
+describe('7d — app killed and reopened', () => {
+  it('replays the full splash sequence on every fresh mount, not just the first', async () => {
+    stubDisplayModeMatchMedia(true);
+    initInstallPrompt();
+
+    server.use(
+      http.get(`${BASE}/notes`, () =>
+        HttpResponse.json({ content: [], page: 0, size: 20, totalElements: 0, totalPages: 1 }),
+      ),
+      http.get(`${BASE}/sync`, () =>
+        HttpResponse.json({
+          changed: [],
+          deletedIds: [],
+          nextCursor: '2026-08-13T09:00:00.000',
+          hasMore: false,
+        }),
+      ),
+    );
+
+    await setStoredRefreshToken('refresh-1');
+
+    // FIRST OPEN.
+    const first = render(<App />);
+    expect(screen.getByText('Write Anywhere. Sync Everywhere.')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'No notes yet' })).toBeInTheDocument();
+    });
+
+    // KILL.
+    first.unmount();
+
+    // REOPEN. Same stubs, same stored session, nothing re-seeded —
+    // the point is that unchanged conditions still produce the splash
+    // again, because it comes from AuthProvider's fresh 'initializing'
+    // status on mount, not anything remembered from the previous visit.
+    render(<App />);
+    expect(screen.getByText('Write Anywhere. Sync Everywhere.')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'No notes yet' })).toBeInTheDocument();
+    });
   });
 });

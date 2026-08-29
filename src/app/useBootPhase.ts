@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 import { useAuth } from '@/app/providers/auth-context';
 import { useIsStandalone } from '@/pwa/displayMode';
 
@@ -30,18 +32,31 @@ export type BootPhase = 'splash' | 'install' | 'ready';
  *     fired, or ever will, changes nothing about WHETHER installation
  *     is still outstanding — only standalone-or-not answers that.
  *
- * The reactive `useIsStandalone()`, not the one-shot
- * `isStandaloneDisplayMode()`: on the native/Chromium path, accepting
- * the install prompt can flip display-mode mid-session without a
- * reload, and this hook needs to notice that and move on to 'ready'
- * without the person having to do anything else (see InstallPage's own
- * "Notare is installed. Continuing…" state, which only ever makes
- * sense if something above it is actually watching for this and
- * following through). On the instructional/iOS path there is no such
- * live transition — this tab's display-mode never flips itself, only
- * a fresh launch from a newly created home-screen icon does — which is
- * exactly why that branch's "Continue" closes the tab instead of
- * waiting for a phase change that will never come in that tab.
+ * LATCHED, not a raw live read of useIsStandalone() — this was the
+ * direct read through Step 4c's own first version, and it turned out to
+ * be wrong: `display-mode` is not the monotonic one-way signal that
+ * version assumed. Observed directly while testing the native install
+ * flow on the dev server: display-mode flipped to standalone right on
+ * schedule when the install actually completed, bootPhase correctly
+ * moved to 'ready' — and then, ~2 seconds later, with NO reload and NO
+ * uninstall in between (same navigation-start timeline throughout, per
+ * displayMode.ts's own diagnostic logging), the SAME media query
+ * flipped back to non-standalone on its own, as Chrome finished
+ * settling the window's real app association. A raw live read sent
+ * bootPhase straight back to 'install' for that blip — ejecting someone
+ * already let into the app back onto the mandatory gate, for a signal
+ * that had nothing to do with them actually losing the installed app.
+ *
+ * `everStandalone` fixes this by remembering, not re-asking: once
+ * useIsStandalone() has read true even once during this page's life,
+ * this hook commits to 'ready' (auth permitting) and never reconsiders
+ * — a later false reading no longer matters. That's the correct
+ * semantics for what this hook is actually answering ("has this session
+ * cleared the install requirement"), which can only ever go from
+ * unmet to met, never back — a genuine uninstall can only be discovered
+ * at the START of a fresh page load (a real cold start, which gets its
+ * own fresh `useState(isStandalone)` initial value below, computed from
+ * whatever is actually true at THAT moment), never mid-session.
  *
  * Deliberately NOT distinguishing native from instructional here: that
  * split is real (Step 3d vs 3e render very differently) but it's a
@@ -53,7 +68,20 @@ export function useBootPhase(): BootPhase {
   const { state } = useAuth();
   const isStandalone = useIsStandalone();
 
+  // Lazy initial value, not `useState(false)`: a cold start that's
+  // ALREADY standalone (launched from the installed icon) must commit
+  // to 'ready' from its very first render, not lag a tick behind an
+  // effect that hasn't run yet.
+  const [everStandalone, setEverStandalone] = useState(isStandalone);
+
+  useEffect(() => {
+    // One-directional on purpose — see this hook's own doc comment.
+    // Never resets to false: a later live `false` reading is exactly
+    // the transient blip this latch exists to ignore.
+    if (isStandalone) setEverStandalone(true);
+  }, [isStandalone]);
+
   if (state.status === 'initializing') return 'splash';
-  if (!isStandalone) return 'install';
+  if (!everStandalone) return 'install';
   return 'ready';
 }

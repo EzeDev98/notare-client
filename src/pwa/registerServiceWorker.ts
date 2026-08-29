@@ -4,8 +4,9 @@
  * A new service worker installs in the background and sits WAITING —
  * `sw.js` never calls `self.skipWaiting()` on its own. This module is the
  * only thing that unblocks it, and only in response to `applyUpdate()`,
- * called from `UpdateBanner` once a person actually clicks "Refresh".
- * Nothing here takes over a session nobody asked to interrupt mid-edit.
+ * called from `UpdateAvailableModal` once a person actually clicks
+ * "Update now". Nothing here takes over a session nobody asked to
+ * interrupt mid-edit.
  */
 
 type UpdateListener = (available: boolean) => void;
@@ -20,9 +21,9 @@ function notify(available: boolean): void {
 /**
  * Subscribes to update-availability. Replays the CURRENT state
  * immediately on subscribe — a component mounting after the update was
- * already detected (e.g. `UpdateBanner` rendering fresh on a route
- * change) must not have to wait for a second `updatefound` that will
- * never come.
+ * already detected (e.g. `UpdateAvailableModal` rendering fresh on a
+ * route change) must not have to wait for a second `updatefound` that
+ * will never come.
  */
 export function onUpdateAvailable(listener: UpdateListener): () => void {
   listeners.add(listener);
@@ -32,8 +33,18 @@ export function onUpdateAvailable(listener: UpdateListener): () => void {
   };
 }
 
+// Set only by applyUpdate() below — the single signal the controllerchange
+// listener uses to tell "the user approved this update" apart from
+// sw.js's activate handler calling self.clients.claim() on its own, which
+// also fires controllerchange but happens on EVERY first-ever activation
+// (a brand-new install has no prior controller, so the new worker skips
+// waiting and activates immediately, claiming whatever page is open). That
+// case must never reload — see the module doc comment.
+let updateRequested = false;
+
 export function applyUpdate(): void {
   if (waitingWorker === null) return;
+  updateRequested = true;
   waitingWorker.postMessage({ type: 'SKIP_WAITING' });
 }
 
@@ -82,7 +93,7 @@ export function registerServiceWorker(): void {
              * UPDATE to an already-running app, not the very first
              * install (which also reaches `installed` but has no
              * controller yet, and nothing to "update" from — that
-             * first install should not show a banner about itself).
+             * first install should not prompt anyone about itself).
              */
             if (installing.state === 'installed' && navigator.serviceWorker.controller) {
               waitingWorker = installing;
@@ -99,6 +110,12 @@ export function registerServiceWorker(): void {
 
     let reloaded = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
+      // Ignore controllerchange that didn't come from an approved
+      // applyUpdate() — most importantly the one sw.js's activate handler
+      // triggers via self.clients.claim() on a brand-new install, which
+      // has nothing to "update" from and must not reload the tab that
+      // just launched.
+      if (!updateRequested) return;
       // Fires once per activation, in principle — guarded anyway against
       // a double reload if a browser ever fires it more than once.
       if (reloaded) return;

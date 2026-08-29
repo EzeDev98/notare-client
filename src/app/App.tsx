@@ -8,7 +8,7 @@ import { router } from '@/app/router';
 import { useBootPhase } from '@/app/useBootPhase';
 import { AppSplash } from '@/pwa/components/AppSplash';
 import { InstallPage } from '@/pwa/components/InstallPage';
-import { UpdateBanner } from '@/pwa/components/UpdateBanner';
+import { UpdateAvailableModal } from '@/pwa/components/UpdateAvailableModal';
 
 /**
  * Step 2d/4a-4c. Renders against useBootPhase()'s three-state BootPhase
@@ -63,9 +63,9 @@ function AppBoot() {
  * ThemeProvider is outermost: an error boundary rendering inside the router
  * should still be themed.
  *
- * UpdateBanner sits OUTSIDE AuthProvider - a new version is offerable
- * whether or not anyone is signed in (the login screen itself is served by
- * the same service worker).
+ * UpdateAvailableModal sits OUTSIDE AuthProvider - a new version is
+ * offerable whether or not anyone is signed in (the login screen itself is
+ * served by the same service worker).
  *
  * Step 5a/5b. InstallBanner no longer mounts here, and its component/
  * stylesheet (InstallBanner.tsx, InstallBanner.css) are deleted -
@@ -83,7 +83,7 @@ function AppBoot() {
 export function App() {
   return (
     <ThemeProvider>
-      <UpdateBanner />
+      <UpdateAvailableModal />
       <AuthProvider>
         <AppBoot />
       </AuthProvider>

@@ -4,9 +4,17 @@
  * NOTARE-CLIENT-ARCHITECTURE.md §1.4 sizes this at "perhaps 30 lines" for
  * the auth-injection piece specifically; the rest (precache, runtime
  * cache, offline fallback, update flow) is deliberately kept just as
- * plain. Plain JS, not TypeScript — this file is served as-is from
- * /public and runs in the service-worker global scope, which Vite does
- * not transpile.
+ * plain. Plain JS, not TypeScript — this file runs in the service-worker
+ * global scope, which nothing here puts through Vite's normal transform
+ * pipeline.
+ *
+ * NOT served from /public. It lives in this top-level service-worker/
+ * folder and is emitted into the build output's root (same place /sw.js
+ * needs to be, for the manifest's "/" scope to cover it) by
+ * vite-plugins/serviceWorkerVersion.ts's generateBundle hook, which is
+ * also what turns CACHE_VERSION below from a literal placeholder into a
+ * real value on every production build — see that file for why, and see
+ * this file's own CACHE_VERSION comment for what it actually does with it.
  *
  * THREE responsibilities, and no more:
  *   1. App shell + offline fallback (11C)
@@ -21,14 +29,26 @@
  * streaming audio, not re-deciding what Step 7 already owns.
  */
 
-// Bumped v1 -> v2 -> v3 as PRECACHE_URLS changed each time (icons.svg ->
-// icon.svg -> the real PNG logo's five sizes now). A version bump is what
-// makes `activate` evict the old SHELL_CACHE that still holds the stale
-// precached file list — without it, a browser that already installed an
-// older version keeps serving its old cached files offline indefinitely,
-// since `install` only re-runs addAll() for a cache name it has not seen
-// before.
-const CACHE_VERSION = 'v3';
+// Stamped automatically by vite-plugins/serviceWorkerVersion.ts on every
+// production build (a git short SHA, falling back to a build timestamp if
+// git isn't available) — never edit this literal by hand, and don't expect
+// it to look like a real version if you open this SOURCE file directly:
+// '__NOTARE_SW_VERSION__' only ever gets replaced in the copy that build
+// emits to dist/sw.js.
+//
+// WHY THIS HAS TO CHANGE ON EVERY BUILD AT ALL: a browser detects a service
+// worker update purely by re-fetching this script and byte-comparing it
+// against the one already installed (per the Service Worker spec) — it
+// never looks at PRECACHE_URLS or app code. A deploy that changes only
+// application code leaves every OTHER line in this file identical build to
+// build, so without something in here changing too, the browser would
+// never notice an update happened, no matter how much the app itself
+// changed. CACHE_VERSION changing is what makes that byte-comparison see a
+// difference — and, as a second job, it's also what makes `activate` evict
+// the previous build's SHELL_CACHE and RUNTIME_CACHE, so a browser that
+// already installed an older version can't end up stuck serving stale
+// precached files offline indefinitely.
+const CACHE_VERSION = '__NOTARE_SW_VERSION__';
 const SHELL_CACHE = `notare-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `notare-runtime-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
@@ -53,9 +73,21 @@ const PRECACHE_URLS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.addAll(PRECACHE_URLS)));
   // No self.skipWaiting() here — see the message listener below. 11D
-  // wants the person to approve activation (UpdateBanner's "Refresh"),
-  // not a mid-session takeover nobody asked for.
+  // wants the person to approve activation (UpdateAvailableModal's
+  // "Update now"), not a mid-session takeover nobody asked for.
 });
+
+// Set only inside the SKIP_WAITING branch of the message listener below —
+// i.e. only when a page's applyUpdate() actually asked this worker to take
+// over. Left false, `activate` fires exactly the same on a genuine update
+// AND on this worker's very first-ever activation (no incumbent worker to
+// replace, so it skips "waiting" and activates on its own) — without this
+// gate, self.clients.claim() can't tell those two apart, and on a fresh
+// install it ends up claiming the page that just launched, firing an
+// unrequested `controllerchange` for no reason. Claiming buys nothing on a
+// first install anyway: nothing was controlling that page a moment ago, so
+// leaving it uncontrolled until its next navigation costs nothing.
+let claimOnActivate = false;
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -68,7 +100,9 @@ self.addEventListener('activate', (event) => {
             .map((key) => caches.delete(key)),
         ),
       )
-      .then(() => self.clients.claim()),
+      .then(() => {
+        if (claimOnActivate) return self.clients.claim();
+      }),
   );
 });
 
@@ -98,6 +132,10 @@ self.addEventListener('message', (event) => {
   if (!data || typeof data !== 'object') return;
 
   if (data.type === 'SKIP_WAITING') {
+    // The only signal that makes activate's clients.claim() run — see that
+    // handler's own comment. Set synchronously, in this same worker
+    // instance, before skipWaiting() below hands control to activate.
+    claimOnActivate = true;
     self.skipWaiting();
   } else if (data.type === 'AUTH_TOKEN') {
     authToken = typeof data.token === 'string' ? data.token : null;

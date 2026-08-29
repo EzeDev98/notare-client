@@ -92,8 +92,8 @@ export function initInstallPrompt(): void {
 
   window.addEventListener('beforeinstallprompt', (event) => {
     // Stop the browser's own default UI (mini-infobar / omnibox prompt)
-    // so ours is the only one shown — same tradeoff UpdateBanner makes
-    // relative to the toast system: one deliberate surface, not two
+    // so ours is the only one shown — same tradeoff UpdateAvailableModal
+    // makes relative to the toast system: one deliberate surface, not two
     // competing ones.
     event.preventDefault();
     deferredEvent = event as BeforeInstallPromptEvent;
