@@ -16,6 +16,11 @@
     opacity: 0;
   }
 
+  .app-splash__logo {
+    inline-size: 4rem;
+    block-size: 4rem;
+  }
+
   .app-splash__tagline {
     font-size: var(--font-size-md);
     color: var(--color-text-secondary);
