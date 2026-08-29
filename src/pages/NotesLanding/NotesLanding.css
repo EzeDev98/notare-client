@@ -11,18 +11,51 @@
     display: grid;
     place-items: center;
     justify-items: center;
-    gap: var(--space-2);
+    gap: var(--space-4);
     padding: var(--space-8);
     text-align: center;
-  }
-
-  .notes-landing__title {
-    margin: 0;
-    color: var(--color-text);
   }
 
   .notes-landing__body {
     margin: 0;
     color: var(--color-text-secondary);
+  }
+
+  .notes-landing__cta {
+    text-decoration: none;
+  }
+
+  /*
+   * Step 14. --color-logo, not Button's own --color-accent default —
+   * this CTA is meant to read as the brand mark itself, which is more
+   * saturated than the muted accent every other button uses. `!important`
+   * for the same reason Button.css's own primary/danger variants need it:
+   * this codebase's `@layer` precedence is not reliably honoured by
+   * Vite's dev-mode CSS injection order (see Button.css's own note), so a
+   * normal-specificity override here is not guaranteed to win.
+   */
+  .notes-landing__cta-button {
+    background-color: var(--color-logo) !important;
+  }
+
+  .notes-landing__cta-button:hover:not(:disabled) {
+    filter: brightness(0.92);
+  }
+
+  /* The icon sits AFTER the label text — Button.tsx wraps children in one
+     <span class="ds-button__label">, so text and icon land in the same
+     inline flow by default; this just adds a controlled gap between them
+     instead of relying on the icon's own whitespace. */
+  .notes-landing__cta-button .ds-button__label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  /* Icons default to --color-icon (icons.css) — wrong here, this icon
+     sits on a filled purple button and needs to match the label's own
+     white text, not the muted grey every other icon in the app uses. */
+  .notes-landing__cta-button .lucide {
+    color: var(--color-text-on-accent) !important;
   }
 }

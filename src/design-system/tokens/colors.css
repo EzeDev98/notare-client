@@ -28,6 +28,14 @@
     --lavender-base: #75698f;
     --lavender-strong: #665a80;
 
+    /* A punchier, more saturated purple than the ramp above — this is
+     * the app's actual logo/icon colour (public/logo-*.png,
+     * public/icon-*.png), not a UI accent. Kept as its own primitive
+     * rather than folded into the lavender ramp because it answers a
+     * different question ("what colour is the brand mark") than every
+     * value above ("what colour is this piece of UI chrome"). */
+    --royal-purple: #6d28d9;
+
     /* Status. Deliberately no green — see the note on --color-accent below. */
     --red-base: #b3261e; /* 6.26 on bg, 6.54 under white */
     --amber-base: #92500a; /* 5.96 on bg, 6.22 under white */
@@ -89,6 +97,14 @@
     --color-accent-soft: var(--lavender-soft);
     --color-accent-subtle: var(--lavender-soft-bg);
     --color-accent-faint: var(--lavender-pale);
+
+    /* The literal logo/icon colour, not an accent variant — deliberately
+     * more saturated than --color-accent above, which stays muted on
+     * purpose (§28: 90-95% neutral). Reach for this only where something
+     * should visually reference the brand mark itself — e.g. the notes
+     * empty state's "Create new note" CTA — never as a general button
+     * colour, or every button in the app quietly becomes this one. */
+    --color-logo: var(--royal-purple);
 
     /* Status. Never the ONLY signal (§36) — always paired with text or an
      * icon, because roughly 1 in 12 men cannot rely on hue. */

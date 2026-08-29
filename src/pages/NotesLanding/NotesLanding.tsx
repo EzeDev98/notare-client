@@ -1,7 +1,9 @@
-import { Navigate } from 'react-router';
+import { Plus } from 'lucide-react';
+import { Link, Navigate } from 'react-router';
 
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { useNotes } from '@/features/notes/hooks/useNotes';
+import { Button } from '@/design-system/components/Button/Button';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './NotesLanding.css';
@@ -26,6 +28,13 @@ function routeFor(note: NoteView): string {
  *     (noteRepository.ts's own `byPinnedThenRecent`), so this and the
  *     sidebar's top row always agree on what "the latest note" is.
  *   - no notes yet -> a centred empty state, not a blank rectangle.
+ *
+ * Step 14: no separate "No notes yet" heading any more — one line of
+ * copy plus a direct "Create new note" action reads as an invitation,
+ * not a status report. The action reuses the exact same /notes/new
+ * route Notes.tsx's own empty state and the sidebar's "New note" already
+ * point at — this is not a new way to create a note, just another entry
+ * point to the existing one.
  *
  * `/notes/new` and `/notes/:noteId` are untouched, separate routes — this
  * component only ever renders for the bare `/notes` path itself.
@@ -53,8 +62,20 @@ export function NotesLandingPage() {
 
   return (
     <div className="notes-landing notes-landing--centre">
-      <h1 className="notes-landing__title">No notes yet</h1>
       <p className="notes-landing__body">Start a note to begin.</p>
+
+      <Link className="notes-landing__cta" to="/notes/new">
+        {/*
+          --color-logo, not the standard `variant="primary"` accent — this
+          one CTA is meant to read as the brand mark itself (see
+          colors.css's own note on --color-logo), not as an ordinary
+          button, so its colour is overridden in NotesLanding.css.
+        */}
+        <Button variant="primary" className="notes-landing__cta-button">
+          Create new note
+          <Plus aria-hidden="true" />
+        </Button>
+      </Link>
     </div>
   );
 }
