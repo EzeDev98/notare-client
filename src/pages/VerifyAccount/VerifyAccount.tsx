@@ -73,9 +73,8 @@ export function VerifyAccountPage() {
 
   return (
     <>
-      <h1>Verify your account</h1>
-
-      <p className="verify__lead">
+      <h1 className="public-shell__heading">Verify your account</h1>
+      <p className="public-shell__subtitle">
         Enter the 6-digit code we emailed you. Codes expire after 10 minutes.
       </p>
 
@@ -129,7 +128,13 @@ export function VerifyAccountPage() {
         </Button>
       </form>
 
-      <div className="verify__resend">
+      {/*
+        Step 13. Both footer actions in ONE centred group — previously two
+        separate left-aligned blocks (a ghost Button, then a Link below it
+        in its own div), which read as misaligned under a centred,
+        full-width Verify button. Mirrors Login.tsx's own .login__links.
+      */}
+      <div className="verify__links">
         <Button
           variant="ghost"
           size="sm"
@@ -138,11 +143,11 @@ export function VerifyAccountPage() {
         >
           {cooldown.remaining > 0 ? `Resend in ${String(cooldown.remaining)}s` : 'Send a new code'}
         </Button>
-      </div>
 
-      <p className="verify__alt">
-        <Link to="/login">Back to sign in</Link>
-      </p>
+        <p>
+          <Link to="/login">Back to sign in</Link>
+        </p>
+      </div>
     </>
   );
 }

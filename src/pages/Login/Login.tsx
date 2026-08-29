@@ -90,10 +90,6 @@ export function LoginPage() {
          * permission" here would be actively misleading — the user needs the
          * code in their inbox.
          *
-         * The verification screen arrives in 4F; until then this at least says
-         * something true.
-         */
-        /*
          * Now actionable. The account exists and the password was right — it
          * is simply unverified, so send them where they can fix it, carrying
          * the identifier so they do not retype it.
@@ -118,7 +114,8 @@ export function LoginPage() {
 
   return (
     <>
-      <h1>Sign in</h1>
+      <h1 className="public-shell__heading">Sign in</h1>
+      <p className="public-shell__subtitle">Sign in to your account</p>
 
       {authState.status === 'session-expired' ? (
         <p className="login__notice" role="status">

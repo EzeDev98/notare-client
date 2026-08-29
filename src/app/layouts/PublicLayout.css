@@ -17,24 +17,51 @@
     overflow-y: auto;
   }
 
+  /*
+   * Step 13. Card treatment now applies at EVERY size, mobile included —
+   * this used to only appear at >=640px on the theory that a bordered
+   * card wastes horizontal space on a narrow phone. In practice the
+   * uncarded mobile view read as unfinished (a bare, oversized heading
+   * with nothing else on the page), so this now matches InstallPage's
+   * own card-on-mobile fix. Padding still steps up at the tablet
+   * breakpoint below.
+   */
   .public-shell__panel {
     inline-size: 100%;
     /* Narrow measure: a form is scanned, not read. Full-width fields on a
      * wide screen make the eye travel between label and input. */
     max-inline-size: var(--measure-narrow);
+    padding: var(--space-6) var(--space-5);
+    background-color: var(--color-surface);
+    border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
   }
 
   @media (min-width: 640px) {
     .public-shell__panel {
       padding: var(--space-8);
-      background-color: var(--color-surface);
-      border: var(--border-width) solid var(--color-border);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-sm);
     }
   }
 
-  /* No panel chrome on mobile: at 375px a bordered card inside a padded
-   * viewport wastes horizontal space the form needs, and the surface reads as
-   * the page anyway. */
+  /*
+   * Step 13. Shared heading/subtitle for every page under this layout —
+   * Login and VerifyAccount both use these now instead of a bare <h1>
+   * and page-specific lead paragraph, so any future page under
+   * PublicLayout (reset password, register) gets the same hierarchy for
+   * free instead of reinventing it per page.
+   */
+  .public-shell__heading {
+    margin: 0;
+    font-size: var(--font-size-xl);
+    line-height: var(--line-height-snug);
+    text-align: center;
+  }
+
+  .public-shell__subtitle {
+    margin: var(--space-1) 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    text-align: center;
+  }
 }

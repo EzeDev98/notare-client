@@ -1,9 +1,4 @@
 @layer pages {
-  .verify__lead {
-    margin-block-start: var(--space-3);
-    color: var(--color-text-secondary);
-  }
-
   .verify__form {
     display: grid;
     gap: var(--space-5);
@@ -28,12 +23,27 @@
     color: var(--color-text);
   }
 
-  .verify__resend {
+  /*
+   * Step 13. One centred column for both footer actions — mirrors
+   * Login.css's own .login__links, which already solved the identical
+   * problem there. Before this, "Send a new code" (a ghost Button) sat
+   * left-aligned in its own block, and "Back to sign in" (a plain Link)
+   * sat left-aligned in a SEPARATE block below it — two independently
+   * left-edge-anchored elements directly under a centred, full-width
+   * "Verify" button, which is exactly why it read as misaligned.
+   */
+  .verify__links {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
     margin-block-start: var(--space-4);
+    text-align: center;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
   }
 
-  .verify__alt {
-    margin-block-start: var(--space-6);
-    font-size: var(--font-size-sm);
+  .verify__links p {
+    margin: 0;
   }
 }
