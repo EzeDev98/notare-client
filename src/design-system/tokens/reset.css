@@ -46,6 +46,28 @@
 
     /* Stops iOS Safari inflating text in landscape. */
     -webkit-text-size-adjust: 100%;
+
+    /*
+     * Belt-and-suspenders with .app-shell's own overflow: hidden
+     * (AppLayout.css's own comment on that rule) — .app-shell fills the
+     * viewport and manages its own internal scrolling, but html/body having
+     * no size or overflow rule of their own left the DOCUMENT itself
+     * draggable on mobile: a touch-scroll with nothing left to scroll (the
+     * empty "Start a note to begin" state, say) fell through to the
+     * browser's own elastic overscroll/rubber-band at the page level,
+     * visibly shifting the whole layout — toolbar and bottom bar included
+     * — even though nothing on screen was meant to move. height: 100% +
+     * overflow: hidden removes the document's own scroll entirely;
+     * overscroll-behavior: none stops any scroll gesture from ever
+     * chaining past a nested container's own edge to the document/browser
+     * chrome. Neither property touches scrolling INSIDE .app-shell__main,
+     * .app-shell__note-list, .app-shell__folders, or
+     * .note-detail__scroll — those keep their own overflow-y: auto and
+     * remain exactly as scrollable as before.
+     */
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 
   body {
@@ -55,6 +77,12 @@
      * when the keyboard opens. dvh tracks the visible area.
      */
     min-height: 100dvh;
+    /* See html's own comment above — same fix, same reasoning, needed on
+       both ancestors since either one being scrollable is enough to let
+       the document bounce. */
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 
   /*
