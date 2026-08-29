@@ -289,7 +289,7 @@ describe('7b — Android Chrome, already installed/standalone', () => {
     // page means NotesLandingPage's empty state, not a redirect to a note
     // — see NotesLandingPage's own doc comment on the two branches.
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'No notes yet' })).toBeInTheDocument();
+      expect(screen.getByText('Start a note to begin.')).toBeInTheDocument();
     });
     expect(screen.queryByRole('heading', { name: 'Ready to install' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Sign in' })).not.toBeInTheDocument();
@@ -411,7 +411,7 @@ describe('7d — app killed and reopened', () => {
     const first = render(<App />);
     expect(screen.getByTestId('app-splash')).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'No notes yet' })).toBeInTheDocument();
+      expect(screen.getByText('Start a note to begin.')).toBeInTheDocument();
     });
 
     // KILL.
@@ -424,7 +424,7 @@ describe('7d — app killed and reopened', () => {
     render(<App />);
     expect(screen.getByTestId('app-splash')).toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: 'No notes yet' })).toBeInTheDocument();
+      expect(screen.getByText('Start a note to begin.')).toBeInTheDocument();
     });
   });
 });

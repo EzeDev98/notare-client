@@ -18,6 +18,7 @@ import {
   NotebookText,
   PanelLeft,
   Search,
+  Settings,
   Share,
   SquarePen,
   Sun,
@@ -35,6 +36,7 @@ import { useTheme } from '@/app/providers/theme-context';
 import { useFoldersPanel } from '@/app/layouts/useFoldersPanel';
 import { useSidebarWidth } from '@/app/layouts/useSidebarWidth';
 import { MobileNotesPanel } from '@/app/layouts/MobileNotesPanel';
+import { SettingsPanel } from '@/app/layouts/SettingsPanel';
 import { AnimatedSidebarNoteList } from '@/features/notes/components/AnimatedSidebarNoteList/AnimatedSidebarNoteList';
 import {
   NoteContextMenu,
@@ -846,6 +848,59 @@ export function AppLayout() {
   }, [location.pathname, requestMobileNotesClose]);
 
   /*
+   * Responsive layout plan, next step. The mobile bottom bar's far-right
+   * slot (Settings, replacing a direct Account link there — see
+   * accountItem's sibling markup below) opens this: a slide-in panel from
+   * the right, same open/closing-animation shape as
+   * isMobileNotesOpen/isMobileNotesClosing and notificationsOpen/
+   * notificationsClosing above (see either's own comment for why the two
+   * booleans plus ref mirrors exist) rather than a fourth variant of the
+   * same pattern.
+   */
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSettingsClosing, setIsSettingsClosing] = useState(false);
+  const isSettingsOpenRef = useRef(isSettingsOpen);
+  isSettingsOpenRef.current = isSettingsOpen;
+  const isSettingsClosingRef = useRef(isSettingsClosing);
+  isSettingsClosingRef.current = isSettingsClosing;
+
+  const requestSettingsClose = useCallback(() => {
+    if (!isSettingsOpenRef.current || isSettingsClosingRef.current) return;
+    setIsSettingsClosing(true);
+  }, []);
+
+  function handleSettingsAnimationEnd(event: AnimationEvent<HTMLDivElement>) {
+    if (event.animationName !== 'ds-settings-panel-exit' || event.target !== event.currentTarget) {
+      return;
+    }
+
+    setIsSettingsOpen(false);
+    setIsSettingsClosing(false);
+  }
+
+  useEffect(() => {
+    if (!isSettingsOpen) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        requestSettingsClose();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSettingsOpen, requestSettingsClose]);
+
+  // Same reasoning as MobileNotesPanel's own identical effect above —
+  // navigating to a note (e.g. via the Settings panel's Account link)
+  // shouldn't leave this overlay sitting open on top of the new route.
+  useEffect(() => {
+    requestSettingsClose();
+  }, [location.pathname, requestSettingsClose]);
+
+  /*
    * Here, not in AuthProvider: this component only ever mounts for an
    * authenticated session (RequireAuth wraps its route), so "the shell
    * mounted" already means "we have a session worth syncing for" — no
@@ -901,6 +956,14 @@ export function AppLayout() {
   );
 
   const hasEmptyNote = emptyNote !== undefined;
+
+  // Shared by the toolbar's own Delete icon AND MobileNotesPanel's new
+  // mobile header (Step: mobile slide-in) — the exact same "whatever note
+  // is currently open" action regardless of which control reached it.
+  function handleDeleteActiveNote() {
+    if (!activeNoteRow) return;
+    setNoteToDelete(toView(activeNoteRow));
+  }
 
   return (
     <div
@@ -1038,7 +1101,7 @@ export function AppLayout() {
           </button>
           <button
             type="button"
-            className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined"
+            className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined app-shell__toolbar-delete"
             aria-label="Delete note"
             disabled={activeNoteRow == null}
             onClick={() => {
@@ -1206,38 +1269,6 @@ export function AppLayout() {
               </form>
             </div>
 
-            {/*
-              Step 13, <1024px only (AppLayout.css hides this whole wrap
-              at >=1024px — desktop already has ThemeToggle permanently in
-              the folders panel, see below). Same collapsed-icon/unfold-
-              in-place shape as the search toggle just above, reusing that
-              established pattern rather than a new one — see
-              isThemeToggleExpanded's own comment for why it doesn't
-              auto-collapse on selection the way search does on submit.
-            */}
-            <div className="app-shell__toolbar-theme-wrap" ref={themeToggleWrapRef}>
-              <button
-                type="button"
-                className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined app-shell__toolbar-theme-toggle"
-                aria-label="Change theme"
-                aria-expanded={isThemeToggleExpanded}
-                onClick={() => {
-                  setIsThemeToggleExpanded((expanded) => !expanded);
-                }}
-              >
-                {resolvedTheme === 'dark' ? (
-                  <Moon aria-hidden="true" />
-                ) : (
-                  <Sun aria-hidden="true" />
-                )}
-              </button>
-
-              {isThemeToggleExpanded ? (
-                <div className="app-shell__toolbar-theme-unfold">
-                  <ThemeToggle />
-                </div>
-              ) : null}
-            </div>
           </div>
         </div>
       </div>
@@ -1327,7 +1358,7 @@ export function AppLayout() {
           assistive tech and to test queries alike.
         */}
         <ul className="app-shell__compact-nav" role="list" aria-label="Primary navigation">
-          {compactNavItems.map((item) => (
+          {compactNavItems.slice(0, -1).map((item) => (
             <li key={item.to}>
               <NavLink to={item.to} className="app-shell__nav-link">
                 <span className="app-shell__nav-icon">{item.icon}</span>
@@ -1335,7 +1366,83 @@ export function AppLayout() {
               </NavLink>
             </li>
           ))}
+
+          {/*
+            The Account slot, rendered TWICE and CSS-swapped by
+            breakpoint (AppLayout.css) rather than in JS — same "one DOM,
+            media queries decide" rule this whole shell already follows
+            (this file's own top comment). Below 640px the bottom bar
+            shows Settings instead of a direct Account link; Account
+            itself is still reachable from inside the panel Settings
+            opens (SettingsPanel). At 640px+ this reverts to the plain
+            Account link every other compact-nav item already uses.
+          */}
+          <li>
+            <NavLink to={accountItem.to} className="app-shell__nav-link app-shell__account-link">
+              <span className="app-shell__nav-icon">{accountItem.icon}</span>
+              <span className="app-shell__nav-label">{accountItem.label}</span>
+            </NavLink>
+            <button
+              type="button"
+              className="app-shell__nav-link app-shell__settings-toggle"
+              aria-label={isSettingsOpen ? 'Close settings' : 'Settings'}
+              aria-haspopup="dialog"
+              aria-expanded={isSettingsOpen}
+              onClick={() => {
+                if (isSettingsClosing) return;
+
+                if (isSettingsOpen) {
+                  requestSettingsClose();
+                  return;
+                }
+
+                setIsSettingsClosing(false);
+                setIsSettingsOpen(true);
+              }}
+            >
+              <span className="app-shell__nav-icon">
+                <Settings aria-hidden="true" />
+              </span>
+              <span className="app-shell__nav-label">Settings</span>
+            </button>
+          </li>
         </ul>
+
+        {/*
+          The tablet rail's own theme-toggle trigger — 640-1023px only
+          (AppLayout.css). The theme control's toolbar home is gone at
+          every width now: >=1024px always kept ThemeToggle live in the
+          folders panel below, and <640px now reaches it through the new
+          Settings slide-in instead (SettingsPanel). This fills the one
+          remaining gap — the icon-only rail, which has neither of those
+          — with a single icon trigger "immediately after the account
+          icon", reusing the exact popover state/behaviour the toolbar's
+          old control already had (isThemeToggleExpanded and
+          themeToggleWrapRef are unchanged, just relocated here).
+        */}
+        <div className="app-shell__rail-theme-wrap" ref={themeToggleWrapRef}>
+          <button
+            type="button"
+            className="app-shell__nav-link app-shell__rail-theme-toggle"
+            aria-label="Change theme"
+            aria-haspopup="true"
+            aria-expanded={isThemeToggleExpanded}
+            onClick={() => {
+              setIsThemeToggleExpanded((expanded) => !expanded);
+            }}
+          >
+            <span className="app-shell__nav-icon">
+              {resolvedTheme === 'dark' ? <Moon aria-hidden="true" /> : <Sun aria-hidden="true" />}
+            </span>
+            <span className="app-shell__nav-label">Theme</span>
+          </button>
+
+          {isThemeToggleExpanded ? (
+            <div className="app-shell__rail-theme-unfold">
+              <ThemeToggle />
+            </div>
+          ) : null}
+        </div>
 
         {/* DESKTOP SIDEBAR — >=1024px only. See this file's own top comment. */}
         <div className="app-shell__sidebar">
@@ -1399,6 +1506,19 @@ export function AppLayout() {
           onClose={requestMobileNotesClose}
           isClosing={isMobileNotesClosing}
           onAnimationEnd={handleMobileNotesAnimationEnd}
+          onCreateNote={() => {
+            void handleCreateNote();
+          }}
+          onDeleteActive={handleDeleteActiveNote}
+          hasActiveNote={activeNoteRow != null}
+        />
+      ) : null}
+
+      {isSettingsOpen || isSettingsClosing ? (
+        <SettingsPanel
+          onClose={requestSettingsClose}
+          isClosing={isSettingsClosing}
+          onAnimationEnd={handleSettingsAnimationEnd}
         />
       ) : null}
 

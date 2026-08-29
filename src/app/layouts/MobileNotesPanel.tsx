@@ -1,5 +1,5 @@
 import type { AnimationEventHandler } from 'react';
-import { X } from 'lucide-react';
+import { Plus, Trash2, X } from 'lucide-react';
 
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { AnimatedSidebarNoteList } from '@/features/notes/components/AnimatedSidebarNoteList/AnimatedSidebarNoteList';
@@ -15,6 +15,18 @@ interface MobileNotesPanelProps {
   onClose: () => void;
   isClosing: boolean;
   onAnimationEnd: AnimationEventHandler<HTMLDivElement>;
+  /*
+   * Below 640px only (see this component's own CSS) — the toolbar no
+   * longer carries New note/Delete at that width (AppLayout.css's mobile
+   * decluttering), so this panel's own header takes over both, in the
+   * left/left/right arrangement asked for: New note and Delete on the
+   * left, Cancel on the right. At 640-1023px these three props are still
+   * passed but never rendered — that range keeps the original title +
+   * close header untouched, below.
+   */
+  onCreateNote: () => void;
+  onDeleteActive: () => void;
+  hasActiveNote: boolean;
 }
 
 /**
@@ -54,6 +66,9 @@ export function MobileNotesPanel({
   onClose,
   isClosing,
   onAnimationEnd,
+  onCreateNote,
+  onDeleteActive,
+  hasActiveNote,
 }: MobileNotesPanelProps) {
   return (
     <div
@@ -64,6 +79,14 @@ export function MobileNotesPanel({
       data-closing={isClosing || undefined}
       onAnimationEnd={onAnimationEnd}
     >
+      {/*
+        Two headers, one DOM, CSS-swapped by breakpoint — the same rule
+        AppLayout.tsx's own compact-nav/sidebar split already follows.
+        Below 640px this panel is the 50%-width slide-in (MobileNotesPanel.css),
+        and its header becomes New note + Delete (left) / Cancel (right) —
+        see mobile-notes-panel__mobile-header's own CSS comment for why.
+        At 640-1023px it's the original full-screen title + close.
+      */}
       <header className="mobile-notes-panel__header">
         <h2 className="mobile-notes-panel__title">Notes</h2>
         <button
@@ -74,6 +97,36 @@ export function MobileNotesPanel({
         >
           <X aria-hidden="true" />
         </button>
+
+        <div className="mobile-notes-panel__mobile-header">
+          <div className="mobile-notes-panel__mobile-actions">
+            <button
+              type="button"
+              className="mobile-notes-panel__icon-btn"
+              aria-label="New note"
+              onClick={onCreateNote}
+            >
+              <Plus aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              className="mobile-notes-panel__icon-btn"
+              aria-label="Delete note"
+              disabled={!hasActiveNote}
+              onClick={onDeleteActive}
+            >
+              <Trash2 aria-hidden="true" />
+            </button>
+          </div>
+          <button
+            type="button"
+            className="mobile-notes-panel__icon-btn mobile-notes-panel__cancel"
+            aria-label="Cancel"
+            onClick={onClose}
+          >
+            <X aria-hidden="true" />
+          </button>
+        </div>
       </header>
 
       <div className="mobile-notes-panel__body">
