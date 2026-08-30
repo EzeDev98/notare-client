@@ -99,7 +99,7 @@ export function ResetPasswordPage() {
 
   return (
     <>
-      <h1>Reset your password</h1>
+      <h1 className="public-shell__heading">Reset your password</h1>
 
       {step === 'request' ? (
         <form className="reset__form" onSubmit={(event) => void handleRequest(event)} noValidate>
@@ -201,9 +201,9 @@ export function ResetPasswordPage() {
         </form>
       ) : null}
 
-      <p className="reset__alt">
+      <div className="reset__alt">
         <Link to="/login">Back to sign in</Link>
-      </p>
+      </div>
     </>
   );
 }

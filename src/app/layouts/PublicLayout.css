@@ -53,7 +53,10 @@
    */
   .public-shell__heading {
     margin: 0;
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
+    /* Lighter than the base <h1> rule's semibold (base.css) — a form title
+     * doesn't need the same weight as a page heading. */
+    font-weight: var(--font-weight-medium);
     line-height: var(--line-height-snug);
     text-align: center;
   }

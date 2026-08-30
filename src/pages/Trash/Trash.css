@@ -29,6 +29,7 @@
    */
   .trash__lead {
     margin-block: var(--space-8) var(--space-15) !important;
+    text-align: center;
   }
 
   .trash__list {

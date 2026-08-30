@@ -60,4 +60,63 @@
     color: var(--color-text-disabled);
     cursor: not-allowed;
   }
+
+  /*
+   * FLOATING VARIANT — TextField and PasswordField only (see the `floating`
+   * doc comment on Field.tsx). The label sits inside the control, at the
+   * same size and position a placeholder would occupy, until the control is
+   * focused or has a value — then it rises to the top edge and shrinks to a
+   * caption, sitting on the border the way an outlined Material field does.
+   *
+   * Driven by `:placeholder-shown`, which is why TextField/PasswordField
+   * always send a real `placeholder` attribute (defaulting to a single
+   * space when the caller doesn't supply one) — without one, the
+   * pseudo-class never matches and the label would never float.
+   *
+   * `:has()` rather than a sibling combinator so this keeps working when the
+   * control isn't a direct sibling of the label — PasswordField wraps its
+   * `<input>` in `.ds-password-field` for the reveal button, and `:has()`
+   * matches a descendant at any depth.
+   */
+  .ds-field--floating .ds-field__control {
+    position: relative;
+  }
+
+  .ds-field--floating .ds-field__label {
+    position: absolute;
+    inset-inline-start: var(--space-3);
+    inset-block-start: 50%;
+    max-inline-size: calc(100% - var(--space-3) * 2);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding-inline: var(--space-1);
+    /* Masks the border line once the label floats up onto it. */
+    background-color: var(--color-surface);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-normal);
+    /* So a click in the control's empty space still reaches the input
+     * underneath instead of landing on the label. */
+    pointer-events: none;
+    transform: translateY(-50%);
+    transform-origin: left center;
+    transition:
+      inset-block-start var(--transition-fast),
+      font-size var(--transition-fast),
+      color var(--transition-fast);
+  }
+
+  .ds-field--floating .ds-field__control:has(.ds-control:focus) .ds-field__label,
+  .ds-field--floating .ds-field__control:has(.ds-control:not(:placeholder-shown)) .ds-field__label {
+    inset-block-start: 0;
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+  }
+
+  /* Focus gets the accent colour on top of the shared floated state above. */
+  .ds-field--floating .ds-field__control:has(.ds-control:focus) .ds-field__label {
+    color: var(--color-accent);
+  }
 }

@@ -27,9 +27,15 @@ export function TextField({ label, hint, error, className, ...rest }: TextFieldP
   const ids = { hintId: `${base}-hint`, errorId: `${base}-error` };
 
   return (
-    <Field label={label} controlId={base} {...ids} hint={hint} error={error}>
+    <Field label={label} controlId={base} {...ids} hint={hint} error={error} floating>
       <input
         id={base}
+        // A real placeholder attribute (a single space when the caller
+        // doesn't need actual placeholder text) so the floating label's CSS
+        // — driven by `:placeholder-shown` — has something to key off. A
+        // caller-supplied placeholder in `rest` still wins, since it's
+        // spread after this.
+        placeholder=" "
         className={['ds-control', className].filter(Boolean).join(' ')}
         // Announces the error STATE. describedby announces the error TEXT.
         // Both are needed; either alone leaves half the message.

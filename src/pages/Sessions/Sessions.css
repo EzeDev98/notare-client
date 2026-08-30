@@ -11,6 +11,10 @@
     font-size: var(--font-size-sm);
   }
 
+  .sessions__lead {
+    text-align: center;
+  }
+
   .sessions__list {
     display: grid;
     gap: var(--space-3);

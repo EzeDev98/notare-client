@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from '@/app/App';
+import { startKeepAlive } from '@/lib/keepAlive';
 import { initInstallPrompt } from '@/pwa/installPrompt';
 import { registerServiceWorker } from '@/pwa/registerServiceWorker';
 import '@/design-system/global.css';
@@ -26,6 +27,11 @@ registerServiceWorker();
 // Captures beforeinstallprompt before React ever renders, so the event
 // can't fire and go unheard during initial mount. See installPrompt.ts.
 initInstallPrompt();
+
+// Keeps Render's free-tier instance from spinning down while this app is
+// open. See keepAlive.ts's own doc comment for what this does and doesn't
+// cover.
+startKeepAlive();
 
 createRoot(rootElement).render(
   <StrictMode>

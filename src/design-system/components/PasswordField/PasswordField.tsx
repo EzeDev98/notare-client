@@ -45,11 +45,15 @@ export function PasswordField({ label, hint, error, className, ...rest }: Passwo
   const [visible, setVisible] = useState(false);
 
   return (
-    <Field label={label} controlId={base} {...ids} hint={hint} error={error}>
+    <Field label={label} controlId={base} {...ids} hint={hint} error={error} floating>
       <div className="ds-password-field">
         <input
           id={base}
           type={visible ? 'text' : 'password'}
+          // See TextField: a real placeholder is what lets the floating
+          // label's `:placeholder-shown` CSS tell an empty field from a
+          // filled one.
+          placeholder=" "
           className={['ds-control', 'ds-password-field__control', className]
             .filter(Boolean)
             .join(' ')}

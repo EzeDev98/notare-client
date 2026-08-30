@@ -12,6 +12,15 @@
     gap: var(--space-4);
   }
 
+  /*
+   * Opts out of the global small/tablet <h1> centring (typography.css) —
+   * this heading sits next to "Invite someone" in a flex row, and needs to
+   * stay pinned to the start edge at every width.
+   */
+  .invitations__header h1 {
+    text-align: left;
+  }
+
   .invitations__invite-link {
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);

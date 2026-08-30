@@ -19,6 +19,10 @@
     gap: var(--space-4);
   }
 
+  .notes--archived .notes__header {
+    justify-content: center;
+  }
+
   .notes__header-actions {
     display: flex;
     gap: var(--space-4);
@@ -69,7 +73,7 @@
   .notes--archived .note-card__title {
     color: var(--color-text);
     font-size: var(--font-size-base);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-normal);
   }
 
   .notes--archived .note-card__preview {

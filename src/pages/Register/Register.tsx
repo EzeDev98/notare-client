@@ -99,7 +99,7 @@ export function RegisterPage() {
 
   return (
     <>
-      <h1>Create an account</h1>
+      <h1 className="public-shell__heading">Create an account</h1>
 
       <form className="register__form" onSubmit={(event) => void handleSubmit(event)} noValidate>
         {registration.formError !== null ? (
@@ -179,9 +179,9 @@ export function RegisterPage() {
         </Button>
       </form>
 
-      <p className="register__alt">
+      <div className="register__alt">
         Already have an account? <Link to="/login">Sign in</Link>
-      </p>
+      </div>
     </>
   );
 }

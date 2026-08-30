@@ -83,10 +83,33 @@
   }
 
   h1 {
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-xl);
     line-height: var(--line-height-tight);
-    font-weight: var(--font-weight-semibold);
+    /* Medium, not semibold — a section title doesn't need the same weight
+     * as a heavy display heading, and reads closer to the system-UI weight
+     * native Apple apps use for a page title. */
+    font-weight: var(--font-weight-medium);
     letter-spacing: var(--tracking-tight);
+    /* text-secondary, not text — softer than full-strength ink, same
+     * reasoning as the weight above. */
+    color: var(--color-text-secondary);
+    text-align: center;
+  }
+
+  /*
+   * Every page-level <h1> centres itself on a small/tablet screen — a
+   * left-aligned title reads like leftover desktop layout on a single
+   * narrow column. 1023px pairs with AppLayout's own 1024px breakpoint
+   * (its own @media block) so there's no gap between "mobile/tablet" and
+   * "desktop" here.
+   *
+   * Collaborations opts out (see Invitations.css): its <h1> sits in a flex
+   * row next to "Invite someone" and stays left-aligned there.
+   */
+  @media (max-width: 1023px) {
+    h1 {
+      text-align: center;
+    }
   }
 
   h2 {

@@ -29,6 +29,20 @@ interface FieldProps extends FieldMessages {
   hintId: string;
   errorId: string;
   children: ReactNode;
+  /**
+   * Floats the label inside the control instead of stacking it above it, to
+   * save the vertical space a separate label row costs — useful on forms
+   * with several short fields stacked together (Register, Login).
+   *
+   * Opt-in per consumer rather than the default for every Field: the CSS
+   * relies on `:placeholder-shown` to tell an empty control from a filled
+   * one, and that pseudo-class only does anything useful on `<input>` and
+   * `<textarea>`. A `<select>` never matches it, so a floating label there
+   * would read as permanently "filled" even with nothing chosen. TextField
+   * and PasswordField pass `floating`; Select and TextArea keep the
+   * stacked layout.
+   */
+  floating?: boolean;
 }
 
 /**
@@ -46,15 +60,40 @@ interface FieldProps extends FieldMessages {
  * to announce a validation failure the user needs to act on. Deliberately NOT
  * used on the hint, which is ordinary guidance and should not interrupt
  * anything.
+ *
+ * The label stays a real <label for> either way — `floating` only changes
+ * where it sits, never how it is wired up. A sighted user reads it inside
+ * the control instead of above it; a screen reader user gets the same
+ * "Label, edit text" announcement either way, since that comes from the
+ * `for`/`id` pair, not from visual position.
  */
-export function Field({ label, controlId, hintId, errorId, hint, error, children }: FieldProps) {
+export function Field({
+  label,
+  controlId,
+  hintId,
+  errorId,
+  hint,
+  error,
+  children,
+  floating = false,
+}: FieldProps) {
   return (
-    <div className="ds-field">
-      <label className="ds-field__label" htmlFor={controlId}>
-        {label}
-      </label>
-
-      {children}
+    <div className={floating ? 'ds-field ds-field--floating' : 'ds-field'}>
+      {floating ? (
+        <div className="ds-field__control">
+          {children}
+          <label className="ds-field__label" htmlFor={controlId}>
+            {label}
+          </label>
+        </div>
+      ) : (
+        <>
+          <label className="ds-field__label" htmlFor={controlId}>
+            {label}
+          </label>
+          {children}
+        </>
+      )}
 
       {/* Rendered before the error so a screen reader reads guidance first. */}
       {hint !== undefined && !error ? (
