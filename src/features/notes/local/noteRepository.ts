@@ -594,13 +594,24 @@ export const outboxRepository = {
   },
 
   /**
-   * Queues an UPDATE, or updates the content of one already queued.
+   * Queues an UPDATE, or updates the content (and version/noteId) of one
+   * already queued.
    *
-   * `version` is the LOCAL row's last-server-acknowledged version, which does
-   * not change between coalesced edits (it only moves on an ack) — so
-   * repeated calls for the same unsent stretch of edits pass the same value
-   * every time, and overwriting it on each call is harmless because it is
-   * always identical.
+   * `version` USED TO be treated as invariant across coalesced calls — "it
+   * only moves on an ack, so repeated calls for the same unsent stretch of
+   * edits pass the same value every time." That is true for the ordinary
+   * typing path, but false for conflict resolution: `resolveKeepMine` /
+   * `resolveKeepBoth` (sync/conflicts.ts) deliberately call this with a NEW
+   * version (the server's, adopted so the requeued push isn't stale against
+   * it again) while an OLDER outbox row for the same note already sits here
+   * — the exact one that carried the stale version which caused the
+   * conflict in the first place (push.ts's CONFLICT branch leaves it queued
+   * on purpose, for 8E to resolve). Updating only `content` on the
+   * coalescing branch left that stale version in place, so the requeued
+   * push resent the same doomed (content, version) pair and the server
+   * conflicted again — the resolution never actually stuck. `noteId` is
+   * updated too for the same reason, though it should not realistically
+   * change once a row has one.
    */
   async enqueueUpdate(note: {
     localId: string;
@@ -612,7 +623,11 @@ export const outboxRepository = {
       const existing = await db.outbox.where('localId').equals(note.localId).first();
 
       if (existing?.type === 'UPDATE') {
-        await db.outbox.update(existing.id, { content: note.content });
+        await db.outbox.update(existing.id, {
+          content: note.content,
+          version: note.version,
+          noteId: note.noteId,
+        });
         return;
       }
 

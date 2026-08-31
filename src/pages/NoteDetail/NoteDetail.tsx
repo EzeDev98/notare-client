@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 import { useAuth } from '@/app/providers/auth-context';
 import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
 import { InlineVoiceNotes } from '@/features/voice/components/InlineVoiceNote/InlineVoiceNote';
+import { formatUserInitials } from '@/features/userLookup/hooks/useUserLookup';
 import { parseNoteId, useNote } from '@/features/notes/hooks/useNote';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { VoiceRecorder, type VoiceUploadHandle } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
@@ -43,6 +44,18 @@ export function NoteDetailPage() {
     authState.status === 'authenticated' || authState.status === 'refreshing'
       ? authState.user.id
       : null;
+  /*
+   * Every recording InlineVoiceNotes renders on THIS page is the current
+   * user's own — see InlineVoiceNotesProps's own doc comment for why a
+   * single value is correct here and not a per-recording lookup the way
+   * SharedInlineVoiceNotes needs. `formatUserInitials` accepts `undefined`
+   * for "no profile", which covers the brief window before auth restores.
+   */
+  const ownerInitials = formatUserInitials(
+    authState.status === 'authenticated' || authState.status === 'refreshing'
+      ? authState.user
+      : undefined,
+  );
 
   const voiceNotes = useVoiceNotesByNote(serverId);
   const uploadMutation = useUploadVoiceNote();
@@ -125,7 +138,7 @@ export function NoteDetailPage() {
               currentUserId={currentUserId}
               contentAccessory={
                 voiceNotes.data && voiceNotes.data.length > 0 ? (
-                  <InlineVoiceNotes voiceNotes={voiceNotes.data} />
+                  <InlineVoiceNotes voiceNotes={voiceNotes.data} ownerInitials={ownerInitials} />
                 ) : null
               }
             />

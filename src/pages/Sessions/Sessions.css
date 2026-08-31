@@ -64,12 +64,50 @@
     font-size: var(--font-size-sm);
   }
 
-  .sessions__all {
+  /*
+   * Both destructive actions share one row — "Sign out everywhere" at the
+   * start, "Reset this device" at the end — separated from the session
+   * list above by its own top border so the two read as a single danger
+   * zone rather than more ordinary page content. `flex-wrap` lets the pair
+   * stack instead of overlapping if the viewport gets too narrow for both
+   * buttons plus their hover hints side by side.
+   */
+  .sessions__danger-zone {
     margin-block-start: var(--space-8);
+    padding-block-start: var(--space-6);
+    border-block-start: var(--border-width) solid var(--color-border);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
   }
 
   /*
-   * Plain text below the button, revealed on hover — NOT a native `title`
+   * `align-items: flex-start`, not the flex default of `stretch` -- a
+   * column flex container with `align-items: stretch` (the default) sizes
+   * EVERY child, the <Button> included, to match its widest child's own
+   * intrinsic width. The hint paragraph below the button is exactly such
+   * a wider child, so `stretch` here would blow the button up to whatever
+   * width the hint's un-wrapped text wants, rather than the button
+   * staying its own natural size with the (shorter) hint wrapping
+   * underneath it.
+   */
+  .sessions__danger-action {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Right-hand action: its hint right-aligns under it, mirroring the
+     button's own position, rather than trailing off to the left. */
+  .sessions__danger-action--reset {
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  /*
+   * Plain text below each button, revealed on hover — NOT a native `title`
    * tooltip (browsers delay those, which read as sluggish here) and NOT a
    * bubble/box floating over other content. `visibility`, not `opacity`
    * alone: keeps it out of the tab order and un-selectable while hidden,
@@ -86,8 +124,24 @@
    * take part in the transition's timing instead of flipping the moment
    * the fade starts — so hidden text doesn't briefly become interactive
    * before it's even visible, or vice versa on the way out.
+   *
+   * Scoped to `.sessions__danger-action:hover`, not the whole row — so
+   * hovering "Sign out everywhere" never reveals "Reset this device"'s
+   * hint, and vice versa.
    */
-  .sessions__all-hint {
+  .sessions__danger-hint {
+    /*
+     * Capped, not left to its own un-wrapped length -- `align-items:
+     * flex-start` above stops CROSS-axis stretch, but the outer row still
+     * sizes each action's MAIN-axis width from its widest child's
+     * max-content size, and an un-wrapped sentence is plenty wide enough
+     * on its own to push both actions past the container's width and
+     * force them onto separate lines. Capping the hint's own width bounds
+     * that contribution, which is what actually keeps both buttons on
+     * one row.
+     */
+    max-inline-size: 15rem;
+    align-items: center;
     margin: var(--space-1) 0 0;
     visibility: hidden;
     opacity: 0;
@@ -97,8 +151,25 @@
     transition-behavior: allow-discrete;
   }
 
-  .sessions__all:hover .sessions__all-hint {
+  .sessions__danger-action:hover .sessions__danger-hint {
     visibility: visible;
     opacity: 1;
+  }
+
+  /*
+   * Fixed, centred, and above everything else — same reasoning as Modal's
+   * own backdrop. This can outlive the confirmation Modal itself (the sync
+   * attempt and the erase both run AFTER that Modal has already closed —
+   * see handleReset's own comment on why), so it needs to stay visible
+   * regardless of what page content sits beneath it.
+   */
+  .sessions__reset-progress {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-surface);
   }
 }

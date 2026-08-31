@@ -230,3 +230,32 @@ export function resetTokenStoreForTests(): void {
   dbPromise = null;
   clearAccessToken();
 }
+
+/**
+ * Closes this tab's open connection to the auth database, if there is one.
+ *
+ * Needed by hardReset.ts before it calls `indexedDB.deleteDatabase('notare-auth')`
+ * — a delete request waits for every open connection to close before it can
+ * actually complete (it only fires 'blocked' in the meantime), and this
+ * module's own `dbPromise` cache is exactly such a connection, held open for
+ * the tab's entire lifetime by design (`openDatabase`'s own doc comment).
+ * Without closing it first, the delete would sit blocked until this tab
+ * happens to reload or close on its own — which defeats the entire point of
+ * a reset that is supposed to take effect immediately.
+ *
+ * Safe to call even if nothing has opened the database yet this session —
+ * `dbPromise` is simply null in that case, and there is nothing to close.
+ */
+export async function closeAuthDatabase(): Promise<void> {
+  if (dbPromise === null) return;
+
+  const promise = dbPromise;
+  dbPromise = null;
+
+  try {
+    const database = await promise;
+    database.close();
+  } catch {
+    // Nothing to close if the connection never actually opened.
+  }
+}

@@ -76,6 +76,73 @@ describe('resolveKeepMine', () => {
 
     await expect(resolveKeepMine('local-31')).rejects.toThrow();
   });
+
+  /*
+   * Regression test for a real production bug: a conflict reached through
+   * push.ts's CONFLICT branch (a cold-start push, no editor open) always
+   * leaves the ORIGINAL outbox row queued — "keep the local copy... it
+   * stays queued... until 8E lets the user resolve it" (push.ts's own doc
+   * comment). So by the time the user actually resolves it here, an outbox
+   * row already exists, still carrying the STALE version that caused the
+   * conflict in the first place.
+   *
+   * `enqueueUpdate`'s coalescing branch used to update only `content` on
+   * that existing row, silently leaving its stale `version` behind. The
+   * requeued push then resent the same doomed (content, version) pair, the
+   * server rejected it as a conflict AGAIN, and the note never actually
+   * left syncState 'conflict' — "Keep mine" (and "Keep both") looked like
+   * they did nothing, no matter how many times the user chose them.
+   */
+  it('actually resolves when a stale outbox row already exists from the original conflict', async () => {
+    const theirs = makeNote({ id: 32, version: 5, content: 'Server body' });
+    const row = makeRow({
+      serverId: 32,
+      localId: 'local-32',
+      dirty: 1,
+      version: 3,
+      content: 'My body',
+      syncState: 'conflict',
+      conflictNote: theirs,
+    });
+    await noteRepository.put(row);
+
+    // What push.ts's CONFLICT branch actually leaves behind: the outbox
+    // row from the attempt that discovered the conflict, still at the
+    // stale version (3).
+    await outboxRepository.enqueueUpdate({
+      localId: 'local-32',
+      noteId: 32,
+      version: 3,
+      content: 'My body',
+    });
+
+    // A version-aware mock, unlike acceptAnyPush(): APPLIED only if the
+    // operation's version matches the server's current one (5).
+    server.use(
+      http.post(`${BASE}/sync/batch`, async ({ request }) => {
+        const body = (await request.json()) as {
+          operations: { operationId: string; version?: number }[];
+        };
+        return HttpResponse.json({
+          results: body.operations.map((op) => ({
+            operationId: op.operationId,
+            status: op.version === 5 ? 'APPLIED' : 'CONFLICT',
+            note: makeNote({ id: 32, version: 5, content: 'Server body' }),
+          })),
+          appliedCount: 0,
+          conflictCount: 1,
+          serverTime: '2026-08-13T09:00:00.000',
+        });
+      }),
+    );
+
+    await resolveKeepMine('local-32');
+
+    const resolved = await noteRepository.getByLocalId('local-32');
+    expect(resolved?.syncState).toBe('synced');
+    expect(resolved?.conflictNote).toBeNull();
+    await expect(outboxRepository.count()).resolves.toBe(0);
+  });
 });
 
 describe('resolveUseTheirs', () => {

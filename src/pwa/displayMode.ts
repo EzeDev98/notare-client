@@ -42,6 +42,17 @@ export function isStandaloneDisplayMode(): boolean {
 }
 
 /**
+ * How long to wait before re-checking a synchronous initial read that may
+ * have been a transient false negative — see the RELOAD BUG comment on
+ * `useIsStandalone` below. Comfortably under `useBootPhase`'s
+ * `SPLASH_MIN_MS` (1000ms): the point is for this correction to land WHILE
+ * still on the splash screen in the common case, so a person reloading an
+ * already-installed app never sees the mandatory InstallPage flash at all,
+ * rather than merely recovering from it a moment after it appeared.
+ */
+const STANDALONE_RECHECK_MS = 400;
+
+/**
  * Reactive form of the above, for components that need to re-render if
  * display mode changes mid-session — e.g. a user installs the app from
  * the mandatory InstallPage without a full reload, and the app needs to
@@ -51,6 +62,35 @@ export function isStandaloneDisplayMode(): boolean {
  * change during a session (iOS only sets it at launch), so there is
  * nothing to subscribe to. Only the media query can transition live,
  * via its own `change` event.
+ *
+ * THE RELOAD BUG, and why a `change` LISTENER ALONE cannot fix it. This
+ * hook's initial state is a single synchronous snapshot
+ * (`isStandaloneDisplayMode()`, read once via `useState`'s lazy
+ * initializer) — correct the overwhelming majority of the time, but not
+ * guaranteed: reloading an ALREADY-installed app (not a fresh launch from
+ * the home-screen icon — an in-place reload of a running standalone
+ * window) can catch the platform still settling the window's display mode
+ * back into standalone, and this hook's very first synchronous read can
+ * land in that gap and see `false`. Nothing is actually CHANGING from the
+ * platform's point of view — the window was standalone before the reload
+ * and is standalone after it, just misreported for an instant — so no
+ * `change` event ever fires to correct it, and `useEverStandalone`'s
+ * one-directional latch (by design: never resets true back to false) locks
+ * onto that wrong `false` for the rest of the session. `useBootPhase` reads
+ * exactly that latch to decide 'install' vs 'ready', so this is the actual
+ * mechanism behind "reloading sends me back to the install screen until I
+ * fully kill and reopen the app" — a fresh cold launch gets an independent
+ * new first read, which is far less likely to land in the same narrow
+ * window twice in a row, so it looks "fixed" by killing and reopening when
+ * really it just didn't reproduce that time.
+ *
+ * The fix is a single delayed RE-CHECK below, not a bigger one-time delay
+ * before the first read (which would slow down the correct, common case
+ * for everyone to hedge against the rare one) and not polling forever
+ * (nothing after the platform settles will ever change again on its own).
+ * One re-read shortly after mount, applied only if it disagrees with the
+ * value already in state, corrects a bad initial snapshot without
+ * changing anything when the initial read was already right.
  */
 export function useIsStandalone(): boolean {
   const [standalone, setStandalone] = useState(isStandaloneDisplayMode);
@@ -97,6 +137,35 @@ export function useIsStandalone(): boolean {
 
     mediaQueryList.addEventListener('change', handleChange);
     return () => mediaQueryList.removeEventListener('change', handleChange);
+  }, []);
+
+  /*
+   * THE RE-CHECK — see this hook's own top comment for the bug this fixes.
+   * One-shot, not an interval: the platform's display-mode genuinely
+   * settles within milliseconds of a reload, so a single re-read shortly
+   * after mount is enough, and anything past that is better served by the
+   * `change` listener above, which covers a REAL transition (e.g.
+   * installing from the mandatory InstallPage without a reload).
+   *
+   * Only calls `setStandalone` when the re-read actually disagrees with
+   * what state already holds — the overwhelmingly common case is "the
+   * first read was already correct," and that path must stay a no-op
+   * rather than an unconditional extra render for every single mount.
+   */
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setStandalone((current) => {
+        const rechecked = isStandaloneDisplayMode();
+        if (rechecked === current) return current;
+
+        console.warn(
+          `[pwa] display-mode standalone corrected from ${current} to ${rechecked} at ${Math.round(performance.now())}ms since navigation start — initial read was stale`,
+        );
+        return rechecked;
+      });
+    }, STANDALONE_RECHECK_MS);
+
+    return () => clearTimeout(timer);
   }, []);
 
   return standalone;
