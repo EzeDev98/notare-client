@@ -7,6 +7,7 @@ import { NoteCard } from '@/features/notes/components/NoteCard/NoteCard';
 import { useDeleteNote } from '@/features/notes/hooks/useDeleteNote';
 import { useNoteActions } from '@/features/notes/hooks/useNoteActions';
 import { useNoteSearch } from '@/features/notes/hooks/useNoteSearch';
+import { BackButton } from '@/design-system/components/BackButton/BackButton';
 import { Button } from '@/design-system/components/Button/Button';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { TextField } from '@/design-system/components/TextField/TextField';
@@ -58,6 +59,7 @@ export function SearchPage() {
 
   return (
     <section className="search">
+      <BackButton />
       <h1>Search</h1>
 
       <div className="search__field">

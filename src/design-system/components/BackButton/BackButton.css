@@ -1,0 +1,40 @@
+@layer components {
+  /*
+   * Hidden by default (>=1024px) — see BackButton.tsx's doc comment for
+   * why. Overridden visible below 1024px, where every page that renders
+   * this component actually needs it.
+   */
+  .back-button {
+    display: none;
+  }
+
+  @media (max-width: 1023px) {
+    /* Same 44px touch target as .app-shell__toolbar-icon-btn
+     * (AppLayout.css) — a fingertip has far less precision than a
+     * cursor, and this is the same class of control. */
+    .back-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      inline-size: 44px;
+      block-size: 44px;
+      margin-block-end: var(--space-2);
+      padding: 0;
+      border: .5px solid rgba(102, 90, 128, .1);
+      border-radius: var(--radius-full);
+      background: none;
+      color: var(--color-icon);
+      cursor: pointer;
+    }
+
+    .back-button:hover,
+    .back-button:active {
+      background-color: var(--color-accent-faint);
+      color: var(--color-text);
+    }
+
+    .back-button svg {
+      color: inherit;
+    }
+  }
+}

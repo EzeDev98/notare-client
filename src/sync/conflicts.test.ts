@@ -112,7 +112,7 @@ describe('resolveUseTheirs', () => {
 });
 
 describe('resolveKeepBoth', () => {
-  it('puts theirs first, a divider, then mine, and requeues the merged row', async () => {
+  it('puts mine first, then theirs, and requeues the merged row', async () => {
     const theirs = makeNote({
       id: 50,
       version: 2,
@@ -133,7 +133,7 @@ describe('resolveKeepBoth', () => {
     await resolveKeepBoth('local-50');
 
     const resolved = await noteRepository.getByLocalId('local-50');
-    expect(resolved?.content).toBe('Server body\n\n--- Your version ---\n\nMy body');
+    expect(resolved?.content).toBe('My body\n\nServer body');
     // Same reasoning as resolveKeepMine's test: requeue() awaits the push,
     // and acceptAnyPush() fixes the applied version at 9 regardless of what
     // was sent — not theirs.version (2), which is only an intermediate value.

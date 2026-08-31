@@ -4,6 +4,7 @@ import { SharedNoteCard } from '@/features/sharedNotes/components/SharedNoteCard
 import { useSharedWithMeFeed } from '@/features/sharedNotes/hooks/useSharedWithMeFeed';
 import { SharedVoiceCard } from '@/features/sharedVoiceNotes/components/SharedVoiceCard/SharedVoiceCard';
 import { formatUserName, useUserLookup } from '@/features/userLookup/hooks/useUserLookup';
+import { BackButton } from '@/design-system/components/BackButton/BackButton';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { Button } from '@/design-system/components/Button/Button';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
@@ -52,6 +53,7 @@ export function SharedNotesPage() {
 
   return (
     <section className="shared-notes">
+      <BackButton />
       <header className="shared-notes__header">
         <h1>Shared with me</h1>
       </header>

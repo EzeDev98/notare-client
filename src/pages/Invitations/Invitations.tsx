@@ -15,6 +15,7 @@ import type { CollaborationStatus } from '@/features/collaboration/types';
 import { formatUserName, useUserLookup } from '@/features/userLookup/hooks/useUserLookup';
 import { isBadRequest } from '@/lib/http/errors';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
+import { BackButton } from '@/design-system/components/BackButton/BackButton';
 import { Button } from '@/design-system/components/Button/Button';
 import { Modal } from '@/design-system/components/Modal/Modal';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
@@ -30,6 +31,7 @@ export function InvitationsPage() {
 
   return (
     <section className="invitations">
+      <BackButton />
       <header className="invitations__header">
         <h1>Collaborations</h1>
         <Link to="/collaborations/invite" className="invitations__invite-link">

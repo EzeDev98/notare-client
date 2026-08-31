@@ -3,6 +3,7 @@ import { NotebookPen } from 'lucide-react';
 
 import { useTrash } from '@/features/notes/hooks/useTrash';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
+import { BackButton } from '@/design-system/components/BackButton/BackButton';
 import { Button } from '@/design-system/components/Button/Button';
 import { Modal } from '@/design-system/components/Modal/Modal';
 import { formatServerDateTimeRelative } from '@/lib/time';
@@ -39,6 +40,7 @@ export function TrashPage() {
 
   return (
     <section className="trash">
+      <BackButton />
       <h1>Trash</h1>
 
       <p className="trash__lead">

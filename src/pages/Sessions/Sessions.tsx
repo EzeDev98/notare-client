@@ -3,6 +3,7 @@ import { LogOut, MonitorSmartphone } from 'lucide-react';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { useSessions } from '@/features/auth/hooks/useSessions';
+import { BackButton } from '@/design-system/components/BackButton/BackButton';
 import { Button } from '@/design-system/components/Button/Button';
 import { Modal } from '@/design-system/components/Modal/Modal';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
@@ -80,6 +81,7 @@ export function SessionsPage() {
 
   return (
     <section className="sessions">
+      <BackButton />
       <h1>Sessions</h1>
 
       <p className="sessions__lead">

@@ -336,6 +336,37 @@ export const noteRepository = {
   },
 
   /**
+   * Records a CONFLICT from the INTERACTIVE editor's direct autosave
+   * (`useNoteEditor.ts`'s `save()`), as opposed to `markConflict` above,
+   * which is the outbox/batch push's (8C) equivalent.
+   *
+   * WHY THIS EXISTS: before it, a 409 from the editor's own PATCH only
+   * flipped ephemeral in-memory React state (`saveState.status ===
+   * 'conflict'`) to stop the autosave scheduler. Nothing on the ROW said a
+   * conflict had happened, so it kept `dirty: 1` and its old, stale
+   * `version` — indistinguishable from an ordinary unsent edit. Anything
+   * that re-armed the scheduler outside that one component instance (a
+   * remount, a reconnect, another tab) had no way to know better and would
+   * legitimately resend the exact same doomed (content, version) pair,
+   * hitting 409 again forever with no backoff.
+   *
+   * `theirs` is left null here, unlike `markConflict`: the editor's PATCH
+   * response carries only `currentVersion` (see `useConflict.ts`'s own doc
+   * comment), not the full server note, so there is nothing to attach yet.
+   * `useConflict` fetches it separately for display; this method's only job
+   * is to make the "don't retry this" fact durable the instant the 409
+   * comes back, before that fetch — or anything else — has a chance to run.
+   */
+  markEditorConflict(localId: string): Promise<void> {
+    return db.transaction('rw', db.notes, async () => {
+      const existing = await db.notes.get(localId);
+      if (!existing) return;
+
+      await db.notes.put({ ...existing, syncState: 'conflict' });
+    });
+  },
+
+  /**
    * Records an INVALID result from a push (8C).
    *
    * "Do not retry" (architecture doc) means the outbox row is gone — the

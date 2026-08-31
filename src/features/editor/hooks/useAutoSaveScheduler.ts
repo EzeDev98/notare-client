@@ -63,6 +63,21 @@ export function useAutoSaveScheduler({ save, canSchedule, hasPendingWork }: Sche
      */
     if (inFlightRef.current) return;
 
+    /*
+     * RE-CHECKED HERE, not just when the timer was armed.
+     *
+     * `schedule()` only gates on `canSchedule()` at the moment it sets the
+     * timeout. Everything between then and now is a window: the timer can
+     * be sitting there for up to `DEBOUNCE_MS`/`MAX_WAIT_MS`, and this run's
+     * OWN previous iteration may have detected a conflict or gone offline in
+     * that gap and armed a follow-up before the resulting state change was
+     * visible to it (`canSchedule`/`hasPendingWork` read a ref mirroring
+     * React state one render behind). Without this check, that stale
+     * follow-up fires anyway, unconditionally — resending the exact same
+     * doomed request the state change was meant to stop.
+     */
+    if (!optionsRef.current.canSchedule()) return;
+
     inFlightRef.current = true;
     firstEditAtRef.current = null;
 

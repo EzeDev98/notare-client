@@ -107,7 +107,8 @@
     cursor: pointer;
   }
 
-  .voice-recorder__bar-btn:hover {
+  .voice-recorder__bar-btn:hover,
+  .voice-recorder__bar-btn:active {
     background-color: var(--color-accent-faint);
   }
 

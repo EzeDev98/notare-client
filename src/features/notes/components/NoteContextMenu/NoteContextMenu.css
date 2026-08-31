@@ -10,7 +10,13 @@
    */
   .note-context-menu {
     position: fixed;
-    z-index: var(--z-dropdown);
+    /*
+     * --z-popover, not --z-dropdown: this menu is opened from a note row
+     * inside MobileNotesPanel or the desktop sidebar rail, both of which
+     * can themselves sit at the --z-modal tier below 1024px. --z-dropdown
+     * (100) loses to that every time; --z-popover (1050) clears it.
+     */
+    z-index: var(--z-popover);
     display: flex;
     flex-direction: column;
     min-inline-size: 200px;
@@ -49,7 +55,8 @@
     cursor: pointer;
   }
 
-  .note-context-menu__item:hover:not(:disabled) {
+  .note-context-menu__item:hover:not(:disabled),
+  .note-context-menu__item:active:not(:disabled) {
     background-color: var(--color-accent-subtle);
   }
 
@@ -78,7 +85,8 @@
      token to reach for instead). The "Delete" label's own red text already
      carries "this is destructive" (§36 — colour never carries meaning
      alone, but the word itself does the rest of the work here). */
-  .note-context-menu__item--danger:hover:not(:disabled) {
+  .note-context-menu__item--danger:hover:not(:disabled),
+  .note-context-menu__item--danger:active:not(:disabled) {
     background-color: var(--color-surface-sunken);
   }
 }

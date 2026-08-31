@@ -282,7 +282,8 @@
     transition: background-color var(--transition-fast);
   }
 
-  .notifications-panel__view-all:hover {
+  .notifications-panel__view-all:hover,
+  .notifications-panel__view-all:active {
     background-color: var(--color-accent-faint);
   }
 

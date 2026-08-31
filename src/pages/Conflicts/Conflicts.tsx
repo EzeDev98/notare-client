@@ -1,4 +1,5 @@
 import { useAuth } from '@/app/providers/auth-context';
+import { BackButton } from '@/design-system/components/BackButton/BackButton';
 import { Button } from '@/design-system/components/Button/Button';
 import { useConflicts } from '@/features/notes/hooks/useConflicts';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
@@ -32,6 +33,7 @@ export function ConflictsPage() {
 
   return (
     <section className="conflicts">
+      <BackButton />
       <h1>Conflicts</h1>
       <p className="conflicts__lead">
         These notes changed on the server while you had edits that hadn&rsquo;t been sent yet.

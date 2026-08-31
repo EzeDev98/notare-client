@@ -98,11 +98,12 @@ export async function resolveUseTheirs(localId: string): Promise<void> {
 }
 
 /**
- * KEEP BOTH — the only option that destroys nothing. Theirs first, a
- * divider, then mine — untidy and recoverable, which is the right trade
- * when someone interrupted mid-sentence is about to click the emphasised
- * button. Identical to `useNoteEditor.ts`'s `keepBoth`; see that file if
- * this one ever needs to change; they should change together.
+ * KEEP BOTH — the only option that destroys nothing. Mine first, then
+ * theirs, joined as one continuous note rather than separated by a
+ * divider — the person resolving the conflict is usually the one who just
+ * edited, so their words lead, with the incoming version appended below
+ * for reference. Identical to `useNoteEditor.ts`'s `keepBoth`; see that
+ * file if this one ever needs to change; they should change together.
  */
 export async function resolveKeepBoth(localId: string): Promise<void> {
   const row = await noteRepository.getByLocalId(localId);
@@ -113,7 +114,7 @@ export async function resolveKeepBoth(localId: string): Promise<void> {
   const mergedContent =
     theirContent.trim() === ''
       ? row.content
-      : `${theirContent}\n\n--- Your version ---\n\n${row.content}`;
+      : `${row.content}\n\n${theirContent}`;
 
   const merged: NoteRow = {
     ...row,

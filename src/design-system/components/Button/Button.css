@@ -63,7 +63,8 @@
     color: var(--color-text-on-accent) !important;
   }
 
-  .ds-button[data-variant='primary']:hover:not(:disabled) {
+  .ds-button[data-variant='primary']:hover:not(:disabled),
+  .ds-button[data-variant='primary']:active:not(:disabled) {
     background-color: var(--color-accent-hover);
   }
 
@@ -75,7 +76,8 @@
     color: var(--color-text) !important;
   }
 
-  .ds-button[data-variant='secondary']:hover:not(:disabled) {
+  .ds-button[data-variant='secondary']:hover:not(:disabled),
+  .ds-button[data-variant='secondary']:active:not(:disabled) {
     background-color: var(--color-accent-faint);
   }
 
@@ -85,7 +87,8 @@
     color: var(--color-text) !important;
   }
 
-  .ds-button[data-variant='ghost']:hover:not(:disabled) {
+  .ds-button[data-variant='ghost']:hover:not(:disabled),
+  .ds-button[data-variant='ghost']:active:not(:disabled) {
     background-color: var(--color-accent-subtle);
   }
 
@@ -95,7 +98,8 @@
     color: var(--color-text-on-danger) !important;
   }
 
-  .ds-button[data-variant='danger']:hover:not(:disabled) {
+  .ds-button[data-variant='danger']:hover:not(:disabled),
+  .ds-button[data-variant='danger']:active:not(:disabled) {
     filter: brightness(0.92);
   }
 

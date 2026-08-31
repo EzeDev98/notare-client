@@ -75,8 +75,8 @@
     display: grid;
     justify-items: center;
     gap: var(--space-2);
-    inline-size: min(360px, calc(100vw - 32px));
-    padding: var(--space-8) var(--space-6) var(--space-6);
+    inline-size: min(320px, calc(100vw - 32px));
+    padding: var(--space-6) var(--space-5) var(--space-5);
     border-radius: var(--radius-lg);
     background-color: var(--color-surface);
     box-shadow: var(--shadow-md);
@@ -127,8 +127,8 @@
   .ds-modal__icon {
     display: grid;
     place-items: center;
-    inline-size: 72px;
-    block-size: 72px;
+    inline-size: 60px;
+    block-size: 60px;
     margin-block-end: var(--space-2);
     border-radius: var(--radius-lg);
 
@@ -154,17 +154,17 @@
    * modal's intended icon size.
    */
   .ds-modal__icon svg {
-    inline-size: 50px !important;
-    block-size: 50px !important;
-    width: 50px !important;
-    height: 50px !important;
+    inline-size: 42px !important;
+    block-size: 42px !important;
+    width: 42px !important;
+    height: 42px !important;
     color: inherit;
   }
 
   .ds-modal__title {
     margin: 0;
     color: var(--color-text);
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-base);
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-snug);
   }
@@ -184,8 +184,8 @@
   .ds-modal__actions {
     display: flex;
     inline-size: 100%;
-    gap: 10px;
-    margin-block-start: var(--space-4);
+    gap: var(--space-2);
+    margin-block-start: var(--space-3);
   }
 
   /*
@@ -207,6 +207,11 @@
    */
   .ds-modal__actions .ds-modal__action {
     flex: 1;
+    /* Button's own `sm` sizing (Button.css), not `md` — the same numbers
+       every small button in the app already uses, just applied here since
+       Modal never exposes a size prop of its own to pass 'sm' through. */
+    min-block-size: 2rem;
+    padding-inline: var(--space-3);
     border-radius: var(--radius-lg);
   }
 }

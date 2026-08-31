@@ -39,6 +39,15 @@
 
   html {
     /*
+     * Mobile WebKit/Chrome's own default tap feedback — a grey/blue box
+     * over whatever was tapped — has no accessibility purpose the way the
+     * outline above does; colors.css's own :focus-visible ring already
+     * covers keyboard/screen-reader users. Off globally so it stops
+     * appearing as a stray box on every icon button.
+     */
+    -webkit-tap-highlight-color: transparent;
+
+    /*
      * NO font-size here, on purpose. A user who set their browser default to
      * 20px did so deliberately; overriding it takes that away with no recourse.
      * Everything is sized in rem so the whole interface scales with them.

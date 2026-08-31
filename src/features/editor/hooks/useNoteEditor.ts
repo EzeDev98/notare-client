@@ -3,7 +3,12 @@ import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import { useAutoSaveScheduler } from '@/features/editor/hooks/useAutoSaveScheduler';
 import { useConflict } from '@/features/editor/hooks/useConflict';
-import { hasPendingWork, initialSaveState, saveReducer } from '@/features/editor/saveState';
+import {
+  hasPendingWork,
+  initialSaveState,
+  saveReducer,
+  type SaveState,
+} from '@/features/editor/saveState';
 import { noteService } from '@/features/notes/api/noteService';
 import { fromNoteResponse } from '@/features/notes/local/noteMappers';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
@@ -49,7 +54,21 @@ interface DraftOverride {
  * network request.
  */
 export function useNoteEditor(initialRow: NoteRow) {
-  const [saveState, dispatch] = useReducer(saveReducer, initialSaveState);
+  /*
+   * Lazy init, not a bare `initialSaveState`: a row can already be
+   * `syncState === 'conflict'` the moment this hook first mounts — loaded
+   * that way from Dexie because a PREVIOUS mount's `save()` persisted it
+   * there (see `markEditorConflict`'s own doc comment). Starting at 'idle'
+   * regardless would silently swallow that: `save()`'s dirty-row guard
+   * would correctly refuse to resend, but the conflict panel that explains
+   * WHY would never appear — the note would just look like it's sitting
+   * there "Unsaved" for no visible reason.
+   */
+  const [saveState, dispatch] = useReducer(
+    saveReducer,
+    initialRow,
+    (row): SaveState => (row.syncState === 'conflict' ? { status: 'conflict' } : initialSaveState),
+  );
   const online = useOnlineStatus();
 
   /*
@@ -209,6 +228,16 @@ export function useNoteEditor(initialRow: NoteRow) {
     // Nothing to send. The row is clean, so the server already has this.
     if (current.dirty === 0) return;
 
+    /*
+     * Already known to conflict, PERSISTED on the row (not just in this
+     * component's in-memory saveState) — do not resend the same doomed
+     * (content, version) pair. See `markEditorConflict`'s own doc comment
+     * for why relying on ephemeral React state alone let this retry
+     * forever: a remount, a reconnect, or a stray timer had no durable
+     * signal telling it to stop.
+     */
+    if (current.syncState === 'conflict') return;
+
     dispatch({ type: 'SAVE_STARTED' });
 
     try {
@@ -303,6 +332,10 @@ export function useNoteEditor(initialRow: NoteRow) {
       dispatch({ type: 'SAVE_SUCCEEDED' });
     } catch (error) {
       if (isConflict(error)) {
+        // Durable first: the row must say "conflict" before anything else
+        // (a re-render, a reconnect effect, another tab) gets a chance to
+        // read it and decide there's ordinary unsent work to retry.
+        await noteRepository.markEditorConflict(localId);
         dispatch({ type: 'CONFLICT_DETECTED' });
       } else if (isOffline(error)) {
         /*
@@ -400,7 +433,16 @@ export function useNoteEditor(initialRow: NoteRow) {
      */
     setDraftOverride({ content: mine.content, version: conflict.theirs.version });
     void noteRepository
-      .put({ ...mine, version: conflict.theirs.version, dirty: 1 })
+      .put({
+        ...mine,
+        version: conflict.theirs.version,
+        dirty: 1,
+        // `mine` now carries `syncState: 'conflict'` (markEditorConflict, in
+        // save()'s catch block) — must be cleared explicitly here, the same
+        // way `keepBoth` already does below, or the row would report itself
+        // conflicted forever after a resolution that fixed exactly that.
+        syncState: 'pending',
+      })
       .then(() => {
         dispatch({ type: 'CONFLICT_RESOLVED' });
         return scheduler.flush();
@@ -431,9 +473,13 @@ export function useNoteEditor(initialRow: NoteRow) {
   /**
    * KEEP BOTH — the only option that destroys nothing.
    *
-   * Theirs first, a divider, then mine. Untidy and recoverable, which is the
-   * right trade when someone interrupted mid-sentence is about to click the
-   * emphasised button.
+   * Mine first, then theirs, joined as one continuous note rather than
+   * separated by a divider — the person resolving the conflict is usually
+   * the one who just edited, so their words lead, with the incoming
+   * version appended below for reference. Untidy in the sense that nothing
+   * was reconciled sentence by sentence, but recoverable, which is the
+   * right trade when someone interrupted mid-sentence is about to click
+   * the emphasised button.
    */
   const keepBoth = useCallback(() => {
     if (conflict.status !== 'ready') return;
@@ -445,7 +491,7 @@ export function useNoteEditor(initialRow: NoteRow) {
     const mergedContent =
       theirContent.trim() === ''
         ? mine.content
-        : `${theirContent}\n\n--- Your version ---\n\n${mine.content}`;
+        : `${mine.content}\n\n${theirContent}`;
 
     const finalContent = mergedContent.slice(0, 20_000);
 

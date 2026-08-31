@@ -143,7 +143,7 @@
    * `.app-shell__toolbar-search-wrap`) for the same reason.
    */
   .app-shell__toolbar-main {
-    flex: 0 0 60%;
+    flex: 1;
     min-inline-size: 0;
   }
 
@@ -217,8 +217,7 @@
    * next to a 20%/40% split and keeps search fully on screen.
    */
   .app-shell__notifications {
-    flex: 0 1 33.3333%;
-    justify-content: center;
+    flex: 0 0 auto;
     /* See .app-shell__toolbar-main's own comment above on why this is
        needed at every level of this chain. */
     min-inline-size: 0;
@@ -236,11 +235,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    inline-size: 44px;
-    block-size: 44px;
+    inline-size: 30px;
+    block-size: 27px;
     padding: 0;
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: 13px;
     background: none;
     color: var(--color-icon);
     text-decoration: none;
@@ -249,9 +248,11 @@
 
   .app-shell__toolbar-icon-btn--outlined {
     border: var(--border-width) solid var(--color-border);
+    border-radius: var(--radius-sm);
   }
 
-  .app-shell__toolbar-icon-btn:hover {
+  .app-shell__toolbar-icon-btn:hover,
+  .app-shell__toolbar-icon-btn:active {
     background-color: var(--color-accent-faint);
     color: var(--color-text);
   }
@@ -404,9 +405,11 @@
   .app-shell__toolbar-search-wrap {
     display: flex;
     align-items: center;
-    /* See .app-shell__notifications's own comment on why shrink is 1, not
-       0 — same gap, same fix. */
-    flex: 0 1 66.6667%;
+    /* Fills whatever the expand-note column and the bell (both auto-width
+       now, immediately above) don't take, rather than a fixed 66.6667% —
+       that fraction was sized for when the icons themselves were wider,
+       and left a dead gap next to the search field once they shrank. */
+    flex: 1;
     /* See .app-shell__toolbar-main's own comment above on why this is
        needed at every level of this chain — this is the actual source of
        the min-content width that made it necessary everywhere else. */
@@ -419,9 +422,9 @@
     gap: var(--space-2);
     flex: 1;
     inline-size: 100%;
-    block-size: 40px;
+    block-size: 35px;
     padding-inline: var(--space-3);
-    border-radius: 7px;
+    border-radius: 10px;
     background-color: var(--color-surface-sunken);
     color: var(--color-text-secondary);
   }
@@ -1197,7 +1200,8 @@
       border-radius: var(--radius-sm);
     }
 
-    .app-shell__toolbar-icon-btn:hover {
+    .app-shell__toolbar-icon-btn:hover,
+    .app-shell__toolbar-icon-btn:active {
       background-color: var(--color-accent-faint);
       color: var(--color-text);
     }
@@ -1355,7 +1359,8 @@
       font-size: var(--font-size-sm);
     }
 
-    .app-shell__nav-link:hover {
+    .app-shell__nav-link:hover,
+    .app-shell__nav-link:active {
       background-color: var(--color-accent-faint);
     }
 

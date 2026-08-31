@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router';
 import { VoiceNoteCard } from '@/features/voice/components/VoiceNoteCard/VoiceNoteCard';
 import { useVoiceNotes, useVoiceNotesByNote } from '@/features/voice/hooks/useVoiceNotes';
 import { useDeleteVoiceNote } from '@/features/voice/hooks/useVoiceNoteMutations';
+import { BackButton } from '@/design-system/components/BackButton/BackButton';
 import { Button } from '@/design-system/components/Button/Button';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
@@ -35,6 +36,7 @@ function AllVoiceNotes() {
 
   return (
     <section className="voice-notes">
+      <BackButton />
       <h1>Voice notes</h1>
 
       {voiceNotes.isLoading ? (
@@ -100,6 +102,7 @@ function FilteredByNote({ noteId }: { noteId: number }) {
 
   return (
     <section className="voice-notes">
+      <BackButton />
       <h1>Voice notes for this note</h1>
 
       {voiceNotes.isLoading ? (

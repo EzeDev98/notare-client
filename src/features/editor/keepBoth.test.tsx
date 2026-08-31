@@ -60,8 +60,8 @@ describe('keepBoth', () => {
     const merged = result.current.row.content;
     expect(merged).toContain('their words');
     expect(merged).toContain('my words');
-    // Theirs first, then the divider, then mine.
-    expect(merged.indexOf('their words')).toBeLessThan(merged.indexOf('my words'));
+    // Mine first, then theirs.
+    expect(merged.indexOf('my words')).toBeLessThan(merged.indexOf('their words'));
 
     // The server's version is adopted, so the follow-up save is accepted
     // rather than rejected as stale.

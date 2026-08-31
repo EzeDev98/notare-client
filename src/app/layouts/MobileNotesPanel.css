@@ -121,7 +121,8 @@
     cursor: pointer;
   }
 
-  .mobile-notes-panel__close:hover {
+  .mobile-notes-panel__close:hover,
+  .mobile-notes-panel__close:active {
     background-color: var(--color-accent-faint);
     color: var(--color-text);
   }
@@ -159,7 +160,8 @@
     cursor: pointer;
   }
 
-  .mobile-notes-panel__icon-btn:hover {
+  .mobile-notes-panel__icon-btn:hover,
+  .mobile-notes-panel__icon-btn:active {
     background-color: var(--color-accent-faint);
     color: var(--color-text);
   }

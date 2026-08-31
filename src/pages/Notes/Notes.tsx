@@ -14,6 +14,7 @@ import { useNoteActions } from '@/features/notes/hooks/useNoteActions';
 import { useNotes } from '@/features/notes/hooks/useNotes';
 import { createLocalNote } from '@/features/notes/local/noteMappers';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
+import { BackButton } from '@/design-system/components/BackButton/BackButton';
 import { Button } from '@/design-system/components/Button/Button';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Notes.css';
@@ -109,6 +110,7 @@ export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
 
   return (
     <section className={archived ? 'notes notes--archived' : 'notes'}>
+      {archived ? <BackButton /> : null}
       <header className="notes__header">
         <h1>{archived ? 'Archived' : 'Notes'}</h1>
         {archived ? null : (

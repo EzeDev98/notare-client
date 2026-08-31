@@ -73,7 +73,8 @@
     cursor: pointer;
   }
 
-  .settings-panel__close:hover {
+  .settings-panel__close:hover,
+  .settings-panel__close:active {
     background-color: var(--color-accent-faint);
     color: var(--color-text);
   }
@@ -99,7 +100,8 @@
     font-weight: var(--font-weight-medium);
   }
 
-  .settings-panel__account:hover {
+  .settings-panel__account:hover,
+  .settings-panel__account:active {
     background-color: var(--color-accent-faint);
   }
 
