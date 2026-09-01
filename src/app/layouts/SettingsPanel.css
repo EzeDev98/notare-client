@@ -100,13 +100,29 @@
     font-weight: var(--font-weight-medium);
   }
 
-  .settings-panel__account:hover,
-  .settings-panel__account:active {
-    background-color: var(--color-accent-faint);
-  }
-
   .settings-panel__account svg {
     color: var(--color-icon);
+  }
+
+  /*
+   * .settings-panel__account was written assuming an <a> (no native
+   * chrome to undo). The Reset row reuses it on a real <button> instead
+   * (it doesn't navigate anywhere), so this resets the border/background
+   * a button brings by default and left-aligns the text — a button's
+   * content doesn't inherit block-level text-align the way an anchor's
+   * does. font-family only, not the full `font` shorthand: see
+   * AppLayout.css's own button.app-shell__nav-link comment for why the
+   * shorthand form is the one that quietly breaks this codebase's font
+   * sizing under @layer.
+   */
+  .settings-panel__reset {
+    appearance: none;
+    border: none;
+    background: none;
+    inline-size: 100%;
+    text-align: start;
+    font-family: inherit;
+    cursor: pointer;
   }
 
   /*

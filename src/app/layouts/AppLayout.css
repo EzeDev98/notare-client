@@ -578,12 +578,31 @@
     display: none;
   }
 
+  /*
+   * Fixed, centred, and above everything else — same reasoning as Modal's
+   * own backdrop. This can outlive the confirmation Modal itself (the sync
+   * attempt and the erase both run AFTER that Modal has already closed —
+   * see useDeviceReset's own comment on why), so it needs to stay visible
+   * regardless of what page content sits beneath it. Triggered from the
+   * sidebar's "Reset this device" button, directly under Accounts.
+   */
+  .app-shell__reset-progress {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-surface);
+  }
+
   .app-shell__nav-link {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: var(--space-1);
+    cursor: pointer;
 
     /*
      * 44px, not the Button's 40px. This is a genuinely viewport-shaped
@@ -619,7 +638,16 @@
     border: none;
     background: none;
     cursor: pointer;
-    font: inherit;
+    /*
+     * font-family only, not the full `font` shorthand — the shorthand
+     * resets font-size/weight/line-height to `inherit` too, and because
+     * this selector (button.app-shell__nav-link) is MORE specific than
+     * the plain .app-shell__nav-link rule above, that `inherit` was
+     * winning over this class's own font-size: var(--font-size-xs),
+     * making "Reset this device" render at the browser's ambient font
+     * size instead of matching every other nav item.
+     */
+    font-family: inherit;
   }
 
   /*
@@ -1357,11 +1385,6 @@
       inline-size: 100%;
       border-radius: var(--radius-md);
       font-size: var(--font-size-sm);
-    }
-
-    .app-shell__nav-link:hover,
-    .app-shell__nav-link:active {
-      background-color: var(--color-accent-faint);
     }
 
     .app-shell__nav-link[aria-current='page'] {

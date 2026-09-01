@@ -5,7 +5,6 @@
     background-color: var(--color-surface);
     border: var(--border-width) solid var(--color-border);
     border-radius: var(--radius-md);
-    transition: border-color var(--transition-fast);
 
     /*
      * `.notes__list` is a grid, and grid items default to `min-width: auto`
@@ -30,10 +29,6 @@
      */
     -webkit-touch-callout: none;
     user-select: none;
-  }
-
-  .note-card:hover {
-    border-color: var(--color-border-strong);
   }
 
   /* Visual echo of the context menu this card opened — same treatment
@@ -98,10 +93,18 @@
 
   .note-card__title {
     margin: 0;
-    font-size: var(--font-size-base);
-    /* Explicit, not inherited — the base <h2> rule is semibold; a card
-     * title in a list should never be bold. */
-    font-weight: var(--font-weight-normal);
+    /*
+     * `!important` on both — this is a real `<h2>`, and `typography.css`'s
+     * base `h2` rule (`@layer base`) sets `font-size: var(--font-size-xl)`
+     * / `font-weight: semibold`. `@layer components` (this file) is
+     * supposed to beat `@layer base` regardless of selector specificity,
+     * but per the `@layer` injection-order hazard Button.css's own
+     * comment documents elsewhere in this codebase, that ordering isn't
+     * reliable in practice — same fix already applied to
+     * SharedNoteCard's own title for the identical reason.
+     */
+    font-size: 18px !important;
+    font-weight: var(--font-weight-normal) !important;
     line-height: var(--line-height-snug);
     /* Long titles truncate rather than pushing the card taller than its
      * neighbours and breaking the list's rhythm. */

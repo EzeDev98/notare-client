@@ -15,6 +15,34 @@
     text-align: center;
   }
 
+  /*
+   * Left-aligns the page heading + lead line at desktop widths only
+   * (>=1024px, matching AppLayout's own sidebar breakpoint) — mirrors
+   * Invitations.css's approach of opting out of typography.css's global
+   * <h1> centering, but scoped by a min-width query rather than applying
+   * at every width: unlike Invitations (whose heading sits in a flex row
+   * next to a button and needs to stay pinned at every size), this page
+   * has no such reason below 1024px, so the global center-by-default
+   * (and its own max-width:1023px reinforcement) is left in place for
+   * tablet/mobile.
+   *
+   * `!important` on the `h1` line specifically — same `@layer`
+   * injection-order hazard documented elsewhere in this codebase
+   * (Button.css, Modal.css, SharedNoteCard.css): `@layer pages` is
+   * supposed to beat `@layer base`'s own centered `h1` rule regardless of
+   * specificity, but wasn't reliably doing so in practice. `.sessions__lead`
+   * isn't part of that base-layer rule, so it doesn't need the same guard.
+   */
+  @media (min-width: 1024px) {
+    .sessions h1 {
+      text-align: left !important;
+    }
+
+    .sessions__lead {
+      text-align: left;
+    }
+  }
+
   .sessions__list {
     display: grid;
     gap: var(--space-3);
@@ -65,21 +93,17 @@
   }
 
   /*
-   * Both destructive actions share one row — "Sign out everywhere" at the
-   * start, "Reset this device" at the end — separated from the session
-   * list above by its own top border so the two read as a single danger
-   * zone rather than more ordinary page content. `flex-wrap` lets the pair
-   * stack instead of overlapping if the viewport gets too narrow for both
-   * buttons plus their hover hints side by side.
+   * "Reset this device" used to share this row — it now lives in the
+   * sidebar (AppLayout.css/.tsx). Kept as a flex row (rather than
+   * collapsing to block styles) since a future account-wide action can
+   * drop back in here the same way.
    */
   .sessions__danger-zone {
-    margin-block-start: var(--space-8);
-    padding-block-start: var(--space-6);
-    border-block-start: var(--border-width) solid var(--color-border);
+    margin-block-start: var(--space-4);
+    padding-block-start: var(--space-3);
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    justify-content: space-between;
     gap: var(--space-4);
   }
 
@@ -99,48 +123,17 @@
     align-items: flex-start;
   }
 
-  /* Right-hand action: its hint right-aligns under it, mirroring the
-     button's own position, rather than trailing off to the left. */
-  .sessions__danger-action--reset {
-    align-items: flex-end;
-    text-align: right;
-  }
-
   /*
-   * Plain text below each button, revealed on hover — NOT a native `title`
+   * Plain text below the button, revealed on hover — NOT a native `title`
    * tooltip (browsers delay those, which read as sluggish here) and NOT a
    * bubble/box floating over other content. `visibility`, not `opacity`
-   * alone: keeps it out of the tab order and un-selectable while hidden,
-   * same reasoning `.note-card__actions` uses opacity instead of `display`
-   * for hover reveals elsewhere — except this one has no keyboard
-   * equivalent to preserve, so there is nothing it needs to stay reachable
-   * for.
+   * alone: keeps it out of the tab order and un-selectable while hidden.
    *
-   * `opacity` fades alongside `visibility` rather than replacing it:
-   * `visibility` alone snaps instantly and can't be transitioned smoothly
-   * on its own, and `opacity` alone would leave the hidden text tabbable
-   * and selectable. `transition-behavior: allow-discrete` is what lets
-   * `visibility` (normally an instant, non-interpolable jump) actually
-   * take part in the transition's timing instead of flipping the moment
-   * the fade starts — so hidden text doesn't briefly become interactive
-   * before it's even visible, or vice versa on the way out.
-   *
-   * Scoped to `.sessions__danger-action:hover`, not the whole row — so
-   * hovering "Sign out everywhere" never reveals "Reset this device"'s
-   * hint, and vice versa.
+   * No `max-inline-size` cap here (unlike an earlier version of this
+   * rule) — the hint is left free to use its full available width rather
+   * than being squeezed into a narrow column.
    */
   .sessions__danger-hint {
-    /*
-     * Capped, not left to its own un-wrapped length -- `align-items:
-     * flex-start` above stops CROSS-axis stretch, but the outer row still
-     * sizes each action's MAIN-axis width from its widest child's
-     * max-content size, and an un-wrapped sentence is plenty wide enough
-     * on its own to push both actions past the container's width and
-     * force them onto separate lines. Capping the hint's own width bounds
-     * that contribution, which is what actually keeps both buttons on
-     * one row.
-     */
-    max-inline-size: 15rem;
     align-items: center;
     margin: var(--space-1) 0 0;
     visibility: hidden;
@@ -154,22 +147,5 @@
   .sessions__danger-action:hover .sessions__danger-hint {
     visibility: visible;
     opacity: 1;
-  }
-
-  /*
-   * Fixed, centred, and above everything else — same reasoning as Modal's
-   * own backdrop. This can outlive the confirmation Modal itself (the sync
-   * attempt and the erase both run AFTER that Modal has already closed —
-   * see handleReset's own comment on why), so it needs to stay visible
-   * regardless of what page content sits beneath it.
-   */
-  .sessions__reset-progress {
-    position: fixed;
-    inset: 0;
-    z-index: var(--z-modal);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--color-surface);
   }
 }

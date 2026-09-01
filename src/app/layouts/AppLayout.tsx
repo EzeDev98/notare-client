@@ -18,12 +18,14 @@ import {
   Moon,
   NotebookText,
   PanelLeft,
+  RotateCcw,
   Search,
   Settings,
   Share,
   SquarePen,
   Sun,
   Trash2,
+  TriangleAlert,
   NotebookPen,
   Users,
   X,
@@ -44,6 +46,7 @@ import {
   NoteContextMenu,
   type NoteContextMenuActions,
 } from '@/features/notes/components/NoteContextMenu/NoteContextMenu';
+import { useDeviceReset } from '@/features/auth/hooks/useDeviceReset';
 import { useDeleteNote } from '@/features/notes/hooks/useDeleteNote';
 import { useNoteActions } from '@/features/notes/hooks/useNoteActions';
 import { useNotes } from '@/features/notes/hooks/useNotes';
@@ -56,6 +59,7 @@ import { useConflictCount } from '@/sync/useConflicts';
 import { useSyncStatus } from '@/sync/useSyncStatus';
 import { ThemeToggle } from '@/design-system/components/ThemeToggle/ThemeToggle';
 import { Modal } from '@/design-system/components/Modal/Modal';
+import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import './AppLayout.css';
 
 /*
@@ -924,6 +928,22 @@ export function AppLayout() {
           ? { label: 'Sync trouble — retrying', tone: 'danger' as const }
           : null;
 
+  /*
+   * "Reset this device" — the sidebar (directly under Accounts, below)
+   * only needs `requestDeviceReset` for its own click handler; the rest
+   * of this state machine (confirm, sync, confirm again if unsynced
+   * changes remain, erase) lives in the hook itself, shared with nothing
+   * else — SessionsPage used to own an identical copy of this before it
+   * moved here. See useDeviceReset's own doc comment.
+   */
+  const {
+    confirmation: resetConfirmation,
+    resetStage: deviceResetStage,
+    requestReset: requestDeviceReset,
+    closeConfirmation: closeDeviceResetConfirmation,
+    handleReset: handleDeviceReset,
+  } = useDeviceReset();
+
   // Same hook, same query the "Notes" list already used (archived: false
   // by default) — the sidebar list and NotesLandingPage read the same
   // live Dexie query, so there is exactly one source of truth for "what
@@ -1275,6 +1295,33 @@ export function AppLayout() {
               </NavLink>
             </li>
           ))}
+
+          {/*
+            "Reset this device" — same destination and same div[role=button]
+            pattern as the compact nav's own copy of this item, reused here
+            so the desktop folders panel (>=1024px) has the same escape
+            hatch below Accounts that the mobile slide-in already does.
+          */}
+          <li>
+            <div
+              role="button"
+              tabIndex={0}
+              className="app-shell__nav-link"
+              onClick={requestDeviceReset}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  requestDeviceReset();
+                }
+              }}
+            >
+              <span className="app-shell__nav-icon">
+                <RotateCcw aria-hidden="true" />
+              </span>
+              <span className="app-shell__nav-label">Reset this device</span>
+            </div>
+          </li>
+
         </ul>
 
         {/*
@@ -1505,7 +1552,71 @@ export function AppLayout() {
           onClose={requestSettingsClose}
           isClosing={isSettingsClosing}
           onAnimationEnd={handleSettingsAnimationEnd}
+          onResetDevice={requestDeviceReset}
         />
+      ) : null}
+
+      {resetConfirmation === 'reset' ? (
+        <Modal
+          icon={<TriangleAlert aria-hidden="true" />}
+          title="Reset this device?"
+          description={
+            <>
+              This deletes every note, draft, and cached file this browser
+              has stored locally, and signs you out.
+            </>
+          }
+          secondaryAction={{
+            label: 'Cancel',
+            onClick: closeDeviceResetConfirmation,
+          }}
+          primaryAction={{
+            label: 'Reset device',
+            onClick: () => {
+              void handleDeviceReset();
+            },
+          }}
+          onClose={closeDeviceResetConfirmation}
+        />
+      ) : null}
+
+      {resetConfirmation === 'reset-unsynced' ? (
+        <Modal
+          icon={<TriangleAlert aria-hidden="true" />}
+          title="Unsynced changes remain"
+          description={
+            <>
+              Notare tried to sync before resetting, but some local changes
+              still have not reached the server — most likely because this
+              device is offline right now. Resetting anyway will permanently
+              lose them. Cancel and try again once you are back online, or
+              reset anyway and discard them.
+            </>
+          }
+          secondaryAction={{
+            label: 'Cancel',
+            onClick: closeDeviceResetConfirmation,
+          }}
+          primaryAction={{
+            label: 'Reset anyway',
+            onClick: () => {
+              void handleDeviceReset(true);
+            },
+          }}
+          onClose={closeDeviceResetConfirmation}
+        />
+      ) : null}
+
+      {deviceResetStage !== 'idle' ? (
+        <div className="app-shell__reset-progress" role="status">
+          <Spinner
+            label={
+              deviceResetStage === 'syncing'
+                ? 'Syncing your changes before resetting…'
+                : 'Erasing local data…'
+            }
+          />
+        </div>
       ) : null}
 
       {noteToDelete ? (

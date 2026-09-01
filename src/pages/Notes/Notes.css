@@ -23,6 +23,20 @@
     justify-content: center;
   }
 
+  /*
+   * Left-aligns the "Archived" heading at desktop widths only (>=1024px,
+   * matching AppLayout's own sidebar breakpoint) — same treatment as
+   * Sessions.css/Trash.css's identical blocks. This header is a single-child
+   * flex row (see `.notes__header`'s own comment above), so unlike those
+   * two pages this needs `justify-content`, not `text-align`, to actually
+   * move the heading.
+   */
+  @media (min-width: 1024px) {
+    .notes--archived .notes__header {
+      justify-content: center;
+    }
+  }
+
   .notes__header-actions {
     display: flex;
     gap: var(--space-4);

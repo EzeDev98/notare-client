@@ -32,6 +32,25 @@
     text-align: center;
   }
 
+  /*
+   * Left-aligns the page heading + lead line at desktop widths only
+   * (>=1024px, matching AppLayout's own sidebar breakpoint) — same
+   * treatment as Sessions.css's identical block. `!important` on the
+   * `h1` line for the same `@layer` injection-order hazard documented
+   * there (and on `.trash__lead` too, matching this file's own existing
+   * `!important` on that selector just above, which notes the
+   * un-important version wasn't taking effect either).
+   */
+  @media (min-width: 1024px) {
+    .trash h1 {
+      text-align: center !important;
+    }
+
+    .trash__lead {
+      text-align: center !important;
+    }
+  }
+
   .trash__list {
     display: grid;
     gap: var(--space-3);

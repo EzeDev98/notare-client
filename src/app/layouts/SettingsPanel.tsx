@@ -1,6 +1,6 @@
 import type { AnimationEventHandler } from 'react';
 import { Link } from 'react-router';
-import { User, X } from 'lucide-react';
+import { RotateCcw, User, X } from 'lucide-react';
 
 import { ThemeToggle } from '@/design-system/components/ThemeToggle/ThemeToggle';
 import './SettingsPanel.css';
@@ -9,6 +9,7 @@ interface SettingsPanelProps {
   onClose: () => void;
   isClosing: boolean;
   onAnimationEnd: AnimationEventHandler<HTMLDivElement>;
+  onResetDevice: () => void;
 }
 
 /**
@@ -31,7 +32,12 @@ interface SettingsPanelProps {
  * transform/filter/contain, so `position: fixed` here resolves against
  * the viewport regardless of where in the tree this mounts.
  */
-export function SettingsPanel({ onClose, isClosing, onAnimationEnd }: SettingsPanelProps) {
+export function SettingsPanel({
+  onClose,
+  isClosing,
+  onAnimationEnd,
+  onResetDevice,
+}: SettingsPanelProps) {
   return (
     <div
       className="settings-panel"
@@ -57,6 +63,33 @@ export function SettingsPanel({ onClose, isClosing, onAnimationEnd }: SettingsPa
           <User aria-hidden="true" />
           <span>Accounts</span>
         </Link>
+
+        {/*
+          Directly under Accounts, same row styling — this doesn't
+          navigate anywhere, so a <button> rather than a <Link>, closing
+          the sheet first so the confirmation modal it opens (AppLayout's
+          own Reset-confirmation Modal) isn't fighting this slide-in
+          panel's own z-index/animation for the screen at the same time.
+        */}
+        <div
+          role="button"
+          tabIndex={0}
+          className="settings-panel__account settings-panel__reset"
+          onClick={() => {
+            onClose();
+            onResetDevice();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onClose();
+              onResetDevice();
+            }
+          }}
+        >
+          <RotateCcw aria-hidden="true" />
+          <span>Reset this device</span>
+        </div>
 
         {/* Pinned to the bottom — see this file's own top comment. */}
         <div className="settings-panel__theme">

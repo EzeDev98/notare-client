@@ -196,14 +196,18 @@
    * pairs visually balanced regardless of which one has the longer word.
    *
    * Otherwise this is Button's own standard `md` sizing — no height or
-   * padding override. `border-radius: var(--radius-lg)` is the one
-   * deliberate departure from Button's own `--radius-md` corners,
-   * matching the modal card's own radius rather than introducing a third
-   * radius value. Specificity here (two classes) is deliberately higher
-   * than `.ds-button`'s single-class `border-radius: var(--radius-md)`
-   * in Button.css, so this wins regardless of which stylesheet the
-   * browser happens to inject first — see that file's own note on
-   * `@layer` ordering being injection-order-dependent in dev.
+   * padding override. `border-radius: 10px` is the one deliberate
+   * departure from Button's own `--radius-md` corners, matching the modal
+   * card's own radius rather than introducing a third radius value.
+   * `!important`, and a literal 10px rather than `var(--radius-lg)` — same
+   * `@layer` injection-order hazard Button.css's own big comment already
+   * documents for `color` on the `primary`/`danger` variants (dev serves
+   * each component's CSS as its own separately-injected <style> tag, so a
+   * layer's precedence can end up decided by injection order instead of
+   * the order `global.css` declares). Two classes' worth of specificity
+   * was meant to be enough on its own; it wasn't reliably winning in
+   * practice, so this uses the same fix already proven for that other
+   * property instead of a second unproven one.
    */
   .ds-modal__actions .ds-modal__action {
     flex: 1;
@@ -212,6 +216,6 @@
        Modal never exposes a size prop of its own to pass 'sm' through. */
     min-block-size: 2rem;
     padding-inline: var(--space-3);
-    border-radius: var(--radius-lg);
+    border-radius: 3px !important;
   }
 }
