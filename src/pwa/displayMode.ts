@@ -28,6 +28,31 @@ import { useEffect, useState } from 'react';
  * conditions of the current window, which is exactly what a boot-time
  * check needs.
  */
+/**
+ * One-shot hint carried across the "Reset this device" navigation (see
+ * useDeviceReset.ts) confirming this window WAS standalone right before
+ * wipeLocalState() unregistered the service worker — the same event that
+ * makes the live display-mode signal likely to misreport `false` for a
+ * beat on the very next load (see THE RELOAD BUG below). Reset knows the
+ * true answer synchronously, before the unregister happens, and encodes
+ * it in the URL it navigates to, rather than making the fresh load
+ * re-guess it from a signal that reset itself just made less reliable.
+ *
+ * Stripped from the URL on first read via replaceState — a one-shot
+ * signal for the navigation that carried it, not something that should
+ * silently answer every later reload of this page too.
+ */
+function consumePostResetStandaloneHint(): boolean {
+  if (typeof window === 'undefined' || typeof URLSearchParams === 'undefined') return false;
+
+  const url = new URL(window.location.href);
+  if (url.searchParams.get('notare_reset_standalone') !== '1') return false;
+
+  url.searchParams.delete('notare_reset_standalone');
+  window.history.replaceState(null, '', url.toString());
+  return true;
+}
+
 export function isStandaloneDisplayMode(): boolean {
   if (typeof window === 'undefined') return false;
 
@@ -38,7 +63,11 @@ export function isStandaloneDisplayMode(): boolean {
   const iosStandaloneNavigator = (window.navigator as Navigator & { standalone?: boolean })
     .standalone;
 
-  return matchesDisplayModeMediaQuery || iosStandaloneNavigator === true;
+  return (
+    matchesDisplayModeMediaQuery ||
+    iosStandaloneNavigator === true ||
+    consumePostResetStandaloneHint()
+  );
 }
 
 /**
@@ -51,6 +80,15 @@ export function isStandaloneDisplayMode(): boolean {
  * rather than merely recovering from it a moment after it appeared.
  */
 const STANDALONE_RECHECK_MS = 400;
+
+/**
+ * Second, later checkpoint alongside STANDALONE_RECHECK_MS — some reloads
+ * (notably right after "Reset this device" unregisters the service
+ * worker) settle slower than the first recheck's window, so one late
+ * checkpoint is kept as a second chance rather than assuming 400ms always
+ * covers it.
+ */
+const STANDALONE_RECHECK_LONG_MS = 1500;
 
 /**
  * Reactive form of the above, for components that need to re-render if
@@ -153,7 +191,7 @@ export function useIsStandalone(): boolean {
    * rather than an unconditional extra render for every single mount.
    */
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const recheck = () => {
       setStandalone((current) => {
         const rechecked = isStandaloneDisplayMode();
         if (rechecked === current) return current;
@@ -163,40 +201,92 @@ export function useIsStandalone(): boolean {
         );
         return rechecked;
       });
-    }, STANDALONE_RECHECK_MS);
+    };
 
-    return () => clearTimeout(timer);
+    const timers = [STANDALONE_RECHECK_MS, STANDALONE_RECHECK_LONG_MS].map((delay) =>
+      setTimeout(recheck, delay),
+    );
+
+    return () => timers.forEach(clearTimeout);
   }, []);
 
   return standalone;
 }
 
 /**
+ * Persisted counterpart to the in-memory latch below. A React state latch
+ * only remembers "installed" for the lifetime of one tab's JS — it says
+ * nothing about an ORDINARY reload, a link opened in a fresh tab, or any
+ * other load that never re-launches from the home-screen icon. Every one
+ * of those is a completely normal way to keep using an app you already
+ * installed, and every one of them was, until now, indistinguishable from
+ * a first-time visitor who has never installed anything — both get a
+ * live `display-mode: standalone` read of `false`, and both got sent to
+ * the mandatory InstallPage. This key is what tells them apart: once
+ * standalone is EVER confirmed on this browser, that fact outlives the
+ * tab, so the install gate — which exists for people who have not
+ * installed yet — stops re-litigating it on every single load for
+ * someone who plainly already has.
+ *
+ * "Reset this device" clears all of localStorage by design (hardReset.ts)
+ * — a full reset genuinely does start over, and the one navigation that
+ * follows it is separately covered by the `notare_reset_standalone` URL
+ * hint above, not by this key.
+ */
+export const EVER_STANDALONE_STORAGE_KEY = 'notare:everStandalone';
+
+function readPersistedEverStandalone(): boolean {
+  if (typeof localStorage === 'undefined') return false;
+  try {
+    return localStorage.getItem(EVER_STANDALONE_STORAGE_KEY) === '1';
+  } catch {
+    // Unavailable in some private-browsing modes — fall back to the live
+    // signal only, same as everywhere else in this file.
+    return false;
+  }
+}
+
+function persistEverStandalone(): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(EVER_STANDALONE_STORAGE_KEY, '1');
+  } catch {
+    // Same as above — best-effort, never blocks the in-memory latch.
+  }
+}
+
+/**
  * Step 8d/10a. Latches useIsStandalone() rather than exposing the live
- * value directly. Two separate call sites need "has this session ever
+ * value directly. Two separate call sites need "has this browser ever
  * been confirmed as the installed app" rather than "is it standalone
  * RIGHT NOW":
  *
  *   - useBootPhase.ts: once install is confirmed, a later transient
  *     `false` reading (a known Chrome quirk right after a real install
- *     completes) must not eject someone back onto the mandatory
- *     InstallPage.
+ *     completes, or an ordinary reload in a ordinary tab) must not eject
+ *     someone back onto the mandatory InstallPage.
  *   - App.tsx's UpdateAvailableModal placement: a first-time visitor on
  *     the install gate has nothing installed to update, so the modal
  *     must never appear for them — but once this reads true, it should
  *     keep offering updates even through a later transient blip.
  *
  * Lazy initial value, not `useState(false)`: a cold start that's ALREADY
- * standalone must commit from its very first render, not lag a tick
- * behind an effect that hasn't run yet.
+ * standalone — or was confirmed standalone on a PAST visit — must commit
+ * from its very first render, not lag a tick behind an effect that
+ * hasn't run yet.
  */
 export function useEverStandalone(): boolean {
   const isStandalone = useIsStandalone();
-  const [everStandalone, setEverStandalone] = useState(isStandalone);
+  const [everStandalone, setEverStandalone] = useState(
+    () => isStandalone || readPersistedEverStandalone(),
+  );
 
   useEffect(() => {
     // One-directional on purpose — never resets to false.
-    if (isStandalone) setEverStandalone(true);
+    if (isStandalone) {
+      setEverStandalone(true);
+      persistEverStandalone();
+    }
   }, [isStandalone]);
 
   return everStandalone;

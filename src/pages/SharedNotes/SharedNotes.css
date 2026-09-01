@@ -12,6 +12,15 @@
     gap: var(--space-4);
   }
 
+  /* Desktop only (matches --breakpoint-lg, see layout.css) — left-align the
+     "Shared with me" header instead of centering it. Tablet/mobile keep the
+     centered layout above. */
+  @media (min-width: 1024px) {
+    .shared-notes__header {
+      justify-content: center;
+    }
+  }
+
   /*
    * Mirrors `.invitations__tabs`/`.invitations__tab` exactly — this page's
    * own doc comment says the tab CHOICE mirrors `InvitationsPage`'s

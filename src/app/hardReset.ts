@@ -2,6 +2,7 @@ import { closeAuthDatabase } from '@/features/auth/tokenStore';
 import { db } from '@/features/notes/local/database';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import { requestSync } from '@/sync/engine';
+import { EVER_STANDALONE_STORAGE_KEY } from '@/pwa/displayMode';
 
 /**
  * "Reset this device" — a full local teardown, reachable from the Sessions
@@ -99,7 +100,20 @@ export async function wipeLocalState(): Promise<void> {
   await deleteAllDatabases();
 
   try {
+    /*
+     * Whether THIS BROWSER has ever installed the app is not "app data"
+     * the way notes, drafts, and cached files are — it is closer to an
+     * OS-level fact, the same category as a home-screen icon actually
+     * existing. "Reset this device" promises a clean slate for the
+     * former; it was never meant to make an already-installed person
+     * relitigate the mandatory install gate on their very next load, so
+     * this one key survives the otherwise-total clear below.
+     */
+    const everStandaloneFlag = localStorage.getItem(EVER_STANDALONE_STORAGE_KEY);
     localStorage.clear();
+    if (everStandaloneFlag !== null) {
+      localStorage.setItem(EVER_STANDALONE_STORAGE_KEY, everStandaloneFlag);
+    }
   } catch {
     // Unavailable in some private-browsing modes — nothing more to do.
   }
