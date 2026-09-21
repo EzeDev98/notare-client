@@ -130,19 +130,19 @@ describe('registration', () => {
   });
 });
 
-describe('otp', () => {
-  it('accepts an email as the identifier (B6)', async () => {
-    await authService.verifyOtp({ notarianIdOrEmail: 'test@example.com', code: '123456' });
+describe('activation resend', () => {
+  it('posts to the activation endpoint with the identifier', async () => {
+    await authService.resendActivation({ notarianIdOrEmail: 'test@example.com' });
 
-    expect(lastBody).toEqual({ notarianIdOrEmail: 'test@example.com', code: '123456' });
+    expect(lastRequest?.url).toBe(`${BASE}/activation/resend`);
+    expect(lastBody).toEqual({ notarianIdOrEmail: 'test@example.com' });
   });
 
-  it('resend answers 200 for an unknown identifier', async () => {
-    // Non-committal by design, and B6 made the server swallow its own cooldown
-    // too — 200-then-429 versus 200-twice was a registered-address oracle in
-    // two requests. The client therefore owns the visible countdown.
+  it('answers 200 for an unknown identifier', async () => {
+    // Non-committal by design, so it cannot be used to probe for registered
+    // addresses. The client therefore owns the visible countdown.
     await expect(
-      authService.resendOtp({ notarianIdOrEmail: 'nobody@example.com' }),
+      authService.resendActivation({ notarianIdOrEmail: 'nobody@example.com' }),
     ).resolves.toMatchObject({ message: expect.any(String) as string });
   });
 });

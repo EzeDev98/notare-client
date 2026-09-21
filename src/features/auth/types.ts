@@ -106,14 +106,8 @@ export interface RegistrationResponse {
   notarianId: string;
 }
 
-export interface VerifyOtpRequest {
-  /** B6: either form. The two are told apart by '@', which a notarianId
-   *  cannot contain. */
-  notarianIdOrEmail: string;
-  code: string;
-}
-
-export interface ResendOtpRequest {
+export interface ResendActivationRequest {
+  /** Either form; told apart by '@', which a notarianId cannot contain. */
   notarianIdOrEmail: string;
 }
 

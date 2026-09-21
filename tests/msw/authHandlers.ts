@@ -44,12 +44,8 @@ export const authHandlers = [
     ),
   ),
 
-  http.post(`${BASE}/otp/verify-otp`, () =>
-    HttpResponse.json({ message: 'Account verified successfully.' }),
-  ),
-
-  http.post(`${BASE}/otp/resend-otp`, () =>
-    HttpResponse.json({ message: 'If an account with that ID exists, a new code has been sent.' }),
+  http.post(`${BASE}/activation/resend`, () =>
+    HttpResponse.json({ message: 'If an account with that ID exists, a new email has been sent.' }),
   ),
 
   http.post(`${BASE}/password/forgot-password`, () =>

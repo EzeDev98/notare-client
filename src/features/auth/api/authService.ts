@@ -6,11 +6,10 @@ import type {
   LogoutResponse,
   RegistrationRequest,
   RegistrationResponse,
-  ResendOtpRequest,
+  ResendActivationRequest,
   ResetPasswordRequest,
   SessionResponse,
   TokenResponse,
-  VerifyOtpRequest,
   VerifyResetOtpRequest,
   VerifyResetOtpResponse,
 } from '@/features/auth/types';
@@ -35,8 +34,7 @@ const PATHS = {
   refresh: '/auth/refresh',
   register: '/user/register',
   me: '/user/me',
-  verifyOtp: '/otp/verify-otp',
-  resendOtp: '/otp/resend-otp',
+  resendActivation: '/activation/resend',
   forgotPassword: '/password/forgot-password',
   verifyResetOtp: '/password/verify-reset-otp',
   resetPassword: '/password/reset-password',
@@ -92,31 +90,19 @@ export const authService = {
   },
 
   /**
-   * B6: the identifier is a notarianId OR an email.
+   * Re-sends the email-verification link. The identifier is a notarianId OR
+   * an email. Verification itself happens on internal-auth via the emailed
+   * link, so there is no code to submit.
    *
-   * Before that change, a user who closed the tab between registering and
-   * verifying was permanently stuck — unable to verify, resend, log in
-   * (unverified is 403) or re-register (email taken).
+   * ALWAYS 200, whether or not the account exists, so nothing in the response
+   * can be used to probe for registered addresses. The UI runs its own visible
+   * cooldown for that reason.
    */
-  verifyOtp(body: VerifyOtpRequest, { signal }: Cancellable = {}): Promise<MessageResponse> {
-    return httpClient.post<MessageResponse>(PATHS.verifyOtp, {
-      body,
-      ...(signal ? { signal } : {}),
-    });
-  },
-
-  /**
-   * ALWAYS 200, whether or not the account exists — and B6 also made the
-   * server swallow its own cooldown, because 200-then-429 versus 200-twice was
-   * a registered-address oracle in two requests.
-   *
-   * CONSEQUENCE FOR THE CLIENT: the cooldown is now invisible from the
-   * response, so the UI must run its own visible countdown after a successful
-   * call. It needs one for the UX regardless; it just can no longer learn the
-   * server's from a status code.
-   */
-  resendOtp(body: ResendOtpRequest, { signal }: Cancellable = {}): Promise<MessageResponse> {
-    return httpClient.post<MessageResponse>(PATHS.resendOtp, {
+  resendActivation(
+    body: ResendActivationRequest,
+    { signal }: Cancellable = {},
+  ): Promise<MessageResponse> {
+    return httpClient.post<MessageResponse>(PATHS.resendActivation, {
       body,
       ...(signal ? { signal } : {}),
     });

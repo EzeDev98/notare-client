@@ -5,7 +5,7 @@ import { useAuth } from '@/app/providers/auth-context';
 import { Button } from '@/design-system/components/Button/Button';
 import { PasswordField } from '@/design-system/components/PasswordField/PasswordField';
 import { TextField } from '@/design-system/components/TextField/TextField';
-import { fieldErrors, isForbidden, isOffline, isUnauthorized } from '@/lib/http/errors';
+import { fieldErrors, isForbidden, isOffline, isUnauthorized, statusOf } from '@/lib/http/errors';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Login.css';
 
@@ -96,6 +96,9 @@ export function LoginPage() {
          */
         void navigate('/verify', { state: { identifier: usernameOrEmail.trim() } });
         return;
+      } else if (statusOf(error) === 423) {
+        // Locked or disabled by an administrator: nothing the user can fix here.
+        setFormError('This account is unavailable. Please contact support.');
       } else if (isOffline(error)) {
         setFormError('Cannot reach Notare. Check your connection and try again.');
       } else {
