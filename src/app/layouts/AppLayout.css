@@ -1439,11 +1439,6 @@
       transition: inset-inline-start var(--motion-duration-base) var(--motion-ease-standard);
     }
 
-    .app-shell__resize-handle:hover,
-    .app-shell__resize-handle:active {
-      background-color: var(--color-accent-faint);
-    }
-
     /* ---- Folders panel ---------------------------------------------- */
 
     .app-shell__folders {
@@ -1503,11 +1498,6 @@
       z-index: var(--z-sticky);
       cursor: col-resize;
       touch-action: none;
-    }
-
-    .app-shell__folders-resize-handle:hover,
-    .app-shell__folders-resize-handle:active {
-      background-color: var(--color-accent-faint);
     }
   }
 }
