@@ -50,7 +50,7 @@ describe('debouncing', () => {
     const save = vi.fn().mockResolvedValue(undefined);
     const { api } = mount({ save });
 
-    // Five keystrokes, 200ms apart — faster than the 1.2s debounce.
+    // Five keystrokes, 200ms apart — far faster than the 2-minute debounce.
     for (let i = 0; i < 5; i += 1) {
       act(() => {
         api.schedule();
@@ -60,7 +60,7 @@ describe('debouncing', () => {
     expect(save).not.toHaveBeenCalled();
 
     await act(async () => {
-      vi.advanceTimersByTime(1_200);
+      vi.advanceTimersByTime(120_000);
       await Promise.resolve();
     });
 
@@ -78,11 +78,11 @@ describe('debouncing', () => {
     const save = vi.fn().mockResolvedValue(undefined);
     const { api } = mount({ save });
 
-    // A keystroke every 500ms for 11 seconds: never a 1.2s pause.
-    for (let i = 0; i < 22; i += 1) {
+    // A keystroke every 30s for 6 minutes: never a 2-minute pause.
+    for (let i = 0; i < 12; i += 1) {
       act(() => {
         api.schedule();
-        vi.advanceTimersByTime(500);
+        vi.advanceTimersByTime(30_000);
       });
     }
 
@@ -90,7 +90,7 @@ describe('debouncing', () => {
       await Promise.resolve();
     });
 
-    // Fired at the 10s ceiling rather than never.
+    // Fired at the 5-minute ceiling rather than never.
     expect(save).toHaveBeenCalled();
   });
 });
@@ -109,14 +109,14 @@ describe('one at a time', () => {
 
     act(() => {
       api.schedule();
-      vi.advanceTimersByTime(1_200);
+      vi.advanceTimersByTime(120_000);
     });
     expect(save).toHaveBeenCalledTimes(1);
 
     // More edits while the request is outstanding.
     act(() => {
       api.schedule();
-      vi.advanceTimersByTime(1_200);
+      vi.advanceTimersByTime(120_000);
     });
 
     // Still one. Starting a second is the ordering problem 6D is about, and
@@ -148,12 +148,12 @@ describe('one at a time', () => {
 
     await act(async () => {
       api.schedule();
-      vi.advanceTimersByTime(1_200);
+      vi.advanceTimersByTime(120_000);
       await Promise.resolve();
     });
 
     await act(async () => {
-      vi.advanceTimersByTime(1_200);
+      vi.advanceTimersByTime(120_000);
       await Promise.resolve();
     });
 

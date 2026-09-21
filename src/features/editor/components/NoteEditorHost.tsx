@@ -1,5 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
-import { useNavigate } from 'react-router';
+import { useState, type ReactNode } from 'react';
 
 import { ConflictPanel } from '@/features/editor/components/ConflictPanel/ConflictPanel';
 import { EditorSurface } from '@/features/editor/components/EditorSurface/EditorSurface';
@@ -7,6 +6,7 @@ import { SaveIndicator } from '@/features/editor/components/SaveIndicator/SaveIn
 import { useEditorShortcuts } from '@/features/editor/hooks/useEditorShortcuts';
 import { useNoteEditor } from '@/features/editor/hooks/useNoteEditor';
 import type { NoteRow } from '@/features/notes/local/noteRow';
+import { parseServerDateTime } from '@/lib/time';
 
 interface NoteEditorHostProps {
   /** The local row. Exists before any server has seen this note. */
@@ -21,30 +21,37 @@ interface NoteEditorHostProps {
   contentAccessory?: ReactNode;
 }
 
+/**
+ * "21 September 2026, 9:38 pm" — shown once at the top of every note, like
+ * Apple Notes. Frozen on first render for a given note (parent passes
+ * key=localId): a new note has no server timestamp yet, and swapping to the
+ * server's zoneless one after the first sync would change the text mid-typing.
+ */
+function NoteDateHeading({ row }: { row: NoteRow }) {
+  const [text] = useState(() => {
+    const date =
+      (row.createdAt !== null ? parseServerDateTime(row.createdAt) : null) ??
+      new Date(row.localUpdatedAt);
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }).formatToParts(date);
+    const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
+    return `${get('day')} ${get('month')} ${get('year')}, ${get('hour')}:${get('minute')} ${get('dayPeriod').toLowerCase()}`;
+  });
+
+  return <p className="note-date">{text}</p>;
+}
+
 export function NoteEditorHost({ row, currentUserId, contentAccessory }: NoteEditorHostProps) {
-  const navigate = useNavigate();
   const editor = useNoteEditor(row);
 
   useEditorShortcuts({ onSave: editor.flush });
 
-  const serverId = editor.row.serverId;
-
-  /*
-   * Correct the URL once a new note has a server id — WITHOUT navigating.
-   *
-   * navigate() would remount this component (the key on localId is stable, but
-   * the route change unmounts the page), discarding nothing now that Dexie
-   * holds the draft — but still causing a visible flicker. replaceState
-   * updates the address without a navigation: React Router listens for
-   * popstate, not replaceState.
-   */
-  useEffect(() => {
-    if (serverId !== null && window.location.pathname.startsWith('/notes/local/')) {
-      void navigate(`/notes/${String(serverId)}`, {
-        replace: true,
-      });
-    }
-  }, [navigate, serverId]);
 
   if (editor.saveState.status === 'conflict') {
     return (
@@ -78,15 +85,14 @@ export function NoteEditorHost({ row, currentUserId, contentAccessory }: NoteEdi
     <>
       <SaveIndicator state={editor.saveState} />
 
+      <NoteDateHeading key={editor.row.localId} row={editor.row} />
+
       <EditorSurface
         content={editor.row.content}
         focusKey={editor.row.localId}
         onContentChange={(value) => {
           editor.setDraft({ content: value });
           editor.markEdited();
-        }}
-        onBlur={() => {
-          void editor.flush();
         }}
         contentAccessory={contentAccessory}
       />

@@ -148,6 +148,6 @@ describe('the note detail view', () => {
      */
     const content = await screen.findByLabelText('Note content');
     expect(content).toHaveValue('');
-    expect(content).toHaveAttribute('placeholder', 'Start writing…');
+    expect(content).not.toHaveAttribute('placeholder');
   });
 });

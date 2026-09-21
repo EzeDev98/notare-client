@@ -124,9 +124,9 @@ async function typeAndConflict(): Promise<void> {
   await user.clear(content);
   await user.paste('my words');
 
-  // Blur flushes, so the conflict is provoked deliberately rather than by
-  // waiting out a timer.
-  await user.tab();
+  // Ctrl+S flushes, so the conflict is provoked deliberately rather than by
+  // waiting out the 2-minute auto-save timer.
+  await user.keyboard('{Control>}s{/Control}');
 
   await screen.findByRole('heading', { name: /this note was edited/i }, { timeout: 6_000 });
 }

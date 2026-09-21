@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -21,12 +22,16 @@ function renderLocal(path = '/notes/local/local-abc') {
     { initialEntries: [path] },
   );
 
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
   return render(
-    <SignedIn>
-      <ToastProvider>
-        <RouterProvider router={router} />
-      </ToastProvider>
-    </SignedIn>,
+    <QueryClientProvider client={queryClient}>
+      <SignedIn>
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
+      </SignedIn>
+    </QueryClientProvider>,
   );
 }
 

@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -24,12 +25,15 @@ function renderNew() {
       initialEntries: ['/notes/new'],
     },
   );
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <SignedIn>
-      <ToastProvider>
-        <RouterProvider router={router} />
-      </ToastProvider>
-    </SignedIn>,
+    <QueryClientProvider client={queryClient}>
+      <SignedIn>
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
+      </SignedIn>
+    </QueryClientProvider>,
   );
 }
 
@@ -90,6 +94,7 @@ describe('creating a note', () => {
     const content = await screen.findByLabelText('Note content');
     await user.click(content);
     await user.paste('first');
+    await user.keyboard('{Control>}s{/Control}');
 
     await waitFor(
       () => {
@@ -101,8 +106,11 @@ describe('creating a note', () => {
     // More text while the POST is in flight and after it returns.
     await user.paste(' and more');
 
+    // Ctrl+S is ignored while the POST is still outstanding (one save at a
+    // time), so press it until the flush is accepted and the PATCH lands.
     await waitFor(
-      () => {
+      async () => {
+        await user.keyboard('{Control>}s{/Control}');
         expect(lastPatched).toContain('and more');
       },
       { timeout: 6_000 },
@@ -122,6 +130,7 @@ describe('creating a note', () => {
     const content = await screen.findByLabelText('Note content');
     await user.click(content);
     await user.paste('written with no connection');
+    await user.keyboard('{Control>}s{/Control}');
 
     await waitFor(
       async () => {

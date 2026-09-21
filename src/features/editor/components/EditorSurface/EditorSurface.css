@@ -75,3 +75,12 @@
     outline: none;
   }
 }
+
+/* The note's creation date, centred above the text like Apple Notes. */
+.note-date {
+  margin: var(--space-4) 0 0;
+  text-align: center;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  user-select: none;
+}

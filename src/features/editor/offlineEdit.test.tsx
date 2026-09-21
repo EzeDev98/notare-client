@@ -62,6 +62,7 @@ describe('editing an existing note with no connection (8B)', () => {
     const content = await screen.findByLabelText('Note content');
     await user.click(content);
     await user.paste('edited with no connection');
+    await user.keyboard('{Control>}s{/Control}');
 
     await waitFor(
       async () => {
@@ -88,6 +89,7 @@ describe('editing an existing note with no connection (8B)', () => {
     const content = await screen.findByLabelText('Note content');
     await user.click(content);
     await user.paste('first offline edit');
+    await user.keyboard('{Control>}s{/Control}');
 
     await waitFor(
       async () => {
@@ -98,6 +100,7 @@ describe('editing an existing note with no connection (8B)', () => {
     const [queuedAfterFirst] = await outboxRepository.list();
 
     await user.paste(' and a second offline edit');
+    await user.keyboard('{Control>}s{/Control}');
 
     await waitFor(
       async () => {

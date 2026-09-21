@@ -71,6 +71,7 @@ describe('one request at a time', () => {
 
     const content = await screen.findByLabelText('Note content');
     await user.type(content, 'the quick brown fox');
+    await user.keyboard('{Control>}s{/Control}');
 
     await waitFor(
       () => {
@@ -114,6 +115,7 @@ describe('one request at a time', () => {
 
     const content = await screen.findByLabelText('Note content');
     await user.type(content, 'hello world');
+    await user.keyboard('{Control>}s{/Control}');
 
     /*
      * The FOLLOW-UP doing its job. The first request carried the text as it

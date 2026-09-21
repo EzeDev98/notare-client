@@ -3,6 +3,11 @@ import { Link, useParams } from 'react-router';
 import { useAuth } from '@/app/providers/auth-context';
 import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
 import { useLocalNote } from '@/features/notes/hooks/useLocalNote';
+import { InlineVoiceNotes } from '@/features/voice/components/InlineVoiceNote/InlineVoiceNote';
+import { VoiceRecorder, type VoiceUploadHandle } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
+import { useUploadVoiceNote } from '@/features/voice/hooks/useVoiceNoteMutations';
+import { useVoiceNotesByNote } from '@/features/voice/hooks/useVoiceNotes';
+import { formatUserInitials } from '@/features/userLookup/hooks/useUserLookup';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './NoteDetail.css';
@@ -11,9 +16,9 @@ import './NoteDetail.css';
  * A note that has not reached the server yet.
  *
  * Lives at /notes/local/:localId — see NoteCard's routing comment for why a
- * note with serverId === null links here, and NoteEditorHost's replaceState
- * effect for the other direction: the moment a serverId is assigned, the URL
- * moves itself to /notes/:serverId and NoteDetailPage takes over. This page
+ * note with serverId === null links here, and the fact that a note
+ * stays on this route for its whole editing session: when a serverId is assigned
+ * in the background nothing remounts, and the voice recorder appears in place. This page
  * exists only to resolve THIS side of that lifecycle, including a page
  * refresh while still on it — Dexie is queried by localId, and nothing here
  * ever asks the server about a UUID it has never heard of.
@@ -36,6 +41,27 @@ export function LocalNoteDetailPage() {
     authState.status === 'authenticated' || authState.status === 'refreshing'
       ? authState.user.id
       : null;
+
+  const ownerInitials = formatUserInitials(
+    authState.status === 'authenticated' || authState.status === 'refreshing'
+      ? authState.user
+      : undefined,
+  );
+
+  // Null until the first background sync assigns a server id. The page never
+  // changes route when that happens: the mic simply becomes available here.
+  const serverId = state.status === 'ready' ? state.row.serverId : null;
+  const voiceNotes = useVoiceNotesByNote(serverId);
+  const uploadMutation = useUploadVoiceNote();
+  const upload: VoiceUploadHandle = {
+    mutate: (variables, options) =>
+      uploadMutation.mutate(
+        { ...variables, ...(serverId !== null ? { noteId: serverId } : {}) },
+        options,
+      ),
+    isPending: uploadMutation.isPending,
+    isError: uploadMutation.isError,
+  };
 
   // 1C/4G: no title field — the note domain has none. Same pattern as
   // NoteDetailPage's document title.
@@ -60,19 +86,23 @@ export function LocalNoteDetailPage() {
           <div
             className="note-detail__editor-region"
           >
-            <NoteEditorHost row={state.row} currentUserId={currentUserId} />
+            <NoteEditorHost
+              row={state.row}
+              currentUserId={currentUserId}
+              contentAccessory={
+                voiceNotes.data && voiceNotes.data.length > 0 ? (
+                  <InlineVoiceNotes voiceNotes={voiceNotes.data} ownerInitials={ownerInitials} />
+                ) : null
+              }
+            />
           </div>
         ) : null}
 
-        {/*
-          No InlineVoiceNotes accessory and no <VoiceRecorder> here, unlike
-          NoteDetailPage. Both are keyed to a serverId — voice notes are
-          uploads/grants against the SERVER's note row — and a note still on
-          this route has none yet. As soon as NoteEditorHost's replaceState
-          effect fires, the URL becomes /notes/:serverId and NoteDetailPage
-          (which has both) takes over the same editor instance.
-        */}
       </div>
+
+      {state.status === 'ready' && state.row.serverId !== null ? (
+        <VoiceRecorder upload={upload} noteId={state.row.serverId} />
+      ) : null}
     </article>
   );
 }

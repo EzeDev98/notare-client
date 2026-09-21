@@ -164,7 +164,6 @@ export function EditorSurface(props: EditorSurfaceProps) {
           ref={contentRef}
           className="editor-surface__content"
           aria-label="Note content"
-          placeholder="Start writing…"
           value={props.content}
           readOnly={readOnly}
           maxLength={20_000}

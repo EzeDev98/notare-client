@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 /** Quiet period before saving. */
-const DEBOUNCE_MS = 1_200;
+const DEBOUNCE_MS = 120_000;
 
 /**
  * Ceiling on how long unsaved work can sit, however continuously the user
@@ -12,7 +12,7 @@ const DEBOUNCE_MS = 1_200;
  * has been sent. This is the floor that stops that, and it is the one whose
  * absence loses the most work.
  */
-const MAX_WAIT_MS = 10_000;
+const MAX_WAIT_MS = 300_000;
 
 interface SchedulerOptions {
   /** Performs the save. May throw; the scheduler keeps going regardless. */
