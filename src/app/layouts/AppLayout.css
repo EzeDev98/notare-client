@@ -1537,7 +1537,6 @@
 .app-shell__toolbar {
   border-block-end: none;
 }
-EOFcat >> src/app/layouts/AppLayout.css <<'EOF'
 
 /* Clean, minimal top bar: no hairline between the toolbar and the content.
    Unlayered so it wins over every layered/media-query border rule above. */
