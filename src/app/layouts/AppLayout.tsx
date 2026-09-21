@@ -244,8 +244,24 @@ export function AppLayout() {
   const { width: sidebarWidth, setWidth: setSidebarWidth } = useSidebarWidth();
   const dragStateRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
+  /*
+   * While a resize drag is in progress, the shell's width transitions must be
+   * off (see the data-resizing rule at the end of AppLayout.css). They exist
+   * for the folders panel sliding open/closed; during a drag each pointer move
+   * restarts them, so the columns, toolbar segment and handle each trail the
+   * pointer by a different amount.
+   */
+  function beginResizing() {
+    document.documentElement.dataset['resizing'] = 'true';
+  }
+
+  function endResizing() {
+    delete document.documentElement.dataset['resizing'];
+  }
+
   function handleResizePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
     dragStateRef.current = { startX: event.clientX, startWidth: sidebarWidth };
+    beginResizing();
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
@@ -272,6 +288,7 @@ export function AppLayout() {
 
   function handleFoldersResizePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
     foldersDragStateRef.current = { startX: event.clientX, startWidth: foldersWidth };
+    beginResizing();
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
@@ -1351,6 +1368,7 @@ export function AppLayout() {
           onPointerDown={handleFoldersResizePointerDown}
           onPointerMove={handleFoldersResizePointerMove}
           onPointerUp={handleFoldersResizePointerUp}
+          onLostPointerCapture={endResizing}
         />
       ) : null}
 
@@ -1520,6 +1538,7 @@ export function AppLayout() {
         onPointerDown={handleResizePointerDown}
         onPointerMove={handleResizePointerMove}
         onPointerUp={handleResizePointerUp}
+        onLostPointerCapture={endResizing}
       />
 
       {/*

@@ -1524,3 +1524,20 @@
 .app-shell__toolbar-icon-btn[data-unavailable='true']:hover {
   opacity: 0.45;
 }
+/*
+ * Set on <html> by AppLayout.tsx while a sidebar or folders-panel resize drag
+ * is in progress. The grid-template-columns, toolbar inline-size and handle
+ * inset transitions are only meant for the folders panel opening and closing;
+ * left on during a drag they restart on every pointer move and the columns,
+ * toolbar and handle trail the pointer by different amounts. Unlayered, so it
+ * outranks the layered rules above.
+ */
+:root[data-resizing='true'] .app-shell,
+:root[data-resizing='true'] .app-shell * {
+  transition: none;
+}
+
+:root[data-resizing='true'] {
+  cursor: col-resize;
+  user-select: none;
+}
