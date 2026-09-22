@@ -1124,10 +1124,6 @@
       justify-content: space-between;
       min-inline-size: 0;
       padding-inline: var(--space-3);
-      /* Matches .app-shell__nav's own background so the sidebar panel
-         reads as one continuous surface from the title bar down to the
-         note list, instead of stopping at the toolbar row's flat color. */
-      background-color: var(--color-surface-sunken);
     }
 
     .app-shell__toolbar-main {
