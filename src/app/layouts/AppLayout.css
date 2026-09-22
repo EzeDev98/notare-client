@@ -1073,9 +1073,23 @@
     }
 
     .app-shell__toolbar {
-      display: flex !important;
+      display: grid !important;
       grid-column: 1 / -1;
       grid-row: 1;
+      /*
+       * Same three-column template as .app-shell itself, not a
+       * calc()-derived flex width on the child below. A separate calc()
+       * — even one reading the identical custom properties — is resolved
+       * by its own rounding pass, independent of the outer grid's own
+       * track-sizing algorithm, so the two can land a subpixel apart.
+       * That gap is what made the toolbar-row segment of the folders/
+       * sidebar divider read as a different thickness than the rest of
+       * it. Running the SAME algorithm against the SAME custom
+       * properties here guarantees the boundary lands on the identical
+       * pixel in the toolbar as it does below it.
+       */
+      grid-template-columns: var(--folders-width, 0px) var(--sidebar-width, 240px) 1fr;
+      transition: grid-template-columns var(--motion-duration-base) var(--motion-ease-standard);
       block-size: 52px;
       min-block-size: 52px;
       /*
@@ -1095,30 +1109,23 @@
       background-color: #FAFAF9;
     }
 
-    /* Same width as .app-shell__nav below, via the same variable — see
-       AppLayout.tsx's own comment on why the two stay locked together. */
+    /* Spans the folders + sidebar tracks of the grid above, rather than
+       an explicit calc() width — see that rule's own comment. */
     .app-shell__toolbar-nav {
+      grid-column: 1 / 3;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      flex-shrink: 0;
-      /*
-       * BOTH columns combined — folders + sidebar, via the same two
-       * variables the grid itself uses. No border of its own any more:
-       * .app-shell::after (above) draws that same boundary the full
-       * height of the page, this segment's width just has to keep
-       * matching it, which it does via the same two variables.
-       */
-      inline-size: calc(var(--folders-width, 0px) + var(--sidebar-width, 240px));
+      min-inline-size: 0;
       padding-inline: var(--space-3);
-      transition: inline-size var(--motion-duration-base) var(--motion-ease-standard);
     }
 
     .app-shell__toolbar-main {
+      grid-column: 3;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      flex: 1;
+      min-inline-size: 0;
       padding-inline: var(--space-3);
     }
 
