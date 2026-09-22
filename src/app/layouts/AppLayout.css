@@ -1643,8 +1643,8 @@
   .app-shell__toolbar {
     background: linear-gradient(
       to right,
-      var(--color-surface-recessed) 0,
-      var(--color-surface-recessed) var(--folders-width, 0px),
+      #EDEDEC 0,
+      #EDEDEC var(--folders-width, 0px),
       #FAFAF9 var(--folders-width, 0px)
     );
   }
