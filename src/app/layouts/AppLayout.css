@@ -1092,8 +1092,8 @@
        * surface with the note list and editor below it, not a separate
        * boxed header sitting on top of them.
        */
-      background-color: var(--color-surface);
       background-color: #FAFAF9;
+    }
 
     /* Same width as .app-shell__nav below, via the same variable — see
        AppLayout.tsx's own comment on why the two stay locked together. */
