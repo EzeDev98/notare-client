@@ -87,7 +87,7 @@
     block-size: 52px;
     min-block-size: 52px;
     border-block-end: var(--border-width) solid var(--color-border);
-    background-color: #FAFAF9;
+    background-color: #EDEDEC;
   }
 
   .app-shell__toolbar-nav,
@@ -1435,7 +1435,6 @@
       gap: var(--space-1);
       margin: 0;
       padding-block-start: var(--space-3);
-      border-block-start: var(--border-width) solid var(--color-border);
     }
 
     /*
@@ -1641,12 +1640,7 @@
  */
 @media (min-width: 1024px) {
   .app-shell__toolbar {
-    background: linear-gradient(
-      to right,
-      #EDEDEC 0,
-      #EDEDEC var(--folders-width, 0px),
-      #FAFAF9 var(--folders-width, 0px)
-    );
+    background: #EDEDEC;
   }
 
   /*
