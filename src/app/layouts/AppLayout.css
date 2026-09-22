@@ -1631,3 +1631,45 @@
 :root[data-resizing='true'] .app-shell::after {
   transition: none;
 }
+
+/*
+ * Window Controls Overlay: once the manifest opts in (display_override
+ * above), Chrome/Edge stop drawing their own title bar — the centred
+ * page-title text, the profile avatar, the browser's own ⋮ menu — and
+ * hand that whole strip to the page instead. Only the actual OS window
+ * buttons still render on top, in a small fixed corner (traffic lights
+ * on macOS, min/max/close on Windows). Two things this toolbar needs to
+ * keep working once that happens:
+ *
+ * 1. Made draggable (-webkit-app-region: drag), so grabbing empty
+ *    toolbar space still moves the window the way the native bar did.
+ * 2. Every actual control inside it opted back OUT of that drag region
+ *    — otherwise a click starts a window drag instead of firing.
+ *
+ * env(titlebar-area-x) resolves to 0px on any browser/platform where
+ * the overlay isn't active (Safari, Firefox, an uninstalled tab, older
+ * Chrome), so none of this shifts anything or drags anything when
+ * there's no native bar being reclaimed in the first place.
+ */
+.app-shell__toolbar {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+.app-shell__toolbar-icon-btn,
+.app-shell__toolbar-search-wrap,
+.app-shell__toolbar-search,
+.app-shell__toolbar-search-close {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+@media (min-width: 1024px) {
+  /* Keeps the folders-toggle — this row's leftmost control — clear of
+     macOS's traffic lights, which sit in this exact top-left corner once
+     the overlay takes over. Added on top of the existing --space-3 inset
+     rather than replacing it. */
+  .app-shell__toolbar-nav {
+    padding-inline-start: calc(var(--space-3) + env(titlebar-area-x, 0px));
+  }
+}
