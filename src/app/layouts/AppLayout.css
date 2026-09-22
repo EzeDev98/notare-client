@@ -539,7 +539,7 @@
      * but kept explicit rather than relying on the grid track alone).
      */
 
-    background-color: #EDEDEC;
+    background-color: #FAFAF9;
     border-block-start: var(--border-width) solid var(--color-border);
 
     padding-block: var(--space-4);
@@ -1538,10 +1538,9 @@
        * above it, matching the reference — this is the one panel in the
        * shell that should read as visibly recessed; the note list, the
        * editor and the toolbar all stay pure white (--color-surface)
-       * around it. --color-surface-recessed flips to a genuinely lighter
-       * tone in dark mode (dark.css), same token both places.
+       * around it.
        */
-      background-color: var(--color-surface-recessed);
+      background-color: #EDEDEC;
     }
 
     .app-shell__folders-account {
