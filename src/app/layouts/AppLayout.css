@@ -1134,8 +1134,8 @@
         to right,
         #EDEDEC 0,
         #EDEDEC var(--folders-width, 0px),
-        var(--color-surface-sunken) var(--folders-width, 0px),
-        var(--color-surface-sunken) 100%
+        #EDEDEC var(--folders-width, 0px),
+        #EDEDEC 100%
       );
     }
 
