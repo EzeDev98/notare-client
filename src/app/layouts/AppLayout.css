@@ -1031,6 +1031,47 @@
       position: relative;
     }
 
+    /*
+     * The two column dividers, drawn ONCE here rather than as borders on
+     * .app-shell__toolbar-nav / .app-shell__folders / .app-shell__nav —
+     * those three each cover only part of the shell's height (the
+     * toolbar is its own 52px row, the two panels below start after it),
+     * so a border on any one of them stopped at that element's own edge
+     * and never reached the top of the page. These two lines instead
+     * span the FULL height of the shell, toolbar row included, and sit
+     * at the exact same x-coordinates the resize handles already use
+     * (var(--folders-width) and folders+sidebar), so they track the
+     * panels precisely as they slide open, closed, or resized.
+     */
+    .app-shell::before,
+    .app-shell::after {
+      content: '';
+      position: absolute;
+      inset-block: 0;
+      inline-size: var(--border-width);
+      background-color: var(--color-border);
+      pointer-events: none;
+      transition: inset-inline-start var(--motion-duration-base) var(--motion-ease-standard);
+    }
+
+    /* Folders/sidebar boundary — only meaningful while the folders panel
+       is open; at 0 width it would otherwise sit flush on the shell's own
+       left edge, a stray line with nothing to divide. */
+    .app-shell::before {
+      inset-inline-start: var(--folders-width, 0px);
+      opacity: 0;
+    }
+
+    .app-shell[data-folders-open='true']::before {
+      opacity: 1;
+    }
+
+    /* Sidebar/main boundary — always present; the note list is always
+       shown at this breakpoint. */
+    .app-shell::after {
+      inset-inline-start: calc(var(--folders-width, 0px) + var(--sidebar-width, 240px));
+    }
+
     .app-shell__toolbar {
       display: flex !important;
       grid-column: 1 / -1;
@@ -1046,8 +1087,11 @@
        * escape it, and now it can. See NotificationsPanel.css's own
        * comment on why it isn't a portal — that comment assumed this
        * ancestor had no `overflow: hidden`, which wasn't true until now.
+       *
+       * No border-block-end — the toolbar reads as one continuous white
+       * surface with the note list and editor below it, not a separate
+       * boxed header sitting on top of them.
        */
-      border-block-end: var(--border-width) solid var(--color-border);
       background-color: var(--color-surface);
     }
 
@@ -1060,15 +1104,13 @@
       flex-shrink: 0;
       /*
        * BOTH columns combined — folders + sidebar, via the same two
-       * variables the grid itself uses. This segment now spans the
-       * folders panel AND the note list, so its own right border still
-       * lines up exactly with the note list's right edge (the "+"
-       * intersection this shell always draws) whether the folders panel
-       * is open, animating, or closed.
+       * variables the grid itself uses. No border of its own any more:
+       * .app-shell::after (above) draws that same boundary the full
+       * height of the page, this segment's width just has to keep
+       * matching it, which it does via the same two variables.
        */
       inline-size: calc(var(--folders-width, 0px) + var(--sidebar-width, 240px));
       padding-inline: var(--space-3);
-      border-inline-end: var(--border-width) solid var(--color-border);
       transition: inline-size var(--motion-duration-base) var(--motion-ease-standard);
     }
 
@@ -1459,17 +1501,19 @@
          without this, text would visibly wrap and reflow mid-slide
          instead of reading as content being revealed or hidden. */
       overflow: hidden;
-      border-inline-end: var(--border-width) solid var(--color-border);
+      /* No border of its own — .app-shell::before (above) draws this same
+         boundary the full height of the page, toolbar row included. */
       padding-inline: var(--space-3);
 
       /*
-       * Darker and distinct from the note list beside it, matching the
-       * reference — sunken rather than a hand-picked colour, so it stays
-       * correct in dark mode too (--color-surface-sunken flips from a
-       * light warm tint to a genuinely darker tone there, same token
-       * both places).
+       * Darker and distinct from the note list AND the toolbar beside and
+       * above it, matching the reference — this is the one panel in the
+       * shell that should read as visibly recessed; the note list, the
+       * editor and the toolbar all stay pure white (--color-surface)
+       * around it. --color-surface-recessed flips to a genuinely lighter
+       * tone in dark mode (dark.css), same token both places.
        */
-      background-color: var(--color-surface-sunken);
+      background-color: var(--color-surface-recessed);
     }
 
     .app-shell__folders-account {

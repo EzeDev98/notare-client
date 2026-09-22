@@ -55,6 +55,13 @@
     --color-surface: var(--warm-0);
     --color-surface-sunken: var(--warm-50);
 
+    /* One step darker again than --color-surface-sunken — for the ONE
+     * large panel (the folders nav) that needs to read as visibly
+     * recessed against pure-white surfaces beside it, not just a hair
+     * off-white. Its own token rather than reusing --color-surface-sunken
+     * everywhere, so this stays scoped to that one job. */
+    --color-surface-recessed: var(--warm-200);
+
     /* Text. TWO readable tiers, not three. Primary is 14.52 and the AA floor
      * is 4.5, which leaves room for exactly one intermediate value — and
      * --warm-600 already occupies it. Any third tier light enough to look

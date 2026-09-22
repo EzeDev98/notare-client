@@ -984,6 +984,7 @@ export function AppLayout() {
   return (
     <div
       className="app-shell"
+      data-folders-open={isFoldersOpen}
       style={
         {
           '--sidebar-width': `${String(sidebarWidth)}px`,

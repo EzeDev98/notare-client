@@ -19,6 +19,11 @@
     --color-surface: #292524;
     --color-surface-sunken: #171412;
 
+    /* Lighter than --color-surface here, not darker — dark mode's own
+     * "recessed" reads as a step toward the border colour, the same
+     * direction --color-border-strong already goes for this theme. */
+    --color-surface-recessed: #33302c;
+
     /*
      * #E7E5E4 (13.93), not #F5F5F4 (16.03). That extra contrast IS the glare:
      * on a bright screen in a dark room, near-white body text is what makes
