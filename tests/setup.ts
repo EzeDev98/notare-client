@@ -116,3 +116,21 @@ afterEach(async () => {
 beforeEach(async () => {
   await resetDatabase();
 });
+
+/*
+ * Clears localStorage between tests, alongside the Dexie reset above.
+ *
+ * useEverStandalone() persists a one-directional "this browser was once
+ * standalone" flag to real localStorage (EVER_STANDALONE_STORAGE_KEY),
+ * by design — it must survive reloads. But fake-indexeddb and jsdom's
+ * localStorage both live as long as the module, not the test, and only
+ * Dexie was being reset above. A test earlier in the file that goes
+ * standalone (e.g. 7a/7b in App.test.tsx) leaves that flag set, so a
+ * LATER test in the same file (7c, iOS Safari, never installed) reads
+ * everStandalone as true from its very first render and skips straight
+ * past the mandatory InstallPage — a real cross-test leak, not a flaky
+ * timing issue.
+ */
+afterEach(() => {
+  localStorage.clear();
+});

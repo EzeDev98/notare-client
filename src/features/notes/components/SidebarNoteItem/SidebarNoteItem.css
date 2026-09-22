@@ -1,9 +1,13 @@
 @layer components {
   /* The thin rule under each row IS the separator between notes — no gap,
      no card background, so a long list reads as one continuous sheet the
-     way the reference app's own sidebar does. */
+     way the reference app's own sidebar does.
+     A centred ::after (below) rather than a border directly on this
+     element — a real border-block-end always spans the row's full width,
+     and this one is deliberately shorter (70%) than that, centred under
+     the row's content. */
   .sidebar-note-item {
-    border-block-end: var(--border-width) solid var(--color-border);
+    position: relative;
     /*
      * THE fix for the horizontal scrollbar that used to appear across the
      * whole sidebar. A grid item (this <li>, inside
@@ -33,8 +37,37 @@
     user-select: none;
   }
 
-  .sidebar-note-item:last-child {
-    border-block-end: none;
+  .sidebar-note-item::after {
+    content: '';
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline-start: 50%;
+    transform: translateX(-50%);
+    inline-size: 90%;
+    /* #EDEDEC — same literal colour as the active row's own background
+       (.sidebar-note-item__link[aria-current='page'], below), not the
+       --color-border token, per request. */
+    border-block-end: var(--border-width) solid #EDEDEC;
+  }
+
+  .sidebar-note-item:last-child::after {
+    display: none;
+  }
+
+  /*
+   * The reference app's own behaviour (Apple Notes): the selected row's
+   * highlight covers the divider on BOTH sides of it — its own (below)
+   * and the row above it's (which sits at the shared boundary between
+   * the two). Two rules, since a row's divider is drawn by ITSELF
+   * (::after, inset-block-end: 0), not by the row below it:
+   *   - hide this row's own divider when IT is the selected one
+   *   - hide this row's divider when the NEXT row is the selected one
+   *     (:has() looking forward, since CSS has no "previous sibling"
+   *     selector) — that divider sits right above the selected row.
+   */
+  .sidebar-note-item:has(.sidebar-note-item__link[aria-current='page'])::after,
+  .sidebar-note-item:has(+ .sidebar-note-item .sidebar-note-item__link[aria-current='page'])::after {
+    display: none;
   }
 
   /* Echoes the reference screenshot's own highlighted row while its context
@@ -52,7 +85,12 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
-    padding: var(--space-3);
+    /* Split from the single `padding: var(--space-3)` shorthand so the
+       vertical spacing between rows can be trimmed slightly without
+       touching the horizontal padding (--space-3, unchanged) that sets
+       the row's left/right inset. */
+    padding-inline: var(--space-3);
+    padding-block: var(--space-2);
     color: var(--color-text);
     text-decoration: none;
   }
@@ -61,7 +99,7 @@
      aria-current="page" itself, so what's announced and what's highlighted
      can't drift apart. */
   .sidebar-note-item__link[aria-current='page'] {
-    background-color: var(--color-accent-subtle);
+    background-color: #EDEDEC;
     border-radius: 5px;
   }
 
@@ -94,6 +132,13 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* Same rule AppLayout.css's own sync-status states outright: colour never
+     carries the meaning alone (§36) — "Sync failed" is the actual signal,
+     this only reinforces it. */
+  .sidebar-note-item__preview--danger {
+    color: var(--color-danger);
   }
 }
 

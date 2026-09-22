@@ -932,14 +932,20 @@ export function AppLayout() {
    * 8F. Same restraint the conflict banner and SaveIndicator both already
    * use: 'idle' (the resting state — last run succeeded, nothing pending)
    * shows NOTHING. A permanent "Synced" pill on every screen is chrome
-   * competing with content for a fact nobody asked about; 'syncing' /
-   * 'offline' / 'error' are the only states worth a line of text.
+   * competing with content for a fact nobody asked about.
+   *
+   * 'syncing' now shows nothing either, deliberately, same as 'idle': the
+   * engine (sync/engine.ts) fires a run on app start, every debounced local
+   * edit, tab-focus regain, the `online` event, and a 60s background poll —
+   * all routine, and all normally near-instant. Surfacing every one of
+   * those as a visible "Syncing…" pill was flashing on/off constantly
+   * during ordinary use, not just for the rare slow run this was meant to
+   * cover. 'offline' / 'error' are the only states still worth a line of
+   * text — real conditions, not routine background activity.
    */
   const syncStatus = useSyncStatus();
   const syncMessage =
-    syncStatus.status === 'syncing'
-      ? { label: 'Syncing…', tone: 'quiet' as const }
-      : syncStatus.status === 'offline'
+    syncStatus.status === 'offline'
         ? { label: "Offline — you're working locally", tone: 'warn' as const }
         : syncStatus.status === 'error'
           ? { label: 'Sync trouble — retrying', tone: 'danger' as const }
@@ -994,10 +1000,44 @@ export function AppLayout() {
     >
       <RouteFocus targetId="main" />
 
-      {syncMessage ? (
-        <p className="app-shell__sync-status" aria-hidden="true" data-tone={syncMessage.tone}>
-          {syncMessage.label}
-        </p>
+      {/*
+        Bug fix: sync-status and the conflict banner used to be plain
+        in-flow children here, each mounting/unmounting with no grid-column/
+        grid-row of its own. CSS Grid auto-placed each one into a brand-new
+        implicit row every time it appeared, and since .app-shell is capped
+        at 100dvh with overflow: hidden, that row could only get its height
+        by shrinking the grid's one flexible row (minmax(0, 1fr)) — the row
+        the sidebar lives in. The sidebar's theme toggle is bottom-pinned via
+        margin-block-start: auto, so every shrink/grow visibly jumped it up
+        and dropped it back down. Wrapping both in .app-shell__status-stack
+        (position: fixed, in AppLayout.css) takes them out of grid/flex flow
+        entirely, so mounting or unmounting either one can no longer resize
+        anything else on the page.
+      */}
+      {syncMessage || conflictCount > 0 ? (
+        <div className="app-shell__status-stack">
+          {syncMessage ? (
+            <p className="app-shell__sync-status" aria-hidden="true" data-tone={syncMessage.tone}>
+              {syncMessage.label}
+            </p>
+          ) : null}
+          {conflictCount > 0 ? (
+            /*
+             * role="alert": a conflict is exactly the interruption ConflictPanel
+             * already treats as one (§38) — announced immediately, not queued
+             * behind whatever a screen reader happens to be reading.
+             */
+            <div className="app-shell__conflict-banner" role="alert">
+              <p>
+                {conflictCount} {conflictCount === 1 ? 'note has' : 'notes have'} a conflict that
+                needs your attention.
+              </p>
+              <NavLink className="app-shell__conflict-link" to="/conflicts">
+                Review
+              </NavLink>
+            </div>
+          ) : null}
+        </div>
       ) : null}
       {/*
         Always rendered so the region exists before it has content — same
@@ -1009,23 +1049,6 @@ export function AppLayout() {
       <p className="ds-visually-hidden" role="status">
         {syncMessage && syncStatus.status !== 'syncing' ? syncMessage.label : ''}
       </p>
-
-      {conflictCount > 0 ? (
-        /*
-         * role="alert": a conflict is exactly the interruption ConflictPanel
-         * already treats as one (§38) — announced immediately, not queued
-         * behind whatever a screen reader happens to be reading.
-         */
-        <div className="app-shell__conflict-banner" role="alert">
-          <p>
-            {conflictCount} {conflictCount === 1 ? 'note has' : 'notes have'} a conflict that
-            needs your attention.
-          </p>
-          <NavLink className="app-shell__conflict-link" to="/conflicts">
-            Review
-          </NavLink>
-        </div>
-      ) : null}
       {/*
         Visually hidden until focused, then the first thing a keyboard user
         reaches. Without it they tab through the whole nav on every page before

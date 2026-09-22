@@ -4,7 +4,8 @@
     gap: 2px;
     padding: 2px;
     border-radius: var(--radius-md);
-    background-color: var(--color-surface-sunken);
+    background-color: var(--color-surface-recessed);
+    box-shadow: var(--shadow-sm);
   }
 
   .theme-toggle__button {
@@ -45,4 +46,22 @@
     color: var(--color-accent);
     box-shadow: var(--shadow-sm);
   }
+}
+
+/*
+ * Dark mode: the two un-selected icons (whichever of sun/moon/monitor
+ * isn't the active preference) sit at --color-icon, which in dark mode
+ * is a fairly muted #a8a29e against the toggle's own recessed background
+ * — asked to be brighter, #FAFAF9 specifically. Unlayered + !important
+ * for the same reason AppLayout.css's own dark-mode nav-link fix needs
+ * it: this codebase's @layer order isn't reliably honoured by Vite's dev
+ * CSS injection, so a normal-specificity override here isn't guaranteed
+ * to beat `.theme-toggle__button`'s own components-layer color.
+ *
+ * Scoped to :not([aria-checked='true']) — the active mode's icon keeps
+ * its existing --color-accent highlight (just above) as the signal for
+ * which mode is actually selected; this only brightens the other two.
+ */
+[data-theme='dark'] .theme-toggle__button:not([aria-checked='true']) {
+  color: #FAFAF9 !important;
 }

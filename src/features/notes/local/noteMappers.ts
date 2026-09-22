@@ -207,6 +207,27 @@ export interface NoteView {
   deletedAt: string | null;
   /** True when there are local edits the server has not accepted. */
   unsaved: boolean;
+  /**
+   * When this row was last touched LOCALLY, as epoch milliseconds — the same
+   * field NoteRow keeps for offline list ordering. The only timestamp
+   * available before the server has accepted a first version, so the list
+   * can show a real, honest date instead of a "not saved yet" placeholder
+   * for a note that has simply never round-tripped yet. A genuine instant
+   * (the device clock), unlike updatedAt's zoneless server LocalDateTime —
+   * format it with lib/time.ts's Instant helpers, not the LocalDateTime
+   * ones.
+   */
+  localUpdatedAt: number;
+  /**
+   * True only when the server permanently rejected this row's last push
+   * (`syncState === 'invalid'`) — a real failure. Deliberately NOT the same
+   * as `unsaved`: edited-but-not-yet-sent and offline-with-pending-changes
+   * are both normal, expected states nobody did anything wrong to cause,
+   * and the list should stay quiet about them (§36 aside: colour is not the
+   * only signal, but here there is no signal at all unless something is
+   * actually wrong).
+   */
+  syncFailed: boolean;
 }
 
 export function toView(row: NoteRow): NoteView {
@@ -226,5 +247,7 @@ export function toView(row: NoteRow): NoteView {
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
     unsaved: row.dirty === 1,
+    localUpdatedAt: row.localUpdatedAt,
+    syncFailed: row.syncState === 'invalid',
   };
 }

@@ -13,6 +13,7 @@ import { noteService } from '@/features/notes/api/noteService';
 import { fromNoteResponse } from '@/features/notes/local/noteMappers';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import type { NoteRow } from '@/features/notes/local/noteRow';
+import type { NoteResponse } from '@/features/notes/types';
 import { isConflict, isOffline } from '@/lib/http/errors';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
 
@@ -332,10 +333,32 @@ export function useNoteEditor(initialRow: NoteRow) {
       dispatch({ type: 'SAVE_SUCCEEDED' });
     } catch (error) {
       if (isConflict(error)) {
+        /*
+         * Fetch the server's note BEFORE marking the row conflicted, same
+         * request useConflict.ts already made for THIS editor's own live
+         * display — the difference is this copy gets persisted, so the
+         * conflict is resolvable from the Conflicts page even after this
+         * editor closes. See markEditorConflict's own doc comment: a null
+         * conflictNote used to make this kind of conflict permanent and
+         * invisible everywhere except the exact editor instance that hit
+         * the 409. Best-effort: a failed fetch still records the conflict
+         * durably (conflictNote null, same as before this fix), it just
+         * isn't resolvable from the Conflicts page until the next attempt
+         * succeeds.
+         */
+        let theirs: NoteResponse | null = null;
+        if (current.serverId !== null) {
+          try {
+            theirs = await noteService.getNote(current.serverId);
+          } catch {
+            // Swallowed — see comment above.
+          }
+        }
+
         // Durable first: the row must say "conflict" before anything else
         // (a re-render, a reconnect effect, another tab) gets a chance to
         // read it and decide there's ordinary unsent work to retry.
-        await noteRepository.markEditorConflict(localId);
+        await noteRepository.markEditorConflict(localId, theirs);
         dispatch({ type: 'CONFLICT_DETECTED' });
       } else if (isOffline(error)) {
         /*

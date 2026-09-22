@@ -114,10 +114,11 @@ describe('useIsStandalone', () => {
   });
 
   it('still responds to a genuine change event on top of the re-check', () => {
-    // Consumed in order: the initial mount read, the 400ms re-check read
-    // (both false — nothing to correct yet), then the read inside
-    // handleChange once fireChange() actually fires below.
-    const { fireChange } = stubMatchMediaWithSequence([false, false, true]);
+    // Consumed in order: the initial mount read, the 400ms re-check read,
+    // the 1500ms re-check read (all three false — nothing to correct yet),
+    // then the read inside handleChange once fireChange() actually fires
+    // below.
+    const { fireChange } = stubMatchMediaWithSequence([false, false, false, true]);
 
     const { result } = renderHook(() => useIsStandalone());
     expect(result.current).toBe(false);
@@ -125,7 +126,7 @@ describe('useIsStandalone', () => {
     act(() => {
       vi.runAllTimers();
     });
-    // The re-check's own read also happened to see false here — nothing
+    // Both re-checks' own reads also happened to see false here — nothing
     // corrected yet, same as an ordinary non-standalone tab.
     expect(result.current).toBe(false);
 

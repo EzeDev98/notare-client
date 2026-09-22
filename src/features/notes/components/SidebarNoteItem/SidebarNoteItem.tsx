@@ -3,7 +3,12 @@ import { Link } from 'react-router';
 
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { deriveNoteLabel, EMPTY_NOTE_REMAINDER } from '@/features/notes/local/noteLabel';
-import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
+import {
+  formatInstantAbsolute,
+  formatInstantRelative,
+  formatServerDateTimeAbsolute,
+  formatServerDateTimeRelative,
+} from '@/lib/time';
 import { useLongPressContextMenu } from '@/shared/hooks/useLongPressContextMenu';
 import './SidebarNoteItem.css';
 
@@ -73,10 +78,29 @@ export function SidebarNoteItem({
   } | undefined;
 }) {
   const { label: displayTitle, remainder } = deriveNoteLabel(note.content);
-  const preview = remainder === '' ? EMPTY_NOTE_REMAINDER : remainder.slice(0, 80);
+  /*
+   * A permanent sync failure (server rejected the push — syncState
+   * 'invalid') is the one thing worth interrupting this row for. Normal
+   * "edited, not yet sent" / "offline, queued" states stay quiet — see
+   * NoteView.syncFailed's own doc comment for why.
+   */
+  const preview = note.syncFailed
+    ? 'Sync failed — will retry'
+    : remainder === ''
+      ? EMPTY_NOTE_REMAINDER
+      : remainder.slice(0, 80);
 
+  // No server updatedAt yet is every note's first few seconds of life, not
+  // a failure — localUpdatedAt (a real device-clock instant) gives an
+  // honest date instead of a "not saved yet" status message.
+  const localInstant = new Date(note.localUpdatedAt).toISOString();
   const dateLabel =
-    note.updatedAt !== null ? formatServerDateTimeRelative(note.updatedAt) : 'Not saved yet';
+    note.updatedAt !== null ? formatServerDateTimeRelative(note.updatedAt) : formatInstantRelative(localInstant);
+  const dateTimeAttr = note.updatedAt ?? localInstant;
+  const dateTitle =
+    note.updatedAt !== null
+      ? formatServerDateTimeAbsolute(note.updatedAt)
+      : formatInstantAbsolute(localInstant);
 
   // localId, not serverId: an offline-created note has no server id yet
   // and still needs to be openable — same routing NoteCard already uses.
@@ -117,18 +141,20 @@ export function SidebarNoteItem({
         <span className="sidebar-note-item__title">{displayTitle}</span>
         <span className="sidebar-note-item__meta">
           <span className="sidebar-note-item__date">
-            {note.updatedAt !== null ? (
-              <time
-                dateTime={note.updatedAt}
-                title={formatServerDateTimeAbsolute(note.updatedAt)}
-              >
-                {dateLabel}
-              </time>
-            ) : (
-              dateLabel
-            )}
+            <time dateTime={dateTimeAttr} title={dateTitle}>
+              {dateLabel}
+            </time>
           </span>
-          <span className="sidebar-note-item__preview">{preview}</span>
+          <span
+            className={[
+              'sidebar-note-item__preview',
+              note.syncFailed ? 'sidebar-note-item__preview--danger' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            {preview}
+          </span>
         </span>
       </Link>
     </li>

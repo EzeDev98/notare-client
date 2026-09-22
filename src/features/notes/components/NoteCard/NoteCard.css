@@ -141,4 +141,13 @@
     background-color: var(--color-accent-subtle);
     border-radius: var(--radius-sm);
   }
+
+  /* A border rather than a filled danger background — no --color-danger-subtle
+     token exists (colors.css), and this matches the conflict banner's own
+     choice of a border over a fill for the same reason. */
+  .note-card__badge--danger {
+    background-color: transparent;
+    border: var(--border-width) solid var(--color-danger);
+    color: var(--color-danger);
+  }
 }

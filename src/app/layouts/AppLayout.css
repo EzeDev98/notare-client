@@ -87,7 +87,7 @@
     block-size: 52px;
     min-block-size: 52px;
     border-block-end: var(--border-width) solid var(--color-border);
-    background-color: #EDEDEC;
+    background-color: var(--color-surface-recessed);
   }
 
   .app-shell__toolbar-nav,
@@ -422,17 +422,29 @@
     gap: var(--space-2);
     flex: 1;
     inline-size: 100%;
-    block-size: 35px;
+    block-size: 27px;
     padding-inline: var(--space-3);
-    border-radius: 10px;
-    background-color: var(--color-surface-sunken);
+    /* Matches the toolbar icon buttons' own outlined style
+       (.app-shell__toolbar-icon-btn--outlined) — a thin border instead
+       of a filled background, and --radius-sm (4px) rather than the
+       previous 10px. Base rule, so this is what mobile and the
+       640–1024px tablet range (which only overrides width below) both
+       use — the 1024px+ desktop block has the same fix applied on its
+       own copy of this rule. */
+    /* Outlined, no fill — matches the toolbar icon buttons' own
+       outlined style, and the reference field once its background fill
+       is taken away. 3px is a literal value, not --radius-sm (4px):
+       intentionally tighter than that token. */
+    border: var(--border-width) solid var(--color-border);
+    border-radius: 3px;
+    background-color: transparent;
     color: var(--color-text-secondary);
   }
 
   .app-shell__toolbar-search svg:first-child {
     flex-shrink: 0;
-    inline-size: 1rem;
-    block-size: 1rem;
+    inline-size: 23px;
+    block-size: 23px;
   }
 
   .app-shell__toolbar-search-toggle,
@@ -447,7 +459,8 @@
     background: none;
     color: var(--color-text);
     font: inherit;
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-normal);
   }
 
   .app-shell__toolbar-search input:focus-visible {
@@ -539,7 +552,7 @@
      * but kept explicit rather than relying on the grid track alone).
      */
 
-    background-color: #FAFAF9;
+    background-color: var(--color-bg);
     border-block-start: var(--border-width) solid var(--color-border);
 
     padding-block: var(--space-4);
@@ -724,6 +737,36 @@
 
   /* ---- Sync status (8F) -------------------------------------------------- */
 
+  /*
+   * Takes .app-shell__sync-status and .app-shell__conflict-banner
+   * (AppLayout.tsx) fully out of .app-shell's own grid/flex flow. Both used
+   * to be plain in-flow children that mounted and unmounted with no
+   * grid-column/grid-row of their own — CSS Grid auto-placed each into a
+   * brand-new implicit row on mount, and since .app-shell is capped at
+   * 100dvh with overflow: hidden, that row could only get its height by
+   * shrinking the grid's one flexible row (minmax(0, 1fr)), which is the
+   * row the sidebar lives in. The sidebar's theme toggle is bottom-pinned
+   * via margin-block-start: auto, so every shrink/grow visibly jumped it up
+   * and dropped it back down. position: fixed removes this stack from
+   * layout entirely, so neither banner can resize anything else again.
+   */
+  .app-shell__status-stack {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline: 0;
+    z-index: var(--z-dropdown);
+    display: flex;
+    flex-direction: column;
+    /* The stack itself has no background — only its children do — so gaps
+       around a single banner (e.g. sync-status alone, without the wider
+       conflict-banner) shouldn't block clicks on whatever sits beneath. */
+    pointer-events: none;
+  }
+
+  .app-shell__status-stack > * {
+    pointer-events: auto;
+  }
+
   .app-shell__sync-status {
     margin: 0;
     padding: var(--space-2) var(--space-4);
@@ -731,6 +774,12 @@
     color: var(--color-text-secondary);
     /* Same rule SaveIndicator.css states outright: colour never carries the
      * meaning alone (§36) — the words do. */
+
+    /* Needs its own opaque backing now that it floats over the toolbar and
+       page content instead of sitting inline against the shell's own
+       background. */
+    background-color: var(--color-surface);
+    border-block-end: var(--border-width) solid var(--color-border);
   }
 
   .app-shell__sync-status[data-tone='warn'] {
@@ -785,6 +834,30 @@
      * long note scrolls the whole shell and takes the nav with it. */
     min-block-size: 0;
     overflow-y: auto;
+
+    /*
+     * Unset before, so this fell through to body's --color-bg (#FAFAF9, a
+     * warm off-white) — visibly different from .app-shell__nav's own
+     * --color-surface (pure white, #FFFFFF) right next to it. Same token
+     * as nav now, so the note list and the editor read as one continuous
+     * white surface; only .app-shell__folders keeps --color-surface-sunken.
+     *
+     * On the ELEMENT itself, not scoped to :focus-visible (below) — that
+     * was the actual bug: RouteFocus.tsx's focus() only lands here for as
+     * long as focus stays on #main, which is the instant before the user
+     * clicks into the note or the list. The moment focus moves anywhere
+     * else, a focus-visible-only rule stops applying and the panel falls
+     * straight back through to #FAFAF9 — exactly the flicker this rule
+     * was written to fix in the first place, just conditionally. Setting
+     * it here makes the white surface permanent instead of a side effect
+     * of a transient focus state.
+     *
+     * var(--color-surface), not a literal #FFFFFF — the theme-aware token
+     * still resolves to #FFFFFF in light mode (which is the ask), but
+     * also correctly becomes #292524 under [data-theme='dark'] instead of
+     * whiting out this panel in dark mode.
+     */
+    background-color: var(--color-surface);
   }
 
   /*
@@ -799,15 +872,6 @@
    */
   .app-shell__main:focus-visible {
     outline: none !important;
-
-    /*
-     * Never set before, so this fell through to body's --color-bg (a warm
-     * off-white) — visibly different from .app-shell__nav's own
-     * --color-surface (pure white) right next to it. Same token as nav
-     * now, so the note list and the editor read as one continuous white
-     * surface; only .app-shell__folders keeps --color-surface-sunken.
-     */
-    background-color: var(--color-surface);
   }
 
   /* ---- 640px+ : icon rail --------------------------------------------- */
@@ -1132,10 +1196,10 @@
          panel is closed (--folders-width: 0px). */
       background: linear-gradient(
         to right,
-        #EDEDEC 0,
-        #EDEDEC var(--folders-width, 0px),
-        #EDEDEC var(--folders-width, 0px),
-        #EDEDEC 100%
+        var(--color-surface-recessed) 0,
+        var(--color-surface-recessed) var(--folders-width, 0px),
+        var(--color-surface-recessed) var(--folders-width, 0px),
+        var(--color-surface-recessed) 100%
       );
     }
 
@@ -1203,17 +1267,27 @@
       align-items: center;
       gap: var(--space-2);
       inline-size: 220px;
-      block-size: 32px;
+      block-size: 27px;
       padding-inline: var(--space-3);
-      border-radius: 7px;
-      background-color: var(--color-surface-sunken);
+      /* Matches the toolbar icon buttons' own outlined style
+         (.app-shell__toolbar-icon-btn--outlined) — a thin border instead
+         of a filled background, and --radius-sm (4px) rather than the
+         previous 7px so it doesn't round out past the rest of the
+         toolbar's controls. */
+      /* Outlined, no fill — matches the toolbar icon buttons' own
+         outlined style, and the reference field once its background fill
+         is taken away. 3px is a literal value, not --radius-sm (4px):
+         intentionally tighter than that token. */
+      border: var(--border-width) solid var(--color-border);
+      border-radius: 3px;
+      background-color: transparent;
       color: var(--color-text-secondary);
     }
 
     .app-shell__toolbar-search svg {
       flex-shrink: 0;
-      inline-size: 1rem;
-      block-size: 1rem;
+      inline-size: 23px;
+      block-size: 23px;
     }
 
     /*
@@ -1252,7 +1326,8 @@
       background: none;
       color: var(--color-text);
       font: inherit;
-      font-size: var(--font-size-sm);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-normal);
     }
 
     /*
@@ -1462,7 +1537,7 @@
     }
 
     .app-shell__nav-link[aria-current='page'] {
-      background-color: var(--color-accent-subtle);
+      background-color: #FFFFFF;
     }
 
     /* Labels back. Undoing the clip, not re-declaring the layout. */
@@ -1552,7 +1627,7 @@
        * editor and the toolbar all stay pure white (--color-surface)
        * around it.
        */
-      background-color: #EDEDEC;
+      background-color: var(--color-surface-recessed);
     }
 
     .app-shell__folders-account {
@@ -1640,7 +1715,7 @@
  */
 @media (min-width: 1024px) {
   .app-shell__toolbar {
-    background: #EDEDEC;
+    background: var(--color-surface-recessed);
   }
 
   /*
@@ -1651,7 +1726,7 @@
    */
   .app-shell::before {
     background-color: transparent;
-    box-shadow: 2px 0 4px 0 rgb(0 0 0 / 0.1);
+    box-shadow: none;
   }
 }
 
@@ -1708,4 +1783,58 @@
   .app-shell__toolbar-nav {
     padding-inline-start: calc(var(--space-3) + env(titlebar-area-x, 0px));
   }
+}
+
+/*
+ * Dark mode: the folders panel's nav items (Voice notes, Shared with me,
+ * Collaborations, Archived, Trash, Accounts) were rendering in
+ * --color-accent's lavender instead of the intended --color-text-secondary/
+ * --color-icon — NavLink renders as a real <a>, and colors.css's own base
+ * layer sets `a { color: var(--color-accent); }`. That rule is supposed to
+ * lose to `.app-shell__nav-link`'s own color (components comes after base
+ * in this file's stated layer order), but colors.css's own comment already
+ * documents that Vite's dev-mode CSS injection doesn't reliably honour that
+ * order here — the same reason Button.css and the global focus-visible
+ * rule both needed `!important` for this identical class of bug.
+ * `!important` here is that same fix, not a new pattern.
+ *
+ * Scoped to dark mode and to the non-active state only — an item's own
+ * [aria-current='page'] accent highlight (further up this file) still
+ * marks which folder you're actually in; this only fixes the resting
+ * color every item was wrongly inheriting.
+ */
+[data-theme='dark'] .app-shell__nav-link:not([aria-current='page']) {
+  color: #FAFAF9 !important;
+}
+
+[data-theme='dark'] .app-shell__nav-link:not([aria-current='page']) .app-shell__nav-icon,
+[data-theme='dark'] .app-shell__nav-link:not([aria-current='page']) .app-shell__nav-icon svg {
+  /*
+   * The icon span's own `color: var(--color-icon)` never reached the SVG
+   * anyway — tokens/icons.css's global `.lucide` rule sets `color`
+   * directly on every icon svg, which blocks inheritance from an
+   * ancestor's `color` the same way it does for every other icon button
+   * in this file (see e.g. `.app-shell__toolbar-icon-btn svg`'s own
+   * `color: inherit` comment). Targeting the svg directly, not just the
+   * wrapping span, is what actually reaches it.
+   */
+  color: #FAFAF9 !important;
+}
+
+/*
+ * The CURRENT page's own item (Shared with me above, say, once you've
+ * actually navigated there) was deliberately excluded from the rule
+ * above so its [aria-current='page'] accent highlight further up this
+ * file could still mark which folder you're in. It still wasn't
+ * #FFFFFF, though — it was showing --color-accent's lavender. Same fix,
+ * same reason it needs !important, just for the active item and #FFFFFF
+ * specifically rather than the resting items' #FAFAF9.
+ */
+[data-theme='dark'] .app-shell__nav-link[aria-current='page'] {
+  color: #FFFFFF !important;
+}
+
+[data-theme='dark'] .app-shell__nav-link[aria-current='page'] .app-shell__nav-icon,
+[data-theme='dark'] .app-shell__nav-link[aria-current='page'] .app-shell__nav-icon svg {
+  color: #FFFFFF !important;
 }

@@ -350,19 +350,33 @@ export const noteRepository = {
    * legitimately resend the exact same doomed (content, version) pair,
    * hitting 409 again forever with no backoff.
    *
-   * `theirs` is left null here, unlike `markConflict`: the editor's PATCH
-   * response carries only `currentVersion` (see `useConflict.ts`'s own doc
-   * comment), not the full server note, so there is nothing to attach yet.
-   * `useConflict` fetches it separately for display; this method's only job
-   * is to make the "don't retry this" fact durable the instant the 409
-   * comes back, before that fetch — or anything else — has a chance to run.
+   * `theirs` IS now stored here, unlike the original version of this
+   * method. It used to be left null on the theory that `useConflict.ts`
+   * would fetch it separately, live, purely for that one editor instance's
+   * display — but nothing ever persisted it, so `noteRepository.listConflicted`
+   * (the Conflicts page AND the sync-status banner both read it) had a row
+   * with `syncState: 'conflict'` and `conflictNote: null` forever: counted
+   * by the banner, filtered OUT of the Conflicts page (which requires
+   * `conflictNote !== null` to render anything), and unresolvable by
+   * `resolveKeepMine`/`resolveUseTheirs`/`resolveKeepBoth` (`sync/conflicts.ts`,
+   * all three throw on a null `conflictNote`) the moment that editor closed.
+   * A conflict from this path was, in practice, permanent and invisible.
+   * The caller now fetches the server's note (the same `noteService.getNote`
+   * call `useConflict.ts` already made) and passes it through here, so this
+   * row is resolvable from the Conflicts page like any other conflict —
+   * `theirs` is optional only so a failed fetch still records SOMETHING
+   * durable rather than losing the "don't retry this" fact entirely.
    */
-  markEditorConflict(localId: string): Promise<void> {
+  markEditorConflict(localId: string, theirs: NoteResponse | null = null): Promise<void> {
     return db.transaction('rw', db.notes, async () => {
       const existing = await db.notes.get(localId);
       if (!existing) return;
 
-      await db.notes.put({ ...existing, syncState: 'conflict' });
+      await db.notes.put({
+        ...existing,
+        syncState: 'conflict',
+        conflictNote: theirs ?? existing.conflictNote,
+      });
     });
   },
 

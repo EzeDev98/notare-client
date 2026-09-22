@@ -60,7 +60,7 @@
      * recessed against pure-white surfaces beside it, not just a hair
      * off-white. Its own token rather than reusing --color-surface-sunken
      * everywhere, so this stays scoped to that one job. */
-    --color-surface-recessed: var(--warm-200);
+    --color-surface-recessed: #ededec;
 
     /* Text. TWO readable tiers, not three. Primary is 14.52 and the AA floor
      * is 4.5, which leaves room for exactly one intermediate value — and

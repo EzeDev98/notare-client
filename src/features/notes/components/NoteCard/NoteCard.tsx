@@ -6,7 +6,12 @@ import { Modal } from '@/design-system/components/Modal/Modal';
 import { NotebookPen } from 'lucide-react';
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
-import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
+import {
+  formatInstantAbsolute,
+  formatInstantRelative,
+  formatServerDateTimeAbsolute,
+  formatServerDateTimeRelative,
+} from '@/lib/time';
 import { useLongPressContextMenu } from '@/shared/hooks/useLongPressContextMenu';
 import './NoteCard.css';
 
@@ -116,15 +121,35 @@ export function NoteCard({
 
         <p className="note-card__meta">
           {note.pinned ? <span className="note-card__badge">Pinned</span> : null}
-          {/* Text, not just an icon — a note with unsent changes is worth
-              saying plainly (§36). */}
-          {note.unsaved ? <span className="note-card__badge">Unsaved</span> : null}
+          {/*
+            Deliberately nothing here for "edited, not yet sent" or "offline,
+            queued" — both are normal, expected states, not something the
+            list should announce. Only a genuine, permanent sync failure
+            (§36: colour is not the only signal, hence the words) earns a
+            badge; everything else stays quiet the way SaveIndicator already
+            does for the editor itself.
+          */}
+          {note.syncFailed ? (
+            <span className="note-card__badge note-card__badge--danger">Sync failed</span>
+          ) : null}
           {note.updatedAt !== null ? (
             <time dateTime={note.updatedAt} title={formatServerDateTimeAbsolute(note.updatedAt)}>
               {formatServerDateTimeRelative(note.updatedAt)}
             </time>
           ) : (
-            <span>Not saved yet</span>
+            /*
+             * No server updatedAt yet (never round-tripped) is not a failure
+             * — it is every note's first few seconds of life. localUpdatedAt
+             * is a real device-clock instant, so this reads as an honest
+             * date ("just now", "2 minutes ago") instead of a status message
+             * about syncing.
+             */
+            <time
+              dateTime={new Date(note.localUpdatedAt).toISOString()}
+              title={formatInstantAbsolute(new Date(note.localUpdatedAt).toISOString())}
+            >
+              {formatInstantRelative(new Date(note.localUpdatedAt).toISOString())}
+            </time>
           )}
         </p>
       </Link>
