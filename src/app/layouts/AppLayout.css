@@ -1070,8 +1070,6 @@
        shown at this breakpoint. */
     .app-shell::after {
       inset-inline-start: calc(var(--folders-width, 0px) + var(--sidebar-width, 240px));
-      /* TEMP DEBUG — remove after testing */
-      background-color: transparent !important;
     }
 
     .app-shell__toolbar {
@@ -1330,6 +1328,13 @@
       grid-row: 2;
       inline-size: var(--sidebar-width, 240px);
       padding-inline: var(--space-3);
+      /* Cancels the 640px+ block's border-inline-end — that boundary is
+         drawn once, for real, by .app-shell::after above. Left active
+         here it overlapped that line at the same x-coordinate via a
+         different rendering path (border layout vs. absolute position),
+         landing on a different sub-pixel and reading as inconsistent
+         thickness. */
+      border-inline-end: none;
       /* The sidebar is now one column: brand, then either the compact nav
          (hidden below) or the sidebar (new note / list / bottom nav),
          filling the remaining height so the bottom nav can pin to the
