@@ -1471,7 +1471,15 @@
        */
       display: block;
       position: absolute;
-      inset-block: 52px 0;
+      /*
+       * Full height (0 to 0 — top and bottom insets both zero), not just
+       * the area below the 52px toolbar. The divider itself (.app-shell::
+       * after) already spans the toolbar row, so a drag handle that
+       * stopped short of it was a real functional gap, not just a visual
+       * one: there was no way to grab the boundary from the toolbar's own
+       * 52px band, only from the note list/main split beneath it.
+       */
+      inset-block: 0;
       /*
        * calc(folders + sidebar) — this handle sits at the boundary
        * between the note list and main content (columns 2/3), which has
@@ -1542,7 +1550,9 @@
     .app-shell__folders-resize-handle {
       display: block;
       position: absolute;
-      inset-block: 52px 0;
+      /* Full height, same reasoning as .app-shell__resize-handle's own
+         identical fix above — the toolbar row was ungrabbable. */
+      inset-block: 0;
       inset-inline-start: var(--folders-width, 0px);
       inline-size: 10px;
       margin-inline-start: -5px;
