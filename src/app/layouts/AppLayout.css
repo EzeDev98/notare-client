@@ -1124,6 +1124,19 @@
       justify-content: space-between;
       min-inline-size: 0;
       padding-inline: var(--space-3);
+      /* This strip sits above TWO panels — folders (#EDEDEC) and the
+         note-list sidebar (--color-surface-sunken) — so one flat color
+         can only ever match one of them. Hard-stop gradient at the exact
+         folders/sidebar boundary instead, matching each panel below its
+         own segment. Collapses to a single solid color when the folders
+         panel is closed (--folders-width: 0px). */
+      background: linear-gradient(
+        to right,
+        #EDEDEC 0,
+        #EDEDEC var(--folders-width, 0px),
+        var(--color-surface-sunken) var(--folders-width, 0px),
+        var(--color-surface-sunken) 100%
+      );
     }
 
     .app-shell__toolbar-main {
