@@ -1581,3 +1581,53 @@
 .app-shell__toolbar {
   border-block-end: none;
 }
+
+/*
+ * Follow-up: the folders panel's recessed colour must read as ONE continuous
+ * surface from the very top of the page — including behind the 52px toolbar
+ * row — not stop at the toolbar's bottom edge and leave a seam. Rather than
+ * restructure the grid, the toolbar's own background gets a hard-stop
+ * gradient instead: recessed colour for exactly the folders-width portion
+ * (0 when the panel is closed, so this is inert until it's open), pure
+ * white beyond it. Colour is what separates the folders panel from the rest
+ * of the shell now, top to bottom — not a border.
+ *
+ * Unlayered and appended after every other rule in this file (the whole
+ * file's body lives in `@layer components`), so it wins without
+ * `!important` — the same technique the "Clean, minimal top bar" override
+ * above already relies on.
+ */
+@media (min-width: 1024px) {
+  .app-shell__toolbar {
+    background: linear-gradient(
+      to right,
+      var(--color-surface-recessed) 0,
+      var(--color-surface-recessed) var(--folders-width, 0px),
+      var(--color-surface) var(--folders-width, 0px)
+    );
+  }
+
+  /*
+   * The folders/sidebar boundary was a hard 1px line in --color-border,
+   * cutting straight across the toolbar's icon row. The colour change
+   * above is the demarcation now; what's left of the line is a soft drop
+   * shadow off the folders panel's own edge, not a drawn border.
+   */
+  .app-shell::before {
+    background-color: transparent;
+    box-shadow: 2px 0 4px 0 rgb(0 0 0 / 0.1);
+  }
+}
+
+/*
+ * Resize-lag fix, round 2: `:root[data-resizing='true'] .app-shell *`
+ * disables transitions on every real element while dragging, but a plain
+ * `*` in a descendant selector does not match generated content — these
+ * two pseudo-elements kept animating their position the whole time, which
+ * is what read as lag when the folders panel was dragged open quickly.
+ * Listed explicitly since no other selector reaches them.
+ */
+:root[data-resizing='true'] .app-shell::before,
+:root[data-resizing='true'] .app-shell::after {
+  transition: none;
+}
