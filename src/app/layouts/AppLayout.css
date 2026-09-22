@@ -539,7 +539,7 @@
      * but kept explicit rather than relying on the grid track alone).
      */
 
-    background-color: #FAFAF9;
+    background-color: #EDEDEC;
     border-block-start: var(--border-width) solid var(--color-border);
 
     padding-block: var(--space-4);
