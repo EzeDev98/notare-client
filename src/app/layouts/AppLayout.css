@@ -1070,6 +1070,8 @@
        shown at this breakpoint. */
     .app-shell::after {
       inset-inline-start: calc(var(--folders-width, 0px) + var(--sidebar-width, 240px));
+      /* TEMP DEBUG — remove after testing */
+      background-color: transparent !important;
     }
 
     .app-shell__toolbar {
