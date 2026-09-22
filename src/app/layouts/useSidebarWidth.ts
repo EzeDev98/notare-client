@@ -6,7 +6,12 @@ const MIN_WIDTH = 200;
 const MAX_WIDTH = 420;
 
 function clamp(value: number): number {
-  return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, value));
+  // Rounded to an integer CSS px — a fractional width fed into the
+  // toolbar/shell's shared grid-template-columns calc() lands the column
+  // boundary (and the divider positioned against it) on a fractional
+  // device pixel, which gets anti-aliased differently depending on what's
+  // behind it.
+  return Math.round(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, value)));
 }
 
 function readStoredWidth(): number {

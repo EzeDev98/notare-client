@@ -1105,8 +1105,14 @@
        * No border-block-end — the toolbar reads as one continuous white
        * surface with the note list and editor below it, not a separate
        * boxed header sitting on top of them.
+       *
+       * var(--color-surface), not a hardcoded #FAFAF9 — the divider's
+       * anti-aliased edge blends with whatever's behind it, and a
+       * mismatched hex here (vs. .app-shell__nav/.app-shell__main below,
+       * both var(--color-surface)) made the line read a different
+       * thickness across the toolbar-row segment than everywhere else.
        */
-      background-color: #FAFAF9;
+      background-color: var(--color-surface);
     }
 
     /* Spans the folders + sidebar tracks of the grid above, rather than
