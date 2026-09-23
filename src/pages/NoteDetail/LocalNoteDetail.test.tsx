@@ -46,7 +46,9 @@ describe('the local note detail view', () => {
     );
 
     const { container } = renderLocal();
-    await screen.findByDisplayValue('Draft');
+    // No `.value`/display-value on a contenteditable div — wait on the
+    // rendered text instead, same wait-for-load purpose as before.
+    await screen.findByText('Draft');
     await expectNoAxeViolations(container);
   });
 
@@ -72,7 +74,8 @@ describe('the local note detail view', () => {
 
     renderLocal();
 
-    expect(await screen.findByDisplayValue('Written offline')).toBeInTheDocument();
+    // No `.value`/display-value on a contenteditable div — read rendered text.
+    expect(await screen.findByText('Written offline')).toBeInTheDocument();
     expect(requested).toBe(false);
   });
 
@@ -111,7 +114,9 @@ describe('the local note detail view', () => {
 
     renderLocal();
 
-    expect(await screen.findByLabelText('Note content')).toHaveValue('still unsynced');
+    // No `.value` on a contenteditable div — toHaveTextContent reads the
+    // rendered text instead.
+    expect(await screen.findByLabelText('Note content')).toHaveTextContent('still unsynced');
   });
 
   it('shows a not-found state for a localId with no matching row', async () => {

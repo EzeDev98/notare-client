@@ -44,6 +44,25 @@ export const handlers = [
     ),
   ),
 
+  /*
+   * useSync (AppLayout) mounts unconditionally and pulls on mount, in every
+   * test that renders it — not just sync-specific tests. Missing this one
+   * was invisible until now only because whatever else that test was doing
+   * usually finished, or itself failed for its own reason, before the
+   * background pull's request ever resolved; onUnhandledRequest: 'error'
+   * (tests/setup.ts) means any test that outlasts that race throws
+   * "intercepted a request without a matching request handler" for a
+   * request the test itself never asked for or cares about. An honest
+   * "nothing changed" response (empty `changed`/`deletedIds`, `hasMore:
+   * false`) is a true no-op: pull.ts only writes the cursor `if
+   * (latestCursor)`, and an empty string is falsy, so this never persists a
+   * cursor either — a global default with no side effect for tests that
+   * have nothing to do with sync.
+   */
+  http.get(`${BASE}/sync`, () =>
+    HttpResponse.json({ changed: [], deletedIds: [], nextCursor: '', hasMore: false }),
+  ),
+
   // ---- collection -------------------------------------------------------
   http.get(`${BASE}/notes`, () =>
     HttpResponse.json(makePage([makeNoteSummary({ id: 1 }), makeNoteSummary({ id: 2 })])),

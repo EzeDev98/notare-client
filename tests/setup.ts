@@ -50,6 +50,55 @@ beforeAll(() => {
 });
 
 /*
+ * jsdom implements the DOM, not layout (see vite.config.ts's own note on
+ * getBoundingClientRect) — but for Range and Document it goes further than
+ * "returns zeros": Range.prototype.getClientRects, Range.prototype.
+ * getBoundingClientRect, and Document.prototype.elementFromPoint do not
+ * exist on jsdom 30 AT ALL (verified directly: `'getClientRects' in
+ * document.createRange()` is false). ProseMirror's own cursor/paste
+ * position math (coordsAtPos → singleRect, posAtCoords) calls exactly
+ * these, unconditionally, on every keystroke and paste once a real
+ * @tiptap/react editor is mounted (EditorSurface.tsx) — without this shim
+ * every such test throws `TypeError: target.getClientRects is not a
+ * function` or `doc.elementFromPoint is not a function` from inside
+ * prosemirror-view, not from anything in this app's own code.
+ *
+ * Zeroed/empty results, matching Element.prototype.getBoundingClientRect's
+ * own existing jsdom behaviour (see vite.config.ts) — this does not give
+ * tests real layout, it only stops jsdom's *missing* methods from
+ * crashing ProseMirror the way its *stubbed-to-zero* ones already don't.
+ */
+beforeAll(() => {
+  if (typeof Range.prototype.getClientRects !== 'function') {
+    Range.prototype.getClientRects = (): DOMRectList => [] as unknown as DOMRectList;
+  }
+  if (typeof Range.prototype.getBoundingClientRect !== 'function') {
+    Range.prototype.getBoundingClientRect = (): DOMRect =>
+      ({
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        width: 0,
+        height: 0,
+        x: 0,
+        y: 0,
+        toJSON() {
+          return this;
+        },
+      }) as DOMRect;
+  }
+  if (typeof document.elementFromPoint !== 'function') {
+    // Real browsers resolve the element under a point via layout; jsdom has
+    // none to consult, so there is no coordinate this could correctly
+    // answer for. `null` is what the real API returns when nothing is
+    // there, and ProseMirror's own callers (posAtCoords) already handle
+    // that case, falling back rather than assuming a hit.
+    document.elementFromPoint = (): Element | null => null;
+  }
+});
+
+/*
  * onUnhandledRequest: 'error' is what makes the mock server trustworthy.
  *
  * The default lets an unmatched request through to the REAL network, so a

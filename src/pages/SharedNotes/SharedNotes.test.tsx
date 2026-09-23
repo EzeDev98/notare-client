@@ -42,7 +42,15 @@ function emptyBoth() {
 
 describe('Shared with me', () => {
   it('renders a single merged feed with no All/Notes/Voice tabs', async () => {
-    emptyBoth();
+    server.use(
+      http.get(`${BASE}/shared-notes`, () =>
+        HttpResponse.json(
+          makePage([makeSharedNoteSummary({ note: makeNoteSummary({ contentPreview: 'Cooking' }) })]),
+        ),
+      ),
+      http.get(`${BASE}/shared-voice-notes`, () => HttpResponse.json(makePage([]))),
+    );
+
     renderShared();
 
     expect(await screen.findByRole('heading', { name: 'Shared with me' })).toBeInTheDocument();

@@ -70,7 +70,13 @@ describe('one request at a time', () => {
     renderEditor();
 
     const content = await screen.findByLabelText('Note content');
-    await user.type(content, 'the quick brown fox');
+    // paste(), not type() — see conflict.test.tsx's typeAndConflict for why:
+    // user.type() drives the real ProseMirror editor one keystroke at a
+    // time, and jsdom's synthetic events don't stay in step with its
+    // per-keystroke transaction/DOM-observation cycle the way a real
+    // browser's native typing does. A single paste is one atomic insert.
+    await user.click(content);
+    await user.paste('the quick brown fox');
     await user.keyboard('{Control>}s{/Control}');
 
     await waitFor(
@@ -114,7 +120,9 @@ describe('one request at a time', () => {
     renderEditor();
 
     const content = await screen.findByLabelText('Note content');
-    await user.type(content, 'hello world');
+    // Same reasoning as above — paste(), not type().
+    await user.click(content);
+    await user.paste('hello world');
     await user.keyboard('{Control>}s{/Control}');
 
     /*
@@ -162,7 +170,10 @@ describe('switching notes', () => {
     );
 
     const { unmount } = renderEditor('/notes/5');
-    expect(await screen.findByLabelText('Note content')).toHaveValue('Body 5');
+    // No `.value` on a contenteditable div — toHaveTextContent reads the
+    // rendered text instead. Single-line content here, so no <br>/textContent
+    // subtlety (see NoteDetail.test.tsx's newline test for that case).
+    expect(await screen.findByLabelText('Note content')).toHaveTextContent('Body 5');
     unmount();
 
     renderEditor('/notes/9');
@@ -173,6 +184,6 @@ describe('switching notes', () => {
      * note 5's text and version while pointing at note 9's id, and the next
      * auto-save would write one note's content into the other.
      */
-    expect(await screen.findByLabelText('Note content')).toHaveValue('Body 9');
+    expect(await screen.findByLabelText('Note content')).toHaveTextContent('Body 9');
   });
 });

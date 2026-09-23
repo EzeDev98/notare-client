@@ -193,6 +193,8 @@ describe('resolving', () => {
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: /use theirs/i }));
 
-    expect(await screen.findByLabelText('Note content')).toHaveValue('their words');
+    // No `.value` on a contenteditable div — toHaveTextContent reads the
+    // rendered text instead.
+    expect(await screen.findByLabelText('Note content')).toHaveTextContent('their words');
   }, 15_000);
 });

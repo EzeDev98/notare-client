@@ -1,6 +1,7 @@
 import { Button } from '@/design-system/components/Button/Button';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import type { ConflictState } from '@/features/editor/hooks/useConflict';
+import { ConflictContentPreview } from './ConflictContentPreview';
 import './ConflictPanel.css';
 
 /**
@@ -92,18 +93,22 @@ export function ConflictPanel({
       <div className="conflict__panes">
         <article className="conflict__pane">
           <h3 className="conflict__pane-title">Your version</h3>
-          {/* pre-wrap, matching the read view: the text is text, and newlines
-              are preserved by CSS rather than by markup. No separate title
-              line above this (1B/4D) — it would just repeat the content's
-              own first line. */}
-          <div className="conflict__body">{mine.content}</div>
+          {/* Rendered through ConflictContentPreview — real Markdown
+              formatting, not the raw `#`/`**` characters this used to show
+              verbatim. No separate title line above this (1B/4D) — it would
+              just repeat the content's own first line. */}
+          <div className="conflict__body">
+            <ConflictContentPreview content={mine.content} />
+          </div>
         </article>
 
         <article className="conflict__pane">
           <h3 className="conflict__pane-title">
             {byAnotherDevice ? 'Version on the server' : 'Their version'}
           </h3>
-          <div className="conflict__body">{theirs.content ?? ''}</div>
+          <div className="conflict__body">
+            <ConflictContentPreview content={theirs.content ?? ''} />
+          </div>
         </article>
       </div>
 

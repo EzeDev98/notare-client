@@ -60,10 +60,82 @@
     margin-block-start: var(--space-3);
     max-block-size: 18rem;
     overflow-y: auto;
-    white-space: pre-wrap;
     overflow-wrap: break-word;
     font-size: var(--text-base);
     line-height: var(--line-height-normal);
+    color: var(--color-text);
+  }
+
+  /*
+   * Node formatting for ConflictContentPreview's rendered Markdown —
+   * deliberately its own copy of EditorSurface.css's equivalent block
+   * rather than a shared bare class name: both files sit in the same
+   * `@layer components`, so two files' rules targeting one shared class
+   * would be decided by import order, not by design — exactly the kind of
+   * accidental UI conflict this work was told to avoid. Same tradeoff
+   * useNoteEditor.ts's own MAX_CONTENT_LENGTH comment already makes
+   * elsewhere in this codebase. Every value here is one EditorSurface.css
+   * already uses; scale is intentionally the pane's own compact size
+   * (--text-base/--space-3), not the full editor's reading size, since this
+   * is a comparison view, not the writing surface.
+   */
+  .conflict__body .conflict__preview > * + * {
+    margin-block-start: var(--space-3);
+  }
+
+  .conflict__body .conflict__preview h1,
+  .conflict__body .conflict__preview h2,
+  .conflict__body .conflict__preview h3 {
+    font-family: inherit;
+    font-weight: var(--weight-semibold);
+    line-height: var(--line-height-snug);
+    color: var(--color-text);
+  }
+
+  .conflict__body .conflict__preview h1 {
+    font-size: var(--text-md);
+  }
+
+  .conflict__body .conflict__preview h2,
+  .conflict__body .conflict__preview h3 {
+    font-size: var(--text-base);
+  }
+
+  .conflict__body .conflict__preview ul,
+  .conflict__body .conflict__preview ol {
+    padding-inline-start: var(--space-5);
+  }
+
+  .conflict__body .conflict__preview li + li {
+    margin-block-start: var(--space-1);
+  }
+
+  .conflict__body .conflict__preview blockquote {
+    padding-inline-start: var(--space-3);
+    border-inline-start: var(--border-width) solid var(--color-border);
+    color: var(--color-text-secondary);
+  }
+
+  .conflict__body .conflict__preview pre {
+    padding: var(--space-2);
+    background-color: var(--color-surface);
+    border-radius: var(--radius-sm);
+    overflow-x: auto;
+  }
+
+  .conflict__body .conflict__preview pre code {
+    font-size: inherit;
+  }
+
+  .conflict__body .conflict__preview a {
+    color: var(--color-accent);
+  }
+
+  .conflict__body .conflict__preview hr {
+    border: none;
+    block-size: var(--border-width);
+    background-color: var(--color-border);
+    margin-block: var(--space-1);
   }
 
   .conflict__actions {

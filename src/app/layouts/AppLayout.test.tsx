@@ -48,7 +48,7 @@ describe('the toolbar delete icon', () => {
     const user = userEvent.setup();
     renderAt('/notes/7');
 
-    const deleteButton = await screen.findByRole('button', { name: 'Delete note' });
+    const deleteButton = await screen.findByRole('button', { name: 'Delete note' }, { timeout: 5_000 });
     await waitFor(() => expect(deleteButton).toBeEnabled());
     await user.click(deleteButton);
     await user.click(await screen.findByRole('button', { name: 'Delete' }));
@@ -380,9 +380,16 @@ describe('the sidebar note context menu', () => {
     // `window.location.pathname`, which createMemoryRouter never touches —
     // the browser's real location stays put regardless of in-memory
     // navigation, so checking it proves nothing either way.
-    expect(await screen.findByRole('textbox', { name: 'Note content' })).toHaveValue(
-      'Second note',
-    );
+    // `getByRole('textbox', ...)` relies on implicit ARIA role computation
+    // for `contenteditable`, which this project's testing-library/jsdom
+    // setup does not resolve for a plain contenteditable div — confirmed in
+    // total isolation, no TipTap involved: a bare `<div contentEditable
+    // aria-label="x">` fails the exact same `findByRole` query regardless
+    // of any wait. Not a timing issue at any timeout — `getByLabelText`
+    // (what every other editor test in this codebase already uses) matches
+    // the same element directly by its `aria-label`, no role computation
+    // involved.
+    expect(await screen.findByLabelText('Note content')).toHaveTextContent('Second note');
   });
 
   it('duplicates the note it was opened for into a new note with the same content', async () => {

@@ -74,15 +74,21 @@ describe('the note detail view', () => {
     renderDetail();
 
     /*
-     * The field's VALUE, not rendered text. Since 6A the content lives in a
-     * textarea, and its value is what round-trips back to the server — so that
-     * is the thing worth asserting on.
-     *
-     * (The old getByText assertion happened to keep passing here, because a
-     * textarea's value appears as its text content. Passing for a different
-     * reason than it was written for is not the same as passing.)
+     * Since the TipTap rewrite the field is a contenteditable div, not a
+     * textarea — it has no `.value`, and a `<br>` element contributes
+     * NOTHING to `.textContent` (verified directly), so a plain string
+     * comparison can't tell "one\ntwo\nthree" apart from "onetwothree".
+     * What actually matters — and what a collapsed run-on paragraph would
+     * fail — is that three SEPARATE lines exist in the DOM. EditorSurface.tsx
+     * configures `breaks: true` specifically so a bare `\n` (every note ever
+     * written in the old textarea has no other kind) becomes a real <br>
+     * rather than collapsing to a space; this asserts that mapping held.
      */
-    expect(await screen.findByLabelText('Note content')).toHaveValue('one\ntwo\nthree');
+    const content = await screen.findByLabelText('Note content');
+    expect(content.querySelectorAll('br')).toHaveLength(2);
+    expect(content).toHaveTextContent('one');
+    expect(content).toHaveTextContent('two');
+    expect(content).toHaveTextContent('three');
   });
 
   it('renders angle brackets as text rather than markup', async () => {
@@ -93,9 +99,16 @@ describe('the note detail view', () => {
     );
     const { container } = renderDetail();
 
-    // A textarea's value is text by construction — there is no parsing step
-    // for markup to survive, which is a stronger guarantee than escaping.
-    expect(await screen.findByLabelText('Note content')).toHaveValue('<script>alert(1)</script>');
+    // Markdown.configure's `html: false` (EditorSurface.tsx) is what makes
+    // this safe now — a literal `<script>` in the source is escaped text,
+    // never parsed as markup, verified directly: editor.getHTML() for this
+    // exact input is `<p>&lt;script&gt;...&lt;/script&gt;</p>`. No `.value`
+    // to compare against a plain string here, so this reads the rendered
+    // text instead — still proving the same thing: the tag survives as
+    // characters, not as an element.
+    expect(await screen.findByLabelText('Note content')).toHaveTextContent(
+      '<script>alert(1)</script>',
+    );
     expect(container.querySelector('script')).toBeNull();
   });
 
@@ -147,7 +160,7 @@ describe('the note detail view', () => {
      * blank page they are about to write on.
      */
     const content = await screen.findByLabelText('Note content');
-    expect(content).toHaveValue('');
+    expect(content).toHaveTextContent('');
     expect(content).not.toHaveAttribute('placeholder');
   });
 });

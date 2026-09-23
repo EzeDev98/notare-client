@@ -34,6 +34,45 @@ export interface NoteLabel {
   remainder: string;
 }
 
+/**
+ * Strips Markdown syntax from a single line of stored content, leaving the
+ * plain text a reader actually sees once the editor renders it.
+ *
+ * Content is stored as Markdown (EditorSurface.tsx / tiptap-markdown), so
+ * without this a pasted `# Heading` or `**bold**` leaked its raw `#`/`**`
+ * characters straight into the label and preview — the same problem rich
+ * text already solved for the note BODY, just not yet for this derived
+ * text. Block markers (heading hashes, blockquote `>`, list bullets/
+ * numbers, task-list checkboxes) are stripped from the start of the line;
+ * a line that is nothing but a horizontal rule becomes blank, same as an
+ * empty line, so it never becomes the label by accident; inline emphasis,
+ * strikethrough, code spans, images and links are unwrapped to their own
+ * visible text.
+ */
+function stripMarkdownLine(line: string): string {
+  let text = line;
+
+  text = text.replace(/^\s{0,3}#{1,6}\s+/, '');
+  text = text.replace(/^\s{0,3}>+\s?/, '');
+  text = text.replace(/^\s*(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\s+)?/, '');
+
+  if (/^\s{0,3}([-*_])\s*(?:\1\s*){2,}$/.test(text)) return '';
+
+  text = text.replace(/(\*\*\*|___)(.+?)\1/g, '$2');
+  text = text.replace(/(\*\*|__)(.+?)\1/g, '$2');
+  text = text.replace(/(?<!\*)\*(?!\*)([^*\n]+?)\*(?!\*)/g, '$1');
+  text = text.replace(/(?<!_)_(?!_)([^_\n]+?)_(?!_)/g, '$1');
+  text = text.replace(/~~(.+?)~~/g, '$1');
+  text = text.replace(/`([^`]+)`/g, '$1');
+
+  // Images before links — an image's "text" is its alt, and the link
+  // pattern below would otherwise also match `![alt](url)` and keep the `!`.
+  text = text.replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1');
+  text = text.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
+
+  return text;
+}
+
 export function deriveNoteLabel(content: string): NoteLabel {
   const trimmed = content.trim();
 
@@ -41,16 +80,17 @@ export function deriveNoteLabel(content: string): NoteLabel {
     return { label: EMPTY_NOTE_LABEL, remainder: '' };
   }
 
-  const lines = trimmed.split('\n');
-  const labelIndex = lines.findIndex((line) => line.trim() !== '');
+  const lines = trimmed.split('\n').map((line) => stripMarkdownLine(line).trim());
+  const labelIndex = lines.findIndex((line) => line !== '');
 
-  // Every line is blank (whitespace-only) even though `trimmed` itself
-  // wasn't — e.g. content that is just "\n   \n". Same as no content.
+  // Every line was blank, or became blank once Markdown-only lines
+  // (a lone heading marker, a horizontal rule) were stripped down to
+  // nothing. Same as no content.
   if (labelIndex === -1) {
     return { label: EMPTY_NOTE_LABEL, remainder: '' };
   }
 
-  const label = (lines[labelIndex] ?? '').trim();
+  const label = lines[labelIndex] ?? '';
   const remainder = lines
     .slice(labelIndex + 1)
     .join(' ')

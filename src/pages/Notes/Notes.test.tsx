@@ -155,7 +155,16 @@ describe('the notes list', () => {
     expect(screen.getByText(/pinned/i)).toBeInTheDocument();
   });
 
-  it('moves a note to the trash and offers an undo', async () => {
+  it('moves a note to the trash, with a plain confirmation toast and no undo', async () => {
+    /*
+     * Undo was here deliberately, until it wasn't: the delete toast was
+     * rewritten to a plain "Note moved to trash." with no quoted title and
+     * no action link (useDeleteNote.ts) — a separate, explicit product
+     * decision from the editor rewrite this file otherwise has nothing to
+     * do with. This test still exercised the OLD behaviour and had been
+     * silently broken since that change; this brings it in line with the
+     * toast as it actually is now rather than restoring the feature.
+     */
     serverHasNoNotes();
     await seedNotes(makeRow({ serverId: 1, content: 'Note 1', ownerId: TEST_USER.id }));
 
@@ -177,9 +186,9 @@ describe('the notes list', () => {
 
     // PatternFly's toast (AlertGroup isToast) mounts its portal target in a
     // useEffect rather than synchronously, so it lands one tick after the
-    // triggering click — findByRole (not getByRole) waits for that.
-    await user.click(await screen.findByRole('button', { name: /undo/i }));
-    expect(await screen.findByRole('link', { name: /note 1/i })).toBeInTheDocument();
+    // triggering click — findByText (not getByText) waits for that.
+    expect(await screen.findByText('Note moved to trash.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /undo/i })).not.toBeInTheDocument();
   });
 
   it('archiving removes the note from the main list', async () => {

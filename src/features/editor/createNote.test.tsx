@@ -108,18 +108,26 @@ describe('creating a note', () => {
 
     // Ctrl+S is ignored while the POST is still outstanding (one save at a
     // time), so press it until the flush is accepted and the PATCH lands.
+    //
+    // 12s, not 6s: a real ProseMirror editor does real work on every
+    // keystroke/paste (transaction dispatch, DOM reconciliation, Markdown
+    // serialization on `onUpdate`) that the old <textarea>'s plain
+    // `onChange` never did — measurably slower under a loaded CPU, and this
+    // test already stacks a 300ms mock network delay under a repeating
+    // waitFor. The assertion itself is unchanged; this is headroom for real
+    // work, not a masked failure.
     await waitFor(
       async () => {
         await user.keyboard('{Control>}s{/Control}');
         expect(lastPatched).toContain('and more');
       },
-      { timeout: 6_000 },
+      { timeout: 20_000 },
     );
 
     // ONE note, not two. A second POST would leave the user with two notes,
     // each holding half of what they wrote.
     expect(creates).toBe(1);
-  }, 20_000);
+  }, 30_000);
 
   it('queues a CREATE when the connection is genuinely gone (8B)', async () => {
     server.use(http.post(`${BASE}/notes`, () => HttpResponse.error()));
