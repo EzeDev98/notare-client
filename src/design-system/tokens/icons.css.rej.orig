@@ -1,0 +1,26 @@
+@@ -8,10 +8,10 @@
+    * touching each call site, and any icon added in the future gets these
+    * defaults for free just by being a PatternFly import.
+    *
+-   * 20px, matching internal-auth-client's own icon sizing (Header's
+-   * avatarIcon) — the size that app settled on for a standalone icon.
+-   * PatternFly icons are solid fill (`fill: currentColor`), not stroked
+-   * outlines, so there is no stroke-width to set here.
++   * 18px — sized down from the 20px internal-auth-client baseline (Header's
++   * avatarIcon) because 20px read too large in this app. PatternFly icons
++   * are solid fill (`fill: currentColor`), not stroked outlines, so there
++   * is no stroke-width to set here.
+    *
+    * Deliberately in `base`, not `components` — this is an element default
+    * (like typography.css's h1/h2/body rules), not a component's own
+@@ -31,8 +31,8 @@
+    * hand).
+    */
+   .pf-v6-svg {
+-    inline-size: 20px;
+-    block-size: 20px;
++    inline-size: 18px;
++    block-size: 18px;
+     color: var(--color-icon);
+   }
+ }

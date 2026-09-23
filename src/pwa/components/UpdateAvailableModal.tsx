@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { MagicIcon } from '@patternfly/react-icons';
 
 import { Modal } from '@/design-system/components/Modal/Modal';
 import { useServiceWorkerUpdate } from '@/pwa/useServiceWorkerUpdate';
@@ -43,7 +43,7 @@ export function UpdateAvailableModal() {
 
   return (
     <Modal
-      icon={<Sparkles aria-hidden="true" />}
+      icon={<MagicIcon aria-hidden="true" />}
       title="A new version of Notare is available"
       description="Update now for the latest features and fixes. Your notes are saved automatically, so it's safe to update anytime."
       primaryAction={{ label: 'Update now', onClick: applyUpdate }}

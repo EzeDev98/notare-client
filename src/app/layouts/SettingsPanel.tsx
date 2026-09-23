@@ -1,6 +1,6 @@
 import type { AnimationEventHandler } from 'react';
 import { Link } from 'react-router';
-import { RotateCcw, User, X } from 'lucide-react';
+import { TimesIcon, UndoIcon, UserIcon } from '@patternfly/react-icons';
 
 import { ThemeToggle } from '@/design-system/components/ThemeToggle/ThemeToggle';
 import './SettingsPanel.css';
@@ -54,13 +54,13 @@ export function SettingsPanel({
           aria-label="Close settings"
           onClick={onClose}
         >
-          <X aria-hidden="true" />
+          <TimesIcon aria-hidden="true" />
         </button>
       </header>
 
       <div className="settings-panel__body">
         <Link to="/account/sessions" className="settings-panel__account" onClick={onClose}>
-          <User aria-hidden="true" />
+          <UserIcon aria-hidden="true" />
           <span>Accounts</span>
         </Link>
 
@@ -87,7 +87,7 @@ export function SettingsPanel({
             }
           }}
         >
-          <RotateCcw aria-hidden="true" />
+          <UndoIcon aria-hidden="true" />
           <span>Reset this device</span>
         </div>
 

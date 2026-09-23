@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 
 import { Button } from '@/design-system/components/Button/Button';
 import { Modal } from '@/design-system/components/Modal/Modal';
-import { NotebookPen } from 'lucide-react';
+import { PencilAltIcon } from '@patternfly/react-icons';
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import {
@@ -204,7 +204,7 @@ export function NoteCard({
 
       {deleteModalOpen ? (
         <Modal
-          icon={<NotebookPen aria-hidden="true" />}
+          icon={<PencilAltIcon aria-hidden="true" />}
           description="Delete this note? The note will be moved to Trash."
           secondaryAction={{
             label: 'Cancel',

@@ -55,7 +55,7 @@
   .note-detail__back {
     display: flex;
     align-items: center;
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
   }
 
   .note-detail__back a {
@@ -93,7 +93,7 @@
     align-items: center;
     margin-block: var(--space-3) 0;
     color: var(--color-text-secondary);
-    font-size: var(--font-size-xs);
+    font-size: var(--text-xs);
   }
 
   .note-detail__badge {
@@ -107,7 +107,7 @@
 
     /* The reading size and leading from 2A — one step above UI text, with the
      * air long-form reading needs. */
-    font-size: var(--font-size-md);
+    font-size: var(--text-md);
     line-height: var(--line-height-relaxed);
 
     /*
@@ -159,7 +159,7 @@
 
   .note-detail__voice-heading {
     margin: 0 0 var(--space-3);
-    font-size: var(--font-size-md);
+    font-size: var(--text-md);
   }
 
   .note-detail__voice-list {

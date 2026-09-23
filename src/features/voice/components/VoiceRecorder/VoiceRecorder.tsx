@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Mic, Pause, Play, Send, Trash2 } from 'lucide-react';
+import { MicrophoneIcon, PaperPlaneIcon, PauseIcon, PlayIcon, TrashIcon } from '@patternfly/react-icons';
 
 import { useMediaRecorderState } from '@/features/voice/hooks/useMediaRecorderState';
 import { Button } from '@/design-system/components/Button/Button';
@@ -389,7 +389,7 @@ export function VoiceRecorder({ upload, noteId, onUploaded }: VoiceRecorderProps
             }}
             aria-label="Discard recording"
           >
-            <Trash2 aria-hidden="true" color="var(--color-danger)" />
+            <TrashIcon aria-hidden="true" color="var(--color-danger)" />
           </button>
 
           {/*
@@ -411,9 +411,9 @@ export function VoiceRecorder({ upload, noteId, onUploaded }: VoiceRecorderProps
             aria-label={recorder.status.paused ? 'Resume recording' : 'Pause recording'}
           >
             {recorder.status.paused ? (
-              <Play aria-hidden="true" />
+              <PlayIcon aria-hidden="true" />
             ) : (
-              <Pause aria-hidden="true" />
+              <PauseIcon aria-hidden="true" />
             )}
           </button>
 
@@ -423,7 +423,7 @@ export function VoiceRecorder({ upload, noteId, onUploaded }: VoiceRecorderProps
             onClick={handleSendWhileRecording}
             aria-label="Save recording"
           >
-            <Send aria-hidden="true" color="var(--color-text-on-accent)" />
+            <PaperPlaneIcon aria-hidden="true" color="var(--color-text-on-accent)" />
           </button>
         </>
       ) : null}
@@ -439,11 +439,11 @@ export function VoiceRecorder({ upload, noteId, onUploaded }: VoiceRecorderProps
             disabled={upload.isPending}
             aria-label="Discard recording"
           >
-            <Trash2 aria-hidden="true" color="var(--color-danger)" />
+            <TrashIcon aria-hidden="true" color="var(--color-danger)" />
           </button>
 
           <div className="voice-recorder__bar-status" role="status">
-            {upload.isPending ? <span className="ds-visually-hidden">Uploading, </span> : null}
+            {upload.isPending ? <span className="pf-v6-screen-reader">Uploading, </span> : null}
             <span className="voice-recorder__timer">
               {upload.isPending
                 ? `${String(Math.round(progress * 100))}%`
@@ -458,7 +458,7 @@ export function VoiceRecorder({ upload, noteId, onUploaded }: VoiceRecorderProps
             disabled={upload.isPending}
             aria-label="Save recording"
           >
-            <Send aria-hidden="true" color="var(--color-text-on-accent)" />
+            <PaperPlaneIcon aria-hidden="true" color="var(--color-text-on-accent)" />
           </button>
 
           {upload.isError ? (
@@ -489,13 +489,13 @@ export function VoiceRecorder({ upload, noteId, onUploaded }: VoiceRecorderProps
               : 'Record a voice note'
           }
         >
-          <Mic aria-hidden="true" color="var(--color-text-on-accent)" />
+          <MicrophoneIcon aria-hidden="true" color="var(--color-text-on-accent)" />
         </button>
       ) : null}
 
       {confirmingDiscard ? (
         <Modal
-          icon={<Mic aria-hidden="true" />}
+          icon={<MicrophoneIcon aria-hidden="true" />}
           description="Discard this recording? It hasn't been saved yet — this can't be undone."
           secondaryAction={{
             label: 'Cancel',

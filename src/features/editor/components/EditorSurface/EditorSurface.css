@@ -22,8 +22,8 @@
    * anything.
    */
   .editor-surface__heading {
-    font-size: var(--font-size-2xl);
-    font-weight: var(--font-weight-semibold);
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
     line-height: var(--line-height-tight);
     letter-spacing: var(--tracking-tight);
   }
@@ -42,7 +42,7 @@
 
     /* The reading size and leading from 2A — the same values the read view
      * used, so switching between them is not a visual jump. */
-    font-size: var(--font-size-md);
+    font-size: var(--text-md);
     line-height: var(--line-height-relaxed);
 
     /* Height is set by JS; this stops the browser's own resize handle from
@@ -80,7 +80,7 @@
 .note-date {
   margin: var(--space-4) 0 0;
   text-align: center;
-  font-size: var(--font-size-xs);
+  font-size: var(--text-xs);
   color: var(--color-text-secondary);
   user-select: none;
 }

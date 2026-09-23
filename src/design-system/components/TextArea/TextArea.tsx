@@ -1,8 +1,9 @@
 import { useId, type ComponentPropsWithoutRef } from 'react';
+import { TextArea as PFTextArea } from '@patternfly/react-core';
 
 import { describedBy } from '@/design-system/components/Field/describedBy';
+import { omitUndefined } from '@/design-system/lib/omitUndefined';
 import { Field, type FieldMessages } from '@/design-system/components/Field/Field';
-import './TextArea.css';
 
 interface TextAreaProps
   extends
@@ -11,24 +12,21 @@ interface TextAreaProps
   label: string;
 }
 
-/**
- * A multi-line field. NOT the note editor — that is a different problem
- * (auto-save, conflict state, measure) and gets its own component in Step 6.
- * This is for short multi-line input: a share message, a report reason.
- */
-export function TextArea({ label, hint, error, className, rows = 4, ...rest }: TextAreaProps) {
+/** A labelled PatternFly TextArea, resizable vertically only. */
+export function TextArea({ label, hint, error, value, rows = 4, ...rest }: TextAreaProps) {
   const base = useId();
   const ids = { hintId: `${base}-hint`, errorId: `${base}-error` };
 
   return (
     <Field label={label} controlId={base} {...ids} hint={hint} error={error}>
-      <textarea
+      <PFTextArea
+        {...omitUndefined(rest)}
         id={base}
         rows={rows}
-        className={['ds-control', 'ds-textarea', className].filter(Boolean).join(' ')}
-        aria-invalid={error !== undefined || undefined}
+        {...(value === undefined ? {} : { value: value as string | number })}
+        resizeOrientation="vertical"
+        validated={error === undefined ? 'default' : 'error'}
         aria-describedby={describedBy(ids, { hint, error })}
-        {...rest}
       />
     </Field>
   );

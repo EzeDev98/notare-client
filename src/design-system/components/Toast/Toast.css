@@ -1,40 +1,43 @@
 @layer components {
+  /* Above Notare's own panels and dialogs (tokens/layout.css), so a
+   * session-expired message is never hidden behind one. */
   .ds-toast {
-    position: fixed;
-    /* Above a modal: a session-expired message must reach the user even
-     * mid-dialog. The z-index scale from 2B exists so this is a lookup rather
-     * than a guess. */
     z-index: var(--z-toast);
 
-    inset-inline: var(--space-4);
-    /* Clear of the mobile bottom bar AND the home indicator. */
-    inset-block-end: calc(var(--space-4) + env(safe-area-inset-bottom) + 56px);
+    /* Shorter than PatternFly's 37.5rem default — this is a one-line
+     * confirmation, not a document. */
+    --pf-v6-c-alert-group--m-toast--MaxWidth: 24rem;
 
-    display: flex;
-    gap: var(--space-2);
-    align-items: center;
-
-    padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
-    background-color: var(--color-surface);
-    border: var(--border-width) solid var(--color-border-strong);
-    border-radius: var(--radius-md);
-    /* One of the two places a shadow is justified (§31): this genuinely floats
-     * above the page, and a border alone would not say so. */
-    box-shadow: var(--shadow-md);
+    /* ~2s fade in and fade out (PatternFly's default is a quick ~200ms
+     * blink). Scoped to these component tokens, not the global motion
+     * tokens, so only this toast slows down. */
+    --pf-v6-c-alert-group--m-toast__item--TransitionDuration--opacity--default: 2s;
+    --pf-v6-c-alert-group--m-toast__item--TransitionDuration--opacity: 2s;
+    --pf-v6-c-alert-group--m-toast__item--m-outgoing--TransitionDuration--opacity--default: 2s;
+    --pf-v6-c-alert-group--m-toast__item--m-outgoing--TransitionDuration--opacity: 2s;
   }
 
-  @media (min-width: 640px) {
-    .ds-toast {
-      /* No bottom bar at this width, so it can sit lower and narrower. */
-      inset-block-end: var(--space-6);
-      inset-inline: auto var(--space-6);
-      max-inline-size: 26rem;
-    }
+  /* Shorter, borderless, tightly rounded, and lifted with the same
+   * barely-there shadow the rest of the design system uses for floating
+   * elements (tokens/layout.css) instead of PatternFly's status border. */
+  .ds-toast .pf-v6-c-alert {
+    --pf-v6-c-alert--PaddingBlockStart: 0.625rem;
+    --pf-v6-c-alert--PaddingBlockEnd: 0.625rem;
+    --pf-v6-c-alert--BorderWidth: 0;
+    --pf-v6-c-alert--BorderRadius: 3px;
+    --pf-v6-c-alert--BoxShadow: var(--shadow-sm);
+
+    /* Same recessed surface as .app-shell__folders (AppLayout.css) instead
+     * of PatternFly's floating-white default, so the toast reads as a
+     * distinct surface against the (also white) page behind it. */
+    --pf-v6-c-alert--BackgroundColor: var(--color-surface-recessed);
   }
 
-  .ds-toast__message {
-    margin: 0;
-    flex: 1;
-    font-size: var(--font-size-sm);
+  /* The close (X) icon reads oversized on the shrunken toast. Scoped to
+   * this button only — icons.css's 17px base stays the app-wide default
+   * for every other PatternFly icon. */
+  .ds-toast .pf-v6-c-alert__action .pf-v6-svg {
+    inline-size: 12px;
+    block-size: 12px;
   }
 }

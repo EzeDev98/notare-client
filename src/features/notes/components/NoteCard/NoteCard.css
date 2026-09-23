@@ -95,7 +95,7 @@
     margin: 0;
     /*
      * `!important` on both — this is a real `<h2>`, and `typography.css`'s
-     * base `h2` rule (`@layer base`) sets `font-size: var(--font-size-xl)`
+     * base `h2` rule (`@layer base`) sets `font-size: var(--text-lg)`
      * / `font-weight: semibold`. `@layer components` (this file) is
      * supposed to beat `@layer base` regardless of selector specificity,
      * but per the `@layer` injection-order hazard Button.css's own
@@ -103,8 +103,8 @@
      * reliable in practice — same fix already applied to
      * SharedNoteCard's own title for the identical reason.
      */
-    font-size: 18px !important;
-    font-weight: var(--font-weight-normal) !important;
+    font-size: var(--text-md) !important;
+    font-weight: var(--weight-regular) !important;
     line-height: var(--line-height-snug);
     /* Long titles truncate rather than pushing the card taller than its
      * neighbours and breaking the list's rhythm. */
@@ -116,7 +116,7 @@
   .note-card__preview {
     margin: var(--space-2) 0 0;
     color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
     line-height: var(--line-height-normal);
 
     /* Two lines, then ellipsis. A preview that runs to five lines stops being
@@ -133,7 +133,7 @@
     align-items: center;
     margin: var(--space-3) 0 0;
     color: var(--color-text-secondary);
-    font-size: var(--font-size-xs);
+    font-size: var(--text-xs);
   }
 
   .note-card__badge {

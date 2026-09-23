@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Bell, FileText, Mic, User } from 'lucide-react';
+import { BellIcon, FileAltIcon, MicrophoneIcon, UserIcon } from '@patternfly/react-icons';
 
 export interface NavItem {
   to: string;
@@ -31,21 +31,21 @@ export const navItems: NavItem[] = [
   {
     to: '/notes',
     label: 'Notes',
-    icon: <FileText aria-hidden="true" />,
+    icon: <FileAltIcon aria-hidden="true" />,
   },
   {
     to: '/voice',
     label: 'Voice',
-    icon: <Mic aria-hidden="true" />,
+    icon: <MicrophoneIcon aria-hidden="true" />,
   },
   {
     to: '/notifications',
     label: 'Notifications',
-    icon: <Bell aria-hidden="true" />,
+    icon: <BellIcon aria-hidden="true" />,
   },
   {
     to: '/account/sessions',
     label: 'Account',
-    icon: <User aria-hidden="true" />,
+    icon: <UserIcon aria-hidden="true" />,
   },
 ];

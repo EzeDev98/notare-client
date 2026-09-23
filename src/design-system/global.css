@@ -23,8 +23,9 @@
  *
  * A @layer STATEMENT is allowed before @import; ordinary rules are not.
  */
-@layer reset, tokens, base, components, pages, utilities;
+@layer patternfly, reset, tokens, base, components, pages, utilities;
 
+@import '@patternfly/react-core/dist/styles/base.css' layer(patternfly);
 @import './tokens/reset.css';
 @import './tokens/typography.css';
 @import './tokens/colors.css';
@@ -32,3 +33,4 @@
 @import './tokens/motion.css';
 @import './tokens/icons.css';
 @import './tokens/dark.css';
+@import './tokens/patternfly.css';

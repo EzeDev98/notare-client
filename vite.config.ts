@@ -5,6 +5,7 @@ import { defineConfig } from 'vitest/config';
 import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
+import { patternflyLayerPlugin } from './vite-plugins/patternflyLayer';
 import { serviceWorkerVersionPlugin } from './vite-plugins/serviceWorkerVersion';
 
 export default defineConfig(({ mode }) => {
@@ -23,24 +24,45 @@ export default defineConfig(({ mode }) => {
     // `apply: 'build'`) — see service-worker/sw.js and
     // vite-plugins/serviceWorkerVersion.ts for why sw.js needs a plugin at
     // all instead of just living in /public like every other static file.
-    plugins: [react(), serviceWorkerVersionPlugin()],
+    plugins: [patternflyLayerPlugin(), react(), serviceWorkerVersionPlugin()],
 
     resolve: {
-      alias: {
+      alias: [
         /*
          * The bundler's half of the path alias. tsconfig paths teaches the
          * TYPE CHECKER what "@/lib/http" means; this teaches the BUNDLER where
          * to load it from. Two programs, neither reads the other's config.
          */
-        '@': fileURLToPath(new URL('./src', import.meta.url)),
+        { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
         /*
          * Test-only helpers live outside src/, so @/ cannot reach them. Their
          * own alias, rather than deep relative paths: 1C bans those because
          * "../../../../tests/msw/server" hides which layer it crosses, and a
          * test importing fixtures is crossing one every time.
          */
-        '~': fileURLToPath(new URL('./tests', import.meta.url)),
-      },
+        { find: '~', replacement: fileURLToPath(new URL('./tests', import.meta.url)) },
+        /*
+         * Redirects every `import { XIcon } from '@patternfly/react-icons'`
+         * in src/ to Lucide equivalents — the ONE place that swap happens;
+         * see the shim file's own header comment for the full rationale.
+         *
+         * The `^...$` RegExp is deliberate and load-bearing: a plain string
+         * key here would ALSO match `@patternfly/react-icons/dist/esm/...`
+         * (Vite/@rollup/plugin-alias treats a string find as a prefix,
+         * matching the exact string or that string + '/'), which would
+         * hijack PatternFly's OWN internal icon imports inside
+         * @patternfly/react-core (e.g. Alert's status icons) and break
+         * them, since those are all deep imports, not this bare specifier.
+         * The regex matches only the exact bare import, leaving every deep
+         * import PatternFly uses internally completely untouched.
+         */
+        {
+          find: /^@patternfly\/react-icons$/,
+          replacement: fileURLToPath(
+            new URL('./src/design-system/icons/lucide-patternfly-icons.tsx', import.meta.url),
+          ),
+        },
+      ],
     },
 
     /*

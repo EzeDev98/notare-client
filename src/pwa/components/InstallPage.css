@@ -77,20 +77,11 @@
   /* Step 9. Considerably reduced on mobile per the redesign ask,
    * stepping back up to the original sizes at the tablet breakpoint. */
   .install-page__heading {
-    font-size: var(--font-size-lg);
-    line-height: var(--line-height-snug);
-    color: var(--color-text);
     margin: 0;
   }
 
-  @media (min-width: 640px) {
-    .install-page__heading {
-      font-size: var(--font-size-xl);
-    }
-  }
-
   .install-page__description {
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
     line-height: var(--line-height-normal);
     color: var(--color-text-secondary);
     margin: 0;
@@ -98,7 +89,7 @@
 
   @media (min-width: 640px) {
     .install-page__description {
-      font-size: var(--font-size-base);
+      font-size: var(--text-md);
     }
   }
 
@@ -125,13 +116,13 @@
     gap: var(--space-3);
     align-items: stretch;
     align-self: stretch;
-    font-size: var(--font-size-xs);
+    font-size: var(--text-xs);
     color: var(--color-text-secondary);
   }
 
   @media (min-width: 640px) {
     .install-page__benefits {
-      font-size: var(--font-size-sm);
+      font-size: var(--text-base);
     }
   }
 
@@ -165,7 +156,7 @@
    * mobile like the rest of this page's type scale.
    */
   .install-page__status {
-    font-size: var(--font-size-xs);
+    font-size: var(--text-xs);
     color: var(--color-text-disabled);
     line-height: var(--line-height-normal);
     margin: 0;
@@ -173,7 +164,7 @@
 
   @media (min-width: 640px) {
     .install-page__status {
-      font-size: var(--font-size-sm);
+      font-size: var(--text-base);
     }
   }
 
@@ -190,13 +181,13 @@
     gap: var(--space-3);
     align-items: stretch;
     align-self: stretch;
-    font-size: var(--font-size-xs);
+    font-size: var(--text-xs);
     color: var(--color-text-secondary);
   }
 
   @media (min-width: 640px) {
     .install-page__steps {
-      font-size: var(--font-size-sm);
+      font-size: var(--text-base);
     }
   }
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NotebookPen } from 'lucide-react';
+import { PencilAltIcon } from '@patternfly/react-icons';
 
 import { useTrash } from '@/features/notes/hooks/useTrash';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
@@ -41,11 +41,15 @@ export function TrashPage() {
   return (
     <section className="trash">
       <BackButton />
-      <h1>Trash</h1>
+      {notes !== undefined && notes.length > 0 ? (
+        <>
+          <h1>Trash</h1>
 
-      <p className="trash__lead">
-        Notes stay here until you delete them permanently.
-      </p>
+          <p className="trash__lead">
+            Notes stay here until you delete them permanently.
+          </p>
+        </>
+      ) : null}
 
       {refreshError !== null ? (
         <p className="trash__offline" role="status">
@@ -116,7 +120,7 @@ export function TrashPage() {
 
       {confirmingNote !== null ? (
         <Modal
-          icon={<NotebookPen aria-hidden="true" />}
+          icon={<PencilAltIcon aria-hidden="true" />}
           description={
             <>
               Delete <strong>{deriveNoteLabel(confirmingNote.content).label}</strong>{' '}

@@ -1,67 +1,80 @@
 @layer components {
+  /* Fills whatever width its container gives it, one equal third each. */
   .theme-toggle {
     display: flex;
-    gap: 2px;
-    padding: 2px;
-    border-radius: var(--radius-md);
-    background-color: var(--color-surface-recessed);
-    box-shadow: var(--shadow-sm);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    /* Replaces PatternFly's own border/outline (below) with one soft
+       shadow around the whole group instead of hard lines. */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+
+    /*
+     * PatternFly does NOT draw the toggle-group button's border (or the
+     * selected item's thicker blue outline) via `border`/`box-shadow` on
+     * the button itself - it draws both as ::before/::after pseudo-
+     * elements, sized entirely by these custom properties. Overriding
+     * `border`/`outline`/`box-shadow` directly on
+     * .pf-v6-c-toggle-group__button (the previous attempt) touches
+     * nothing PatternFly actually paints, which is why that change had
+     * no visible effect. Zeroing the widths here is what actually
+     * removes the 1px grey line around every segment and the 2px blue
+     * outline PatternFly adds to the selected segment - the selected
+     * background tint (--pf-v6-c-toggle-group__button--m-selected--
+     * BackgroundColor, untouched) still shows which mode is active.
+     */
+    --pf-v6-c-toggle-group__button--before--BorderWidth: 0;
+    --pf-v6-c-toggle-group__button--after--BorderWidth: 0;
+    --pf-v6-c-toggle-group__button--m-selected--before--BorderWidth: 0;
+    --pf-v6-c-toggle-group__button--m-selected--after--BorderWidth: 0;
+    /* This negative margin exists to overlap adjacent buttons' 1px
+       borders into one shared line - moot once the border width above
+       is 0, but left at 0 rather than a stray -1px so segments sit
+       flush instead of overlapping by a pixel. */
+    --pf-v6-c-toggle-group__item--item--MarginInlineStart: 0;
+    /* PatternFly's default hover/focus fill is a light blue accent
+       (#e0f0ff), which reads as an unrelated color floating on top of
+       the folder panel's own recessed gray background behind it.
+       Matching it to that same gray keeps the interaction feedback
+       consistent with the panel it lives in, rather than introducing a
+       one-off accent color. The selected segment's own fill
+       (--pf-v6-c-toggle-group__button--m-selected--BackgroundColor) is
+       untouched, so it still stays visually distinct as the active
+       choice. */
+    --pf-v6-c-toggle-group__button--hover--BackgroundColor: var(--color-surface-recessed);
+    /* PatternFly's own idle-state fill is a solid white
+       (--pf-v6-c-toggle-group__button--BackgroundColor: #ffffff), which is
+       what made every unselected segment read as its own white box
+       sitting on top of the folder panel's gray - transparent lets the
+       panel's background show through directly instead, so the control
+       reads as part of the panel rather than a component floating on
+       it. The selected fill and the hover/focus overrides above are
+       separate variables, untouched, so they still show through
+       normally. */
+    --pf-v6-c-toggle-group__button--BackgroundColor: transparent;
   }
 
-  .theme-toggle__button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .theme-toggle .pf-v6-c-toggle-group__item {
     flex: 1;
-    block-size: 32px;
+  }
 
-    background: none;
-    border: none;
-    border-radius: var(--radius-sm);
-    color: var(--color-icon);
-    cursor: pointer;
+  .theme-toggle .pf-v6-c-toggle-group__button {
+    justify-content: center;
+    inline-size: 100%;
   }
 
   /*
-   * Size now comes from the global `.lucide` rule (tokens/icons.css) —
-   * the old 1.125rem (18px) override is gone, so these fall to the same
-   * 20px every other icon in the app uses.
-   *
-   * `color: inherit` is still needed, though: `.lucide` sets `color`
-   * directly on the svg, which blocks inheritance from an ancestor's
-   * `color`. Without this line, the icon would always sit at the base
-   * --color-icon and the hover/selected rules below — which work by
-   * changing THIS BUTTON's color — would stop reaching it.
+   * Keyboard focus was still showing blue after the hover fix above -
+   * not the background-color (that DID change, same as hover, since
+   * PatternFly drives both off the one shared --hover--BackgroundColor
+   * variable via `:is(:hover, :focus)`), but the browser's own native
+   * focus ring (the `outline` property), which is a completely separate
+   * layer neither PatternFly's variables nor the hover fix ever touched.
+   * This rule targets :focus specifically (not the shared hover/focus
+   * variable) so focus can be styled independently of hover: white
+   * background, no outline.
    */
-  .theme-toggle__button svg {
-    color: inherit;
+  .theme-toggle .pf-v6-c-toggle-group__button:focus {
+    background-color: #ffffff;
+    outline: none;
   }
-
-  .theme-toggle__button:hover {
-    color: var(--color-text);
-  }
-
-  .theme-toggle__button[aria-checked='true'] {
-    background-color: var(--color-surface);
-    color: var(--color-accent);
-    box-shadow: var(--shadow-sm);
-  }
-}
-
-/*
- * Dark mode: the two un-selected icons (whichever of sun/moon/monitor
- * isn't the active preference) sit at --color-icon, which in dark mode
- * is a fairly muted #a8a29e against the toggle's own recessed background
- * — asked to be brighter, #FAFAF9 specifically. Unlayered + !important
- * for the same reason AppLayout.css's own dark-mode nav-link fix needs
- * it: this codebase's @layer order isn't reliably honoured by Vite's dev
- * CSS injection, so a normal-specificity override here isn't guaranteed
- * to beat `.theme-toggle__button`'s own components-layer color.
- *
- * Scoped to :not([aria-checked='true']) — the active mode's icon keeps
- * its existing --color-accent highlight (just above) as the signal for
- * which mode is actually selected; this only brightens the other two.
- */
-[data-theme='dark'] .theme-toggle__button:not([aria-checked='true']) {
-  color: #FAFAF9 !important;
 }

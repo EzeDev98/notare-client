@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Check, Mail } from 'lucide-react';
+import { CheckIcon, EnvelopeIcon } from '@patternfly/react-icons';
 import { Link } from 'react-router';
 
 import { CollaboratorPicker } from '@/features/collaboration/components/CollaboratorPicker/CollaboratorPicker';
@@ -187,7 +187,7 @@ function ExistingCollaboratorModal({
 
   return (
     <Modal
-      icon={isPending ? <Mail aria-hidden="true" /> : <Check aria-hidden="true" />}
+      icon={isPending ? <EnvelopeIcon aria-hidden="true" /> : <CheckIcon aria-hidden="true" />}
       title={isPending ? 'Invitation already sent' : "You’re already collaborators"}
       description={
         isPending ? (

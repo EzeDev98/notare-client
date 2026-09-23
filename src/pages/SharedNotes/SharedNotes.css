@@ -40,7 +40,7 @@
     background: none;
     border: none;
     font: inherit;
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
     cursor: pointer;
     border-block-end: 2px solid transparent;
     margin-block-end: -1px;
@@ -53,7 +53,7 @@
   .shared-notes__tab[aria-selected='true'] {
     color: var(--color-accent);
     border-block-end-color: var(--color-accent);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--weight-medium);
   }
 
   /*
@@ -76,7 +76,7 @@
     background-color: var(--color-surface-sunken);
     border: var(--border-width) solid var(--color-danger);
     border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
   }
 
   .shared-notes__partial-error p {
@@ -98,8 +98,8 @@
   }
 
   .shared-notes__retry {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
+    font-size: var(--text-base);
+    font-weight: var(--weight-medium);
     color: var(--color-accent);
     background: none;
     border: none;

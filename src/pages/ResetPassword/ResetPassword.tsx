@@ -9,6 +9,7 @@ import {
   validatePassword,
 } from '@/features/auth/validation';
 import { Button } from '@/design-system/components/Button/Button';
+import { FormAlert } from '@/design-system/components/FormAlert/FormAlert';
 import { PasswordField } from '@/design-system/components/PasswordField/PasswordField';
 import { TextField } from '@/design-system/components/TextField/TextField';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
@@ -106,9 +107,7 @@ export function ResetPasswordPage() {
           <p className="reset__lead">Enter your email address and we&apos;ll send you a code.</p>
 
           {reset.requestAction.formError !== null ? (
-            <p className="reset__error" role="alert">
-              {reset.requestAction.formError}
-            </p>
+            <FormAlert variant="danger" role="alert">{reset.requestAction.formError}</FormAlert>
           ) : null}
 
           <TextField
@@ -138,9 +137,7 @@ export function ResetPasswordPage() {
           </p>
 
           {reset.verifyAction.formError !== null ? (
-            <p className="reset__error" role="alert">
-              {reset.verifyAction.formError}
-            </p>
+            <FormAlert variant="danger" role="alert">{reset.verifyAction.formError}</FormAlert>
           ) : null}
 
           <TextField
@@ -167,9 +164,7 @@ export function ResetPasswordPage() {
           <p className="reset__lead">Choose a new password.</p>
 
           {reset.completeAction.formError !== null ? (
-            <p className="reset__error" role="alert">
-              {reset.completeAction.formError}
-            </p>
+            <FormAlert variant="danger" role="alert">{reset.completeAction.formError}</FormAlert>
           ) : null}
 
           <PasswordField

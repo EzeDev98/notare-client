@@ -8,7 +8,7 @@
   .conflicts__lead {
     margin-block-start: var(--space-2);
     color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
   }
 
   .conflicts__list {
@@ -29,7 +29,7 @@
 
   .conflicts__item-heading {
     margin: 0;
-    font-size: var(--font-size-lg);
+    font-size: var(--text-lg);
   }
 
   .conflicts__panes {
@@ -56,7 +56,7 @@
 
   .conflicts__pane-title {
     margin: 0;
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
     color: var(--color-text-secondary);
   }
 
@@ -66,7 +66,7 @@
     overflow-y: auto;
     white-space: pre-wrap;
     overflow-wrap: break-word;
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
     line-height: var(--line-height-normal);
   }
 
@@ -80,7 +80,7 @@
   .conflicts__note {
     margin: var(--space-3) 0 0;
     color: var(--color-text-secondary);
-    font-size: var(--font-size-xs);
+    font-size: var(--text-xs);
   }
 
   .conflicts__centre {

@@ -7,7 +7,7 @@
 
   .voice-detail__back {
     margin-block-end: var(--space-4);
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
   }
 
   .voice-detail__header {
@@ -16,7 +16,7 @@
 
   .voice-detail__muted {
     color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
   }
 
   .voice-detail__section {
@@ -27,7 +27,7 @@
 
   .voice-detail__section-title {
     margin: 0 0 var(--space-3);
-    font-size: var(--font-size-md);
+    font-size: var(--text-md);
   }
 
   .voice-detail__danger-zone {
@@ -39,7 +39,7 @@
   .voice-detail__error {
     margin: var(--space-2) 0 0;
     color: var(--color-danger);
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
   }
 
   .voice-detail__centre {

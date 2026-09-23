@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router';
 
 import { useAccountVerification } from '@/features/auth/hooks/useAccountVerification';
 import { Button } from '@/design-system/components/Button/Button';
+import { FormAlert } from '@/design-system/components/FormAlert/FormAlert';
 import { TextField } from '@/design-system/components/TextField/TextField';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
@@ -70,9 +71,7 @@ export function VerifyAccountPage() {
 
       <div className="verify__form">
         {notice !== null ? (
-          <p className="verify__notice" role="status">
-            {notice}
-          </p>
+          <FormAlert variant="info" role="status">{notice}</FormAlert>
         ) : null}
 
         <Button

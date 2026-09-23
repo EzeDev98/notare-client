@@ -1,7 +1,7 @@
 import { useState, type AnimationEventHandler } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from 'react-router';
-import { Bell, Mail } from 'lucide-react';
+import { BellIcon, EnvelopeIcon } from '@patternfly/react-icons';
 
 import { collaborationService } from '@/features/collaboration/api/collaborationService';
 import { composeNotificationMessage } from '@/features/notifications/compose';
@@ -208,7 +208,7 @@ export function NotificationsPanel({
                   data-unread={isUnread || undefined}
                 >
                   <span className="notifications-panel__dot" aria-hidden={!isUnread}>
-                    {isUnread ? <span className="ds-visually-hidden">Unread</span> : null}
+                    {isUnread ? <span className="pf-v6-screen-reader">Unread</span> : null}
                   </span>
 
                   <div className="notifications-panel__row-main">
@@ -320,7 +320,7 @@ export function NotificationsPanel({
 
       {confirmingDelete !== null ? (
         <Modal
-          icon={<Bell aria-hidden="true" />}
+          icon={<BellIcon aria-hidden="true" />}
           description="Delete this notification? This can't be undone."
           secondaryAction={{
             label: 'Cancel',
@@ -340,7 +340,7 @@ export function NotificationsPanel({
 
       {confirmingReject !== null ? (
         <Modal
-          icon={<Mail aria-hidden="true" />}
+          icon={<EnvelopeIcon aria-hidden="true" />}
           description={
             confirmingReject.targetLabel.trim() !== '' ? (
               <>

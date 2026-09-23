@@ -5,14 +5,6 @@
     margin-block-start: var(--space-6);
   }
 
-  .login__notice,
-  .login__error {
-    margin: 0;
-    padding: var(--space-3);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
-  }
-
   /*
    * A single container for both auxiliary links, not two independent
    * `<p>` elements relying on margin collapse for spacing between them —
@@ -32,23 +24,11 @@
     gap: var(--space-2);
     margin-block-start: var(--space-6);
     text-align: center;
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
     color: var(--color-text-secondary);
   }
 
   .login__links p {
     margin: 0;
-  }
-
-  .login__notice {
-    background-color: var(--color-accent-subtle);
-    color: var(--color-text);
-  }
-
-  .login__error {
-    /* Text colour AND a border — never colour alone (§36). The message itself
-     * carries the meaning; the styling only reinforces it. */
-    border: var(--border-width) solid var(--color-danger);
-    color: var(--color-danger);
   }
 }

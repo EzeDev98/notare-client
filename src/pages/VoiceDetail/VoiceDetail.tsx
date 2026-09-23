@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { Mic } from 'lucide-react';
+import { MicrophoneIcon } from '@patternfly/react-icons';
 
 import { AudioPlayer } from '@/features/voice/components/AudioPlayer/AudioPlayer';
 import { TranscriptionPanel } from '@/features/voice/components/TranscriptionPanel/TranscriptionPanel';
@@ -160,7 +160,7 @@ export function VoiceDetailPage() {
 
       {voiceNote.data && deleteModalOpen ? (
         <Modal
-          icon={<Mic aria-hidden="true" />}
+          icon={<MicrophoneIcon aria-hidden="true" />}
           description="Delete this voice note? This voice note will be permanently deleted. This action cannot be undone."
           secondaryAction={{
             label: 'Cancel',

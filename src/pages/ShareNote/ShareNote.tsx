@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { UserX } from 'lucide-react';
+import { FormSelect } from '@patternfly/react-core';
+import { UserMinusIcon } from '@patternfly/react-icons';
 
 import { useSentCollaborations } from '@/features/collaboration/hooks/useCollaborations';
 import type { CollaborationResponse } from '@/features/collaboration/types';
@@ -197,17 +198,16 @@ function ShareManager({ noteId }: { noteId: number }) {
 
               <label className="share-note__permission">
                 <span className="share-note__permission-label">Permission</span>
-                <select
-                  className="ds-control"
+                <FormSelect
                   value={row.permission}
-                  disabled={update.isPending && update.variables?.userId === row.sharedWithUserId}
-                  onChange={(event) => {
-                    handlePermissionChange(row, event.target.value as SharePermission);
+                  isDisabled={update.isPending && update.variables?.userId === row.sharedWithUserId}
+                  onChange={(_event, value) => {
+                    handlePermissionChange(row, value as SharePermission);
                   }}
                 >
                   <option value="READ">Read only</option>
                   <option value="WRITE">Can edit</option>
-                </select>
+                </FormSelect>
               </label>
 
               <Button
@@ -234,7 +234,7 @@ function ShareManager({ noteId }: { noteId: number }) {
 
       {confirmingRevoke !== null ? (
         <Modal
-          icon={<UserX aria-hidden="true" />}
+          icon={<UserMinusIcon aria-hidden="true" />}
           title="Remove this collaborator?"
           description={
             <>

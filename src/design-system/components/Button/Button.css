@@ -1,140 +1,29 @@
 @layer components {
+  /*
+   * PatternFly draws the button; this only swaps its pill radius for
+   * Notare's control radius and uses the shared medium weight. Colours come
+   * from tokens/patternfly.css, so no variant is restyled here.
+   */
   .ds-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-
-    border: var(--border-width) solid transparent;
-    border-radius: var(--radius-md);
-    font-weight: var(--font-weight-medium);
-    line-height: 1;
-    cursor: pointer;
-
-    /* Colour only. Transitioning `all` animates layout properties too, which
-     * costs a reflow per frame for no visual gain. */
-    transition:
-      background-color var(--transition-fast),
-      border-color var(--transition-fast),
-      color var(--transition-fast);
+    --pf-v6-c-button--BorderRadius: var(--radius-sm);
+    --pf-v6-c-button--FontWeight: var(--weight-medium);
   }
+}
 
-  /* 40px clears WCAG 2.2's 24px target minimum comfortably. 44px (Apple's
-   * touch guidance) is reserved for mobile contexts in 2E, where it is
-   * genuinely a viewport decision. */
-  .ds-button[data-size='md'] {
-    min-block-size: 2.5rem;
-    padding-inline: var(--space-4);
-    font-size: var(--font-size-sm);
-  }
-
-  .ds-button[data-size='sm'] {
-    min-block-size: 2rem;
-    padding-inline: var(--space-3);
-    font-size: var(--font-size-sm);
-  }
-
+@layer components {
   /*
-   * `!important` on every variant's `color` below — not a stylistic choice,
-   * a necessary one. `tokens/reset.css` sets `input, button, textarea,
-   * select { color: inherit }`, correctly inside `@layer reset`, which
-   * SHOULD lose to this file's `@layer components` per the precedence
-   * `@layer reset, tokens, base, components, pages, utilities;` declares
-   * in global.css. In practice it does not always lose: Vite dev serves
-   * each component's CSS as its own separately-injected <style> tag
-   * (confirmed via getComputedStyle debugging — 13+ inline stylesheets,
-   * no linked hrefs), and a CSS layer's precedence is fixed at FIRST
-   * ENCOUNTER across the whole cascade — if `reset.css`'s own `@layer
-   * reset {...}` block happens to be injected before global.css's
-   * precedence statement is parsed, "reset" and "components" can end up
-   * ordered by injection order instead of by what the code declares,
-   * with no error and no warning. `primary` and `danger` are the
-   * variants where this was actually VISIBLE (their colour differs from
-   * `--color-text`, what the reset's `inherit` resolves to); `secondary`
-   * and `ghost` were equally exposed but happened to look correct by
-   * coincidence, since they already use `--color-text` themselves.
-   * `!important` sidesteps the whole layer-ordering question: among
-   * declarations for the same property, `!important` always beats a
-   * non-`!important` one regardless of origin or layer, and
-   * `color: inherit` above is not `!important`.
+   * PatternFly's --pf-v6-c-button--m-primary--Color already points at
+   * --pf-t--global--text--color--on-brand--default, which tokens/
+   * patternfly.css correctly bridges to --color-text-on-accent (white).
+   * But this codebase's `@layer` precedence (reset, tokens, base,
+   * components, pages, utilities) is not reliably honoured by Vite's
+   * dev-mode CSS injection order — the same issue colors.css documents
+   * for the input focus-ring fix — so PatternFly's own default can load
+   * after the token bridge and win, leaving primary-button text dark on
+   * the purple fill. `!important` on the class directly sidesteps the
+   * custom-property cascade fight entirely, the same way colors.css does.
    */
-  .ds-button[data-variant='primary'] {
-    background-color: var(--color-accent);
+  .ds-button.pf-m-primary {
     color: var(--color-text-on-accent) !important;
-  }
-
-  .ds-button[data-variant='primary']:hover:not(:disabled),
-  .ds-button[data-variant='primary']:active:not(:disabled) {
-    background-color: var(--color-accent-hover);
-  }
-
-  /* SECONDARY — the default. Most buttons in a calm interface should not be
-   * coloured (§28: 90–95% neutral). */
-  .ds-button[data-variant='secondary'] {
-    background-color: var(--color-surface);
-    border-color: var(--color-border-strong);
-    color: var(--color-text) !important;
-  }
-
-  .ds-button[data-variant='secondary']:hover:not(:disabled),
-  .ds-button[data-variant='secondary']:active:not(:disabled) {
-    background-color: var(--color-accent-faint);
-  }
-
-  /* GHOST — toolbar and inline actions, where a border would be noise. */
-  .ds-button[data-variant='ghost'] {
-    background-color: transparent;
-    color: var(--color-text) !important;
-  }
-
-  .ds-button[data-variant='ghost']:hover:not(:disabled),
-  .ds-button[data-variant='ghost']:active:not(:disabled) {
-    background-color: var(--color-accent-subtle);
-  }
-
-  /* DANGER — white on #B3261E is 6.54:1. */
-  .ds-button[data-variant='danger'] {
-    background-color: var(--color-danger);
-    color: var(--color-text-on-danger) !important;
-  }
-
-  .ds-button[data-variant='danger']:hover:not(:disabled),
-  .ds-button[data-variant='danger']:active:not(:disabled) {
-    filter: brightness(0.92);
-  }
-
-  .ds-button:disabled {
-    /* `default` (plain arrow), not `not-allowed`: `not-allowed` reads as
-     * "you did something wrong," which is misleading on a Previous/Next-
-     * style button that's disabled simply because there's no more data in
-     * that direction, not because of an error. It can't be left unset
-     * either — the base `.ds-button` rule above sets `cursor: pointer`
-     * unconditionally, and without an override here that leaks through on
-     * hover, falsely suggesting a disabled button is still clickable.
-     * Opacity and the `disabled` attribute (announced to assistive tech)
-     * remain as the other two signals §36 asked for.
-     */
-    cursor: default;
-    opacity: 0.5;
-  }
-
-  /*
-   * Label hidden but still occupying its space, so the button does not resize
-   * when loading starts. visibility:hidden rather than opacity:0 because it
-   * also removes it from the accessibility tree — the spinner's "Working" is
-   * the announcement while busy.
-   */
-  .ds-button[data-loading] .ds-button__label {
-    visibility: hidden;
-  }
-
-  .ds-button[data-loading] {
-    position: relative;
-  }
-
-  .ds-button[data-loading] .ds-spinner {
-    position: absolute;
-    inset: 0;
-    margin: auto;
   }
 }

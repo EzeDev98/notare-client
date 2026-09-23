@@ -50,7 +50,7 @@
     background: none;
     color: var(--color-text);
     font: inherit;
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
     text-align: start;
     cursor: pointer;
   }

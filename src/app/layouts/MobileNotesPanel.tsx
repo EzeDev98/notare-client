@@ -1,5 +1,5 @@
 import type { AnimationEventHandler } from 'react';
-import { SquarePen, Trash2, X } from 'lucide-react';
+import { EditIcon, TimesIcon, TrashIcon } from '@patternfly/react-icons';
 
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { AnimatedSidebarNoteList } from '@/features/notes/components/AnimatedSidebarNoteList/AnimatedSidebarNoteList';
@@ -95,7 +95,7 @@ export function MobileNotesPanel({
           aria-label="Close notes"
           onClick={onClose}
         >
-          <X aria-hidden="true" />
+          <TimesIcon aria-hidden="true" />
         </button>
 
         <div className="mobile-notes-panel__mobile-header">
@@ -106,7 +106,7 @@ export function MobileNotesPanel({
               aria-label="New note"
               onClick={onCreateNote}
             >
-              <SquarePen aria-hidden="true" />
+              <EditIcon aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -115,7 +115,7 @@ export function MobileNotesPanel({
               disabled={!hasActiveNote}
               onClick={onDeleteActive}
             >
-              <Trash2 aria-hidden="true" />
+              <TrashIcon aria-hidden="true" />
             </button>
           </div>
           <button
@@ -124,7 +124,7 @@ export function MobileNotesPanel({
             aria-label="Cancel"
             onClick={onClose}
           >
-            <X aria-hidden="true" />
+            <TimesIcon aria-hidden="true" />
           </button>
         </div>
       </header>

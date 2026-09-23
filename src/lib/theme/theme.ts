@@ -27,6 +27,7 @@ export type ResolvedTheme = 'light' | 'dark';
  */
 export const THEME_STORAGE_KEY = 'notare.theme';
 export const THEME_ATTRIBUTE = 'data-theme';
+export const PATTERNFLY_DARK_CLASS = 'pf-v6-theme-dark';
 
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 
@@ -77,6 +78,9 @@ export function resolveTheme(preference: ThemePreference): ResolvedTheme {
  */
 export function applyTheme(theme: ResolvedTheme): void {
   document.documentElement.setAttribute(THEME_ATTRIBUTE, theme);
+  // PatternFly's own dark palette keys off this class (index.html sets it
+  // before first paint too).
+  document.documentElement.classList.toggle(PATTERNFLY_DARK_CLASS, theme === 'dark');
 }
 
 /**

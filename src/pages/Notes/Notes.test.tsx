@@ -175,7 +175,10 @@ describe('the notes list', () => {
     await screen.findByRole('heading', { name: /nothing here yet/i });
     expect(screen.queryByRole('link', { name: /note 1/i })).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /undo/i }));
+    // PatternFly's toast (AlertGroup isToast) mounts its portal target in a
+    // useEffect rather than synchronously, so it lands one tick after the
+    // triggering click — findByRole (not getByRole) waits for that.
+    await user.click(await screen.findByRole('button', { name: /undo/i }));
     expect(await screen.findByRole('link', { name: /note 1/i })).toBeInTheDocument();
   });
 

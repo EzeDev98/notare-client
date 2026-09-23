@@ -53,18 +53,13 @@
    */
   .public-shell__heading {
     margin: 0;
-    font-size: var(--font-size-lg);
-    /* Lighter than the base <h1> rule's semibold (base.css) — a form title
-     * doesn't need the same weight as a page heading. */
-    font-weight: var(--font-weight-medium);
-    line-height: var(--line-height-snug);
     text-align: center;
   }
 
   .public-shell__subtitle {
     margin: var(--space-1) 0 0;
     color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
     text-align: center;
   }
 }

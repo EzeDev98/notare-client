@@ -1,147 +1,90 @@
 @layer tokens {
   :root {
     /*
-     * SYSTEM FONT STACK (§29). No web font, deliberately: a downloaded font
-     * costs a network round trip before text is readable, and either flashes
-     * or blocks. The system stack renders instantly and makes the app feel
-     * native on each platform — which is exactly the "gets out of the way"
-     * quality §27 is after.
-     *
-     * Falls through: Apple's SF, then Windows' Segoe, then Android's Roboto,
-     * then generics.
+     * TYPE TOKENS — copied from internal-auth-client's shared/tokens.css so
+     * both apps share one type system. Red Hat Text / Red Hat Display are
+     * PatternFly's own faces; the font files come from PatternFly's base.css
+     * (imported in global.css), so nothing extra is downloaded here.
      */
-    --font-family-sans:
-      -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-      sans-serif;
+    --font-body: 'Red Hat Text', -apple-system, 'Segoe UI', sans-serif;
+    --font-heading: 'Red Hat Display', -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'Red Hat Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-    --font-family-mono:
-      ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+    --text-xs: 12px;
+    --text-sm: 13px;
+    --text-base: 14px;
+    --text-md: 16px;
+    --text-lg: 20px; /* every page title */
+
+    --weight-regular: 400;
+    --weight-medium: 500;
+    --weight-semibold: 600;
 
     /*
-     * TYPE SCALE, in rem so it scales with the user's browser setting.
-     * Restrained ratio — roughly 1.2 between steps at the top, tighter at the
-     * bottom where precision matters more than drama.
+     * Notare-only reading tokens (internal-auth has no long-form text).
+     * Kept because a note is read for an hour, not scanned like a table.
      */
-    --font-size-xs: 0.75rem; /* 12px — timestamps, counts */
-    --font-size-sm: 0.875rem; /* 14px — labels, secondary, buttons */
-    --font-size-base: 1rem; /* 16px — UI default */
-    --font-size-md: 1.0625rem; /* 17px — NOTE CONTENT. See below. */
-    --font-size-lg: 1.25rem; /* 20px — note titles, section headings */
-    --font-size-xl: 1.5rem; /* 24px — page headings */
-    --font-size-2xl: 1.875rem; /* 30px — display */
+    --line-height-tight: 1.2;
+    --line-height-snug: 1.35;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.7;
 
-    /*
-     * Note content is 17px, one step ABOVE the UI default. §29 says do not make
-     * body text small, and this is the text people read for an hour. The
-     * interface is 16px; the writing is bigger than the interface. That
-     * hierarchy is the point.
-     */
-
-    --line-height-tight: 1.2; /* large headings — tight so they read as one unit */
-    --line-height-snug: 1.35; /* small headings, note titles */
-    --line-height-normal: 1.5; /* UI text */
-    --line-height-relaxed: 1.7; /* PROSE. Long-form reading needs the air. */
-
-    /* Three weights only (§29). If something needs more emphasis than 600,
-     * the answer is size or space, not a heavier face. */
-    --font-weight-normal: 400;
-    --font-weight-medium: 500;
-    --font-weight-semibold: 600;
-
-    /*
-     * Large text at default tracking looks loose — a quirk of scaling a face
-     * designed for body copy. A fraction of an em back at display sizes only.
-     */
     --tracking-tight: -0.011em;
     --tracking-normal: 0;
 
-    /*
-     * MEASURE, in ch — the width of the "0" glyph, so this stays ~68
-     * characters at any font size or zoom level. Comfortable prose sits around
-     * 45–75 characters per line; past that the eye loses its place returning
-     * to the start of the next line.
-     */
     --measure-prose: 68ch;
     --measure-narrow: 48ch;
   }
 }
 
 @layer base {
-  /*
-   * Element defaults. Every one of these is overridable by a component or page
-   * layer without a specificity fight — that is what the layer order buys.
-   */
-
   body {
-    font-family: var(--font-family-sans);
-    font-size: var(--font-size-base);
+    font-family: var(--font-body);
+    font-size: var(--text-md);
     line-height: var(--line-height-normal);
-    font-weight: var(--font-weight-normal);
-
-    /* No colour or background here — 2B owns those. The page stays
-     * browser-default until then, on purpose. */
+    font-weight: var(--weight-regular);
   }
 
+  /*
+   * THE page-title rule — the only place a title's size lives. Matches
+   * internal-auth's page title (Red Hat Display, 20px, semibold). Pages
+   * must not set their own font-size on an <h1>.
+   */
   h1 {
-    font-size: var(--font-size-xl);
+    font-family: var(--font-heading);
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
     line-height: var(--line-height-tight);
-    /* Medium, not semibold — a section title doesn't need the same weight
-     * as a heavy display heading, and reads closer to the system-UI weight
-     * native Apple apps use for a page title. */
-    font-weight: var(--font-weight-medium);
-    letter-spacing: var(--tracking-tight);
-    /* text-secondary, not text — softer than full-strength ink, same
-     * reasoning as the weight above. */
-    color: var(--color-text-secondary);
+    color: var(--color-text);
+    /* Pages that need a left-aligned title opt out in their own CSS. */
     text-align: center;
   }
 
-  /*
-   * Every page-level <h1> centres itself on a small/tablet screen — a
-   * left-aligned title reads like leftover desktop layout on a single
-   * narrow column. 1023px pairs with AppLayout's own 1024px breakpoint
-   * (its own @media block) so there's no gap between "mobile/tablet" and
-   * "desktop" here.
-   *
-   * Collaborations opts out (see Invitations.css): its <h1> sits in a flex
-   * row next to "Invite someone" and stays left-aligned there.
-   */
-  @media (max-width: 1023px) {
-    h1 {
-      text-align: center;
-    }
-  }
-
-  h2 {
-    font-size: var(--font-size-xl);
-    line-height: var(--line-height-tight);
-    font-weight: var(--font-weight-semibold);
-    letter-spacing: var(--tracking-tight);
-  }
-
+  h2,
   h3 {
-    font-size: var(--font-size-lg);
+    font-family: var(--font-heading);
+    font-size: var(--text-md);
     line-height: var(--line-height-snug);
-    font-weight: var(--font-weight-semibold);
+    font-weight: var(--weight-semibold);
   }
 
   h4,
   h5,
   h6 {
-    font-size: var(--font-size-base);
+    font-size: var(--text-base);
     line-height: var(--line-height-snug);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--weight-medium);
   }
 
   small {
-    font-size: var(--font-size-sm);
+    font-size: var(--text-sm);
   }
 
   code,
   kbd,
   samp,
   pre {
-    font-family: var(--font-family-mono);
+    font-family: var(--font-mono);
     font-size: 0.9em; /* em, not rem: monospace runs large next to its siblings */
   }
 }

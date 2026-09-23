@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { Mail } from 'lucide-react';
+import { EnvelopeIcon } from '@patternfly/react-icons';
 
 import {
   useReceivedCollaborations,
@@ -226,7 +226,7 @@ function ReceivedList() {
 
     {confirmingRejectId !== null ? (
       <Modal
-        icon={<Mail aria-hidden="true" />}
+        icon={<EnvelopeIcon aria-hidden="true" />}
         description="Reject this invite? You won't get access to this invitation."
         secondaryAction={{
           label: 'Cancel',
@@ -359,7 +359,7 @@ function SentList() {
 
     {confirmingCancelId !== null ? (
       <Modal
-        icon={<Mail aria-hidden="true" />}
+        icon={<EnvelopeIcon aria-hidden="true" />}
         description="Cancel this invite? This invitation will no longer be available to the recipient."
         secondaryAction={{
           label: 'Keep invite',

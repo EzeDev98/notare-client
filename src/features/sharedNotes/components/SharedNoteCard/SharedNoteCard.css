@@ -34,7 +34,7 @@
     /*
      * `!important` on both `font-size` and `font-weight` — this element is
      * a real `<h2>` (SharedNoteCard.tsx), and `typography.css`'s base `h2`
-     * rule (`@layer base`) sets `font-size: var(--font-size-xl)` /
+     * rule (`@layer base`) sets `font-size: var(--text-lg)` /
      * `font-weight: semibold`. `@layer components` (this file) is
      * supposed to beat `@layer base` regardless of selector specificity —
      * but per the exact injection-order hazard Button.css's own comment
@@ -44,8 +44,8 @@
      * `font-size-sm`, not `font-size-base` — one step smaller still, per
      * request.
      */
-    font-size: 18px !important;
-    font-weight: var(--font-weight-normal) !important;
+    font-size: var(--text-md) !important;
+    font-weight: var(--weight-regular) !important;
     line-height: var(--line-height-snug);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -54,13 +54,13 @@
 
   .shared-note-card__untitled {
     color: var(--color-text-secondary);
-    font-weight: var(--font-weight-normal);
+    font-weight: var(--weight-regular);
   }
 
   .shared-note-card__preview {
     margin: var(--space-2) 0 0;
     color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
     line-height: var(--line-height-normal);
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -74,7 +74,7 @@
     align-items: center;
     margin: var(--space-6) 0 0;
     color: var(--color-text-secondary);
-    font-size: var(--font-size-xs);
+    font-size: var(--text-xs);
   }
 
   .shared-note-card__badge {

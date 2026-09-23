@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pause, Play } from 'lucide-react';
+import { PauseIcon, PlayIcon } from '@patternfly/react-icons';
 
 import { useAttachedAudioBlob } from '@/features/sharedNotes/hooks/useAttachedAudioBlob';
 import { formatUserInitials, useUserLookup } from '@/features/userLookup/hooks/useUserLookup';
@@ -153,9 +153,9 @@ function SharedInlineVoiceNote({
             aria-label={playing ? 'Pause voice note' : 'Play voice note'}
           >
             {playing ? (
-              <Pause aria-hidden="true" />
+              <PauseIcon aria-hidden="true" />
             ) : (
-              <Play aria-hidden="true" />
+              <PlayIcon aria-hidden="true" />
             )}
           </button>
 

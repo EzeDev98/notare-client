@@ -17,7 +17,7 @@
 .collaborator-picker__status {
   padding: var(--space-2) var(--space-3);
   color: var(--color-text-secondary);
-  font-size: 0.875rem;
+  font-size: var(--text-base);
 }
 
 .collaborator-picker__status--error {
@@ -45,5 +45,5 @@
 
 .collaborator-picker__username {
   color: var(--color-text-secondary);
-  font-size: 0.875rem;
+  font-size: var(--text-base);
 }

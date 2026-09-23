@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { Pause, Play } from 'lucide-react';
+import { PauseIcon, PlayIcon } from '@patternfly/react-icons';
 
 import { useAudioBlob } from '@/features/voice/hooks/useAudioBlob';
 import type { VoiceNoteResponse } from '@/features/voice/types';
@@ -203,9 +203,9 @@ function InlineVoiceNote({
             aria-label={playing ? 'Pause voice note' : 'Play voice note'}
           >
             {playing ? (
-              <Pause aria-hidden="true" />
+              <PauseIcon aria-hidden="true" />
             ) : (
-              <Play aria-hidden="true" />
+              <PlayIcon aria-hidden="true" />
             )}
           </button>
 

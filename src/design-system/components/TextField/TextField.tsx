@@ -1,14 +1,10 @@
-import { useId, type ComponentPropsWithoutRef } from 'react';
+import { useId, type ChangeEvent, type ComponentPropsWithoutRef, type FormEvent } from 'react';
+import { TextInput, type TextInputProps } from '@patternfly/react-core';
 
 import { describedBy } from '@/design-system/components/Field/describedBy';
+import { omitUndefined } from '@/design-system/lib/omitUndefined';
 import { Field, type FieldMessages } from '@/design-system/components/Field/Field';
 
-/**
- * Omit the props this component owns, so a caller cannot pass an id that
- * breaks the label association or an aria-describedby that overwrites the
- * error wiring. The type makes the mistake unrepresentable rather than
- * documenting it.
- */
 interface TextFieldProps
   extends
     Omit<ComponentPropsWithoutRef<'input'>, 'id' | 'aria-describedby' | 'aria-invalid'>,
@@ -16,32 +12,41 @@ interface TextFieldProps
   label: string;
 }
 
-export function TextField({ label, hint, error, className, ...rest }: TextFieldProps) {
-  /*
-   * useId gives a stable, unique id per component instance. Hand-written ids
-   * collide the moment the same field renders twice on one page; Math.random()
-   * changes on every render, silently breaking the label association after the
-   * first re-render.
-   */
+/** A labelled PatternFly TextInput. Native input props pass straight through. */
+export function TextField({
+  label,
+  hint,
+  error,
+  type,
+  value,
+  onChange,
+  disabled,
+  required,
+  ...rest
+}: TextFieldProps) {
   const base = useId();
   const ids = { hintId: `${base}-hint`, errorId: `${base}-error` };
 
   return (
-    <Field label={label} controlId={base} {...ids} hint={hint} error={error} floating>
-      <input
+    <Field label={label} controlId={base} {...ids} hint={hint} error={error}>
+      <TextInput
+        {...omitUndefined(rest)}
         id={base}
-        // A real placeholder attribute (a single space when the caller
-        // doesn't need actual placeholder text) so the floating label's CSS
-        // — driven by `:placeholder-shown` — has something to key off. A
-        // caller-supplied placeholder in `rest` still wins, since it's
-        // spread after this.
-        placeholder=" "
-        className={['ds-control', className].filter(Boolean).join(' ')}
-        // Announces the error STATE. describedby announces the error TEXT.
-        // Both are needed; either alone leaves half the message.
-        aria-invalid={error !== undefined || undefined}
+        // PatternFly narrows `type` to the text-like inputs it supports.
+        {...(type === undefined ? {} : { type: type as NonNullable<TextInputProps['type']> })}
+        {...(value === undefined ? {} : { value: value as string | number })}
+        {...(onChange === undefined
+          ? {}
+          : {
+              // PatternFly passes a FormEvent; it is the same React change event.
+              onChange: (event: FormEvent<HTMLInputElement>) => {
+                onChange(event as ChangeEvent<HTMLInputElement>);
+              },
+            })}
+        isDisabled={disabled === true}
+        isRequired={required === true}
+        validated={error === undefined ? 'default' : 'error'}
         aria-describedby={describedBy(ids, { hint, error })}
-        {...rest}
       />
     </Field>
   );

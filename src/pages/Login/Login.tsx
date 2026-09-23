@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { Button } from '@/design-system/components/Button/Button';
+import { FormAlert } from '@/design-system/components/FormAlert/FormAlert';
 import { PasswordField } from '@/design-system/components/PasswordField/PasswordField';
 import { TextField } from '@/design-system/components/TextField/TextField';
 import { fieldErrors, isForbidden, isOffline, isUnauthorized, statusOf } from '@/lib/http/errors';
@@ -121,11 +122,11 @@ export function LoginPage() {
       <p className="public-shell__subtitle">Sign in to your account</p>
 
       {authState.status === 'session-expired' ? (
-        <p className="login__notice" role="status">
+        <FormAlert variant="info" role="status">
           {authState.reason === 'revoked'
             ? 'This session was signed out from another device.'
             : 'Your session expired. Please sign in again.'}
-        </p>
+        </FormAlert>
       ) : null}
 
       {/*
@@ -134,18 +135,14 @@ export function LoginPage() {
         form. All free, and all absent from a div.
       */}
       {readVerified(location.state) ? (
-        <p className="login__notice" role="status">
-          Your account is verified. Sign in to continue.
-        </p>
+        <FormAlert variant="info" role="status">Your account is verified. Sign in to continue.</FormAlert>
       ) : null}
 
       <form className="login__form" onSubmit={(event) => void handleSubmit(event)} noValidate>
         {formError !== null ? (
           // role="alert" so it is announced when it appears, rather than being
           // a red sentence only sighted users discover.
-          <p className="login__error" role="alert">
-            {formError}
-          </p>
+          <FormAlert variant="danger" role="alert">{formError}</FormAlert>
         ) : null}
 
         <TextField

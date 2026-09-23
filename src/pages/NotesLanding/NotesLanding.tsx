@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { PlusIcon } from '@patternfly/react-icons';
 import { Link, Navigate } from 'react-router';
 
 import type { NoteView } from '@/features/notes/local/noteMappers';
@@ -73,7 +73,7 @@ export function NotesLandingPage() {
         */}
         <Button variant="primary" className="notes-landing__cta-button">
           Create new note
-          <Plus aria-hidden="true" />
+          <PlusIcon aria-hidden="true" />
         </Button>
       </Link>
     </div>

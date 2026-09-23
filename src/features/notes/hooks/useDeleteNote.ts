@@ -3,12 +3,19 @@ import { useCallback } from 'react';
 import { useToast } from '@/app/providers/toast-context';
 import { noteService } from '@/features/notes/api/noteService';
 import type { NoteView } from '@/features/notes/local/noteMappers';
-import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import { isOffline } from '@/lib/http/errors';
 
 /**
- * Moves a note to the trash, with an undo.
+ * Moves a note to the trash.
+ *
+ * No in-toast undo any more (product decision, not a regression): the toast
+ * is now the same plain "Note moved to trash." used everywhere else a note
+ * leaves the current view, with no quoted title and no action link. Getting
+ * the note back is still one tap away on the Trash screen's own Restore
+ * button (useTrash's `restore`), which is the same setDeleted(false) +
+ * cancelPendingDelete + restoreNote sequence this hook used to run from the
+ * toast's Undo handler.
  *
  * The `onRemove` callback is gone for the same reason it went from
  * useNoteActions: the list is a live query, so setting `deleted` on the row
@@ -41,41 +48,13 @@ export function useDeleteNote() {
 
   return useCallback(
     async (note: NoteView) => {
-      // 1C: no title field — the note domain has none. deriveNoteLabel
-      // always returns something (falling back to "New Note"), so there is
-      // no "Note moved to trash." fallback case left to special-case here.
-      const label = deriveNoteLabel(note.content).label;
       // Same fixed 18-character cutoff as Archived and Trash (NoteCard's
-      // `titleMaxLength` / Trash.tsx's own copy of the same rule) — a toast
-      // is a fixed-width strip, not a resizable card, so it gets the same
-      // hard character count rather than a CSS ellipsis.
-      const toastLabel = label.length > 18 ? `${label.slice(0, 18)}…` : label;
 
       await noteRepository.setDeleted(note.localId, true);
 
       const written = await noteRepository.getByLocalId(note.localId);
 
-      toast.show({
-        message: `“${toastLabel}” moved to trash.`,
-        action: {
-          label: 'Undo',
-          onAction: () => {
-            toast.dismiss();
-            void noteRepository.setDeleted(note.localId, false).then(async () => {
-              // A queued DELETE must not survive an undo — see ADR-006 and
-              // outboxRepository.cancelPendingDelete for why restore itself
-              // stays off the outbox even though this cancellation touches it.
-              await outboxRepository.cancelPendingDelete(note.localId);
-
-              if (written?.serverId == null) return;
-              // Best-effort. If it fails the row is un-deleted locally and
-              // dirty; restore's own reconnect retry (8F) is what reconciles
-              // it, same as any other restore.
-              await noteService.restoreNote(written.serverId).catch(() => undefined);
-            });
-          },
-        },
-      });
+      toast.show({ message: 'Note moved to trash.' });
 
       if (written?.serverId == null) {
         /*

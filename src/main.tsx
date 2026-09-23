@@ -1,3 +1,8 @@
+// FIRST import, on purpose: global.css declares the @layer order, and a
+// layer's position is fixed the first time the browser sees it. Any
+// component CSS injected before this would silently reorder the layers.
+import '@/design-system/global.css';
+
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -5,7 +10,6 @@ import { App } from '@/app/App';
 import { startKeepAlive } from '@/lib/keepAlive';
 import { initInstallPrompt } from '@/pwa/installPrompt';
 import { registerServiceWorker } from '@/pwa/registerServiceWorker';
-import '@/design-system/global.css';
 
 const rootElement = document.getElementById('root');
 

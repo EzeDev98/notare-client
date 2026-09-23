@@ -1,9 +1,0 @@
-@layer components {
-  .ds-textarea {
-    /* Vertical only. Horizontal resizing lets a user drag a field wider than
-     * its container and break the layout around it. */
-    resize: vertical;
-    min-block-size: 4rem;
-    line-height: var(--line-height-normal);
-  }
-}

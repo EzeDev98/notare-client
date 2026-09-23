@@ -10,26 +10,7 @@ import {
 } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Link, NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router';
-import {
-  Archive,
-  Bell,
-  Handshake,
-  Monitor,
-  Moon,
-  NotebookText,
-  PanelLeft,
-  RotateCcw,
-  Search,
-  Settings,
-  Share,
-  SquarePen,
-  Sun,
-  Trash2,
-  TriangleAlert,
-  NotebookPen,
-  Users,
-  X,
-} from 'lucide-react';
+import { ArchiveIcon, BarsIcon, BellIcon, BookIcon, CogIcon, DesktopIcon, EditIcon, ExclamationTriangleIcon, HandshakeIcon, MoonIcon, PencilAltIcon, SearchIcon, ShareSquareIcon, SunIcon, TimesIcon, TrashIcon, UndoIcon, UsersIcon } from '@patternfly/react-icons';
 
 import { navItems, type NavItem } from '@/app/layouts/navItems';
 import { RouteFocus } from '@/app/RouteFocus';
@@ -111,12 +92,12 @@ const desktopOnlyItems: NavItem[] = [
   {
     to: '/archived',
     label: 'Archived',
-    icon: <Archive aria-hidden="true" />,
+    icon: <ArchiveIcon aria-hidden="true" />,
   },
   {
     to: '/trash',
     label: 'Trash',
-    icon: <Trash2 aria-hidden="true" />,
+    icon: <TrashIcon aria-hidden="true" />,
   },
 ];
 
@@ -135,7 +116,7 @@ const desktopOnlyItems: NavItem[] = [
 const sharedWithMeItem: NavItem = {
   to: '/shared',
   label: 'Shared with me',
-  icon: <Users aria-hidden="true" />,
+  icon: <UsersIcon aria-hidden="true" />,
 };
 
 const voiceNotesItem: NavItem = {
@@ -146,7 +127,7 @@ const voiceNotesItem: NavItem = {
 const collaborationItem: NavItem = {
   to: '/collaborations',
   label: 'Collaborations',
-  icon: <Handshake aria-hidden="true" />,
+  icon: <HandshakeIcon aria-hidden="true" />,
 };
 
 const accountItem: NavItem = {
@@ -1046,7 +1027,7 @@ export function AppLayout() {
         Only 'offline' and 'error' interrupt; 'syncing' is routine progress,
         exactly as SaveIndicator treats its own 'saving'.
       */}
-      <p className="ds-visually-hidden" role="status">
+      <p className="pf-v6-screen-reader" role="status">
         {syncMessage && syncStatus.status !== 'syncing' ? syncMessage.label : ''}
       </p>
       {/*
@@ -1106,7 +1087,7 @@ export function AppLayout() {
             aria-pressed={isFoldersOpen}
             onClick={toggleFolders}
           >
-            <PanelLeft aria-hidden="true" />
+            <BarsIcon aria-hidden="true" />
           </button>
 
           {/*
@@ -1137,7 +1118,7 @@ export function AppLayout() {
               setIsMobileNotesOpen(true);
             }}
           >
-            <NotebookText aria-hidden="true" />
+            <BookIcon aria-hidden="true" />
           </button>
           <button
             type="button"
@@ -1149,7 +1130,7 @@ export function AppLayout() {
               setNoteToDelete(toView(activeNoteRow));
             }}
           >
-            <Trash2 aria-hidden="true" />
+            <TrashIcon aria-hidden="true" />
           </button>
         </div>
 
@@ -1175,7 +1156,7 @@ export function AppLayout() {
               void handleCreateNote();
             }}
           >
-            <SquarePen aria-hidden="true" />
+            <EditIcon aria-hidden="true" />
           </button>
 
           {/*
@@ -1216,7 +1197,7 @@ export function AppLayout() {
                   setNotificationsOpen(true);
                 }}
               >
-                <Bell aria-hidden="true" />
+                <BellIcon aria-hidden="true" />
               </button>
 
               {notificationsOpen || notificationsClosing ? (
@@ -1234,7 +1215,7 @@ export function AppLayout() {
                 className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined app-shell__toolbar-share"
                 aria-label="Share this note"
               >
-                <Share aria-hidden="true" />
+                <ShareSquareIcon aria-hidden="true" />
               </Link>
             ) : activeVoiceNoteId !== null ? (
               <Link
@@ -1242,7 +1223,7 @@ export function AppLayout() {
                 className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined app-shell__toolbar-share"
                 aria-label="Share this recording"
               >
-                <Share aria-hidden="true" />
+                <ShareSquareIcon aria-hidden="true" />
               </Link>
             ) : (
               <button
@@ -1251,7 +1232,7 @@ export function AppLayout() {
                 aria-label="Share this note"
                 disabled
               >
-                <Share aria-hidden="true" />
+                <ShareSquareIcon aria-hidden="true" />
               </button>
             )}
 
@@ -1271,7 +1252,7 @@ export function AppLayout() {
                   setIsToolbarSearchExpanded(true);
                 }}
               >
-                <Search aria-hidden="true" />
+                <SearchIcon aria-hidden="true" />
               </button>
 
               <form
@@ -1279,7 +1260,7 @@ export function AppLayout() {
                 role="search"
                 onSubmit={handleToolbarSearchSubmit}
               >
-                <Search aria-hidden="true" />
+                <SearchIcon aria-hidden="true" />
                 <input
                   type="search"
                   placeholder="Search"
@@ -1304,7 +1285,7 @@ export function AppLayout() {
                     setIsToolbarSearchExpanded(false);
                   }}
                 >
-                  <X aria-hidden="true" />
+                  <TimesIcon aria-hidden="true" />
                 </button>
               </form>
             </div>
@@ -1357,7 +1338,7 @@ export function AppLayout() {
               }}
             >
               <span className="app-shell__nav-icon">
-                <RotateCcw aria-hidden="true" />
+                <UndoIcon aria-hidden="true" />
               </span>
               <span className="app-shell__nav-label">Reset this device</span>
             </div>
@@ -1469,7 +1450,7 @@ export function AppLayout() {
               }}
             >
               <span className="app-shell__nav-icon">
-                <Settings aria-hidden="true" />
+                <CogIcon aria-hidden="true" />
               </span>
               <span className="app-shell__nav-label">Settings</span>
             </button>
@@ -1508,11 +1489,11 @@ export function AppLayout() {
           >
             <span className="app-shell__nav-icon">
               {themePreference === 'system' ? (
-                <Monitor aria-hidden="true" />
+                <DesktopIcon aria-hidden="true" />
               ) : themePreference === 'dark' ? (
-                <Moon aria-hidden="true" />
+                <MoonIcon aria-hidden="true" />
               ) : (
-                <Sun aria-hidden="true" />
+                <SunIcon aria-hidden="true" />
               )}
             </span>
             <span className="app-shell__nav-label">Theme</span>
@@ -1601,7 +1582,7 @@ export function AppLayout() {
 
       {resetConfirmation === 'reset' ? (
         <Modal
-          icon={<TriangleAlert aria-hidden="true" />}
+          icon={<ExclamationTriangleIcon aria-hidden="true" />}
           title="Reset this device?"
           description={
             <>
@@ -1625,7 +1606,7 @@ export function AppLayout() {
 
       {resetConfirmation === 'reset-unsynced' ? (
         <Modal
-          icon={<TriangleAlert aria-hidden="true" />}
+          icon={<ExclamationTriangleIcon aria-hidden="true" />}
           title="Unsynced changes remain"
           description={
             <>
@@ -1672,7 +1653,7 @@ export function AppLayout() {
               the selected note?
             </>
           }
-          icon={<NotebookPen aria-hidden="true" />}
+          icon={<PencilAltIcon aria-hidden="true" />}
           secondaryAction={{
             label: 'Cancel',
             onClick: () => {

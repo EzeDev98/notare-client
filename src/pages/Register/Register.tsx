@@ -10,6 +10,7 @@ import {
   validateUsername,
 } from '@/features/auth/validation';
 import { Button } from '@/design-system/components/Button/Button';
+import { FormAlert } from '@/design-system/components/FormAlert/FormAlert';
 import { PasswordField } from '@/design-system/components/PasswordField/PasswordField';
 import { TextField } from '@/design-system/components/TextField/TextField';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
@@ -103,9 +104,7 @@ export function RegisterPage() {
 
       <form className="register__form" onSubmit={(event) => void handleSubmit(event)} noValidate>
         {registration.formError !== null ? (
-          <p className="register__error" role="alert">
-            {registration.formError}
-          </p>
+          <FormAlert variant="danger" role="alert">{registration.formError}</FormAlert>
         ) : null}
 
         <div className="register__row">

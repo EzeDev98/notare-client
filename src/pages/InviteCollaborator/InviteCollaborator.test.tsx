@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -382,12 +382,18 @@ describe('inviting a collaborator', () => {
 
     await user.click(result);
 
-    expect(
-      await screen.findByRole('dialog'),
-    ).toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toBeInTheDocument();
 
+    // Two elements share the accessible name "Close" here: PatternFly's own
+    // dialog-corner "X" (a Modal.css rule hides it in the real app, since
+    // this dialog's explicit actions already cover dismissal — but that CSS
+    // isn't loaded in this test environment) and this dialog's own footer
+    // action. Scoping to the footer targets the one actually meant to be
+    // clicked.
+    const footer = dialog.querySelector('.pf-v6-c-modal-box__footer');
     await user.click(
-      screen.getByRole('button', {
+      within(footer as HTMLElement).getByRole('button', {
         name: 'Close',
       }),
     );

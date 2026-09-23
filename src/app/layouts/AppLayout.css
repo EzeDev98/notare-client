@@ -283,6 +283,13 @@
     display: none;
   }
 
+  /* Requested by name: no focus ring on this one icon specifically —
+     every other toolbar/nav control keeps the global :focus-visible ring
+     (colors.css) for keyboard users. */
+  .app-shell__toolbar-folders-toggle:focus-visible {
+    outline: none;
+  }
+
   /*
    * The tablet rail's own theme control — hidden by default (base = the
    * <640px bottom bar, which reaches theme via the Settings slide-in
@@ -443,8 +450,8 @@
 
   .app-shell__toolbar-search svg:first-child {
     flex-shrink: 0;
-    inline-size: 23px;
-    block-size: 23px;
+    inline-size: 19px;
+    block-size: 19px;
   }
 
   .app-shell__toolbar-search-toggle,
@@ -459,8 +466,8 @@
     background: none;
     color: var(--color-text);
     font: inherit;
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-normal);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-regular);
   }
 
   .app-shell__toolbar-search input:focus-visible {
@@ -628,7 +635,7 @@
 
     color: var(--color-text-secondary);
     text-decoration: none;
-    font-size: var(--font-size-xs);
+    font-size: var(--text-xs);
     transition: color var(--transition-fast);
   }
 
@@ -656,7 +663,7 @@
      * resets font-size/weight/line-height to `inherit` too, and because
      * this selector (button.app-shell__nav-link) is MORE specific than
      * the plain .app-shell__nav-link rule above, that `inherit` was
-     * winning over this class's own font-size: var(--font-size-xs),
+     * winning over this class's own font-size: var(--text-xs),
      * making "Reset this device" render at the browser's ambient font
      * size instead of matching every other nav item.
      */
@@ -691,7 +698,7 @@
    */
   .app-shell__nav-link[aria-current='page'] {
     color: var(--color-accent);
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--weight-medium);
   }
 
   /*
@@ -716,8 +723,8 @@
   }
 
   .app-shell__nav-icon svg {
-    inline-size: 1.5rem;
-    block-size: 1.5rem;
+    inline-size: 19px;
+    block-size: 19px;
   }
 
   /*
@@ -770,7 +777,7 @@
   .app-shell__sync-status {
     margin: 0;
     padding: var(--space-2) var(--space-4);
-    font-size: var(--font-size-xs);
+    font-size: var(--text-xs);
     color: var(--color-text-secondary);
     /* Same rule SaveIndicator.css states outright: colour never carries the
      * meaning alone (§36) — the words do. */
@@ -815,12 +822,12 @@
 
   .app-shell__conflict-banner p {
     margin: 0;
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
   }
 
   .app-shell__conflict-link {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
+    font-size: var(--text-base);
+    font-weight: var(--weight-medium);
     color: var(--color-danger);
     white-space: nowrap;
   }
@@ -1138,6 +1145,7 @@
 
     .app-shell__toolbar {
       display: grid !important;
+      align-items: stretch;
       grid-column: 1 / -1;
       grid-row: 1;
       /*
@@ -1182,25 +1190,55 @@
     /* Spans the folders + sidebar tracks of the grid above, rather than
        an explicit calc() width — see that rule's own comment. */
     .app-shell__toolbar-nav {
+      position: relative;
       grid-column: 1 / 3;
       display: flex;
       align-items: center;
       justify-content: space-between;
       min-inline-size: 0;
       padding-inline: var(--space-3);
-      /* This strip sits above TWO panels — folders (#EDEDEC) and the
-         note-list sidebar (--color-surface-sunken) — so one flat color
-         can only ever match one of them. Hard-stop gradient at the exact
-         folders/sidebar boundary instead, matching each panel below its
-         own segment. Collapses to a single solid color when the folders
-         panel is closed (--folders-width: 0px). */
-      background: linear-gradient(
-        to right,
-        var(--color-surface-recessed) 0,
-        var(--color-surface-recessed) var(--folders-width, 0px),
-        var(--color-surface-recessed) var(--folders-width, 0px),
-        var(--color-surface-recessed) 100%
-      );
+      background-color: var(--color-surface);
+    }
+
+    /*
+     * The folders-segment tint, as its own layer rather than a hard-stop
+     * gradient on the rule above. A `background: linear-gradient(...)`
+     * whose stop offset reads `var(--folders-width)` recomputes as one
+     * discrete jump on every change — CSS does not interpolate a
+     * gradient's stop position when it's driven by a plain custom
+     * property, so the tint's boundary used to snap to its new position
+     * instantly while the folders panel's own column width (a real
+     * `inline-size`, which DOES transition) still eased open/closed over
+     * var(--motion-duration-base) — the tint arriving at its final state
+     * a beat ahead of the panel it's supposed to be capping.
+     *
+     * inline-size on an ordinary box IS a transitionable property even
+     * when its value comes from a var() (same reasoning
+     * .app-shell__resize-handle's own inset-inline-start already relies
+     * on below) — giving the tint its own absolutely-positioned layer
+     * with that same duration/easing keeps it in lockstep with the panel
+     * instead of jumping ahead of it.
+     */
+    .app-shell__toolbar-nav::before {
+      content: '';
+      position: absolute;
+      inset-block: 0;
+      inset-inline-start: 0;
+      inline-size: var(--folders-width, 0px);
+      background-color: var(--color-surface-recessed);
+      transition: inline-size var(--motion-duration-base) var(--motion-ease-standard);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Pulled explicitly above the tint layer, not left to default paint
+       order — this file's own comments elsewhere already document that
+       Vite's dev-mode CSS injection doesn't reliably honour ordering here,
+       so an explicit z-index is the safer bet over relying on flex-item
+       vs. pseudo-element stacking rules. */
+    .app-shell__toolbar-nav > .app-shell__toolbar-icon-btn {
+      position: relative;
+      z-index: 1;
     }
 
     .app-shell__toolbar-main {
@@ -1286,8 +1324,8 @@
 
     .app-shell__toolbar-search svg {
       flex-shrink: 0;
-      inline-size: 23px;
-      block-size: 23px;
+      inline-size: 19px;
+      block-size: 19px;
     }
 
     /*
@@ -1326,8 +1364,8 @@
       background: none;
       color: var(--color-text);
       font: inherit;
-      font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-normal);
+      font-size: var(--text-xs);
+      font-weight: var(--weight-regular);
     }
 
     /*
@@ -1400,7 +1438,7 @@
     }
 
     /*
-     * Size and stroke width now come from the global `.lucide` rule
+     * Size now comes from the global `.pf-v6-svg` rule
      * (tokens/icons.css), not from here — that rule also sets `color`
      * directly on the svg, which blocks the CSS inheritance this button
      * relies on for its hover/disabled states below (`color: inherit`
@@ -1452,6 +1490,11 @@
        */
       position: static;
       min-block-size: 0;
+      /* Overrides the base rule's --color-bg (mobile/tablet). Matches
+         .app-shell__main and, once the folders panel is closed, the
+         toolbar above it — see that rule's own comment on why all three
+         are meant to read as one continuous white surface. */
+      background-color: var(--color-surface);
     }
 
     .app-shell__main {
@@ -1491,6 +1534,14 @@
       overflow-x: hidden;
       margin: 0 calc(-1 * var(--space-2)) 0 0;
       padding: 0 var(--space-2) 0 0;
+      /* Scrolls the same as before; the scrollbar itself is just not
+         drawn. Firefox via scrollbar-width, Chrome/Safari/Edge via the
+         ::-webkit-scrollbar rule below. */
+      scrollbar-width: none;
+    }
+
+    .app-shell__note-list::-webkit-scrollbar {
+      display: none;
     }
 
     .app-shell__note-list-empty {
@@ -1498,7 +1549,7 @@
       margin: 0;
       padding: var(--space-2) var(--space-3);
       color: var(--color-text-secondary);
-      font-size: var(--font-size-sm);
+      font-size: var(--text-base);
     }
 
     /* Pinned to the bottom for free: it's the last flex child in a column
@@ -1533,7 +1584,7 @@
       gap: var(--space-3);
       inline-size: 100%;
       border-radius: var(--radius-md);
-      font-size: var(--font-size-sm);
+      font-size: var(--text-base);
     }
 
     .app-shell__nav-link[aria-current='page'] {
@@ -1637,7 +1688,7 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       color: var(--color-text-secondary);
-      font-size: var(--font-size-xs);
+      font-size: var(--text-xs);
     }
 
     /*
@@ -1699,30 +1750,27 @@
 }
 
 /*
- * Follow-up: the folders panel's recessed colour must read as ONE continuous
- * surface from the very top of the page — including behind the 52px toolbar
- * row — not stop at the toolbar's bottom edge and leave a seam. Rather than
- * restructure the grid, the toolbar's own background gets a hard-stop
- * gradient instead: recessed colour for exactly the folders-width portion
- * (0 when the panel is closed, so this is inert until it's open), pure
- * white beyond it. Colour is what separates the folders panel from the rest
- * of the shell now, top to bottom — not a border.
- *
- * Unlayered and appended after every other rule in this file (the whole
- * file's body lives in `@layer components`), so it wins without
- * `!important` — the same technique the "Clean, minimal top bar" override
- * above already relies on.
+ * Follow-up, superseded: this used to carry the same hard-stop-gradient
+ * background .app-shell__toolbar-nav's own rule (above, in @layer
+ * components) now owns properly, with a transitioning ::before overlay
+ * instead of a gradient stop that can't animate. .app-shell__toolbar-nav
+ * and .app-shell__toolbar-main between them already cover the full
+ * toolbar row, so the parent here only needs a flat colour underneath —
+ * kept unlayered (appended after everything, same technique the "Clean,
+ * minimal top bar" override above relies on) purely so it keeps winning
+ * over the parent's own @layer components rule without needing
+ * `!important`.
  */
 @media (min-width: 1024px) {
   .app-shell__toolbar {
-    background: var(--color-surface-recessed);
+    background-color: var(--color-surface);
   }
 
   /*
    * The folders/sidebar boundary was a hard 1px line in --color-border,
-   * cutting straight across the toolbar's icon row. The colour change
-   * above is the demarcation now; what's left of the line is a soft drop
-   * shadow off the folders panel's own edge, not a drawn border.
+   * cutting straight across the toolbar's icon row. Colour is the
+   * demarcation now (.app-shell__toolbar-nav's own ::before, above), not
+   * a drawn border.
    */
   .app-shell::before {
     background-color: transparent;
@@ -1739,7 +1787,8 @@
  * Listed explicitly since no other selector reaches them.
  */
 :root[data-resizing='true'] .app-shell::before,
-:root[data-resizing='true'] .app-shell::after {
+:root[data-resizing='true'] .app-shell::after,
+:root[data-resizing='true'] .app-shell__toolbar-nav::before {
   transition: none;
 }
 
@@ -1811,7 +1860,7 @@
 [data-theme='dark'] .app-shell__nav-link:not([aria-current='page']) .app-shell__nav-icon svg {
   /*
    * The icon span's own `color: var(--color-icon)` never reached the SVG
-   * anyway — tokens/icons.css's global `.lucide` rule sets `color`
+   * anyway — tokens/icons.css's global `.pf-v6-svg` rule sets `color`
    * directly on every icon svg, which blocks inheritance from an
    * ancestor's `color` the same way it does for every other icon button
    * in this file (see e.g. `.app-shell__toolbar-icon-btn svg`'s own

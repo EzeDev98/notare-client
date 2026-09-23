@@ -54,9 +54,11 @@ export function SharedNotesPage() {
   return (
     <section className="shared-notes">
       <BackButton />
-      <header className="shared-notes__header">
-        <h1>Shared with me</h1>
-      </header>
+      {items.length > 0 ? (
+        <header className="shared-notes__header">
+          <h1>Shared with me</h1>
+        </header>
+      ) : null}
 
       {isLoading ? (
         <div className="shared-notes__centre">

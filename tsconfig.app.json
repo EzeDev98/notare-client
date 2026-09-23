@@ -22,7 +22,8 @@
        Vite is told separately in vite.config.ts. */
     "paths": {
       "@/*": ["./src/*"],
-      "~/*": ["./tests/*"]
+      "~/*": ["./tests/*"],
+      "@patternfly/react-icons": ["./src/design-system/icons/lucide-patternfly-icons.tsx"]
     },
 
     /* strict is eight flags. The four below are NOT in it. */

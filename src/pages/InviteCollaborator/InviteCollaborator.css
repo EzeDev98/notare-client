@@ -20,7 +20,7 @@
    * `tokens/colors.css` regardless of which one is more specific.
    */
   text-decoration: none !important;
-  font-size: 14px;
+  font-size: var(--text-base);
   font-weight: 500;
 }
 
@@ -30,29 +30,26 @@
 
 .invite-collaborator__title {
   margin: 0;
-  font-size: 32px;
-  line-height: 1.15;
-  letter-spacing: -0.03em;
 }
 
 .invite-collaborator__lead {
   margin: 10px 0 28px;
   max-width: 580px;
   color: var(--text-secondary, #6b7280);
-  font-size: 15px;
+  font-size: var(--text-base);
   line-height: 1.6;
 }
 
 .invite-collaborator__status {
   margin: 16px 0 0;
   color: var(--text-secondary, #6b7280);
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 .invite-collaborator__error {
   margin: 16px 0 0;
   color: var(--color-danger, #dc2626);
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 /*

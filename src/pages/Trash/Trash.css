@@ -12,7 +12,7 @@
   .trash__lead,
   .trash__meta {
     color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
   }
 
   /*
@@ -28,7 +28,7 @@
    * rules was visibly not taking effect.
    */
   .trash__lead {
-    margin-block: var(--space-8) var(--space-15) !important;
+    margin-block: calc(var(--space-8) * 0.2) var(--space-6) !important;
     text-align: center;
   }
 
@@ -71,12 +71,12 @@
 
   .trash__title {
     margin: 0;
-    font-weight: var(--font-weight-medium);
+    font-weight: var(--weight-medium);
   }
 
   .trash__meta {
     margin: var(--space-1) 0 0;
-    font-size: var(--font-size-xs);
+    font-size: var(--text-xs);
   }
 
   .trash__actions {
@@ -88,7 +88,7 @@
     margin-block-start: var(--space-4);
     padding: var(--space-3) var(--space-4);
     color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
+    font-size: var(--text-base);
     background-color: var(--color-accent-subtle);
     border-radius: var(--radius-md);
   }

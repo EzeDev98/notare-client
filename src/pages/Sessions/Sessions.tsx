@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { LogOut, MonitorSmartphone } from 'lucide-react';
+import { DeviceIcon, SignOutAltIcon } from '@patternfly/react-icons';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { useSessions } from '@/features/auth/hooks/useSessions';
 import { BackButton } from '@/design-system/components/BackButton/BackButton';
 import { Button } from '@/design-system/components/Button/Button';
+import { FormAlert } from '@/design-system/components/FormAlert/FormAlert';
 import { Modal } from '@/design-system/components/Modal/Modal';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { formatInstantAbsolute, formatInstantRelative } from '@/lib/time';
@@ -89,9 +90,7 @@ export function SessionsPage() {
       </p>
 
       {error !== null ? (
-        <p className="sessions__error" role="alert">
-          {error}
-        </p>
+        <FormAlert variant="danger" role="alert">{error}</FormAlert>
       ) : null}
 
       {sessions === null && error === null ? (
@@ -171,9 +170,9 @@ export function SessionsPage() {
         <Modal
           icon={
             confirmingSession.current ? (
-              <LogOut aria-hidden="true" />
+              <SignOutAltIcon aria-hidden="true" />
             ) : (
-              <MonitorSmartphone aria-hidden="true" />
+              <DeviceIcon aria-hidden="true" />
             )
           }
           description={
@@ -208,7 +207,7 @@ export function SessionsPage() {
 
       {confirmation?.type === 'all' ? (
         <Modal
-          icon={<LogOut aria-hidden="true" />}
+          icon={<SignOutAltIcon aria-hidden="true" />}
           description={
             <>
               This will end every active session,

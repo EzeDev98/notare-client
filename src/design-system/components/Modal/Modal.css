@@ -1,221 +1,31 @@
 @layer components {
+  /* Same stacking tier Notare's own overlays use (tokens/layout.css). */
   .ds-modal-backdrop {
-    position: fixed;
-    inset: 0;
     z-index: var(--z-overlay);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: var(--space-6);
-
-    /*
-     * No token for this: it's the one place in the app that deliberately
-     * darkens the page it sits over rather than sitting on --color-surface
-     * like everything else, so there's nothing in tokens/colors.css to
-     * point at. rgb(...) over a hex/keyword so opacity can vary
-     * independently of the color itself.
-     */
-    background-color: rgb(0 0 0 / 45%);
-    backdrop-filter: blur(4px);
-
-    /*
-     * Step 6A/6B. Enter plays unconditionally on mount. The
-     * `[data-closing='true']` rule below overrides this with the exit
-     * keyframes instead — Modal.tsx only ever sets that attribute once it's
-     * already deferring the real close callback until this animation
-     * finishes (see its own onAnimationEnd handler), so the backdrop is
-     * never left stuck mid-fade.
-     */
-    animation: ds-modal-backdrop-enter var(--motion-duration-base) var(--motion-ease-enter);
   }
 
-  @keyframes ds-modal-backdrop-enter {
-    from {
-      opacity: 0;
-    }
-
-    to {
-      opacity: 1;
-    }
-  }
-
-  /*
-   * Exit — quicker than the matching enter (motion.css's own note on
-   * -ease-exit: "an exit is quicker than the matching enter, so a close
-   * never feels like it's dawdling on the way out"), hence
-   * --motion-duration-fast here against --motion-duration-base above.
-   * `forwards` holds the animation's end state (opacity: 0) for the brief
-   * gap between this finishing and Modal.tsx actually unmounting the node —
-   * without it the backdrop would snap back to fully visible the instant
-   * the animation completes, one frame before disappearing entirely.
-   */
-  .ds-modal-backdrop[data-closing='true'] {
-    animation: ds-modal-backdrop-exit var(--motion-duration-fast) var(--motion-ease-exit) forwards;
-  }
-
-  @keyframes ds-modal-backdrop-exit {
-    from {
-      opacity: 1;
-    }
-
-    to {
-      opacity: 0;
-    }
-  }
-
-  /*
-   * Sized and proportioned to match the reference dialog exactly (see the
-   * design handoff): a compact 360px card, not the wider 400px this used
-   * to default to. Every modal in the app renders through this one rule
-   * now — there is no longer a per-caller size override, so keeping this
-   * number right here is what keeps every confirmation dialog the same
-   * size instead of drifting apart one override at a time.
-   */
-  .ds-modal {
-    display: grid;
-    justify-items: center;
-    gap: var(--space-2);
-    inline-size: min(320px, calc(100vw - 32px));
-    padding: var(--space-6) var(--space-5) var(--space-5);
-    border-radius: var(--radius-lg);
-    background-color: var(--color-surface);
-    box-shadow: var(--shadow-md);
-    text-align: center;
-
-    /*
-     * Subtle, not dramatic (§8): a small scale + 4px settle, the same
-     * distance route-transition-enter and the Phase 5 record-content
-     * transitions use elsewhere, so this reads as part of the same motion
-     * language rather than a separate, showier effect. `[data-closing]`
-     * below swaps this for the exit keyframes — same mechanism as the
-     * backdrop above.
-     */
-    animation: ds-modal-enter var(--motion-duration-base) var(--motion-ease-enter);
-  }
-
-  @keyframes ds-modal-enter {
-    from {
-      opacity: 0;
-      transform: scale(0.96) translateY(4px);
-    }
-
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
-
-  /* Exit — see .ds-modal-backdrop[data-closing='true']'s own comment for
-     why this is --motion-duration-fast/-ease-exit rather than a mirror of
-     the enter above, and why `forwards` matters. */
-  .ds-modal[data-closing='true'] {
-    animation: ds-modal-exit var(--motion-duration-fast) var(--motion-ease-exit) forwards;
-  }
-
-  @keyframes ds-modal-exit {
-    from {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-
-    to {
-      opacity: 0;
-      transform: scale(0.96) translateY(4px);
-    }
-  }
-
+  /* The icon sits before the title text and scales with it (1em). */
   .ds-modal__icon {
-    display: grid;
-    place-items: center;
-    inline-size: 60px;
-    block-size: 60px;
-    margin-block-end: var(--space-2);
-    border-radius: var(--radius-lg);
-
-    /*
-     * The one deliberate accent exception in this component: a badge
-     * exists to draw the eye, so it uses the lavender pairing the rest of
-     * the app reserves for identity/selected-state, same reasoning as
-     * `.shared-note__voice-icon` in SharedNote.css. Every modal uses this
-     * same badge now, including the delete-note confirmation, which used
-     * to render its icon large and unbadged as a one-off exception — the
-     * reference dialog's icon sits inside a filled square exactly like
-     * this one, so that exception no longer has a reason to exist.
-     */
-    background-color: transparent;
+    display: inline-flex;
+    margin-inline-end: var(--space-2);
+    vertical-align: middle;
     color: var(--color-icon);
   }
 
   /*
-   * Force every modal icon to exactly 50px.
-   *
-   * !important is intentional because the global `.lucide` rule sets
-   * width/height directly on the SVG and can otherwise override the
-   * modal's intended icon size.
+   * PatternFly always renders its own "X" close button (aria-label
+   * "Close") whenever `onClose` is passed, with no prop to opt out in the
+   * compound (ModalHeader/ModalBody/ModalFooter) API this component uses.
+   * Every Modal here already has an explicit primary/secondary action —
+   * often literally labelled "Close" or "Cancel" — so the X would be a
+   * second, unlabelled-by-context way to do the same thing: exactly the
+   * duplicated functionality this codebase avoids, and it was colliding
+   * with an explicit "Close" button under the same accessible name.
+   * Hidden visually rather than unmounted: `onClose` stays wired, so
+   * Escape and backdrop-click dismissal (both handled by PatternFly's
+   * Modal internally off that same prop) keep working.
    */
-  .ds-modal__icon svg {
-    inline-size: 42px !important;
-    block-size: 42px !important;
-    width: 42px !important;
-    height: 42px !important;
-    color: inherit;
-  }
-
-  .ds-modal__title {
-    margin: 0;
-    color: var(--color-text);
-    font-size: var(--font-size-base);
-    font-weight: var(--font-weight-semibold);
-    line-height: var(--line-height-snug);
-  }
-
-  .ds-modal__description {
-    margin: 0;
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
-    line-height: var(--line-height-normal);
-  }
-
-  .ds-modal__description strong {
-    color: var(--color-text);
-    font-weight: var(--font-weight-medium);
-  }
-
-  .ds-modal__actions {
-    display: flex;
-    inline-size: 100%;
-    gap: var(--space-2);
-    margin-block-start: var(--space-3);
-  }
-
-  /*
-   * Equal-width, side by side — the reference dialog's layout, and a
-   * deliberate departure from InviteCollaboratorPage's old modal, which
-   * right-aligned two auto-width buttons instead. flex: 1 on both buttons
-   * (rather than sizing to each label) is what keeps Cancel/Delete-style
-   * pairs visually balanced regardless of which one has the longer word.
-   *
-   * Otherwise this is Button's own standard `md` sizing — no height or
-   * padding override. `border-radius: 10px` is the one deliberate
-   * departure from Button's own `--radius-md` corners, matching the modal
-   * card's own radius rather than introducing a third radius value.
-   * `!important`, and a literal 10px rather than `var(--radius-lg)` — same
-   * `@layer` injection-order hazard Button.css's own big comment already
-   * documents for `color` on the `primary`/`danger` variants (dev serves
-   * each component's CSS as its own separately-injected <style> tag, so a
-   * layer's precedence can end up decided by injection order instead of
-   * the order `global.css` declares). Two classes' worth of specificity
-   * was meant to be enough on its own; it wasn't reliably winning in
-   * practice, so this uses the same fix already proven for that other
-   * property instead of a second unproven one.
-   */
-  .ds-modal__actions .ds-modal__action {
-    flex: 1;
-    /* Button's own `sm` sizing (Button.css), not `md` — the same numbers
-       every small button in the app already uses, just applied here since
-       Modal never exposes a size prop of its own to pass 'sm' through. */
-    min-block-size: 2rem;
-    padding-inline: var(--space-3);
-    border-radius: 3px !important;
+  .ds-modal .pf-v6-c-modal-box__close {
+    display: none;
   }
 }

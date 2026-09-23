@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router';
 import type { NoteView } from '@/features/notes/local/noteMappers';
 
 import { useAuth } from '@/app/providers/auth-context';
-import { NotebookPen } from 'lucide-react';
+import { PencilAltIcon } from '@patternfly/react-icons';
 import { Modal } from '@/design-system/components/Modal/Modal';
 import { NoteCard } from '@/features/notes/components/NoteCard/NoteCard';
 import { NoteContextMenu, type NoteContextMenuActions } from '@/features/notes/components/NoteContextMenu/NoteContextMenu';
@@ -111,21 +111,23 @@ export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
   return (
     <section className={archived ? 'notes notes--archived' : 'notes'}>
       {archived ? <BackButton /> : null}
-      <header className="notes__header">
-        <h1>{archived ? 'Archived' : 'Notes'}</h1>
-        {archived ? null : (
-          <div className="notes__header-actions">
-            <Link className="notes__search" to="/search">
-              Search
-            </Link>
-            <Link to="/notes/new">
-              <Button variant="primary" size="sm">
-                New note
-              </Button>
-            </Link>
-          </div>
-        )}
-      </header>
+      {archived && notes !== undefined && notes.length === 0 && !refreshing ? null : (
+        <header className="notes__header">
+          <h1>{archived ? 'Archived' : 'Notes'}</h1>
+          {archived ? null : (
+            <div className="notes__header-actions">
+              <Link className="notes__search" to="/search">
+                Search
+              </Link>
+              <Link to="/notes/new">
+                <Button variant="primary" size="sm">
+                  New note
+                </Button>
+              </Link>
+            </div>
+          )}
+        </header>
+      )}
 
       {archived ? null : <NoteTabs />}
 
@@ -186,7 +188,7 @@ export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
 
       {noteToDelete ? (
         <Modal
-          icon={<NotebookPen aria-hidden="true" />}
+          icon={<PencilAltIcon aria-hidden="true" />}
           description="Delete this note? The note will be moved to Trash."
           secondaryAction={{
             label: 'Cancel',

@@ -37,7 +37,7 @@ function AllVoiceNotes() {
   return (
     <section className="voice-notes">
       <BackButton />
-      <h1>Voice notes</h1>
+      {voiceNotes.data && voiceNotes.data.content.length > 0 ? <h1>Voice notes</h1> : null}
 
       {voiceNotes.isLoading ? (
         <div className="voice-notes__centre">

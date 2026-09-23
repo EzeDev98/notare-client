@@ -1,4 +1,4 @@
-import { Mic } from 'lucide-react';
+import { MicrophoneIcon } from '@patternfly/react-icons';
 import { Link, useParams } from 'react-router';
 
 import { EditorSurface } from '@/features/editor/components/EditorSurface/EditorSurface';
@@ -160,7 +160,7 @@ export function SharedVoiceDetailPage() {
 
             <div className="shared-note__voice-card">
               <span className="shared-note__voice-icon" aria-hidden="true">
-                <Mic />
+                <MicrophoneIcon />
               </span>
 
               <div className="shared-note__voice-player">

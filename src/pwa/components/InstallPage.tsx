@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Plus, Share } from 'lucide-react';
+import { CheckIcon, PlusIcon, ShareSquareIcon } from '@patternfly/react-icons';
 
 import { Button } from '@/design-system/components/Button/Button';
 import { Logo } from '@/design-system/components/Logo/Logo';
@@ -64,15 +64,15 @@ function InstallInstructions() {
     <>
       <ol className="install-page__steps">
         <li>
-          <Share aria-hidden="true" className="install-page__benefit-icon" />
+          <ShareSquareIcon aria-hidden="true" className="install-page__benefit-icon" />
           <span>Tap the Share icon in your browser's toolbar.</span>
         </li>
         <li>
-          <Plus aria-hidden="true" className="install-page__benefit-icon" />
+          <PlusIcon aria-hidden="true" className="install-page__benefit-icon" />
           <span>Scroll down and tap "Add to Home Screen".</span>
         </li>
         <li>
-          <Check aria-hidden="true" className="install-page__benefit-icon" />
+          <CheckIcon aria-hidden="true" className="install-page__benefit-icon" />
           <span>Tap "Add" to finish.</span>
         </li>
       </ol>
@@ -140,15 +140,15 @@ export function InstallPage() {
             <div className="install-page__benefits-box">
               <ul className="install-page__benefits">
                 <li>
-                  <Check aria-hidden="true" className="install-page__benefit-icon" />
+                  <CheckIcon aria-hidden="true" className="install-page__benefit-icon" />
                   <span>Works offline — your notes and voice memos are always there</span>
                 </li>
                 <li>
-                  <Check aria-hidden="true" className="install-page__benefit-icon" />
+                  <CheckIcon aria-hidden="true" className="install-page__benefit-icon" />
                   <span>Opens instantly from your home screen, full-screen</span>
                 </li>
                 <li>
-                  <Check aria-hidden="true" className="install-page__benefit-icon" />
+                  <CheckIcon aria-hidden="true" className="install-page__benefit-icon" />
                   <span>Syncs and shares with collaborators the moment you're back online</span>
                 </li>
               </ul>
