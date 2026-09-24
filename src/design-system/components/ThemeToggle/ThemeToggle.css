@@ -99,4 +99,59 @@
     background-color: #ffffff;
     outline: none;
   }
+
+  /*
+   * Dark mode: the two --Color custom properties above only reach
+   * whatever text PatternFly itself renders with them — they don't
+   * reach the icon's own <svg>, which icons.css's global `.pf-v6-svg`
+   * rule colours directly, the same inheritance gap documented for
+   * every other icon in this app (AppLayout.css's toolbar-icon-btn and
+   * nav-link rules). Targeting the svg directly here is that same fix,
+   * applied to this control: the resting sun/monitor icons go to
+   * #FAFAF9 (matching the folders panel's own resting nav icons), and
+   * the selected one — aria-pressed is what PatternFly's ToggleGroupItem
+   * actually marks selection with, not a class this file can rely on
+   * the name of — goes to #FFFFFF, the same one-shade-brighter
+   * distinction the folders panel's own active nav item uses to still
+   * read as "the one that's on" without a background fill.
+   */
+  [data-theme='dark'] .theme-toggle .pf-v6-c-toggle-group__button:not([aria-pressed='true']) svg {
+    color: #FAFAF9 !important;
+  }
+
+  [data-theme='dark'] .theme-toggle .pf-v6-c-toggle-group__button[aria-pressed='true'] svg {
+    color: #FFFFFF !important;
+  }
+
+  /*
+   * The :focus rule above (line 98) forces a solid #ffffff background
+   * whenever ANY segment has keyboard focus, in every theme — that was
+   * already true before this file's dark-mode icon rules existed. It
+   * only became a visible problem once those two rules started forcing
+   * the icon to white too: a focused segment in dark mode was white
+   * icon on white background, invisible. Equal specificity to both
+   * rules above (same shape: [data-theme] + class + class + one more
+   * selector + svg) and placed after them, so this wins the tie by
+   * source order whenever a segment is actually focused, regardless of
+   * whether it's also the selected one — the icon needs to read against
+   * that white fill either way, not against the dark panel behind it.
+   * #1c1917 is this app's own darkest token value (dark.css's
+   * --color-bg), not an arbitrary new color.
+   */
+  [data-theme='dark'] .theme-toggle .pf-v6-c-toggle-group__button:focus svg {
+    color: #1c1917 !important;
+  }
+
+  /*
+   * Dark mode: the group's own box-shadow (line 9) is a soft BLACK drop
+   * shadow — invisible against the folders panel's own dark background,
+   * so the whole control lost its outer shape/edge entirely, floating
+   * as three unbordered icons with nothing marking where the pill
+   * starts or ends. A subtle white-ish ring in its place restores that
+   * same "this is one bordered shape" read light mode already gets from
+   * its black shadow, just inverted for a dark surface.
+   */
+  [data-theme='dark'] .theme-toggle {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+  }
 }

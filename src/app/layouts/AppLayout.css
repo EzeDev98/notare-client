@@ -1609,7 +1609,16 @@
     }
 
     .app-shell__nav-link[aria-current='page'] {
-      background-color: #FFFFFF;
+      /*
+       * --color-surface, not a hardcoded value — that token IS the note
+       * list panel's and toolbar's own background elsewhere in this file,
+       * so the selected folder's highlight matches it automatically in
+       * both themes: pure white in light mode (identical to the old
+       * hardcoded #FFFFFF — no visible change there), --color-surface's
+       * dark value in dark mode, where the hardcoded value used to stay
+       * white regardless of theme.
+       */
+      background-color: var(--color-surface);
     }
 
     /* Labels back. Undoing the clip, not re-declaring the layout. */
@@ -1907,5 +1916,33 @@
 
 [data-theme='dark'] .app-shell__nav-link[aria-current='page'] .app-shell__nav-icon,
 [data-theme='dark'] .app-shell__nav-link[aria-current='page'] .app-shell__nav-icon svg {
+  color: #FFFFFF !important;
+}
+
+/*
+ * Dark mode: every toolbar icon button (folders-toggle/"expand",
+ * notes-toggle, delete/trash, share, notifications bell, search-toggle —
+ * all of them render this one shared class) was sitting at
+ * --color-icon's muted grey (#a8a29e), noticeably dimmer than the
+ * folders panel's own icons just above, which this same file already
+ * forces to pure white in dark mode. Same fix, same reason it needs
+ * !important (colors.css/icons.css's own base-layer rules win over this
+ * file's @layer components in Vite dev mode — see the nav-link comment
+ * above), targeting the svg directly too since color:inherit from the
+ * button (this file's own .app-shell__toolbar-icon-btn svg rule) doesn't
+ * reach through icons.css's global `.pf-v6-svg` color rule.
+ *
+ * Deliberately excludes :hover/:active/:disabled via :not() — those
+ * already have their own distinct colors (--color-text on hover,
+ * --color-text-disabled when disabled) and weren't part of what looked
+ * dim here; without the :not()s, this rule's own !important would have
+ * beaten those states' colors too, since a plain [data-theme] + class
+ * selector has the same specificity as a class + :disabled/:hover one.
+ */
+[data-theme='dark'] .app-shell__toolbar-icon-btn:not(:hover):not(:active):not(:disabled) {
+  color: #FFFFFF !important;
+}
+
+[data-theme='dark'] .app-shell__toolbar-icon-btn:not(:hover):not(:active):not(:disabled) svg {
   color: #FFFFFF !important;
 }

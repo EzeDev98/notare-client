@@ -99,7 +99,16 @@
      aria-current="page" itself, so what's announced and what's highlighted
      can't drift apart. */
   .sidebar-note-item__link[aria-current='page'] {
-    background-color: #EDEDEC;
+    /*
+     * --color-surface-recessed, not a hardcoded value — that token IS
+     * the folders panel's own background (AppLayout.css's
+     * .app-shell__folders rule), so the open note's highlight matches it
+     * automatically in both themes: #ededec in light mode (identical to
+     * the old hardcoded #EDEDEC — no visible change there), #33302c in
+     * dark mode, where the hardcoded value used to stay a flat light
+     * grey regardless of theme.
+     */
+    background-color: var(--color-surface-recessed);
     border-radius: 5px;
   }
 

@@ -462,6 +462,11 @@ export function AppLayout() {
      * sidebar was just deleted.
      */
     if (deletingActiveNote) {
+      // See suppressMobileNotesCloseRef's own comment above — this
+      // navigate() is the delete landing somewhere sane, not the user
+      // picking a different note, so it must not close the mobile panel
+      // if it happens to be open.
+      suppressMobileNotesCloseRef.current = true;
       void navigate('/notes');
     }
   }
@@ -498,6 +503,11 @@ export function AppLayout() {
     // very first frame.
     await delay(NOTE_LIFECYCLE_DELAY_MS);
 
+    // See suppressMobileNotesCloseRef's own comment above — creating a
+    // note lands on its own route as a side effect of creating it, not
+    // because the user picked a different note from the list, so it
+    // must not close the mobile panel if it happens to be open.
+    suppressMobileNotesCloseRef.current = true;
     void navigate(`/notes/local/${row.localId}`, {
       replace: true,
       state: { skipEnterAnimation: true },
@@ -782,6 +792,18 @@ export function AppLayout() {
   const isMobileNotesClosingRef = useRef(isMobileNotesClosing);
   isMobileNotesClosingRef.current = isMobileNotesClosing;
 
+  /*
+   * Set right before a navigate() call that is NOT "the user picked a
+   * note from the list" — creating a note (below) and deleting the
+   * active note (handleConfirmDelete) both land on a new route too, as
+   * a side effect of what they actually do, not because the person
+   * tapped a row while this panel happened to be open. The pathname
+   * effect below reads and clears this once, so only that one
+   * navigation is exempted — the very next real navigation (picking a
+   * note) still closes the panel normally.
+   */
+  const suppressMobileNotesCloseRef = useRef(false);
+
   const requestMobileNotesClose = useCallback(() => {
     if (!isMobileNotesOpenRef.current || isMobileNotesClosingRef.current) return;
     setIsMobileNotesClosing(true);
@@ -824,9 +846,44 @@ export function AppLayout() {
 
   // Picking a note navigates — same "route change closes the overlay"
   // reasoning as notifications' and search's own identical effects above.
+  // Skipped once when suppressMobileNotesCloseRef says this particular
+  // pathname change was create/delete, not a row actually being picked —
+  // see that ref's own comment above.
   useEffect(() => {
+    if (suppressMobileNotesCloseRef.current) {
+      suppressMobileNotesCloseRef.current = false;
+      return;
+    }
     requestMobileNotesClose();
   }, [location.pathname, requestMobileNotesClose]);
+
+  /*
+   * Outside-tap-to-close. This panel's own top comment says there is no
+   * "outside" to click while it's open — true at 640-1023px, where it's
+   * still the original full-screen dialog, but no longer true below
+   * 640px: MobileNotesPanel.css's 50%-width slide-in leaves the other
+   * half of the screen (the editor, right behind it) visible and
+   * tappable, and nothing was closing the panel when that half was
+   * tapped. Uses a class lookup rather than a ref, unlike the
+   * notifications popover's identical-shaped effect above — there is no
+   * single wrapping element to put a ref on here, since this panel's own
+   * trigger button lives across the tree in the toolbar, not right next
+   * to it.
+   */
+  useEffect(() => {
+    if (!isMobileNotesOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (target instanceof Element && target.closest('.mobile-notes-panel')) return;
+      requestMobileNotesClose();
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [isMobileNotesOpen, requestMobileNotesClose]);
 
   /*
    * Responsive layout plan, next step. The mobile bottom bar's far-right
@@ -880,6 +937,28 @@ export function AppLayout() {
   useEffect(() => {
     requestSettingsClose();
   }, [location.pathname, requestSettingsClose]);
+
+  // Outside-tap-to-close — same reasoning and same class-lookup approach
+  // as MobileNotesPanel's own identical effect above (this panel's own
+  // trigger button also lives across the tree, in the mobile bottom bar,
+  // not right next to the panel). "Reset this device" doesn't fight this:
+  // its own row already calls onClose() before opening the confirmation
+  // modal (SettingsPanel.tsx's own comment on that), so by the time that
+  // modal exists this panel is already closing.
+  useEffect(() => {
+    if (!isSettingsOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (target instanceof Element && target.closest('.settings-panel')) return;
+      requestSettingsClose();
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [isSettingsOpen, requestSettingsClose]);
 
   /*
    * Here, not in AuthProvider: this component only ever mounts for an

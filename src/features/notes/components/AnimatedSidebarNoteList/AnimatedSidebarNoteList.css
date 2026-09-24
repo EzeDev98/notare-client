@@ -1,19 +1,18 @@
 @layer components {
   /*
-   * Only the newly created/deleted note gets this animation.
-   *
-   * The neighboring note's push-down / pull-up movement is handled
-   * separately by the FLIP animation in AnimatedSidebarNoteList.tsx.
+   * The entering/exiting row's own fade+slide AND the neighbor's FLIP
+   * push (AnimatedSidebarNoteList.tsx) all used to be split across two
+   * different animation systems — this file's `@keyframes` for the
+   * first two, element.animate() for the third. That split is gone:
+   * all three now run through element.animate(), in that file, so one
+   * prefers-reduced-motion check (also there) covers all of them
+   * evenly instead of reset.css's own global `animation-duration`
+   * override silently reaching two of the three and missing the third.
+   * `.sidebar-note-item--enter` no longer needs a rule of its own here
+   * as a result — only `--exit` still does, and only for taking the
+   * deleted row out of grid flow immediately (see its own comment),
+   * which is layout, not animation.
    */
-
-  .sidebar-note-item--enter {
-    animation:
-      sidebar-note-enter
-      440ms
-      cubic-bezier(0.22, 1, 0.36, 1)
-      both;
-  }
-
   .sidebar-note-item--exit {
     /*
      * The deleted row is removed from normal grid flow immediately.
@@ -29,44 +28,5 @@
     pointer-events: none;
     overflow: hidden;
     z-index: 1;
-
-    animation:
-      sidebar-note-exit
-      440ms
-      cubic-bezier(0.22, 1, 0.36, 1)
-      both;
-  }
-
-  @keyframes sidebar-note-enter {
-    from {
-      opacity: 0;
-      transform: translate3d(0, -22px, 0);
-    }
-
-    to {
-      opacity: 1;
-      transform: translate3d(0, 0, 0);
-    }
-  }
-
-  @keyframes sidebar-note-exit {
-    from {
-      opacity: 1;
-      transform: translate3d(0, 0, 0);
-    }
-
-    to {
-      opacity: 0;
-      transform: translate3d(0, -22px, 0);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .sidebar-note-item--enter,
-    .sidebar-note-item--exit {
-      animation: none;
-      transform: none;
-      opacity: 1;
-    }
   }
 }
