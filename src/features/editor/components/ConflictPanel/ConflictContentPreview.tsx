@@ -63,7 +63,9 @@ export function ConflictContentPreview({ content }: ConflictContentPreviewProps)
   // editor, rather than assuming this component only ever mounts once per
   // value.
   useEffect(() => {
-    if (!editor) return;
+    // Same destroyed-editor race EditorSurface.tsx's own content-sync
+    // effect has — see its comment for the full explanation.
+    if (!editor || editor.isDestroyed) return;
     if (content === lastSetContentRef.current) return;
     lastSetContentRef.current = content;
     editor.commands.setContent(content);

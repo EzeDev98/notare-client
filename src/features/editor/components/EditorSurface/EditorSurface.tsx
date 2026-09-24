@@ -151,6 +151,26 @@ function EditorSurfaceBody({
   const lastEmittedContentRef = useRef<string>(content);
 
   /*
+   * Tracks which note's editor instance is currently live, so the RENDER
+   * below (not a later effect) re-primes `lastEmittedContentRef` the instant
+   * `focusKey` changes — before `useEditor` gets a chance to (re)construct
+   * the editor for the new note and fire its construction-time `onUpdate`
+   * (see that handler's own comment). An effect only runs after this render
+   * commits, which is too late: TipTap's spurious first `onUpdate` for a
+   * freshly (re)built instance can fire before any `useEffect` below gets a
+   * chance to run, so the previous, effect-based re-prime still left
+   * `lastEmittedContentRef` holding the PREVIOUS note's content at the
+   * moment the new instance's spurious fire landed — which then looked like
+   * a real edit and bumped `localUpdatedAt`, moving a note to the top of the
+   * list just from switching into it.
+   */
+  const editorInstanceKeyRef = useRef<string | null>(focusKey ?? null);
+  if ((focusKey ?? null) !== editorInstanceKeyRef.current) {
+    editorInstanceKeyRef.current = focusKey ?? null;
+    lastEmittedContentRef.current = content;
+  }
+
+  /*
    * The recreate-on-switch key. NoteEditorHost always passes `focusKey`
    * (`row.localId`), so a note switch tears down and rebuilds the editor
    * with the new note's own initial content — the simplest correct thing,
@@ -232,6 +252,23 @@ function EditorSurfaceBody({
         const markdown = getMarkdownContent(instance);
         const next =
           markdown.length > MAX_CONTENT_LENGTH ? markdown.slice(0, MAX_CONTENT_LENGTH) : markdown;
+        // TipTap fires onUpdate once on mount/(re)construction even when
+        // nothing was typed — ProseMirror's own initial-doc normalisation
+        // (and tiptap-markdown's parse/serialise round trip) counts as a
+        // transaction whether or not the text actually changed. Without
+        // this guard, every note open called onContentChange with content
+        // byte-identical to what was already there, which this component's
+        // caller (NoteEditorHost) treats as a genuine edit — silently
+        // marking the row dirty and restamping localUpdatedAt just from
+        // OPENING it, which is what moved every note to the top of the
+        // sidebar the instant it was clicked. Comparing against what this
+        // editor instance last emitted (starting at the initial `content`
+        // prop, via lastEmittedContentRef's own initialiser above) makes a
+        // genuine no-op update a no-op all the way up, while a real edit —
+        // even one that types back to the exact starting text — still goes
+        // through, since `next` would differ from whatever WAS typed in
+        // between.
+        if (next === lastEmittedContentRef.current) return;
         lastEmittedContentRef.current = next;
         onContentChange(next);
       },
@@ -256,7 +293,16 @@ function EditorSurfaceBody({
    * produced; a plain typing round trip never reaches `setContent` at all.
    */
   useEffect(() => {
-    if (!editor) return;
+    // editor.isDestroyed: useEditor's own [focusKey] deps array tears the
+    // PREVIOUS editor instance down (via .destroy()) whenever a note
+    // switch rebuilds it. That destroy() nulls the instance's internal
+    // commandManager, but TipTap's own `get commands()` (@tiptap/core)
+    // dereferences it with no guard — so a fast enough note switch can
+    // let this effect fire against an `editor` reference that is already
+    // destroyed, throwing `Cannot read properties of null (reading
+    // 'commands')` and taking the whole route down with it (caught here,
+    // not silently — see the crash this fixed).
+    if (!editor || editor.isDestroyed) return;
     if (content === lastEmittedContentRef.current) return;
 
     lastEmittedContentRef.current = content;
@@ -267,21 +313,21 @@ function EditorSurfaceBody({
    * Focus follows note identity, exactly like the old textarea's effect
    * (see `focusKey`'s own doc comment above) — gated on `focusKey`
    * CHANGING, not merely being present, so typing (which re-renders this
-   * component constantly) never yanks focus mid-word. Also re-primes
-   * `lastEmittedContentRef` to the new note's own content: the editor
-   * instance was just rebuilt from scratch for it (the `useEditor` deps
-   * array above), so the ref must not still be holding the PREVIOUS note's
-   * last-known text.
+   * component constantly) never yanks focus mid-word.
+   *
+   * Does NOT re-prime `lastEmittedContentRef` anymore — `editorInstanceKeyRef`
+   * above does that during RENDER, because this effect runs too late to beat
+   * TipTap's construction-time `onUpdate` for a freshly rebuilt instance.
    */
   const previousFocusKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!editor || readOnly) return;
+    // Same destroyed-editor race as the content-sync effect above.
+    if (!editor || editor.isDestroyed || readOnly) return;
     if (focusKey === null || focusKey === undefined || focusKey === previousFocusKeyRef.current) {
       return;
     }
     previousFocusKeyRef.current = focusKey;
-    lastEmittedContentRef.current = content;
     editor.commands.focus('end');
     // `content` deliberately excluded — this must fire only on a genuine
     // identity change, not on every keystroke's content update.

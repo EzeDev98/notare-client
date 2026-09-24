@@ -457,6 +457,27 @@ export const noteRepository = {
 
       if (existing.dirty === 1) return 'skipped';
 
+      // A clean row whose server fields are byte-identical to what we
+      // already have gets no write. Opening a synced note re-fetches it
+      // (useNote.ts) on every mount, and db.notes.put — even with values
+      // that end up equal — is still a real IndexedDB write, which fires
+      // every useLiveQuery watching this table. The whole sidebar list
+      // re-renders on every note click, recomputing each row's relative
+      // "X minutes/seconds ago" label against the current instant even
+      // though nothing about any note actually changed — the read looks
+      // like a mutation to anything downstream. Comparing first makes a
+      // no-op open a genuine no-op, list included.
+      const noChange =
+        existing.content === (note.content ?? '') &&
+        existing.pinned === flag(note.pinned) &&
+        existing.archived === flag(note.archived) &&
+        existing.version === note.version &&
+        existing.createdAt === note.createdAt &&
+        existing.updatedAt === note.updatedAt &&
+        existing.ownerId === note.ownerId &&
+        existing.lastModifiedBy === note.lastModifiedBy;
+      if (noChange) return 'skipped';
+
       await db.notes.put(fromNoteResponse(note, existing));
       return 'updated';
     });

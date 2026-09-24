@@ -1260,7 +1260,19 @@ export function AppLayout() {
                 role="search"
                 onSubmit={handleToolbarSearchSubmit}
               >
-                <SearchIcon aria-hidden="true" />
+                {/*
+                  Internal Auth's boxed search field (SearchBar.jsx /
+                  SearchBar.module.css), copied verbatim: an icon well,
+                  the input, and a submit button with its own bordered
+                  well — one bordered unit, not this pill's old
+                  borderless icon-then-input layout.
+                */}
+                <span className="app-shell__toolbar-search-icon" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="7" cy="7" r="5.25" stroke="currentColor" strokeWidth="1.5" />
+                    <path d="M11 11L14.5 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </span>
                 <input
                   type="search"
                   placeholder="Search"
@@ -1271,6 +1283,12 @@ export function AppLayout() {
                   }}
                   ref={toolbarSearchInputRef}
                 />
+                <button type="submit" className="app-shell__toolbar-search-submit" aria-label="Submit search">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 8H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    <path d="M9 4L13 8L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
                 {/*
                   Only meaningful below 1024px (hidden via CSS at
                   >=1024px, same as the toggle button above) — desktop's

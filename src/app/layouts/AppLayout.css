@@ -87,7 +87,7 @@
     block-size: 52px;
     min-block-size: 52px;
     border-block-end: var(--border-width) solid var(--color-border);
-    background-color: var(--color-surface-recessed);
+    background-color: var(--color-surface);
   }
 
   .app-shell__toolbar-nav,
@@ -426,32 +426,63 @@
   .app-shell__toolbar-search {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
     flex: 1;
     inline-size: 100%;
-    block-size: 27px;
-    padding-inline: var(--space-3);
-    /* Matches the toolbar icon buttons' own outlined style
-       (.app-shell__toolbar-icon-btn--outlined) — a thin border instead
-       of a filled background, and --radius-sm (4px) rather than the
-       previous 10px. Base rule, so this is what mobile and the
-       640–1024px tablet range (which only overrides width below) both
-       use — the 1024px+ desktop block has the same fix applied on its
-       own copy of this rule. */
-    /* Outlined, no fill — matches the toolbar icon buttons' own
-       outlined style, and the reference field once its background fill
-       is taken away. 3px is a literal value, not --radius-sm (4px):
-       intentionally tighter than that token. */
+    block-size: 36px;
+    /* Internal Auth's SearchBar.module.css .searchGroup, copied
+       verbatim: a bordered, overflow-hidden box — icon well, input,
+       submit-arrow well all flush against its own edges, no gap or
+       inline padding on the form itself. Base rule, so this is what
+       mobile and the 640–1024px tablet range (which only overrides
+       width below) both use — the 1024px+ desktop block has the same
+       fix applied on its own copy of this rule. 2px, not --radius-sm
+       (4px): matches --radius (2px) in Internal Auth's own tokens.css,
+       a literal value here since this codebase has no equivalent
+       token. */
     border: var(--border-width) solid var(--color-border);
-    border-radius: 3px;
-    background-color: transparent;
+    border-radius: 2px;
+    background-color: var(--color-surface);
     color: var(--color-text-secondary);
+    overflow: hidden;
   }
 
-  .app-shell__toolbar-search svg:first-child {
+  /* Internal Auth's .searchIcon: a fixed 36px square well, not an
+     inline icon with a gap either side of it — this is what creates
+     the field's left-hand spacing now that the form itself has no
+     padding-inline. */
+  .app-shell__toolbar-search-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
-    inline-size: 19px;
-    block-size: 19px;
+    inline-size: 36px;
+    block-size: 100%;
+    color: var(--color-icon);
+  }
+
+  /* Internal Auth's .searchSubmit: same 36px well as the icon above,
+     mirrored on the trailing edge, with its own left border and a
+     tinted fill (var(--color-surface-recessed) / var(--color-border)
+     on hover — this codebase's nearest equivalents to Internal Auth's
+     #f2f2f2 / #e7e7e7) so it reads as its own control, not part of the
+     input. */
+  .app-shell__toolbar-search-submit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    inline-size: 36px;
+    block-size: 100%;
+    border: none;
+    border-inline-start: var(--border-width) solid var(--color-border);
+    background-color: var(--color-surface-recessed);
+    color: var(--color-icon);
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .app-shell__toolbar-search-submit:hover {
+    background-color: var(--color-border);
   }
 
   .app-shell__toolbar-search-toggle,
@@ -468,6 +499,7 @@
     font: inherit;
     font-size: var(--text-xs);
     font-weight: var(--weight-regular);
+    padding-inline-end: var(--space-2);
   }
 
   .app-shell__toolbar-search input:focus-visible {
@@ -1303,29 +1335,17 @@
       flex: initial;
       display: flex;
       align-items: center;
-      gap: var(--space-2);
       inline-size: 220px;
-      block-size: 27px;
-      padding-inline: var(--space-3);
-      /* Matches the toolbar icon buttons' own outlined style
-         (.app-shell__toolbar-icon-btn--outlined) — a thin border instead
-         of a filled background, and --radius-sm (4px) rather than the
-         previous 7px so it doesn't round out past the rest of the
-         toolbar's controls. */
-      /* Outlined, no fill — matches the toolbar icon buttons' own
-         outlined style, and the reference field once its background fill
-         is taken away. 3px is a literal value, not --radius-sm (4px):
-         intentionally tighter than that token. */
+      block-size: 36px;
+      /* Same Internal Auth .searchGroup box as the base rule above —
+         no gap/padding-inline on the form itself, the icon/submit
+         wells (also shared, unscoped rules above) provide that. 2px
+         matches Internal Auth's own --radius token. */
       border: var(--border-width) solid var(--color-border);
-      border-radius: 3px;
-      background-color: transparent;
+      border-radius: 2px;
+      background-color: var(--color-surface);
       color: var(--color-text-secondary);
-    }
-
-    .app-shell__toolbar-search svg {
-      flex-shrink: 0;
-      inline-size: 19px;
-      block-size: 19px;
+      overflow: hidden;
     }
 
     /*
@@ -1366,6 +1386,7 @@
       font: inherit;
       font-size: var(--text-xs);
       font-weight: var(--weight-regular);
+      padding-inline-end: var(--space-2);
     }
 
     /*
@@ -1819,6 +1840,7 @@
 .app-shell__toolbar-icon-btn,
 .app-shell__toolbar-search-wrap,
 .app-shell__toolbar-search,
+.app-shell__toolbar-search-submit,
 .app-shell__toolbar-search-close {
   -webkit-app-region: no-drag;
   app-region: no-drag;

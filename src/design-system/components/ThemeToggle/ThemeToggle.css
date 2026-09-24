@@ -41,6 +41,28 @@
        untouched, so it still stays visually distinct as the active
        choice. */
     --pf-v6-c-toggle-group__button--hover--BackgroundColor: var(--color-surface-recessed);
+    /*
+     * The SELECTED segment's own resting background was the one state
+     * never touched above, so it still pointed at PatternFly's default
+     * blue "brand" fill (--m-selected--BackgroundColor). The :focus rule
+     * below only masks that blue WHILE the button is literally focused —
+     * the instant focus moves anywhere else in the app (clicking any
+     * other button, not just this group), the override stops applying
+     * and the active theme option reverts to a blue box. Neutralised
+     * here so the selected segment matches every other resting state in
+     * this control; its own icon colour (below) is what marks which
+     * mode is active instead of a background fill.
+     */
+    --pf-v6-c-toggle-group__button--m-selected--BackgroundColor: transparent;
+    /*
+     * PatternFly's default selected icon/text colour is tuned for
+     * contrast against ITS OWN blue background above — on the neutral
+     * background this control actually uses, that colour would be
+     * nearly invisible. The app's own accent token takes over as the
+     * "this one is selected" signal.
+     */
+    --pf-v6-c-toggle-group__button--m-selected--Color: var(--color-accent);
+    --pf-v6-c-toggle-group__icon--m-selected--Color: var(--color-accent);
     /* PatternFly's own idle-state fill is a solid white
        (--pf-v6-c-toggle-group__button--BackgroundColor: #ffffff), which is
        what made every unselected segment read as its own white box
