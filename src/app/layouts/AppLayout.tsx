@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
 import { Link, NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router';
 import { ArchiveIcon, BarsIcon, BellIcon, BookIcon, CogIcon, DesktopIcon, EditIcon, ExclamationTriangleIcon, HandshakeIcon, MoonIcon, PencilAltIcon, SearchIcon, ShareSquareIcon, SunIcon, TimesIcon, TrashIcon, UndoIcon, UsersIcon } from '@patternfly/react-icons';
 
@@ -36,7 +36,6 @@ import { isEmptyNote } from '@/features/notes/local/isEmptyNote';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import { NotificationsPanel } from '@/features/notifications/components/NotificationsPanel/NotificationsPanel';
 import { useSync } from '@/sync/useSync';
-import { useConflictCount } from '@/sync/useConflicts';
 import { useSyncStatus } from '@/sync/useSyncStatus';
 import { ThemeToggle } from '@/design-system/components/ThemeToggle/ThemeToggle';
 import { Modal } from '@/design-system/components/Modal/Modal';
@@ -980,15 +979,6 @@ export function AppLayout() {
   useSync(ownerId);
 
   /*
-   * 8E. A count, not the full list — this mounts on EVERY authenticated
-   * route, and pulling in useConflicts' resolution API (and re-rendering on
-   * every field of every conflicted note) here just to know whether a
-   * banner should show would be wasted work on every screen that isn't
-   * /conflicts.
-   */
-  const conflictCount = useConflictCount(ownerId);
-
-  /*
    * 8F. Same restraint the conflict banner and SaveIndicator both already
    * use: 'idle' (the resting state — last run succeeded, nothing pending)
    * shows NOTHING. A permanent "Synced" pill on every screen is chrome
@@ -1074,28 +1064,12 @@ export function AppLayout() {
         entirely, so mounting or unmounting either one can no longer resize
         anything else on the page.
       */}
-      {syncMessage || conflictCount > 0 ? (
+      {syncMessage ? (
         <div className="app-shell__status-stack">
           {syncMessage ? (
             <p className="app-shell__sync-status" aria-hidden="true" data-tone={syncMessage.tone}>
               {syncMessage.label}
             </p>
-          ) : null}
-          {conflictCount > 0 ? (
-            /*
-             * role="alert": a conflict is exactly the interruption ConflictPanel
-             * already treats as one (§38) — announced immediately, not queued
-             * behind whatever a screen reader happens to be reading.
-             */
-            <div className="app-shell__conflict-banner" role="alert">
-              <p>
-                {conflictCount} {conflictCount === 1 ? 'note has' : 'notes have'} a conflict that
-                needs your attention.
-              </p>
-              <NavLink className="app-shell__conflict-link" to="/conflicts">
-                Review
-              </NavLink>
-            </div>
           ) : null}
         </div>
       ) : null}

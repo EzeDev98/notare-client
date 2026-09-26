@@ -78,14 +78,27 @@ export function useBootPhase(): { phase: BootPhase; splashStage: SplashStage } {
     return () => clearTimeout(toFadeElapsed);
   }, [readyToLeave]);
 
-  let phase: BootPhase;
+  let computedPhase: BootPhase;
   if (!readyToLeave || !fadeElapsed) {
-    phase = 'splash';
+    computedPhase = 'splash';
   } else if (!everStandalone) {
-    phase = 'install';
+    computedPhase = 'install';
   } else {
-    phase = 'ready';
+    computedPhase = 'ready';
   }
+
+  /*
+   * ONE-WAY LATCH. Once the real app has been shown it stays shown for the
+   * life of this page. Nothing later (a display-mode blip, an auth state
+   * change, a network error) may swap the whole tree back to the splash or
+   * install screen, because that unmounts everything and reads as a reload.
+   */
+  const [hasBeenReady, setHasBeenReady] = useState(false);
+  useEffect(() => {
+    if (computedPhase === 'ready') setHasBeenReady(true);
+  }, [computedPhase]);
+
+  const phase: BootPhase = hasBeenReady ? 'ready' : computedPhase;
 
   return { phase, splashStage };
 }

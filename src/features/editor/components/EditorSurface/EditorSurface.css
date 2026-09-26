@@ -40,6 +40,10 @@
      * intentional signal, not a stray default black cursor. */
     caret-color: var(--color-accent);
 
+    /* ProseMirror requires this; injectCSS is off, so it is set here. */
+    white-space: pre-wrap;
+    word-wrap: break-word;
+
     /* The reading size and leading from 2A — the same values the read view
      * used, so switching between them is not a visual jump. */
     font-size: var(--text-md);

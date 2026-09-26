@@ -1,5 +1,5 @@
-import { useLiveQuery } from 'dexie-react-hooks';
-import { useCallback, useEffect, useState } from 'react';
+import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { noteService } from '@/features/notes/api/noteService';
@@ -73,6 +73,10 @@ export function useNotes({ archived = false }: { archived?: boolean } = {}): Not
     return archived ? noteRepository.listArchived(ownerId) : noteRepository.listActive(ownerId);
   }, [ownerId, archived]);
 
+  // Memoised: a fresh array every render (e.g. when `refreshing` toggles after a
+  // network response) makes list components re-measure and re-animate.
+  const notes = useMemo(() => rows?.map(toView), [rows]);
+
   /*
    * THE REFRESH. Writes into Dexie and returns nothing to React.
    *
@@ -112,7 +116,7 @@ export function useNotes({ archived = false }: { archived?: boolean } = {}): Not
   }, [ownerId, archived, refreshToken]);
 
   return {
-    notes: rows?.map(toView),
+    notes,
     refreshing,
     refreshError,
     refresh,

@@ -39,21 +39,13 @@ export type SaveState =
   | { status: 'offline'; hasUnsavedChanges: boolean }
 
   /** A save failed for a reason a retry might fix. */
-  | { status: 'error'; retryable: boolean }
-
-  /**
-   * 409. Somebody else changed this note — its own state because it is a
-   * PRODUCT FEATURE, not an error message (§20). 6E resolves it.
-   */
-  | { status: 'conflict' };
+  | { status: 'error'; retryable: boolean };
 
 export type SaveAction =
   | { type: 'EDITED' }
   | { type: 'SAVE_STARTED' }
   | { type: 'SAVE_SUCCEEDED' }
   | { type: 'SAVE_FAILED'; retryable: boolean }
-  | { type: 'CONFLICT_DETECTED' }
-  | { type: 'CONFLICT_RESOLVED' }
   | { type: 'WENT_OFFLINE' }
   | { type: 'WENT_ONLINE' };
 
@@ -71,7 +63,6 @@ export function hasPendingWork(state: SaveState): boolean {
       return state.hasUnsavedChanges;
     case 'idle':
     case 'saved':
-    case 'conflict':
       return false;
     default: {
       const exhaustive: never = state;
@@ -97,18 +88,10 @@ export function saveReducer(state: SaveState, action: SaveAction): SaveState {
       if (state.status === 'offline') {
         return { status: 'offline', hasUnsavedChanges: true };
       }
-      /*
-       * Typing does NOT clear a conflict. The user's edits are still in
-       * conflict with the server's, and quietly returning to `unsaved` would
-       * let the next save overwrite somebody else's work — which §20 rules
-       * out explicitly.
-       */
-      if (state.status === 'conflict') return state;
-
       return { status: 'unsaved' };
 
     case 'SAVE_STARTED':
-      if (state.status === 'offline' || state.status === 'conflict') return state;
+      if (state.status === 'offline') return state;
       return { status: 'saving', supersededByEdits: false };
 
     case 'SAVE_SUCCEEDED':
@@ -122,20 +105,9 @@ export function saveReducer(state: SaveState, action: SaveAction): SaveState {
       return state.supersededByEdits ? { status: 'unsaved' } : { status: 'saved' };
 
     case 'SAVE_FAILED':
-      if (state.status === 'conflict') return state;
       return { status: 'error', retryable: action.retryable };
 
-    case 'CONFLICT_DETECTED':
-      return { status: 'conflict' };
-
-    case 'CONFLICT_RESOLVED':
-      // Resolution leaves local changes to send, or nothing if the server's
-      // copy was taken. `unsaved` is safe either way — a save with no changes
-      // is a no-op.
-      return { status: 'unsaved' };
-
     case 'WENT_OFFLINE':
-      if (state.status === 'conflict') return state;
       return { status: 'offline', hasUnsavedChanges: hasPendingWork(state) };
 
     case 'WENT_ONLINE':

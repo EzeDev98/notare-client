@@ -3,14 +3,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { noteService } from '@/features/notes/api/noteService';
 import {
-  conflictVersion,
   isAborted,
   isApiError,
-  isConflict,
   isNotFound,
   isRetriable,
 } from '@/lib/http/errors';
-import { bareConflict, bootDefaultError, noteConflict, problemDetail } from '~/fixtures/errors';
+import { bootDefaultError, problemDetail } from '~/fixtures/errors';
 import { resetNoteFixtures } from '~/fixtures/notes';
 import { server } from '~/msw/server';
 
@@ -102,54 +100,23 @@ describe('reads', () => {
 
 describe('auto-save', () => {
   it('sends only the fields being changed', async () => {
-    await noteService.autoSaveNote(1, { version: 3 });
+    await noteService.autoSaveNote(1, {});
 
     const body = lastBody as Record<string, unknown>;
 
     // An omitted field means "leave it alone" — content is the only other
     // field auto-save carries, and skipping it here confirms it never rides
     // along uninvited.
-    expect(body).toEqual({ version: 3 });
+    expect(body).toEqual({});
     expect(body).not.toHaveProperty('content');
   });
 
   it('returns the server version for the caller to adopt', async () => {
-    const note = await noteService.autoSaveNote(1, { content: 'x', version: 3 });
+    const note = await noteService.autoSaveNote(1, { content: 'x' });
 
-    /*
-     * ECHOED, NEVER COUNTED. The client quotes the version it last received;
-     * incrementing locally conflicts exactly as a stale value does.
-     */
-    expect(note.version).toBe(4);
+    expect(note.version).toBe(1);
   });
 
-  it('surfaces a conflict carrying the server version', async () => {
-    server.use(http.patch(`${BASE}/notes/:noteId`, () => noteConflict(9)));
-
-    const error = await noteService
-      .autoSaveNote(1, { content: 'x', version: 3 })
-      .catch((e: unknown) => e);
-
-    expect(isConflict(error)).toBe(true);
-    expect(conflictVersion(error)).toBe(9);
-  });
-
-  it('surfaces a conflict WITHOUT a version, so the caller knows to refetch', async () => {
-    /*
-     * The flavour that breaks clients. ObjectOptimisticLockingFailureException
-     * produces a 409 with no currentVersion, and it only appears under genuine
-     * concurrency — awkward to reproduce against a real server, four lines as
-     * a fixture. Step 6 must refetch here rather than assume the field exists.
-     */
-    server.use(http.patch(`${BASE}/notes/:noteId`, () => bareConflict()));
-
-    const error = await noteService
-      .autoSaveNote(1, { content: 'x', version: 3 })
-      .catch((e: unknown) => e);
-
-    expect(isConflict(error)).toBe(true);
-    expect(conflictVersion(error)).toBeUndefined();
-  });
 });
 
 describe('writes', () => {
@@ -160,14 +127,14 @@ describe('writes', () => {
     expect(note.version).toBe(0);
   });
 
-  it('sends content and version on a full update, where null clears', async () => {
-    await noteService.updateNote(1, { content: null, version: 2 });
+  it('sends content on a full update, where null clears', async () => {
+    await noteService.updateNote(1, { content: null });
 
     const body = lastBody as Record<string, unknown>;
 
     // Explicit null, not omission. The type requires both fields precisely so
     // this cannot happen by accident.
-    expect(body).toEqual({ content: null, version: 2 });
+    expect(body).toEqual({ content: null });
   });
 
   it('resolves with nothing for a 204 permanent delete', async () => {

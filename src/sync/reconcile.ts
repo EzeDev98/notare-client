@@ -1,5 +1,5 @@
 import { db } from '@/features/notes/local/database';
-import { fromNoteResponse } from '@/features/notes/local/noteMappers';
+import { fromNoteResponse, isSameRow } from '@/features/notes/local/noteMappers';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import type { SyncChangedEntry } from '@/sync/types';
@@ -11,7 +11,7 @@ import type { SyncChangedEntry } from '@/sync/types';
  * surface will, and a caller having to guess this from side effects instead
  * of a return value is the kind of thing that gets rediscovered the hard way.
  */
-export type ReconcileOutcome = 'inserted' | 'updated' | 'conflict' | 'skipped';
+export type ReconcileOutcome = 'inserted' | 'updated' | 'skipped';
 
 /**
  * Merges one note from `GET /sync`'s `changed[]` into local storage.
@@ -34,14 +34,9 @@ export type ReconcileOutcome = 'inserted' | 'updated' | 'conflict' | 'skipped';
  * between them lets a concurrent local edit land in the gap and get
  * silently overwritten by the merge.
  *
- * MERGE RULE (architecture doc §3.8): a CLEAN row takes the server's
- * version outright. A DIRTY row (unsent local edits) is a conflict only if
- * the server has moved past the version that edit was based on — if the
- * versions still match, the edit is still valid against current server
- * state and simply hasn't been pushed yet, so there's nothing to report.
- * This is the same conflict push.ts's CONFLICT branch produces, reached
- * through a different door — detecting it here means it surfaces the
- * moment a pull runs, not only after the next push round-trip.
+ * MERGE RULE: a CLEAN row takes the server's version outright. A DIRTY row
+ * (unsent local edits) is left alone — last write wins, so the local edit is
+ * pushed next and replaces whatever the server holds.
  */
 export function reconcileFromSync(
   entry: SyncChangedEntry,
@@ -67,14 +62,13 @@ export function reconcileFromSync(
       return 'inserted';
     }
 
-    if (existing.dirty === 1) {
-      if (existing.version === note.version) return 'skipped';
+    // Unsent local edits win: they are pushed next and overwrite the server.
+    if (existing.dirty === 1) return 'skipped';
 
-      await noteRepository.markConflict(existing.localId, note);
-      return 'conflict';
-    }
+    const next = fromNoteResponse(note, existing);
+    if (isSameRow(existing, next)) return 'skipped';
 
-    await noteRepository.put(fromNoteResponse(note, existing));
+    await noteRepository.put(next);
     return 'updated';
   });
 }

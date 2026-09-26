@@ -1,4 +1,4 @@
-import { ensureFreshAccessToken } from '@/features/auth/refreshCoordinator';
+import { ensureFreshAccessToken, isRefreshRejected } from '@/features/auth/refreshCoordinator';
 import { getAccessToken } from '@/features/auth/tokenStore';
 import { setAuthHooks } from '@/lib/http/authHooks';
 
@@ -32,13 +32,12 @@ export function installAuthHooks(onSessionExpired: () => void): () => void {
       try {
         const hasSession = await ensureFreshAccessToken();
         return hasSession ? headerFor(getAccessToken()) : null;
-      } catch {
-        /*
-         * A terminal refresh failure. The request continues WITHOUT a header
-         * and will get a 401 — which is correct: the user sees the request
-         * fail while the session-expired screen appears, rather than the
-         * request hanging while the app decides what to do.
-         */
+      } catch (error) {
+        // Transient failure (offline, timeout, 5xx): send the request with the
+        // token we have and leave the session and the screen alone.
+        if (!isRefreshRejected(error)) return headerFor(getAccessToken());
+
+        // Terminal: the server refused the refresh token.
         onSessionExpired();
         return null;
       }
@@ -49,9 +48,10 @@ export function installAuthHooks(onSessionExpired: () => void): () => void {
         return await ensureFreshAccessToken({
           staleAccessToken: tokenFrom(usedAuthorization),
         });
-      } catch {
-        // Terminal. No retry helps — the server deleted the session record.
-        onSessionExpired();
+      } catch (error) {
+        // Only a refusal from the server is terminal; anything else just means
+        // this one request fails and the caller may retry.
+        if (isRefreshRejected(error)) onSessionExpired();
         return false;
       }
     },

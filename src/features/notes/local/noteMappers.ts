@@ -66,8 +66,16 @@ export function createLocalNote(
     dirty: 1,
     syncState: 'pending',
     localUpdatedAt: Date.now(),
-    conflictNote: null,
   };
+}
+
+/**
+ * True when writing `next` over `existing` would change nothing. Lets a
+ * refresh skip a no-op IndexedDB write, which would otherwise fire every
+ * useLiveQuery on the notes table and re-render the open note and sidebar.
+ */
+export function isSameRow(existing: NoteRow, next: NoteRow): boolean {
+  return (Object.keys(next) as (keyof NoteRow)[]).every((key) => existing[key] === next[key]);
 }
 
 /**
@@ -102,10 +110,6 @@ export function fromNoteResponse(note: NoteResponse, existing?: NoteRow): NoteRo
     // Preserve the existing local ordering when a note is merely read/refreshed.
     // Opening a note is not a local mutation and must not move it to the top.
     // A genuinely new note still receives Date.now().
-    // A row reaching this function is, by definition, one the server just
-    // gave us cleanly — any earlier conflict this row carried is resolved by
-    // that fact alone, so it must not linger and be shown as still-open.
-    conflictNote: null,
   };
 }
 
@@ -152,7 +156,6 @@ export function fromNoteSummary(
     // timestamp so reading a note does not move it to the top of the list.
     // Only a genuinely new local row gets a fresh timestamp here.
     localUpdatedAt: existing?.localUpdatedAt ?? Date.now(),
-    conflictNote: existing?.conflictNote ?? null,
   };
 }
 

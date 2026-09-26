@@ -2,8 +2,8 @@ import { http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { sharedNoteService } from '@/features/sharedNotes/api/sharedNoteService';
-import { conflictVersion, isConflict, isForbidden, isNotFound } from '@/lib/http/errors';
-import { bareConflict, noteConflict, problemDetail } from '~/fixtures/errors';
+import { isForbidden, isNotFound } from '@/lib/http/errors';
+import { problemDetail } from '~/fixtures/errors';
 import { resetNoteFixtures } from '~/fixtures/notes';
 import { server } from '~/msw/server';
 
@@ -79,22 +79,20 @@ describe('getSharedNote', () => {
 });
 
 describe('updateSharedNote', () => {
-  it('sends the full replacement body — content and version, same as the owner path', async () => {
+  it('sends the full replacement body — content only, same as the owner path', async () => {
     await sharedNoteService.updateSharedNote(5, {
       content: null,
-      version: 2,
     });
 
-    expect(lastBody).toEqual({ content: null, version: 2 });
+    expect(lastBody).toEqual({ content: null });
   });
 
   it('returns the server version for the caller to adopt', async () => {
     const note = await sharedNoteService.updateSharedNote(5, {
       content: 'y',
-      version: 2,
     });
 
-    expect(note.version).toBe(3);
+    expect(note.version).toBe(1);
   });
 
   it('answers 403, not 404, for a READ-only grant', async () => {
@@ -108,7 +106,7 @@ describe('updateSharedNote', () => {
     );
 
     const error = await sharedNoteService
-      .updateSharedNote(5, { content: 'y', version: 2 })
+      .updateSharedNote(5, { content: 'y' })
       .catch((e: unknown) => e);
 
     // NOTARE-SERVER.md §3.2: 403 means the caller can already see the
@@ -117,25 +115,4 @@ describe('updateSharedNote', () => {
     expect(isForbidden(error)).toBe(true);
   });
 
-  it('surfaces a conflict carrying the server version', async () => {
-    server.use(http.put(`${BASE}/shared-notes/:noteId`, () => noteConflict(9)));
-
-    const error = await sharedNoteService
-      .updateSharedNote(5, { content: 'y', version: 2 })
-      .catch((e: unknown) => e);
-
-    expect(isConflict(error)).toBe(true);
-    expect(conflictVersion(error)).toBe(9);
-  });
-
-  it('surfaces a conflict without a version, so the caller knows to refetch', async () => {
-    server.use(http.put(`${BASE}/shared-notes/:noteId`, () => bareConflict()));
-
-    const error = await sharedNoteService
-      .updateSharedNote(5, { content: 'y', version: 2 })
-      .catch((e: unknown) => e);
-
-    expect(isConflict(error)).toBe(true);
-    expect(conflictVersion(error)).toBeUndefined();
-  });
 });

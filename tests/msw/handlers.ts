@@ -79,22 +79,22 @@ export const handlers = [
   ),
 
   http.patch(`${BASE}/notes/:noteId`, async ({ params, request }) => {
-    const body = (await request.json()) as { content?: string; version: number };
+    const body = (await request.json()) as { content?: string; version?: number };
 
     // Mirrors the server's version bump, so a test can assert the client
     // ADOPTS the returned version rather than counting for itself.
     return HttpResponse.json(
-      makeNote({ id: Number(params['noteId']), ...body, version: body.version + 1 }),
+      makeNote({ id: Number(params['noteId']), ...body, version: (body.version ?? 0) + 1 }),
     );
   }),
 
   http.put(`${BASE}/notes/:noteId`, async ({ params, request }) => {
     const body = (await request.json()) as {
       content: string | null;
-      version: number;
+      version?: number;
     };
     return HttpResponse.json(
-      makeNote({ id: Number(params['noteId']), ...body, version: body.version + 1 }),
+      makeNote({ id: Number(params['noteId']), ...body, version: (body.version ?? 0) + 1 }),
     );
   }),
 
@@ -128,10 +128,10 @@ export const handlers = [
   http.put(`${BASE}/shared-notes/:noteId`, async ({ params, request }) => {
     const body = (await request.json()) as {
       content: string | null;
-      version: number;
+      version?: number;
     };
     return HttpResponse.json(
-      makeNote({ id: Number(params['noteId']), ownerId: 2, ...body, version: body.version + 1 }),
+      makeNote({ id: Number(params['noteId']), ownerId: 2, ...body, version: (body.version ?? 0) + 1 }),
     );
   }),
 

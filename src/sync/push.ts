@@ -30,7 +30,6 @@ function toOperationRequest(row: OutboxRow): SyncOperationRequest {
   if (row.clientId !== null) request.clientId = row.clientId;
   if (row.noteId !== null) request.noteId = row.noteId;
   if (row.content !== null) request.content = row.content;
-  if (row.version !== null) request.version = row.version;
   return request;
 }
 
@@ -66,7 +65,7 @@ async function run(): Promise<void> {
   if (outbox.length === 0) return;
 
   /*
-   * Rows whose note already carries 'conflict' or 'invalid' are excluded
+   * Rows whose note already carries 'invalid' are excluded
    * before anything is sent.
    *
    * Neither status is incorrect to resend — `operationId` keeps a retry
@@ -82,7 +81,7 @@ async function run(): Promise<void> {
 
   for (const row of outbox) {
     const note = await noteRepository.getByLocalId(row.localId);
-    if (note && (note.syncState === 'conflict' || note.syncState === 'invalid')) continue;
+    if (note && note.syncState === 'invalid') continue;
 
     eligible.push(row);
     // Snapshotted NOW, before anything is sent: applyServerAck's staleness
@@ -145,17 +144,6 @@ async function run(): Promise<void> {
               },
               expectedLocalUpdatedAt,
             );
-          }
-          break;
-        }
-
-        case 'CONFLICT': {
-          // "Keep the local copy" (architecture doc) — the outbox row is
-          // deliberately NOT cleared here; markConflict only stamps the
-          // note. It stays queued, excluded from future runs by the guard
-          // above, until 8E lets the user resolve it.
-          if (result.note) {
-            await noteRepository.markConflict(row.localId, result.note);
           }
           break;
         }

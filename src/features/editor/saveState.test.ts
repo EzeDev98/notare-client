@@ -38,34 +38,6 @@ describe('editing while a save is in flight', () => {
   });
 });
 
-describe('conflict', () => {
-  it('is not cleared by typing', () => {
-    /*
-     * The user's edits are still in conflict with the server's. Quietly
-     * returning to `unsaved` would let the next save overwrite somebody else's
-     * work, which §20 rules out: conflict resolution is the user's decision,
-     * not something the client makes by forgetting.
-     */
-    const conflicted: SaveState = { status: 'conflict' };
-    expect(saveReducer(conflicted, { type: 'EDITED' })).toBe(conflicted);
-    expect(saveReducer(conflicted, { type: 'SAVE_STARTED' })).toBe(conflicted);
-    expect(saveReducer(conflicted, { type: 'WENT_OFFLINE' })).toBe(conflicted);
-  });
-
-  it('ignores a success that arrives after it', () => {
-    // A race, not a bug: the 409 for one request can land before the 200 for
-    // an earlier one.
-    const conflicted: SaveState = { status: 'conflict' };
-    expect(saveReducer(conflicted, { type: 'SAVE_SUCCEEDED' })).toBe(conflicted);
-  });
-
-  it('leaves work to do once resolved', () => {
-    expect(saveReducer({ status: 'conflict' }, { type: 'CONFLICT_RESOLVED' })).toEqual({
-      status: 'unsaved',
-    });
-  });
-});
-
 describe('offline', () => {
   it('remembers whether anything was pending', () => {
     const offline = saveReducer({ status: 'unsaved' }, { type: 'WENT_OFFLINE' });
@@ -100,7 +72,6 @@ describe('totality', () => {
       { status: 'saved' },
       { status: 'offline', hasUnsavedChanges: true },
       { status: 'error', retryable: true },
-      { status: 'conflict' },
     ];
 
     const actions = [
@@ -108,8 +79,6 @@ describe('totality', () => {
       { type: 'SAVE_STARTED' },
       { type: 'SAVE_SUCCEEDED' },
       { type: 'SAVE_FAILED', retryable: true },
-      { type: 'CONFLICT_DETECTED' },
-      { type: 'CONFLICT_RESOLVED' },
       { type: 'WENT_OFFLINE' },
       { type: 'WENT_ONLINE' },
     ] as const;

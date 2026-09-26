@@ -2,11 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ApiError,
-  conflictVersion,
   fieldErrors,
   isAborted,
   isApiError,
-  isConflict,
   isOffline,
   isRetriable,
   isUnauthorized,
@@ -48,27 +46,6 @@ describe('statusOf', () => {
   it('returns undefined for transport failures, which have no status', () => {
     expect(statusOf(new ApiError({ kind: 'network' }))).toBeUndefined();
     expect(statusOf(problem(404))).toBe(404);
-  });
-});
-
-describe('conflictVersion', () => {
-  it('reads currentVersion when the server sent one', () => {
-    expect(conflictVersion(problem(409, { currentVersion: 7 }))).toBe(7);
-  });
-
-  it('returns undefined for a conflict WITHOUT currentVersion', () => {
-    /*
-     * The path that only appears under real concurrency:
-     * ObjectOptimisticLockingFailureException produces a 409 carrying no
-     * currentVersion at all. A client assuming the field is always present
-     * crashes exactly when two people are editing — the moment it matters most.
-     */
-    expect(isConflict(problem(409))).toBe(true);
-    expect(conflictVersion(problem(409))).toBeUndefined();
-  });
-
-  it('ignores a non-numeric currentVersion rather than trusting it', () => {
-    expect(conflictVersion(problem(409, { currentVersion: '7' }))).toBeUndefined();
   });
 });
 

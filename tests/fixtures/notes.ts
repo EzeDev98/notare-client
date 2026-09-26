@@ -60,7 +60,6 @@ export function makeRow(overrides: Partial<NoteRow> = {}): NoteRow {
     dirty: 0,
     syncState: 'synced',
     localUpdatedAt: 1_754_038_800_000,
-    conflictNote: null,
     ...overrides,
   };
 }

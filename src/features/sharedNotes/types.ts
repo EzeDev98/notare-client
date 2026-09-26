@@ -84,5 +84,4 @@ export type SharedNoteDetailResponse = NoteResponse;
  */
 export interface UpdateSharedNoteRequest {
   content: string | null;
-  version: number;
 }

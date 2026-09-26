@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from 'react';
 
-import { ConflictPanel } from '@/features/editor/components/ConflictPanel/ConflictPanel';
 import { EditorSurface } from '@/features/editor/components/EditorSurface/EditorSurface';
 import { SaveIndicator } from '@/features/editor/components/SaveIndicator/SaveIndicator';
 import { useEditorShortcuts } from '@/features/editor/hooks/useEditorShortcuts';
@@ -11,12 +10,6 @@ import { parseServerDateTime } from '@/lib/time';
 interface NoteEditorHostProps {
   /** The local row. Exists before any server has seen this note. */
   row: NoteRow;
-  /**
-   * Used ONLY to word the conflict heading — "on another device" versus "by
-   * someone else". A prop rather than useAuth, so the editor is testable
-   * without a session.
-   */
-  currentUserId: number | null;
   /** Optional content rendered inside the writing surface around the body. */
   contentAccessory?: ReactNode;
 }
@@ -47,31 +40,11 @@ function NoteDateHeading({ row }: { row: NoteRow }) {
   return <p className="note-date">{text}</p>;
 }
 
-export function NoteEditorHost({ row, currentUserId, contentAccessory }: NoteEditorHostProps) {
+export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
   const editor = useNoteEditor(row);
 
   useEditorShortcuts({ onSave: editor.flush });
 
-
-  if (editor.saveState.status === 'conflict') {
-    return (
-      <>
-        <SaveIndicator state={editor.saveState} />
-        <ConflictPanel
-          conflict={editor.conflict}
-          mine={{ content: editor.row.content }}
-          byAnotherDevice={
-            currentUserId !== null &&
-            editor.conflict.status === 'ready' &&
-            editor.conflict.theirs.lastModifiedBy === currentUserId
-          }
-          onKeepMine={editor.keepMine}
-          onUseTheirs={editor.useTheirs}
-          onKeepBoth={editor.keepBoth}
-        />
-      </>
-    );
-  }
 
   /*
    * No word count here any more, and SaveIndicator renders nothing at all

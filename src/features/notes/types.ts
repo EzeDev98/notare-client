@@ -11,13 +11,7 @@ export interface NoteResponse {
   pinned: boolean;
   archived: boolean;
 
-  /**
-   * The optimistic-locking token. ECHOED BACK, NEVER INCREMENTED.
-   *
-   * The server compares what you send against what it holds and rejects a
-   * mismatch with 409. Sending version + 1 conflicts exactly as a stale one
-   * does — the client is not participating in the counting, it is quoting.
-   */
+  /** A change counter kept by the server. Informational only; never sent back. */
   version: number;
 
   createdAt: ServerDateTime;
@@ -67,7 +61,6 @@ export interface CreateNoteRequest {
  */
 export interface UpdateNoteRequest {
   content: string | null;
-  version: number;
 }
 
 /**
@@ -78,5 +71,4 @@ export interface UpdateNoteRequest {
  */
 export interface AutoSaveNoteRequest {
   content?: string;
-  version: number;
 }

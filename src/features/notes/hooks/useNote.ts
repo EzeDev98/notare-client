@@ -1,4 +1,4 @@
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
 import { useEffect, useRef, useState } from 'react';
 
 import { noteService } from '@/features/notes/api/noteService';

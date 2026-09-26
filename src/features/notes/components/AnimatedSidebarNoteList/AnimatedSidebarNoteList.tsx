@@ -27,16 +27,26 @@ const ANIMATION_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
 /*
  * All three of this list's motions (a resting row's FLIP reposition,
  * an entering row's own fade+slide, an exiting row's own fade+slide)
- * are driven through element.animate() (below) rather than a
+ * are driven through safeAnimate(element, ) (below) rather than a
  * declarative CSS `animation`, precisely so this one check covers all
  * three evenly. reset.css's own global `prefers-reduced-motion: reduce`
  * block forces every CSS `@keyframes` animation's duration to ~0 —
  * exactly right for accessibility, but it has zero power over
- * element.animate() calls, so a split between the two systems would
+ * safeAnimate(element, ) calls, so a split between the two systems would
  * silently miss whichever half runs through JS. Checked fresh on every
  * call rather than cached, since it can change mid-session (the OS
  * setting, not just the page load).
  */
+/** Skips the animation where the browser (or a test DOM) has no Web Animations API. */
+function safeAnimate(
+  element: HTMLElement,
+  keyframes: Keyframe[],
+  options: KeyframeAnimationOptions,
+): void {
+  if (typeof element.animate !== 'function') return;
+  element.animate(keyframes, options);
+}
+
 function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
@@ -121,7 +131,7 @@ export function AnimatedSidebarNoteList({
    * fading). This is the piece the old version was missing: it re-read
    * `renderedNotes` itself to decide what to animate, so ANY unrelated
    * update that touched `renderedNotes` re-ran the enter/exit
-   * element.animate() calls for rows that were already mid-fade,
+   * safeAnimate(element, ) calls for rows that were already mid-fade,
    * restarting them from frame 0 — which is exactly what produced a
    * neighbor that "travels slowly" (its FLIP animation kept restarting)
    * and a still-existing note fading to opacity 0 and staying there
@@ -317,7 +327,7 @@ export function AnimatedSidebarNoteList({
 
       if (item.animationState === 'enter') {
         if (entered.has(item.note.localId)) {
-          element.animate(
+          safeAnimate(element, 
             [
               { opacity: 0, transform: 'translate3d(0, -100%, 0)' },
               { opacity: 1, transform: 'translate3d(0, 0, 0)' },
@@ -330,7 +340,7 @@ export function AnimatedSidebarNoteList({
 
       if (item.animationState === 'exit') {
         if (exited.has(item.note.localId)) {
-          element.animate(
+          safeAnimate(element, 
             [
               { opacity: 1, transform: 'translate3d(0, 0, 0)' },
               { opacity: 0, transform: 'translate3d(0, -100%, 0)' },
@@ -354,7 +364,7 @@ export function AnimatedSidebarNoteList({
 
       if (Math.abs(deltaY) < 0.5) continue;
 
-      element.animate(
+      safeAnimate(element, 
         [
           { transform: 'translate3d(0, ' + deltaY + 'px, 0)' },
           { transform: 'translate3d(0, 0, 0)' },

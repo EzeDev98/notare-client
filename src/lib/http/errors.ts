@@ -79,16 +79,6 @@ export function isBadRequest(error: unknown): boolean {
   return statusOf(error) === 400;
 }
 
-export function isConflict(error: unknown): boolean {
-  return statusOf(error) === 409;
-}
-
-export function conflictVersion(error: unknown): number | undefined {
-  if (!isApiError(error) || error.detail.kind !== 'problem') return undefined;
-  const value = error.detail.extensions['currentVersion'];
-  return typeof value === 'number' ? value : undefined;
-}
-
 export function fieldErrors(error: unknown): Record<string, string> | undefined {
   if (!isApiError(error) || error.detail.kind !== 'problem') return undefined;
 

@@ -1,35 +1,27 @@
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import { useAutoSaveScheduler } from '@/features/editor/hooks/useAutoSaveScheduler';
-import { useConflict } from '@/features/editor/hooks/useConflict';
 import {
   hasPendingWork,
   initialSaveState,
   saveReducer,
-  type SaveState,
 } from '@/features/editor/saveState';
 import { noteService } from '@/features/notes/api/noteService';
 import { fromNoteResponse } from '@/features/notes/local/noteMappers';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import type { NoteRow } from '@/features/notes/local/noteRow';
-import type { NoteResponse } from '@/features/notes/types';
-import { isConflict, isOffline } from '@/lib/http/errors';
+import { isOffline } from '@/lib/http/errors';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
 
 /**
  * See `draftOverride`'s own doc comment below for what this is for.
- * `version` is optional: present only when the write that set the override
- * (conflict resolution) also knows the new version synchronously; absent
- * for a plain typing edit, which never changes the version at all.
- *
  * 1B: no `title` field — the note domain has none (NoteRow, NoteResponse,
  * CreateNoteRequest, UpdateNoteRequest and AutoSaveNoteRequest all dropped
  * it). Content is the only text a note carries now.
  */
 interface DraftOverride {
   content: string;
-  version?: number | null;
 }
 
 /**
@@ -55,21 +47,7 @@ interface DraftOverride {
  * network request.
  */
 export function useNoteEditor(initialRow: NoteRow) {
-  /*
-   * Lazy init, not a bare `initialSaveState`: a row can already be
-   * `syncState === 'conflict'` the moment this hook first mounts — loaded
-   * that way from Dexie because a PREVIOUS mount's `save()` persisted it
-   * there (see `markEditorConflict`'s own doc comment). Starting at 'idle'
-   * regardless would silently swallow that: `save()`'s dirty-row guard
-   * would correctly refuse to resend, but the conflict panel that explains
-   * WHY would never appear — the note would just look like it's sitting
-   * there "Unsaved" for no visible reason.
-   */
-  const [saveState, dispatch] = useReducer(
-    saveReducer,
-    initialRow,
-    (row): SaveState => (row.syncState === 'conflict' ? { status: 'conflict' } : initialSaveState),
-  );
+  const [saveState, dispatch] = useReducer(saveReducer, initialSaveState);
   const online = useOnlineStatus();
 
   /*
@@ -144,11 +122,7 @@ export function useNoteEditor(initialRow: NoteRow) {
   }, [localId]);
 
   useEffect(() => {
-    if (
-      draftOverride !== null &&
-      liveRow.content === draftOverride.content &&
-      (draftOverride.version === undefined || liveRow.version === draftOverride.version)
-    ) {
+    if (draftOverride !== null && liveRow.content === draftOverride.content) {
       setDraftOverride(null);
     }
   }, [liveRow, draftOverride]);
@@ -159,7 +133,6 @@ export function useNoteEditor(initialRow: NoteRow) {
       : {
           ...liveRow,
           content: draftOverride.content,
-          version: draftOverride.version === undefined ? liveRow.version : draftOverride.version,
           // Forced, not read from liveRow: `save()`'s "nothing to send"
           // check reads this synchronously via `rowRef`, and liveRow's
           // `dirty` is exactly as stale as its content is while an
@@ -229,16 +202,6 @@ export function useNoteEditor(initialRow: NoteRow) {
     // Nothing to send. The row is clean, so the server already has this.
     if (current.dirty === 0) return;
 
-    /*
-     * Already known to conflict, PERSISTED on the row (not just in this
-     * component's in-memory saveState) — do not resend the same doomed
-     * (content, version) pair. See `markEditorConflict`'s own doc comment
-     * for why relying on ephemeral React state alone let this retry
-     * forever: a remount, a reconnect, or a stray timer had no durable
-     * signal telling it to stop.
-     */
-    if (current.syncState === 'conflict') return;
-
     dispatch({ type: 'SAVE_STARTED' });
 
     try {
@@ -290,14 +253,8 @@ export function useNoteEditor(initialRow: NoteRow) {
           creatingRef.current = null;
         }
       } else {
-        if (current.version === null) {
-          throw new Error('Cannot save a note without a version.');
-        }
-
         const updated = await noteService.autoSaveNote(current.serverId, {
           content: current.content,
-          // ECHOED, never incremented.
-          version: current.version,
         });
 
         /*
@@ -332,35 +289,7 @@ export function useNoteEditor(initialRow: NoteRow) {
 
       dispatch({ type: 'SAVE_SUCCEEDED' });
     } catch (error) {
-      if (isConflict(error)) {
-        /*
-         * Fetch the server's note BEFORE marking the row conflicted, same
-         * request useConflict.ts already made for THIS editor's own live
-         * display — the difference is this copy gets persisted, so the
-         * conflict is resolvable from the Conflicts page even after this
-         * editor closes. See markEditorConflict's own doc comment: a null
-         * conflictNote used to make this kind of conflict permanent and
-         * invisible everywhere except the exact editor instance that hit
-         * the 409. Best-effort: a failed fetch still records the conflict
-         * durably (conflictNote null, same as before this fix), it just
-         * isn't resolvable from the Conflicts page until the next attempt
-         * succeeds.
-         */
-        let theirs: NoteResponse | null = null;
-        if (current.serverId !== null) {
-          try {
-            theirs = await noteService.getNote(current.serverId);
-          } catch {
-            // Swallowed — see comment above.
-          }
-        }
-
-        // Durable first: the row must say "conflict" before anything else
-        // (a re-render, a reconnect effect, another tab) gets a chance to
-        // read it and decide there's ordinary unsent work to retry.
-        await noteRepository.markEditorConflict(localId, theirs);
-        dispatch({ type: 'CONFLICT_DETECTED' });
-      } else if (isOffline(error)) {
+      if (isOffline(error)) {
         /*
          * The row stays dirty and stays in the database. That was already
          * true before 8B — this is where offline-first pays.
@@ -396,7 +325,6 @@ export function useNoteEditor(initialRow: NoteRow) {
           await outboxRepository.enqueueUpdate({
             localId,
             noteId: current.serverId,
-            version: current.version,
             content: newestContent,
           });
         }
@@ -414,8 +342,7 @@ export function useNoteEditor(initialRow: NoteRow) {
 
   const scheduler = useAutoSaveScheduler({
     save,
-    canSchedule: () =>
-      saveStateRef.current.status !== 'offline' && saveStateRef.current.status !== 'conflict',
+    canSchedule: () => saveStateRef.current.status !== 'offline',
     hasPendingWork: () => hasPendingWork(saveStateRef.current),
   });
 
@@ -430,115 +357,6 @@ export function useNoteEditor(initialRow: NoteRow) {
     }
   }, [online, scheduler]);
 
-  const conflict = useConflict(row.serverId, saveState.status === 'conflict');
-
-  /*
-   * KNOWN GAP (8B), not fixed here: none of the three resolutions below clear
-   * a stale outbox entry queued before the conflict was detected. In
-   * practice this is harmless rather than silent — 8C would submit the old
-   * queued version, the server would report CONFLICT again (it is genuinely
-   * stale), and the user sees another round of this same panel rather than
-   * losing anything. Left for whoever builds 8C to decide whether that retry
-   * is worth avoiding.
-   */
-
-  /** KEEP MINE — a deliberate overwrite. Local text stays; version is swapped. */
-  const keepMine = useCallback(() => {
-    if (conflict.status !== 'ready') return;
-    const mine = rowRef.current;
-    /*
-     * An override with the version filled in, NOT a clear to null. Content
-     * is already right in `mine`, but `version` is the whole point of this
-     * action — and clearing to `null` would fall back to `liveRow.version`,
-     * which is still the OLD version until the write below resolves. Read
-     * synchronously (`result.current.row.version`) before Dexie catches up,
-     * that would show the stale version despite having just "kept mine."
-     */
-    setDraftOverride({ content: mine.content, version: conflict.theirs.version });
-    void noteRepository
-      .put({
-        ...mine,
-        version: conflict.theirs.version,
-        dirty: 1,
-        // `mine` now carries `syncState: 'conflict'` (markEditorConflict, in
-        // save()'s catch block) — must be cleared explicitly here, the same
-        // way `keepBoth` already does below, or the row would report itself
-        // conflicted forever after a resolution that fixed exactly that.
-        syncState: 'pending',
-      })
-      .then(() => {
-        dispatch({ type: 'CONFLICT_RESOLVED' });
-        return scheduler.flush();
-      });
-  }, [conflict, scheduler]);
-
-  /** USE THEIRS — discard the local draft. */
-  const useTheirs = useCallback(() => {
-    if (conflict.status !== 'ready') return;
-    const theirs = conflict.theirs;
-    /*
-     * An override carrying THEIRS content/version, not a clear to null.
-     * Clearing to null falls back to `liveRow`, which still holds the
-     * discarded local draft until the write below resolves — for exactly
-     * one render, "use theirs" would still show mine. Same normalisation
-     * `fromNoteResponse` applies (`?? ''`), so this matches what the write
-     * is about to persist.
-     */
-    setDraftOverride({
-      content: theirs.content ?? '',
-      version: theirs.version,
-    });
-    void noteRepository.put(fromNoteResponse(theirs, rowRef.current)).then(() => {
-      dispatch({ type: 'CONFLICT_RESOLVED' });
-    });
-  }, [conflict]);
-
-  /**
-   * KEEP BOTH — the only option that destroys nothing.
-   *
-   * Mine first, then theirs, joined as one continuous note rather than
-   * separated by a divider — the person resolving the conflict is usually
-   * the one who just edited, so their words lead, with the incoming
-   * version appended below for reference. Untidy in the sense that nothing
-   * was reconciled sentence by sentence, but recoverable, which is the
-   * right trade when someone interrupted mid-sentence is about to click
-   * the emphasised button.
-   */
-  const keepBoth = useCallback(() => {
-    if (conflict.status !== 'ready') return;
-
-    const theirs = conflict.theirs;
-    const mine = rowRef.current;
-
-    const theirContent = theirs.content ?? '';
-    const mergedContent =
-      theirContent.trim() === ''
-        ? mine.content
-        : `${mine.content}\n\n${theirContent}`;
-
-    const finalContent = mergedContent.slice(0, 20_000);
-
-    // Same reasoning as `useTheirs`: the merged text AND the adopted
-    // version are both new, so the pre-merge override must not survive to
-    // shadow either one — `row.version` needs to read 7 (or whatever
-    // theirs.version is) the instant this returns, not after Dexie's
-    // write resolves.
-    setDraftOverride({ content: finalContent, version: theirs.version });
-    void noteRepository
-      .put({
-        ...mine,
-        content: finalContent,
-        version: theirs.version,
-        dirty: 1,
-        syncState: 'pending',
-        localUpdatedAt: Date.now(),
-      })
-      .then(() => {
-        dispatch({ type: 'CONFLICT_RESOLVED' });
-        return scheduler.flush();
-      });
-  }, [conflict, scheduler]);
-
   return {
     row,
     saveState,
@@ -546,9 +364,5 @@ export function useNoteEditor(initialRow: NoteRow) {
     markEdited,
     save,
     flush: scheduler.flush,
-    conflict,
-    keepMine,
-    useTheirs,
-    keepBoth,
   };
 }

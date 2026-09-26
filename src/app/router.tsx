@@ -114,13 +114,6 @@ export const routes = [
             },
           },
           {
-            path: 'conflicts',
-            lazy: async () => {
-              const { ConflictsPage } = await import('@/pages/Conflicts/Conflicts');
-              return { Component: ConflictsPage };
-            },
-          },
-          {
             path: 'shared',
             lazy: async () => {
               const { SharedNotesPage } = await import('@/pages/SharedNotes/SharedNotes');

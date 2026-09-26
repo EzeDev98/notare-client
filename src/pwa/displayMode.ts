@@ -133,43 +133,12 @@ const STANDALONE_RECHECK_LONG_MS = 1500;
 export function useIsStandalone(): boolean {
   const [standalone, setStandalone] = useState(isStandaloneDisplayMode);
 
-  // Diagnostic: logs the value this hook started with, once, on mount —
-  // without this there is no visibility into whether a later "changed to
-  // false" warning below is a genuine transition FROM true, or whether
-  // this simply started false the entire time and whatever was on screen
-  // a moment earlier was not actually bootPhase's 'ready' at all.
-  useEffect(() => {
-    console.warn(
-      `[pwa] display-mode standalone started as ${standalone} at ${Math.round(performance.now())}ms since navigation start`,
-    );
-    // Intentionally reads the value captured at mount, not a live one —
-    // this fires once, describing the initial render, by design.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   useEffect(() => {
     if (typeof window.matchMedia !== 'function') return;
 
     const mediaQueryList = window.matchMedia('(display-mode: standalone)');
     const handleChange = () => {
       const next = isStandaloneDisplayMode();
-      // console.warn, not console.debug — Chrome's DevTools console hides
-      // Verbose-level messages (which is what console.debug maps to) under
-      // its log-level filter BY DEFAULT, and almost nobody has that toggled
-      // on. A diagnostic that silently produces no visible output unless a
-      // non-default DevTools setting is already enabled is not a useful
-      // diagnostic. warn/error are never filtered by default, which is
-      // worth the visual noise for something this temporary and this rare
-      // an event.
-      // performance.now() rather than a stack trace: a stack trace on a
-      // browser-dispatched media-query callback just shows browser
-      // internals, not application code, and is not actionable. Time
-      // since navigation start IS actionable — it tells us whether this
-      // fires immediately, a genuine "few seconds" in, or somewhere else
-      // entirely relative to the rest of boot.
-      console.warn(
-        `[pwa] display-mode standalone changed to ${next} at ${Math.round(performance.now())}ms since navigation start`,
-      );
       setStandalone(next);
     };
 
@@ -196,9 +165,6 @@ export function useIsStandalone(): boolean {
         const rechecked = isStandaloneDisplayMode();
         if (rechecked === current) return current;
 
-        console.warn(
-          `[pwa] display-mode standalone corrected from ${current} to ${rechecked} at ${Math.round(performance.now())}ms since navigation start — initial read was stale`,
-        );
         return rechecked;
       });
     };

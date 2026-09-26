@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { conflictVersion, fieldErrors, isApiError, type ApiError } from '@/lib/http/errors';
+import { fieldErrors, isApiError, type ApiError } from '@/lib/http/errors';
 import { parseResponse } from '@/lib/http/parse';
 
 function jsonResponse(body: unknown, status = 200, type = 'application/json'): Response {
@@ -69,10 +69,6 @@ describe('parseResponse — ProblemDetail', () => {
       title: 'Conflict',
       detail: 'This note was modified by someone else.',
     });
-
-    // currentVersion needs no special handling in the parser — it is just an
-    // extension, and 3A already knows how to read one.
-    expect(conflictVersion(error)).toBe(7);
   });
 
   it('surfaces the validation errors map from B2', async () => {

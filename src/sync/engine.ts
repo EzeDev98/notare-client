@@ -1,3 +1,4 @@
+import { releaseLegacyConflicts } from '@/sync/releaseLegacyConflicts';
 import { pullChanges } from '@/sync/pull';
 import { pushOutbox } from '@/sync/push';
 import { onLocalMutation } from '@/sync/mutationSignal';
@@ -225,6 +226,7 @@ export function start(ownerId: number | null): () => void {
   }
 
   void requestSync('start');
+  void releaseLegacyConflicts().catch(() => undefined);
 
   return function stop(): void {
     window.removeEventListener('online', handleOnline);

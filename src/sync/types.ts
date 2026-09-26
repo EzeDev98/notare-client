@@ -27,7 +27,6 @@ export interface SyncOperationRequest {
   clientId?: string;
   noteId?: number;
   content?: string;
-  version?: number;
 }
 
 export interface SyncBatchRequest {
@@ -38,18 +37,16 @@ export interface SyncBatchRequest {
  * The four outcomes the server defines for one operation. Client behaviour
  * per status is documented where each is handled, in `push.ts`.
  */
-export type SyncResultStatus = 'APPLIED' | 'CONFLICT' | 'NOT_FOUND' | 'INVALID';
+export type SyncResultStatus = 'APPLIED' | 'NOT_FOUND' | 'INVALID';
 
 export interface SyncOperationResult {
   operationId: string;
   status: SyncResultStatus;
 
   /**
-   * Present on APPLIED (CREATE/UPDATE — carries the id/version to adopt) and
-   * on CONFLICT (the server's current note, per the architecture doc's
-   * explicit reasoning: a bare version would mean a follow-up fetch per
-   * conflict). Absent on NOT_FOUND and on an APPLIED DELETE — there is
-   * nothing left on the server to describe.
+   * Present on APPLIED (CREATE/UPDATE — carries the id/version to adopt).
+   * Absent on NOT_FOUND and on an APPLIED DELETE — there is nothing left on
+   * the server to describe.
    */
   note?: NoteResponse;
 
@@ -63,7 +60,6 @@ export interface SyncOperationResult {
 export interface SyncBatchResponse {
   results: SyncOperationResult[];
   appliedCount: number;
-  conflictCount: number;
   serverTime: string;
 }
 

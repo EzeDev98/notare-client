@@ -28,10 +28,6 @@
     text-decoration: none;
   }
 
-  .invitations__invite-link:hover {
-    text-decoration: underline;
-  }
-
   .invitations__tabs {
     display: flex;
     gap: var(--space-1);

@@ -428,7 +428,7 @@
     align-items: center;
     flex: 1;
     inline-size: 100%;
-    block-size: 36px;
+    block-size: 30px;
     /* Internal Auth's SearchBar.module.css .searchGroup, copied
        verbatim: a bordered, overflow-hidden box — icon well, input,
        submit-arrow well all flush against its own edges, no gap or
@@ -455,7 +455,7 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    inline-size: 36px;
+    inline-size: 30px;
     block-size: 100%;
     color: var(--color-icon);
   }
@@ -471,7 +471,7 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    inline-size: 36px;
+    inline-size: 30px;
     block-size: 100%;
     border: none;
     border-inline-start: var(--border-width) solid var(--color-border);
@@ -827,41 +827,6 @@
 
   .app-shell__sync-status[data-tone='danger'] {
     color: var(--color-danger);
-  }
-
-  /* ---- Conflict banner -------------------------------------------------- */
-
-  .app-shell__conflict-banner {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
-    padding: var(--space-3) var(--space-4);
-    /*
-     * --color-danger-subtle / --color-text-on-danger don't exist as tokens
-     * (colors.css only defines --color-danger, and --color-text-on-danger
-     * is for text ON a solid danger FILL, which this banner isn't). Same
-     * background token .trash__offline already uses for an aside banner,
-     * with a danger-coloured border doing the emphasis instead — matching
-     * ConflictPanel's own choice of a border over a filled background (§31:
-     * this is a region of the page, not an alert chip).
-     */
-    color: var(--color-text);
-    background-color: var(--color-accent-subtle);
-    border-block-end: var(--border-width) solid var(--color-danger);
-  }
-
-  .app-shell__conflict-banner p {
-    margin: 0;
-    font-size: var(--text-base);
-  }
-
-  .app-shell__conflict-link {
-    font-size: var(--text-base);
-    font-weight: var(--weight-medium);
-    color: var(--color-danger);
-    white-space: nowrap;
   }
 
   /* ---- Main ------------------------------------------------------------ */
@@ -1336,7 +1301,7 @@
       display: flex;
       align-items: center;
       inline-size: 220px;
-      block-size: 36px;
+      block-size: 30px;
       /* Same Internal Auth .searchGroup box as the base rule above —
          no gap/padding-inline on the form itself, the icon/submit
          wells (also shared, unscoped rules above) provide that. 2px

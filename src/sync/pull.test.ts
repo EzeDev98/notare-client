@@ -115,7 +115,7 @@ describe('pullChanges — merging changed notes', () => {
     expect(untouched?.syncState).toBe('pending');
   });
 
-  it('marks a conflict when a dirty row is based on a version the server has moved past', async () => {
+  it('keeps a dirty row untouched even when the server has moved past its base version', async () => {
     const row = makeRow({
       serverId: 12,
       localId: 'local-12',
@@ -130,11 +130,9 @@ describe('pullChanges — merging changed notes', () => {
 
     await pullChanges(1);
 
-    const conflicted = await noteRepository.getByLocalId('local-12');
-    expect(conflicted?.syncState).toBe('conflict');
-    expect(conflicted?.content).toBe('My unsent edit');
-    expect(conflicted?.dirty).toBe(1);
-    expect(conflicted?.conflictNote?.content).toBe('Someone else edited');
+    const kept = await noteRepository.getByLocalId('local-12');
+    expect(kept?.content).toBe('My unsent edit');
+    expect(kept?.dirty).toBe(1);
   });
 });
 
@@ -145,7 +143,6 @@ describe('pullChanges — tombstones', () => {
     await outboxRepository.enqueueUpdate({
       localId: row.localId,
       noteId: 20,
-      version: 0,
       content: row.content,
     });
 

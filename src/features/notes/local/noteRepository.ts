@@ -4,6 +4,7 @@ import {
   fromNoteResponse,
   fromNoteSummary,
   fromTrashedNote,
+  isSameRow,
 } from '@/features/notes/local/noteMappers';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import { META_KEYS } from '@/features/notes/local/metaRow';
@@ -81,23 +82,6 @@ export const noteRepository = {
       .equals([ownerId, 0, 1])
       .toArray();
     return rows.sort(byPinnedThenRecent);
-  },
-
-  /**
-   * Rows a push (8C) or a pull (8D) has flagged as a genuine conflict — a
-   * dirty local edit the server has moved past. `syncState` is indexed on
-   * its own (schema v1), so this is a direct index lookup, not a scan; the
-   * `ownerId` filter runs in memory the same way `search`'s does, since
-   * there is no `[ownerId+syncState]` compound index and a user's conflict
-   * count is never going to be the thing that makes this slow.
-   *
-   * Ordered by `byRecent`, same as the trash and for the same reason: a
-   * conflict is something that just happened, not something to organise —
-   * pinned floating to the top would bury the one that needs attention.
-   */
-  async listConflicted(ownerId: number): Promise<NoteRow[]> {
-    const rows = await db.notes.where('syncState').equals('conflict').toArray();
-    return rows.filter((row) => row.ownerId === ownerId).sort(byRecent);
   },
 
   /**
@@ -197,7 +181,7 @@ export const noteRepository = {
         ...existing,
         ...changes,
         dirty: 1,
-        syncState: existing.syncState === 'conflict' ? 'conflict' : 'pending',
+        syncState: 'pending',
         localUpdatedAt: Date.now(),
       });
     });
@@ -254,10 +238,6 @@ export const noteRepository = {
         updatedAt: ack.updatedAt,
         dirty: unchanged ? 0 : 1,
         syncState: unchanged ? 'synced' : 'pending',
-        // The server just acknowledged this row, cleanly or not — either way
-        // a PREVIOUS conflict (8C) is stale the moment a new ack lands, the
-        // same reasoning fromNoteResponse uses.
-        conflictNote: null,
         /*
          * localUpdatedAt is NOT restamped HERE. An acknowledgement is not a
          * local change — the server agreeing with us is not the user doing
@@ -310,73 +290,6 @@ export const noteRepository = {
       }
 
       await db.outbox.where('localId').equals(localId).delete();
-    });
-  },
-
-  /**
-   * Records a CONFLICT from a push (8C).
-   *
-   * Per the architecture doc's contract: "keep the local copy" — so, unlike
-   * every other push outcome, the outbox row for this note is left in place
-   * by the CALLER (push.ts), not cleared here. This method only stamps the
-   * note itself: `syncState: 'conflict'` and the server's copy attached, so
-   * 8E has something to show without a follow-up fetch.
-   *
-   * dirty and localUpdatedAt are untouched — the user's local edit is still
-   * exactly as unsent as it was a moment ago; a conflict is news about the
-   * SERVER's state, not a local change.
-   */
-  markConflict(localId: string, theirs: NoteResponse): Promise<void> {
-    return db.transaction('rw', db.notes, async () => {
-      const existing = await db.notes.get(localId);
-      if (!existing) return;
-
-      await db.notes.put({ ...existing, syncState: 'conflict', conflictNote: theirs });
-    });
-  },
-
-  /**
-   * Records a CONFLICT from the INTERACTIVE editor's direct autosave
-   * (`useNoteEditor.ts`'s `save()`), as opposed to `markConflict` above,
-   * which is the outbox/batch push's (8C) equivalent.
-   *
-   * WHY THIS EXISTS: before it, a 409 from the editor's own PATCH only
-   * flipped ephemeral in-memory React state (`saveState.status ===
-   * 'conflict'`) to stop the autosave scheduler. Nothing on the ROW said a
-   * conflict had happened, so it kept `dirty: 1` and its old, stale
-   * `version` — indistinguishable from an ordinary unsent edit. Anything
-   * that re-armed the scheduler outside that one component instance (a
-   * remount, a reconnect, another tab) had no way to know better and would
-   * legitimately resend the exact same doomed (content, version) pair,
-   * hitting 409 again forever with no backoff.
-   *
-   * `theirs` IS now stored here, unlike the original version of this
-   * method. It used to be left null on the theory that `useConflict.ts`
-   * would fetch it separately, live, purely for that one editor instance's
-   * display — but nothing ever persisted it, so `noteRepository.listConflicted`
-   * (the Conflicts page AND the sync-status banner both read it) had a row
-   * with `syncState: 'conflict'` and `conflictNote: null` forever: counted
-   * by the banner, filtered OUT of the Conflicts page (which requires
-   * `conflictNote !== null` to render anything), and unresolvable by
-   * `resolveKeepMine`/`resolveUseTheirs`/`resolveKeepBoth` (`sync/conflicts.ts`,
-   * all three throw on a null `conflictNote`) the moment that editor closed.
-   * A conflict from this path was, in practice, permanent and invisible.
-   * The caller now fetches the server's note (the same `noteService.getNote`
-   * call `useConflict.ts` already made) and passes it through here, so this
-   * row is resolvable from the Conflicts page like any other conflict —
-   * `theirs` is optional only so a failed fetch still records SOMETHING
-   * durable rather than losing the "don't retry this" fact entirely.
-   */
-  markEditorConflict(localId: string, theirs: NoteResponse | null = null): Promise<void> {
-    return db.transaction('rw', db.notes, async () => {
-      const existing = await db.notes.get(localId);
-      if (!existing) return;
-
-      await db.notes.put({
-        ...existing,
-        syncState: 'conflict',
-        conflictNote: theirs ?? existing.conflictNote,
-      });
     });
   },
 
@@ -501,7 +414,10 @@ export const noteRepository = {
         // a row with unsent edits would lose it.
         if (existing?.dirty === 1) continue;
 
-        await db.notes.put(fromNoteSummary(summary, ownerId, existing));
+        const next = fromNoteSummary(summary, ownerId, existing);
+        if (existing && isSameRow(existing, next)) continue;
+
+        await db.notes.put(next);
       }
     });
   },
@@ -534,7 +450,10 @@ export const noteRepository = {
 
         if (existing?.dirty === 1) continue;
 
-        await db.notes.put(fromTrashedNote(entry, ownerId, existing));
+        const next = fromTrashedNote(entry, ownerId, existing);
+        if (existing && isSameRow(existing, next)) continue;
+
+        await db.notes.put(next);
       }
     });
   },
@@ -651,7 +570,6 @@ export const outboxRepository = {
   async enqueueUpdate(note: {
     localId: string;
     noteId: number;
-    version: number | null;
     content: string;
   }): Promise<void> {
     await db.transaction('rw', db.outbox, async () => {
@@ -660,7 +578,7 @@ export const outboxRepository = {
       if (existing?.type === 'UPDATE') {
         await db.outbox.update(existing.id, {
           content: note.content,
-          version: note.version,
+          version: null,
           noteId: note.noteId,
         });
         return;
@@ -683,7 +601,7 @@ export const outboxRepository = {
         clientId: null,
         noteId: note.noteId,
         content: note.content,
-        version: note.version,
+        version: null,
         queuedAt: Date.now(),
       });
     });

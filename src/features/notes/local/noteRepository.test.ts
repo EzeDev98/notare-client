@@ -105,20 +105,6 @@ describe('local edits', () => {
     expect(updated?.syncState).toBe('pending');
   });
 
-  it('does not clear a conflict by editing', async () => {
-    const row = createLocalNote(1);
-    await db.notes.put({ ...row, syncState: 'conflict' });
-
-    await noteRepository.applyLocalEdit(row.localId, { content: 'more' });
-
-    /*
-     * The same rule as the editor's save machine (6B): typing does not resolve
-     * a conflict. Quietly returning to 'pending' would let the next push
-     * overwrite somebody else's work.
-     */
-    expect((await noteRepository.getByLocalId(row.localId))?.syncState).toBe('conflict');
-  });
-
   it('finds dirty rows for the push', async () => {
     await db.notes.bulkPut([
       createLocalNote(1, { content: 'unsent' }),
@@ -297,14 +283,14 @@ describe('the outbox (8B)', () => {
   });
 
   describe('enqueueUpdate', () => {
-    const update = { localId: 'local-2', noteId: 7, version: 3, content: 'Body' };
+    const update = { localId: 'local-2', noteId: 7, content: 'Body' };
 
-    it('queues one UPDATE, carrying the base version', async () => {
+    it('queues one UPDATE', async () => {
       await outboxRepository.enqueueUpdate(update);
 
       const rows = await outboxRepository.listForNote(update.localId);
       expect(rows).toHaveLength(1);
-      expect(rows[0]).toMatchObject({ type: 'UPDATE', noteId: 7, version: 3 });
+      expect(rows[0]).toMatchObject({ type: 'UPDATE', noteId: 7 });
     });
 
     it('coalesces repeated offline edits into the same row', async () => {
@@ -333,7 +319,6 @@ describe('the outbox (8B)', () => {
       await outboxRepository.enqueueUpdate({
         localId: 'local-4',
         noteId: 9,
-        version: 1,
         content: 'y',
       });
 
@@ -358,7 +343,6 @@ describe('the outbox (8B)', () => {
       await outboxRepository.enqueueUpdate({
         localId: 'local-5',
         noteId: 1,
-        version: 1,
         content: 'y',
       });
 
@@ -403,7 +387,6 @@ describe('the outbox (8B)', () => {
       await outboxRepository.enqueueUpdate({
         localId: row.localId,
         noteId: 4,
-        version: row.version,
         content: row.content,
       });
 

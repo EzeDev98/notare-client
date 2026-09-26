@@ -37,10 +37,6 @@ export function LocalNoteDetailPage() {
   const state = useLocalNote(localId);
 
   const { state: authState } = useAuth();
-  const currentUserId =
-    authState.status === 'authenticated' || authState.status === 'refreshing'
-      ? authState.user.id
-      : null;
 
   const ownerInitials = formatUserInitials(
     authState.status === 'authenticated' || authState.status === 'refreshing'
@@ -88,7 +84,6 @@ export function LocalNoteDetailPage() {
           >
             <NoteEditorHost
               row={state.row}
-              currentUserId={currentUserId}
               contentAccessory={
                 voiceNotes.data && voiceNotes.data.length > 0 ? (
                   <InlineVoiceNotes voiceNotes={voiceNotes.data} ownerInitials={ownerInitials} />

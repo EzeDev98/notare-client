@@ -79,81 +79,6 @@ describe('pushOutbox — APPLIED', () => {
   });
 });
 
-describe('pushOutbox — CONFLICT', () => {
-  it('keeps the local copy, attaches the server note, and leaves the outbox row queued', async () => {
-    // A realistic prior state: applyLocalEdit already wrote the edit to the
-    // note row itself, and a failed save attempt queued the same content in
-    // the outbox afterwards — enqueueUpdate never touches the note row, only
-    // the outbox, so the row must be seeded with the edit directly.
-    const row = makeRow({
-      serverId: 7,
-      localId: 'local-3',
-      version: 4,
-      dirty: 1,
-      content: 'edited offline',
-    });
-    await noteRepository.put(row);
-    await outboxRepository.enqueueUpdate({
-      localId: row.localId,
-      noteId: 7,
-      version: 4,
-      content: row.content,
-    });
-
-    const theirs = makeNote({ id: 7, version: 6, content: 'edited elsewhere' });
-    server.use(
-      http.post(`${BASE}/sync/batch`, async ({ request }) => {
-        const body = (await request.json()) as { operations: { operationId: string }[] };
-        return HttpResponse.json({
-          results: [
-            { operationId: body.operations[0]?.operationId, status: 'CONFLICT', note: theirs },
-          ],
-          appliedCount: 0,
-          conflictCount: 1,
-          serverTime: '2026-08-13T09:00:00.000',
-        });
-      }),
-    );
-
-    await pushOutbox();
-
-    const updated = await noteRepository.getByLocalId('local-3');
-    expect(updated?.syncState).toBe('conflict');
-    expect(updated?.conflictNote).toEqual(theirs);
-    expect(updated?.content).toBe('edited offline'); // the local copy, untouched
-    await expect(outboxRepository.count()).resolves.toBe(1);
-  });
-
-  it('does not resend an already-conflicted row on a later run', async () => {
-    const row = makeRow({ serverId: 7, localId: 'local-4', syncState: 'conflict' });
-    await noteRepository.put(row);
-    await outboxRepository.enqueueUpdate({
-      localId: row.localId,
-      noteId: 7,
-      version: 4,
-      content: 'still queued',
-    });
-
-    let calls = 0;
-    server.use(
-      http.post(`${BASE}/sync/batch`, () => {
-        calls += 1;
-        return HttpResponse.json({
-          results: [],
-          appliedCount: 0,
-          conflictCount: 0,
-          serverTime: '2026-08-13T09:00:00.000',
-        });
-      }),
-    );
-
-    await pushOutbox();
-
-    expect(calls).toBe(0);
-    await expect(outboxRepository.count()).resolves.toBe(1);
-  });
-});
-
 describe('pushOutbox — NOT_FOUND', () => {
   it('drops the operation and evicts the local note', async () => {
     const row = makeRow({ serverId: 11, localId: 'local-5', deleted: 1, dirty: 1 });
@@ -191,7 +116,6 @@ describe('pushOutbox — INVALID', () => {
     await outboxRepository.enqueueUpdate({
       localId: row.localId,
       noteId: 3,
-      version: 0,
       content: 'never discard this',
     });
 

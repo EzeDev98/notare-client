@@ -40,10 +40,6 @@ export function NoteDetailPage() {
     LOADING_SPINNER_DELAY_MS,
   );
   const { state: authState } = useAuth();
-  const currentUserId =
-    authState.status === 'authenticated' || authState.status === 'refreshing'
-      ? authState.user.id
-      : null;
   /*
    * Every recording InlineVoiceNotes renders on THIS page is the current
    * user's own — see InlineVoiceNotesProps's own doc comment for why a
@@ -135,7 +131,6 @@ export function NoteDetailPage() {
           <div className="note-detail__editor-region">
             <NoteEditorHost
               row={state.row}
-              currentUserId={currentUserId}
               contentAccessory={
                 voiceNotes.data && voiceNotes.data.length > 0 ? (
                   <InlineVoiceNotes voiceNotes={voiceNotes.data} ownerInitials={ownerInitials} />

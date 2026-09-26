@@ -163,14 +163,27 @@ async function handleVoiceStream(request) {
   return fetch(new Request(request, { headers }));
 }
 
-/** Network-first; falls back to the precached offline page. */
+const APP_SHELL_KEY = '/__app-shell__';
+
+/**
+ * Network-first. Every SPA route serves the same index.html, so the last good
+ * copy is kept under one key and used whenever the network fails: a page load
+ * never ends in a browser error page or a service-worker network error, the
+ * app simply boots from cache (Dexie holds the data).
+ */
 async function handleNavigation(request) {
+  const cache = await caches.open(SHELL_CACHE);
   try {
-    return await fetch(request);
+    const response = await fetch(request);
+    if (response.ok && response.type === 'basic') {
+      void cache.put(APP_SHELL_KEY, response.clone());
+    }
+    return response;
   } catch {
-    const cache = await caches.open(SHELL_CACHE);
+    const shell = await cache.match(APP_SHELL_KEY);
+    if (shell) return shell;
     const offline = await cache.match(OFFLINE_URL);
-    return offline ?? Response.error();
+    return offline ?? new Response('Offline', { status: 503, statusText: 'Offline' });
   }
 }
 
@@ -194,7 +207,7 @@ async function handleStaticAsset(request) {
   }
 
   const fresh = await network;
-  return fresh ?? Response.error();
+  return fresh ?? new Response('', { status: 504, statusText: 'Unavailable' });
 }
 
 self.addEventListener('fetch', (event) => {

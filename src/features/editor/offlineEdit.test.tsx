@@ -68,7 +68,7 @@ describe('editing an existing note with no connection (8B)', () => {
       async () => {
         const outbox = await outboxRepository.list();
         expect(outbox).toHaveLength(1);
-        expect(outbox[0]).toMatchObject({ type: 'UPDATE', noteId: 1, version: 4 });
+        expect(outbox[0]).toMatchObject({ type: 'UPDATE', noteId: 1 });
         expect(outbox[0]?.content).toContain('edited with no connection');
       },
       { timeout: 4_000 },

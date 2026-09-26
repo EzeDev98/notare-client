@@ -15,7 +15,7 @@ import {
 import { useSharedNotePermission } from '@/features/sharedNotes/hooks/useSharedNotePermission';
 import type { SharePermission } from '@/features/sharedNotes/types';
 import { useUpdateSharedNote } from '@/features/sharedNotes/hooks/useUpdateSharedNote';
-import { isConflict, isForbidden } from '@/lib/http/errors';
+import { isForbidden } from '@/lib/http/errors';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 
@@ -168,7 +168,6 @@ function SharedNoteView({ noteId }: { noteId: number }) {
             noteId={noteId}
             note={{
               content: query.data.content ?? '',
-              version: query.data.version,
             }}
             cachedPermission={cachedPermission}
             triedEditing={triedEditing}
@@ -203,7 +202,6 @@ interface SharedNoteEditorProps {
   noteId: number;
   note: {
     content: string;
-    version: number;
   };
   /** Lifted up to `SharedNoteView` — see this file's top comment. */
   cachedPermission: SharePermission | undefined;
@@ -221,8 +219,7 @@ function SharedNoteEditor({
   voiceNotes,
 }: SharedNoteEditorProps) {
   const [content, setContent] = useState(note.content);
-  const [version, setVersion] = useState(note.version);
-  const [conflictMessage, setConflictMessage] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const update = useUpdateSharedNote(noteId);
 
@@ -239,35 +236,23 @@ function SharedNoteEditor({
       return;
     }
 
-    setConflictMessage(null);
+    setSaveError(null);
 
     update.mutate(
       {
         content,
-        version,
       },
       {
-        onSuccess: (updated) => {
-          setVersion(updated.version);
-        },
-
         onError: (error) => {
-          if (isConflict(error)) {
-            setConflictMessage(
-              'Someone else changed this note first. Your edit was not saved — reload to see the latest version.',
-            );
-            return;
-          }
-
           if (isForbidden(error)) {
-            setConflictMessage(
+            setSaveError(
               "You don't have permission to edit this note.",
             );
             onTriedEditingChange(false);
             return;
           }
 
-          setConflictMessage(
+          setSaveError(
             'Could not save. Check your connection and try again.',
           );
         },
@@ -309,9 +294,9 @@ function SharedNoteEditor({
         )}
       </div>
 
-      {conflictMessage !== null ? (
-        <p className="shared-note__conflict" role="alert">
-          {conflictMessage}
+      {saveError !== null ? (
+        <p className="shared-note__error" role="alert">
+          {saveError}
         </p>
       ) : null}
 

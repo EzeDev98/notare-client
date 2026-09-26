@@ -26,4 +26,12 @@
   .ds-button.pf-m-primary {
     color: var(--color-text-on-accent) !important;
   }
+
+  /* Same fix for the danger variant, in every state (hover included). */
+  .ds-button.pf-m-danger,
+  .ds-button.pf-m-danger:hover,
+  .ds-button.pf-m-danger:focus,
+  .ds-button.pf-m-danger:active {
+    color: var(--color-text-on-danger) !important;
+  }
 }

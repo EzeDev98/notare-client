@@ -1,5 +1,5 @@
-import { useLiveQuery } from 'dexie-react-hooks';
-import { useCallback, useEffect, useState } from 'react';
+import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { useToast } from '@/app/providers/toast-context';
@@ -63,6 +63,10 @@ export function useTrash(): TrashStateValue {
     if (ownerId === null) return [];
     return noteRepository.listTrashed(ownerId);
   }, [ownerId]);
+
+  // Memoised: a fresh array every render (e.g. when `refreshing` toggles after a
+  // network response) makes list components re-measure and re-animate.
+  const notes = useMemo(() => rows?.map(toView), [rows]);
 
   useEffect(() => {
     if (ownerId === null) return;
@@ -190,7 +194,7 @@ export function useTrash(): TrashStateValue {
   );
 
   return {
-    notes: rows?.map(toView),
+    notes,
     refreshing,
     refreshError,
     refresh,

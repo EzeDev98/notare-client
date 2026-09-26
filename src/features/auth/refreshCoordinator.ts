@@ -1,3 +1,4 @@
+import { statusOf } from '@/lib/http/errors';
 import { authService } from '@/features/auth/api/authService';
 import {
   clearSession,
@@ -116,6 +117,12 @@ export interface EnsureOptions {
   staleAccessToken?: string | null;
 }
 
+/** True only when the server explicitly refused the refresh token. */
+export function isRefreshRejected(error: unknown): boolean {
+  const status = statusOf(error);
+  return status === 400 || status === 401 || status === 403;
+}
+
 export function ensureFreshAccessToken(options: EnsureOptions = {}): Promise<boolean> {
   return withLock(async () => {
     /*
@@ -143,15 +150,16 @@ export function ensureFreshAccessToken(options: EnsureOptions = {}): Promise<boo
       tokens = await authService.refresh(refreshToken);
     } catch (error) {
       /*
-       * No retry. The server deleted the session on a mismatch, and a network
-       * failure is equally unrecoverable: we cannot know whether the server
-       * rotated before the response was lost, so the stored token may already
-       * be dead. Clearing is the only honest outcome.
-       *
-       * (The lost-response case is the one gap that cannot be closed from the
-       * client. A server-side grace window would fix it; it is on the backlog.)
+       * Only a definitive refusal from the server ends the session. A network
+       * drop, timeout or 5xx says nothing about the token, so it is kept and
+       * the failure is simply thrown to be retried later; wiping it here is
+       * what threw people out of the app on a momentary connection blip.
+       * (Known gap: if the response was lost AFTER the server rotated the
+       * token, the retry is treated as reuse and the server ends the session,
+       * which then surfaces as a real 401 refusal. A server-side grace window
+       * would close that.)
        */
-      await clearSession();
+      if (isRefreshRejected(error)) await clearSession();
       throw error;
     }
 

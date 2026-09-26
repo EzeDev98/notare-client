@@ -14,7 +14,6 @@ const AUTHENTICATED_PATHS: Array<{ path: string; expectedTitle: string }> = [
   { path: '/archived', expectedTitle: 'Archived · Notare' },
   { path: '/trash', expectedTitle: 'Trash · Notare' },
   { path: '/search', expectedTitle: 'Search · Notare' },
-  { path: '/conflicts', expectedTitle: 'Conflicts · Notare' },
   // '/shared/:noteId', '/notes/:noteId/share' and '/voice/:voiceNoteId' are
   // deliberately absent from this list, same as '/notes/:noteId' already
   // was — all are dynamic routes that need a real id and seeded (or

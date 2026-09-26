@@ -1,4 +1,4 @@
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { toView, type NoteView } from '@/features/notes/local/noteMappers';

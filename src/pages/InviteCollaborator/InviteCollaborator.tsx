@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { CheckIcon, EnvelopeIcon } from '@patternfly/react-icons';
+import { AngleLeftIcon, CheckIcon, EnvelopeIcon } from '@patternfly/react-icons';
 import { Link } from 'react-router';
 
 import { CollaboratorPicker } from '@/features/collaboration/components/CollaboratorPicker/CollaboratorPicker';
@@ -122,7 +122,9 @@ export function InviteCollaboratorPage() {
   return (
     <section className="invite-collaborator">
       <nav className="invite-collaborator__back">
-        <Link to="/collaborations">← Collaborations</Link>
+        <Link to="/collaborations" aria-label="Back to Collaborations">
+          <AngleLeftIcon aria-hidden="true" />
+        </Link>
       </nav>
 
       <h1 className="invite-collaborator__title">
