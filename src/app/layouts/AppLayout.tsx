@@ -31,9 +31,12 @@ import { useDeviceReset } from '@/features/auth/hooks/useDeviceReset';
 import { useDeleteNote } from '@/features/notes/hooks/useDeleteNote';
 import { useNoteActions } from '@/features/notes/hooks/useNoteActions';
 import { useNotes } from '@/features/notes/hooks/useNotes';
-import { createLocalNote, toView, type NoteView } from '@/features/notes/local/noteMappers';
+import { noteService } from '@/features/notes/api/noteService';
+import { createLocalNote, fromNoteResponse, toView, type NoteView } from '@/features/notes/local/noteMappers';
+import type { NoteRow } from '@/features/notes/local/noteRow';
 import { isEmptyNote } from '@/features/notes/local/isEmptyNote';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
+import { isOffline } from '@/lib/http/errors';
 import { NotificationsPanel } from '@/features/notifications/components/NotificationsPanel/NotificationsPanel';
 import { useSync } from '@/sync/useSync';
 import { useSyncStatus } from '@/sync/useSyncStatus';
@@ -379,35 +382,65 @@ export function AppLayout() {
    * touch server-backed notes. It is purely the "I created a blank note and
    * changed my mind" navigation rule.
    */
-  const previousActiveLocalIdRef = useRef<string | null>(activeLocalId);
+  type ActiveNoteKey = { kind: 'local'; id: string } | { kind: 'server'; id: number };
+
+  function currentActiveNoteKey(): ActiveNoteKey | null {
+    if (activeLocalId !== null) return { kind: 'local', id: activeLocalId };
+    if (activeNoteId !== null) return { kind: 'server', id: Number(activeNoteId) };
+    return null;
+  }
+
+  const previousActiveNoteKeyRef = useRef<ActiveNoteKey | null>(currentActiveNoteKey());
 
   useEffect(() => {
-    const previousLocalId = previousActiveLocalIdRef.current;
-    previousActiveLocalIdRef.current = activeLocalId;
+    const previous = previousActiveNoteKeyRef.current;
+    const current = currentActiveNoteKey();
+    previousActiveNoteKeyRef.current = current;
 
-    if (previousLocalId === null || previousLocalId === activeLocalId) {
+    if (previous === null) return;
+    if (current !== null && current.kind === previous.kind && current.id === previous.id) {
       return;
     }
 
     /*
      * The delay lives around the deletion only, not the ref update above —
      * that has to stay synchronous so the NEXT navigation still computes
-     * the right "previous" id. A rapid second navigation away before this
+     * the right "previous" key. A rapid second navigation away before this
      * timer fires cancels it via the cleanup below rather than deleting a
      * note that may no longer even be the blank one this effect first saw.
      */
     const timer = setTimeout(() => {
-      void noteRepository.getByLocalId(previousLocalId).then((row) => {
-        if (row && row.serverId === null && row.deleted === 0 && isEmptyNote(row)) {
-          void noteRepository.hardDelete(previousLocalId);
+      void (async () => {
+        const row =
+          previous.kind === 'local'
+            ? await noteRepository.getByLocalId(previous.id)
+            : await noteRepository.getByServerId(previous.id);
+
+        if (!row || row.deleted !== 0 || !isEmptyNote(row)) return;
+
+        if (row.serverId === null) {
+          await noteRepository.hardDelete(row.localId);
+          return;
         }
-      });
+
+        await noteRepository.setDeleted(row.localId, true);
+        try {
+          await noteService.softDeleteNote(row.serverId);
+        } catch (error) {
+          if (isOffline(error)) {
+            await outboxRepository.enqueueDelete({ localId: row.localId, noteId: row.serverId });
+          }
+          // Otherwise: left dirty in the local trash, same "not lost,
+          // just not yet reconciled" reasoning useDeleteNote's own doc
+          // comment gives for a non-offline failure there.
+        }
+      })();
     }, NOTE_LIFECYCLE_DELAY_MS);
 
     return () => {
       clearTimeout(timer);
     };
-  }, [activeLocalId]);
+  }, [activeLocalId, activeNoteId]);
 
   const activeNoteRow = useLiveQuery(async () => {
     if (activeLocalId !== null) {
@@ -481,11 +514,35 @@ export function AppLayout() {
     if (hasEmptyNote) return;
     if (authState.status !== 'authenticated' && authState.status !== 'refreshing') return;
 
-    const row = {
-      ...createLocalNote(authState.user.id),
-      dirty: 0 as const,
-      syncState: 'synced' as const,
-    };
+    /*
+     * Saved to the server immediately, not deferred to the first
+     * keystroke. VoiceRecorder only ever mounts once a note has a
+     * serverId (NoteDetailPage / LocalNoteDetailPage both gate on
+     * `row.serverId !== null`), so a note that stayed local-only until
+     * the user typed something left the mic invisible until that first
+     * autosave round-tripped. Creating on the server up front makes the
+     * mic available the instant the note opens, whether the person ever
+     * types into it or not.
+     *
+     * Falls back to the previous local-only row when the request fails
+     * (typically offline): the note still opens instantly, and the
+     * ordinary create-on-first-edit path (useNoteEditor's own `save`)
+     * picks it up exactly as it always has.
+     */
+    let row: NoteRow;
+    let destination: string;
+    try {
+      const created = await noteService.createNote({ content: '' });
+      row = fromNoteResponse(created);
+      destination = `/notes/${String(created.id)}`;
+    } catch {
+      row = {
+        ...createLocalNote(authState.user.id),
+        dirty: 0 as const,
+        syncState: 'synced' as const,
+      };
+      destination = `/notes/local/${row.localId}`;
+    }
 
     // Unblocked — this is what starts the sidebar's own enter animation for
     // the new row, immediately on click.
@@ -507,7 +564,7 @@ export function AppLayout() {
     // because the user picked a different note from the list, so it
     // must not close the mobile panel if it happens to be open.
     suppressMobileNotesCloseRef.current = true;
-    void navigate(`/notes/local/${row.localId}`, {
+    void navigate(destination, {
       replace: true,
       state: { skipEnterAnimation: true },
     });
@@ -1023,9 +1080,13 @@ export function AppLayout() {
   // are my notes" and the two never disagree.
   const { notes } = useNotes();
 
-  const emptyNote = notes?.find(
-    (note) => note.serverId === null && isEmptyNote(note),
-  );
+  // NOT restricted to serverId === null any more: NewNotePage now saves a
+  // new note to the server immediately on open (Option A — the voice
+  // recorder needs a real noteId right away), so a genuinely empty note is
+  // no longer necessarily a local-only one. "One empty note at a time"
+  // has to mean any empty note, synced or not, or this guard would let a
+  // second one through the moment the first one round-trips.
+  const emptyNote = notes?.find((note) => isEmptyNote(note));
 
   const hasEmptyNote = emptyNote !== undefined;
 

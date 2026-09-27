@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PencilAltIcon } from '@patternfly/react-icons';
 
 import { useTrash } from '@/features/notes/hooks/useTrash';
@@ -13,7 +13,8 @@ import './Trash.css';
 export function TrashPage() {
   useDocumentTitle('Trash');
 
-  const { notes, refreshing, refreshError, refresh, restore, deleteForever } = useTrash();
+  const { notes, refreshing, refreshError, refresh, restore, deleteForever, deleteManyForever } =
+    useTrash();
 
   /*
    * Confirmation is keyed by localId, not by server id. A note trashed while
@@ -36,6 +37,64 @@ export function TrashPage() {
 
     setConfirmingId(null);
     void deleteForever(note);
+  }
+
+  /*
+   * Bulk delete — clearing out a large bin without a confirm-and-wait
+   * round trip per note. A Set, not an array: selection is toggled by
+   * localId far more often than it's iterated, and a hundred-item bin is
+   * exactly the case where an array's O(n) `includes` check on every
+   * checkbox render would start to be felt.
+   */
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  // A note that leaves the bin (restored, or individually deleted-forever)
+  // should not linger in a stale selection — otherwise a later "select
+  // all" could try to bulk-delete a note that is no longer here at all.
+  useEffect(() => {
+    if (notes === undefined) return;
+    setSelectedIds((current) => {
+      const stillPresent = new Set(notes.map((note) => note.localId));
+      const next = new Set([...current].filter((id) => stillPresent.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [notes]);
+
+  const selectedNotes = (notes ?? []).filter((note) => selectedIds.has(note.localId));
+  const allSelected = notes !== undefined && notes.length > 0 && selectedIds.size === notes.length;
+
+  function toggleSelected(localId: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(localId)) {
+        next.delete(localId);
+      } else {
+        next.add(localId);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (notes === undefined) return;
+    setSelectedIds(allSelected ? new Set() : new Set(notes.map((note) => note.localId)));
+  }
+
+  function closeBulkConfirmation() {
+    setConfirmingBulkDelete(false);
+  }
+
+  async function handleBulkDeleteForever() {
+    setConfirmingBulkDelete(false);
+    setBulkDeleting(true);
+    try {
+      await deleteManyForever(selectedNotes);
+      setSelectedIds(new Set());
+    } finally {
+      setBulkDeleting(false);
+    }
   }
 
   return (
@@ -67,6 +126,34 @@ export function TrashPage() {
       ) : null}
 
       {notes !== undefined && notes.length > 0 ? (
+        <div className="trash__bulk-bar">
+          <label className="trash__select-all">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleSelectAll}
+              aria-label={allSelected ? 'Deselect all notes' : 'Select all notes'}
+            />
+            {selectedIds.size > 0
+              ? `${String(selectedIds.size)} selected`
+              : 'Select all'}
+          </label>
+
+          <Button
+            variant="danger"
+            size="sm"
+            disabled={selectedIds.size === 0 || bulkDeleting}
+            loading={bulkDeleting}
+            onClick={() => {
+              setConfirmingBulkDelete(true);
+            }}
+          >
+            Delete forever{selectedIds.size > 0 ? ` (${String(selectedIds.size)})` : ''}
+          </Button>
+        </div>
+      ) : null}
+
+      {notes !== undefined && notes.length > 0 ? (
         <ul className="trash__list" role="list">
           {notes.map((note) => {
             // 1C/4D: no title field — the note domain has none.
@@ -79,16 +166,27 @@ export function TrashPage() {
 
             return (
               <li className="trash__item" key={note.localId}>
-                <div>
-                  <p className="trash__title">{displayLabel}</p>
+                <div className="trash__item-main">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(note.localId)}
+                    onChange={() => {
+                      toggleSelected(note.localId);
+                    }}
+                    aria-label={`Select ${label}`}
+                  />
 
-                  {note.deletedAt !== null ? (
-                    <p className="trash__meta">
-                      Trashed {formatServerDateTimeRelative(note.deletedAt)}
-                    </p>
-                  ) : (
-                    <p className="trash__meta">Trashed on this device</p>
-                  )}
+                  <div>
+                    <p className="trash__title">{displayLabel}</p>
+
+                    {note.deletedAt !== null ? (
+                      <p className="trash__meta">
+                        Trashed {formatServerDateTimeRelative(note.deletedAt)}
+                      </p>
+                    ) : (
+                      <p className="trash__meta">Trashed on this device</p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="trash__actions">
@@ -136,6 +234,30 @@ export function TrashPage() {
             onClick: handleDeleteForever,
           }}
           onClose={closeConfirmation}
+        />
+      ) : null}
+
+      {confirmingBulkDelete ? (
+        <Modal
+          icon={<PencilAltIcon aria-hidden="true" />}
+          description={
+            <>
+              Delete <strong>{selectedIds.size}</strong>{' '}
+              {selectedIds.size === 1 ? 'note' : 'notes'} forever? This action cannot be
+              undone.
+            </>
+          }
+          secondaryAction={{
+            label: 'Cancel',
+            onClick: closeBulkConfirmation,
+          }}
+          primaryAction={{
+            label: 'Delete forever',
+            onClick: () => {
+              void handleBulkDeleteForever();
+            },
+          }}
+          onClose={closeBulkConfirmation}
         />
       ) : null}
     </section>

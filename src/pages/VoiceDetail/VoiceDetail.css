@@ -36,6 +36,10 @@
     border-block-start: var(--border-width) solid var(--color-border);
   }
 
+  .voice-detail__danger-zone .voice-detail__muted {
+    margin: 0 0 var(--space-3);
+  }
+
   .voice-detail__error {
     margin: var(--space-2) 0 0;
     color: var(--color-danger);

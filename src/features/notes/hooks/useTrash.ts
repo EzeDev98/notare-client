@@ -41,6 +41,58 @@ export interface TrashStateValue {
   refresh: () => void;
   restore: (note: NoteView) => Promise<void>;
   deleteForever: (note: NoteView) => Promise<void>;
+  /**
+   * Same operation as `deleteForever`, run across many notes at once —
+   * the Trash screen's own "Delete forever" bulk action, for clearing out
+   * a large bin without confirming and waiting on each note one at a time.
+   *
+   * Bounded concurrency (see CONCURRENCY below), not one request per note
+   * fired at once: a bin of a hundred notes would otherwise open a hundred
+   * simultaneous DELETE requests, which is both an unfriendly thing to do
+   * to the server and, in most browsers, throttled to ~6 in-flight
+   * requests per host anyway — the rest would simply queue behind those,
+   * for no benefit over queueing them here on purpose.
+   *
+   * Never throws: every note's outcome is captured individually
+   * (Promise.allSettled) so one failure cannot abort the rest of the
+   * batch, and the summary toast reports how many succeeded and how many
+   * did not, mirroring `deleteForever`'s own honest, no-optimistic-UI
+   * stance on a genuinely irreversible action.
+   */
+  deleteManyForever: (notes: NoteView[]) => Promise<void>;
+}
+
+/** In-flight requests this batch allows at once. See deleteManyForever's doc comment. */
+const DELETE_FOREVER_CONCURRENCY = 6;
+
+/**
+ * Runs `task` over every item in `items`, at most `limit` at a time,
+ * resolving once every task has settled (success or failure alike).
+ */
+async function mapWithConcurrency<T>(
+  items: T[],
+  limit: number,
+  task: (item: T) => Promise<void>,
+): Promise<PromiseSettledResult<void>[]> {
+  const results: PromiseSettledResult<void>[] = new Array(items.length) as PromiseSettledResult<void>[];
+  let nextIndex = 0;
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      try {
+        await task(items[index]!);
+        results[index] = { status: 'fulfilled', value: undefined };
+      } catch (error) {
+        results[index] = { status: 'rejected', reason: error };
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, () => worker()));
+
+  return results;
 }
 
 export function useTrash(): TrashStateValue {
@@ -193,6 +245,58 @@ export function useTrash(): TrashStateValue {
     [toast],
   );
 
+  /**
+   * See TrashStateValue.deleteManyForever's own doc comment for the
+   * concurrency reasoning. Per-note logic is intentionally the same as
+   * `deleteForever` above (server-first for a synced note, purely local
+   * for one that never reached the server) — duplicated rather than
+   * having one call the other in a loop, since `deleteForever` shows its
+   * own toast per note and this needs exactly one summary toast for the
+   * whole batch instead.
+   */
+  const deleteManyForever = useCallback(
+    async (selected: NoteView[]) => {
+      if (selected.length === 0) return;
+
+      const results = await mapWithConcurrency(selected, DELETE_FOREVER_CONCURRENCY, async (note) => {
+        const row = await noteRepository.getByLocalId(note.localId);
+        if (!row) return;
+
+        if (row.serverId !== null) {
+          await noteService.permanentlyDeleteNote(row.serverId);
+        }
+
+        // hardDelete, not setDeleted — same reasoning as deleteForever's
+        // own comment: a server-forgotten note can never be reconciled,
+        // so the local row would only linger as a ghost.
+        await noteRepository.hardDelete(note.localId);
+      });
+
+      const failedCount = results.filter((result) => result.status === 'rejected').length;
+      const succeededCount = results.length - failedCount;
+
+      if (failedCount === 0) {
+        toast.show({
+          message:
+            succeededCount === 1
+              ? 'Note deleted permanently.'
+              : `${String(succeededCount)} notes deleted permanently.`,
+        });
+        return;
+      }
+
+      if (succeededCount === 0) {
+        toast.show({ message: 'Could not delete those notes. You need a connection for this.' });
+        return;
+      }
+
+      toast.show({
+        message: `${String(succeededCount)} notes deleted, ${String(failedCount)} could not be deleted. You need a connection for this.`,
+      });
+    },
+    [toast],
+  );
+
   return {
     notes,
     refreshing,
@@ -200,5 +304,6 @@ export function useTrash(): TrashStateValue {
     refresh,
     restore,
     deleteForever,
+    deleteManyForever,
   };
 }

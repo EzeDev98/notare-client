@@ -57,6 +57,31 @@
     padding: 0;
   }
 
+  .trash__bulk-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: center;
+    justify-content: space-between;
+    margin-block-end: var(--space-4);
+  }
+
+  .trash__select-all {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+
+  .trash__item-main {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-inline-size: 0;
+  }
+
   .trash__item {
     display: flex;
     flex-wrap: wrap;

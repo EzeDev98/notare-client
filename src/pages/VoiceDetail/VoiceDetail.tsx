@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { MicrophoneIcon } from '@patternfly/react-icons';
+import { AngleLeftIcon, MicrophoneIcon } from '@patternfly/react-icons';
 
 import { AudioPlayer } from '@/features/voice/components/AudioPlayer/AudioPlayer';
 import { TranscriptionPanel } from '@/features/voice/components/TranscriptionPanel/TranscriptionPanel';
@@ -92,7 +92,9 @@ export function VoiceDetailPage() {
   return (
     <section className="voice-detail">
       <nav className="voice-detail__back">
-        <Link to="/voice">← Voice notes</Link>
+        <Link to="/voice" aria-label="Back to voice notes">
+          <AngleLeftIcon aria-hidden="true" />
+        </Link>
       </nav>
 
       {voiceNote.isLoading ? (
@@ -118,6 +120,16 @@ export function VoiceDetailPage() {
         >
           <header className="voice-detail__header">
             <h1>Voice note</h1>
+          </header>
+
+          <AudioPlayer voiceNoteId={voiceNote.data.id} />
+
+          <div className="voice-detail__section">
+            <h2 className="voice-detail__section-title">Transcript</h2>
+            <TranscriptionPanel voiceNoteId={voiceNote.data.id} />
+          </div>
+
+          <div className="voice-detail__danger-zone">
             <p className="voice-detail__muted">
               Recorded{' '}
               <time dateTime={voiceNote.data.createdAt}>
@@ -130,16 +142,6 @@ export function VoiceDetailPage() {
                 </>
               ) : null}
             </p>
-          </header>
-
-          <AudioPlayer voiceNoteId={voiceNote.data.id} />
-
-          <div className="voice-detail__section">
-            <h2 className="voice-detail__section-title">Transcript</h2>
-            <TranscriptionPanel voiceNoteId={voiceNote.data.id} />
-          </div>
-
-          <div className="voice-detail__danger-zone">
             <Button
               variant="danger"
               size="sm"

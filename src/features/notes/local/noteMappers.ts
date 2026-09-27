@@ -97,11 +97,19 @@ export function fromNoteResponse(note: NoteResponse, existing?: NoteRow): NoteRo
     content: note.content ?? '',
     pinned: flag(note.pinned),
     archived: flag(note.archived),
-    deleted: 0,
+    // NoteResponse carries no trashed state at all (it has no `deleted`
+    // field) — this device's own local trash flag is the only record of
+    // it. Hardcoding 0 here silently un-trashed any note that came back
+    // through this mapper (useNote.ts's per-open fetch, or a `/sync` pull
+    // reconciling this same note) after being soft-deleted locally: the
+    // very bug behind "I delete a note and it later came back." Preserve
+    // whatever this device already believes, and only default to
+    // not-deleted for a row that never existed locally before.
+    deleted: existing?.deleted ?? 0,
     version: note.version,
     createdAt: note.createdAt,
     updatedAt: note.updatedAt,
-    deletedAt: null,
+    deletedAt: existing?.deletedAt ?? null,
     ownerId: note.ownerId,
     lastModifiedBy: note.lastModifiedBy,
     dirty: 0,
