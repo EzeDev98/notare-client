@@ -1,0 +1,185 @@
+/* Dev-only page. Uses tokens only. */
+.gallery-page {
+  box-sizing: border-box;
+  max-inline-size: calc(var(--content-width) * 2 + var(--gutter) * 3);
+  margin-inline: auto;
+  padding: var(--gutter);
+  color: var(--color-text);
+}
+
+.gallery-page__title {
+  margin: 0;
+  font-size: var(--text-lg);
+  line-height: var(--leading-lg);
+}
+
+.gallery-page__note {
+  margin: 0 0 var(--gutter);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--color-text-muted);
+}
+
+.gallery-group {
+  margin-block: var(--gutter) 0;
+  font-size: var(--text-md);
+  line-height: var(--leading-md);
+}
+
+.gallery-section__title {
+  margin-block: var(--gutter) var(--gap);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+.gallery-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--content-width) / 2), 1fr));
+  gap: var(--gap);
+}
+
+.gallery-panel {
+  position: relative;
+  padding: var(--gutter);
+  border: var(--border-width) solid var(--color-line);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.gallery-panel__tag {
+  position: absolute;
+  inset-block-start: calc(var(--gap) / 2);
+  inset-inline-end: var(--gap);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  color: var(--color-text-muted);
+}
+
+.gallery-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gutter);
+}
+
+.gallery-gap {
+  height: var(--gap);
+}
+
+.gallery-muted {
+  color: var(--color-text-muted);
+}
+
+.gallery-text {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+}
+
+.gallery-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+/* Thin always-visible row (12/16). */
+.gallery-bar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--gap) / 2) var(--gutter);
+  padding: calc(var(--gap) / 2) var(--gutter);
+  background: var(--color-bg);
+  border-bottom: var(--border-width) solid var(--color-line);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+}
+
+.gallery-bar__group {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--gap) / 2);
+}
+
+.gallery-bar__label {
+  color: var(--color-text-muted);
+}
+
+/* Collapsed scenario box. */
+.gallery-controls {
+  margin-block-end: var(--gap);
+  border: var(--border-width) solid var(--color-line);
+  border-radius: var(--radius);
+}
+
+.gallery-controls__summary {
+  padding: var(--gap) var(--card-pad);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  cursor: pointer;
+}
+
+.gallery-controls__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  padding: 0 var(--card-pad) var(--card-pad);
+}
+
+/* Panels shown. */
+.gallery-root[data-panels='light'] .gallery-panel[data-scheme='dark'],
+.gallery-root[data-panels='dark'] .gallery-panel[data-scheme='light'] {
+  display: none;
+}
+
+/* Phone: one narrow column, 75% of the screen-width token. */
+.gallery-root[data-device='phone'] .gallery-pair {
+  grid-template-columns: minmax(0, calc(var(--screen-width) * 0.75));
+  justify-content: center;
+}
+
+/* The app reset makes the document itself unscrollable, so the gallery scrolls on its own. */
+.gallery-root {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  background: var(--color-bg);
+}
+
+.gallery-slot {
+  border: var(--border-width) dashed var(--color-line);
+  border-radius: var(--radius);
+}
+
+.gallery-pad {
+  padding: var(--card-pad) calc(var(--gutter) / 2);
+}
+
+.gallery-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  overflow-y: auto;
+  background: var(--color-bg);
+}
+
+@layer components {
+  .gallery-selbar-demo {
+    position: relative;
+    min-height: var(--row-height);
+  }
+}
+
+@layer components {
+  .gallery-drawer {
+    width: var(--drawer-width);
+    border: var(--border-width) solid var(--color-line);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+  }
+}

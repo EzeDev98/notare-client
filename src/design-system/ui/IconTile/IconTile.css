@@ -1,0 +1,17 @@
+@layer components {
+  .ui-emoji-tile {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: var(--tile-size);
+    height: var(--tile-size);
+    border-radius: var(--radius);
+    background: var(--color-tile);
+    color: var(--color-brand);
+  }
+
+  .ui-emoji-tile .ui-icon {
+    width: calc(var(--tile-size) / 2);
+    height: calc(var(--tile-size) / 2);
+  }
+}

@@ -1,0 +1,12 @@
+@layer components {
+  .ui-card {
+    padding: var(--card-pad);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-line);
+    border-radius: var(--radius);
+  }
+
+  .ui-card--flush {
+    padding: 0;
+  }
+}

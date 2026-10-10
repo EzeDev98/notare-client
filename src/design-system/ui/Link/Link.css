@@ -1,0 +1,26 @@
+@layer components {
+  .ui-link,
+  .ui-link:hover,
+  .ui-link:focus,
+  .ui-link:active,
+  .ui-link:visited {
+    text-decoration: none;
+  }
+
+  .ui-link {
+    color: var(--color-brand);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: opacity var(--motion-hover) var(--ease-standard);
+  }
+
+  .ui-link:focus-visible {
+    box-shadow: 0 0 0 var(--focus-ring-size) var(--focus-ring-color);
+  }
+
+  @media (hover: hover) {
+    .ui-link:hover {
+      opacity: 0.8;
+    }
+  }
+}

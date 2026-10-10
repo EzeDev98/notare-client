@@ -1,0 +1,43 @@
+@layer components {
+  .ui-banner {
+    --banner-tone: var(--color-brand);
+
+    display: flex;
+    align-items: flex-start;
+    gap: var(--gap);
+    padding: var(--card-pad);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-line);
+    border-radius: var(--radius);
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    color: var(--color-text);
+  }
+
+  .ui-banner p {
+    margin: 0;
+  }
+
+  .ui-banner--error {
+    --banner-tone: var(--color-error);
+  }
+
+  .ui-banner .ui-banner__icon {
+    margin-block: calc((var(--leading-sm) - var(--icon-size)) / 2);
+    color: var(--banner-tone);
+  }
+
+  .ui-banner__text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ui-banner__title + .ui-banner__body {
+    color: var(--color-text-muted);
+  }
+
+  .ui-banner__action {
+    flex: none;
+    align-self: center;
+  }
+}

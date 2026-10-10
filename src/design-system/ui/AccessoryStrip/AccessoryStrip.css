@@ -1,0 +1,16 @@
+@layer components {
+  .n-accessory {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--gap) / 2);
+    height: var(--input-height);
+    padding-inline: var(--gap);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-line);
+    border-radius: var(--radius);
+  }
+
+  .n-accessory__spacer {
+    flex: 1;
+  }
+}

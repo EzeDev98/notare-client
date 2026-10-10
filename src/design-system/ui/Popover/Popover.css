@@ -1,0 +1,10 @@
+@layer components {
+  .ui-popover {
+    position: fixed;
+    z-index: var(--z-menu);
+  }
+
+  .ui-popover--anchor > .n-menu {
+    width: 100%;
+  }
+}

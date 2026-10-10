@@ -1,0 +1,37 @@
+@layer components {
+  .n-transcript {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--gap) / 2);
+    padding: var(--card-pad);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-line);
+    border-radius: var(--radius);
+  }
+
+  .n-transcript[hidden] {
+    display: none;
+  }
+
+  .n-transcript p {
+    margin: 0;
+  }
+
+  .n-transcript__label {
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
+    color: var(--color-text-muted);
+  }
+
+  .n-transcript__text {
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    color: var(--color-text);
+  }
+
+  .n-transcript__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--gap);
+  }
+}

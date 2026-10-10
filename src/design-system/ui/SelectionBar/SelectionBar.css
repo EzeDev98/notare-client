@@ -1,0 +1,20 @@
+@layer components {
+  .n-selbar {
+    display: inline-flex;
+    gap: calc(var(--gap) / 4);
+    padding: calc(var(--gap) / 2);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-line);
+    border-radius: var(--radius);
+  }
+
+  .n-selbar--floating {
+    position: absolute;
+    z-index: var(--z-menu);
+  }
+
+  .n-sel {
+    background: var(--color-focus-tint);
+    border-radius: var(--radius-sm);
+  }
+}

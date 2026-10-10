@@ -1,0 +1,47 @@
+@layer components {
+  .ui-otp {
+    display: flex;
+    gap: var(--gap);
+  }
+
+  .ui-otp__box {
+    width: var(--input-height);
+    min-width: 0;
+    height: var(--input-height);
+    padding: 0;
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-field-line);
+    border-radius: var(--radius);
+    color: var(--color-text);
+    font-size: var(--text-md);
+    line-height: var(--leading-md);
+    text-align: center;
+    transition:
+      border-color var(--motion-fast) var(--ease-standard),
+      box-shadow var(--motion-fast) var(--ease-standard);
+  }
+
+  .ui-otp__box--invalid {
+    border-color: var(--color-error);
+  }
+
+  .ui-otp__box:focus-visible {
+    border-color: var(--focus-border);
+    box-shadow: 0 0 0 var(--focus-ring-size) var(--focus-ring-color);
+  }
+
+  .ui-otp__box:disabled {
+    opacity: var(--opacity-disabled);
+    cursor: not-allowed;
+  }
+
+  .ui-otp__box::selection {
+    background: transparent;
+    color: inherit;
+  }
+
+  .ui-otp__box--masked {
+    -webkit-text-security: disc;
+    text-security: disc;
+  }
+}

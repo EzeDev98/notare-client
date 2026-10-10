@@ -133,3 +133,37 @@ Files that still animate outside src/design-system/motion. Each is removed when 
 | O-13 | Two-pane threshold | 800px container width. |
 | O-14 | Install step mandatory or skippable | Skippable: add "Continue in browser". |
 | O-21 | People (connection step) before sharing | Keep People for v1. |
+
+## Step 6e: old components and when they go
+
+The old components in src/design-system/components/ and the PatternFly imports stay until the screens that use them are rebuilt. Each one is deleted in the step where its last importer moves to src/design-system/ui/. Anything left after that goes in Step 20.
+
+### Old components
+
+| Old component | Replaced by | Removed in |
+|---|---|---|
+| Button, BackButton | ui/Button, ui/IconButton, PageHeader | Step 9 to 16, last importer decides |
+| TextField, PasswordField, TextArea, Field, Select | ui/TextField, PasswordField, TextArea, FormField, SelectField | Step 9 (auth forms), last use in Step 13 |
+| FormAlert | ui/InfoBanner | Step 9 |
+| Modal | ui/Overlay | Step 11 to 14, last use decides |
+| Toast, app/providers/ToastProvider, toast-context | ui/ToastProvider, useToast | Step 11 (when AppLayout is rebuilt) |
+| Spinner, Logo, VisuallyHidden | ui/Spinner, Logo, VisuallyHidden | Step 9 |
+| ThemeToggle | Settings screen theme choice | Step 13 |
+| layout (old parts) | components/layout PageHeader, ScreenContainer, FormScreen | Step 9 to 11 |
+
+### Screens and the step that migrates them (these hold the old imports and raw buttons)
+
+- Step 9 Auth: Login, Register, ResetPassword, VerifyAccount.
+- Step 10 Onboarding and install: pwa/InstallPage, pwa/UpdateAvailableModal.
+- Step 11 Home, drawer, search, People, notifications: AppLayout, MobileNotesPanel, navItems, Notes, NotesLanding, Search, Trash, NoteCard, NotificationsPanel, Notifications, Invitations.
+- Step 12 Editor and voice: NoteDetail, VoiceDetail, VoiceNotes, NoteContextMenu, NoteTabs, VoiceRecorder, InlineVoiceNote, VoiceNoteCard, AudioPlayer, TranscriptionPanel.
+- Step 13 Settings: SettingsPanel, Sessions.
+- Step 16 Collaboration client: ShareNote, ShareVoiceNote, SharedNote, SharedNotes, SharedVoiceDetail, SharedVoiceNotes, SharedInlineVoiceNotes, SharedAudioPlayer, CollaboratorPicker, InviteCollaborator.
+
+### PatternFly (A-10)
+
+Not removed in Step 6. 23 files outside design-system/ still import @patternfly/*, so deleting vite-plugins/patternflyLayer.ts, the icon alias block in vite.config.ts, and icons/lucide-patternfly-icons.tsx now would break the build. All three go in Step 20, when the last PatternFly import is gone and the build is checked.
+
+### Lint
+
+The raw <button> rule is clean on every file above today (npm run lint, 0 errors), so no eslint-disable comments were added. If a later step makes the rule stricter, add disable + TODO(step N) then.

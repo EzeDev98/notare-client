@@ -1,0 +1,95 @@
+@layer components {
+  .n-group-label {
+    margin: 0;
+    padding: var(--gap) var(--gutter) calc(var(--gap) / 2);
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
+    color: var(--color-text-muted);
+  }
+
+  .n-list {
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .n-list .n-row:last-child {
+    border-bottom: 0;
+  }
+
+  .n-row {
+    display: flex;
+    align-items: center;
+    gap: var(--gap);
+    width: 100%;
+    height: var(--row-height);
+    padding-inline: var(--gutter);
+    border-bottom: var(--border-width) solid var(--color-line);
+    text-align: start;
+    cursor: pointer;
+    transition: background-color var(--motion-hover) var(--ease-standard);
+  }
+
+  @media (hover: hover) {
+    .n-row:hover {
+      background: var(--color-hover);
+    }
+  }
+
+  .n-row[aria-selected='true'] {
+    background: var(--color-tile);
+  }
+
+  .n-row:focus-visible {
+    border-color: var(--focus-border);
+  }
+
+  .n-row__text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .n-row__title {
+    overflow: hidden;
+    font-size: var(--text-md);
+    line-height: var(--leading-md);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text);
+  }
+
+  .n-row__preview {
+    overflow: hidden;
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-text-muted);
+  }
+
+  .n-row__meta {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: calc(var(--gap) / 4);
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
+    color: var(--color-text-muted);
+  }
+
+  .n-row__glyphs {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--gap) / 2);
+    height: var(--leading-xs);
+  }
+
+  .n-row__glyphs svg {
+    width: var(--glyph-size);
+    height: var(--glyph-size);
+  }
+}

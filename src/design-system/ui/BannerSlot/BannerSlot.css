@@ -1,0 +1,11 @@
+@layer components {
+  .n-banner-slot {
+    display: flex;
+    align-items: center;
+    min-height: var(--bar-height);
+  }
+
+  .n-banner-slot > .ui-banner {
+    flex: 1;
+  }
+}

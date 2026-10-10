@@ -1,0 +1,53 @@
+@layer components {
+  .n-avatar {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: var(--avatar-size);
+    height: var(--avatar-size);
+    border: var(--border-width) solid var(--color-surface);
+    border-radius: 50%;
+    background: var(--tint, var(--color-tile));
+    color: var(--color-on-brand);
+    font-size: var(--text-xs);
+    line-height: 1;
+  }
+
+  .n-avatar--1 {
+    --tint: var(--color-cursor-1);
+  }
+
+  .n-avatar--2 {
+    --tint: var(--color-cursor-2);
+  }
+
+  .n-avatar--3 {
+    --tint: var(--color-cursor-3);
+  }
+
+  .n-avatar--4 {
+    --tint: var(--color-cursor-4);
+  }
+
+  .n-avatar--5 {
+    --tint: var(--color-cursor-5);
+  }
+
+  .n-avatar--6 {
+    --tint: var(--color-cursor-6);
+  }
+
+  .n-avatar--plain {
+    background: var(--color-tile);
+    color: var(--color-brand);
+  }
+
+  .n-avatars {
+    display: inline-flex;
+  }
+
+  .n-avatars .n-avatar + .n-avatar {
+    margin-inline-start: calc(var(--gap) / -2);
+  }
+}

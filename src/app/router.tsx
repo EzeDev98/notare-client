@@ -200,17 +200,15 @@ export const routes = [
     ? [
         {
           path: 'dev/tokens',
-          lazy: async () => {
-            const { TokensPage } = await import('@/dev/tokens/TokensPage');
-            return { Component: TokensPage };
-          },
+          lazy: async () => ({ Component: (await import('@/dev/tokens/TokensPage')).TokensPage }),
+        },
+        {
+          path: 'dev/gallery',
+          lazy: async () => ({ Component: (await import('@/dev/gallery/GalleryPage')).GalleryPage }),
         },
         {
           path: 'dev/motion',
-          lazy: async () => {
-            const { MotionPage } = await import('@/dev/motion/MotionPage');
-            return { Component: MotionPage };
-          },
+          lazy: async () => ({ Component: (await import('@/dev/motion/MotionPage')).MotionPage }),
         },
       ]
     : []),

@@ -1,0 +1,13 @@
+@layer components {
+  .ui-logo {
+    display: block;
+    flex: none;
+    width: var(--logo-size-md);
+    height: var(--logo-size-md);
+  }
+
+  .ui-logo--lg {
+    width: var(--logo-size-lg);
+    height: var(--logo-size-lg);
+  }
+}

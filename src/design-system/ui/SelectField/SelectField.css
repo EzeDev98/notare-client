@@ -1,0 +1,24 @@
+@layer components {
+  .ui-control .ui-select__input {
+    padding-inline-end: calc(var(--icon-size) + var(--gap));
+    appearance: none;
+    cursor: pointer;
+  }
+
+  .ui-control--readonly .ui-select__input {
+    pointer-events: none;
+  }
+
+  .ui-select__input:has(option[value='']:checked) {
+    color: var(--color-text-muted);
+  }
+
+  .ui-control .ui-select__chevron {
+    position: absolute;
+    top: 50%;
+    inset-inline-end: var(--card-pad);
+    color: var(--color-text-muted);
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+}

@@ -1,0 +1,72 @@
+@layer components {
+  .n-voice-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--gap) / 2);
+  }
+
+  .n-voice {
+    display: flex;
+    align-items: center;
+    gap: var(--gap);
+    height: var(--voice-height);
+    padding-inline: calc(var(--gap) / 2) var(--card-pad);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-line);
+    border-radius: var(--radius);
+    transition: border-color var(--motion-fast) var(--ease-standard);
+  }
+
+  .n-voice--recording {
+    border-color: var(--color-brand);
+  }
+
+  .n-voice__track {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .n-voice__time,
+  .n-voice__state {
+    flex: none;
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .n-voice__state--error {
+    color: var(--color-error);
+  }
+
+  .n-voice__dot {
+    flex: none;
+    width: var(--dot-size);
+    height: var(--dot-size);
+    border-radius: 50%;
+    background: var(--color-brand);
+    animation: ui-spinner-pulse calc(var(--motion-fly) * 3) ease-in-out infinite;
+  }
+
+  .n-voice__mic {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: var(--icon-button-size);
+    height: var(--icon-button-size);
+    color: var(--color-text-muted);
+  }
+
+  .n-voice .n-voice__spinner {
+    color: var(--color-text-muted);
+  }
+
+  .n-voice__help {
+    margin: 0;
+    padding-inline: var(--gap);
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
+    color: var(--color-text-muted);
+  }
+}

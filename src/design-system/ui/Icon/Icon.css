@@ -1,0 +1,8 @@
+@layer components {
+  .ui-icon {
+    flex: none;
+    width: var(--icon-size);
+    height: var(--icon-size);
+    stroke-width: var(--icon-stroke);
+  }
+}

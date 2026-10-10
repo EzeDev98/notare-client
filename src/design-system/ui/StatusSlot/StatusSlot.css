@@ -1,0 +1,9 @@
+@layer components {
+  .n-header__status {
+    min-width: calc(var(--select-narrow) * 1.25);
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
+    color: var(--color-text-muted);
+    text-align: end;
+  }
+}
