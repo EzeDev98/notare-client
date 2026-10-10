@@ -1,6 +1,4 @@
-import { Outlet } from 'react-router';
-
-import { RouteFocus } from '@/app/RouteFocus';
+import { AnimatedRoutes } from '@/app/AnimatedRoutes';
 
 import './PublicLayout.css';
 
@@ -15,9 +13,8 @@ import './PublicLayout.css';
 export function PublicLayout() {
   return (
     <main className="public-shell" id="public-main" tabIndex={-1}>
-      <RouteFocus targetId="public-main" />
       <div className="public-shell__panel">
-        <Outlet />
+        <AnimatedRoutes />
       </div>
     </main>
   );

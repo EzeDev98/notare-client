@@ -205,6 +205,13 @@ export const routes = [
             return { Component: TokensPage };
           },
         },
+        {
+          path: 'dev/motion',
+          lazy: async () => {
+            const { MotionPage } = await import('@/dev/motion/MotionPage');
+            return { Component: MotionPage };
+          },
+        },
       ]
     : []),
 

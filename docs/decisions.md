@@ -111,3 +111,25 @@ Files and code scheduled for deletion (add to this list as steps find more):
 | src/app/layouts/AppLayout.tsx | ~1,570 | Deleted in step 11 |
 | src/features/notes/local/noteRepository.ts | ~650 | Split in step 8c |
 | src/features/voice/components/VoiceRecorder/VoiceRecorder.tsx | ~440 | Deleted in step 12 |
+
+## Stray motion (step 4e)
+
+Files that still animate outside src/design-system/motion. Each is removed when its component is rebuilt (step 6) or its screen (steps 9 to 14).
+
+| File | Lines with transition, animation, @keyframes or .animate |
+| --- | --- |
+
+- NOTE_LIFECYCLE_DELAY_MS (220) and its 6 uses in src/app/layouts/AppLayout.tsx: removed when AppLayout.tsx is deleted (step 11).
+- src/features/notes/components/AnimatedSidebarNoteList (JS list animation and its CSS): replaced by flip() and rowOut() when the Home list is rebuilt (step 11).
+
+## Step 5a: open decisions that change the prototypes (answered 10 Oct 2026)
+
+| ID | Question | Answer |
+| --- | --- | --- |
+| O-03 | Bold and Italic in the selection bar | Removed. The bar keeps Link and List. Hierarchy comes from size and colour. |
+| O-04 | 20,000-character limit with a CRDT body | Keep a stated limit with a muted counter (hidden below 19,000; "19,420 of 20,000 characters"; "Limit reached. New text is not saved."). Typing past the limit is blocked, never truncated. |
+| O-11 | Banners above the editor push content down | A fixed-height, one-line slot under the header. It is always there, so a banner appearing or leaving moves nothing. |
+| O-12 | List row title 16/24 vs body 14/20 | Keep the row title at 16/24 and the preview at 14/20. The note body is 14/20. |
+| O-13 | Two-pane threshold | 800px container width. |
+| O-14 | Install step mandatory or skippable | Skippable: add "Continue in browser". |
+| O-21 | People (connection step) before sharing | Keep People for v1. |

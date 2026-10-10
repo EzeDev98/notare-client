@@ -183,3 +183,19 @@ beforeEach(async () => {
 afterEach(() => {
   localStorage.clear();
 });
+
+/*
+ * jsdom has no Web Animations API. The motion module (src/design-system/motion)
+ * calls Element.animate and getAnimations, so tests get a stub whose animation
+ * is already finished. motion.test.ts spies on animate to check what was asked.
+ */
+beforeAll(() => {
+  if (typeof Element.prototype.animate !== 'function') {
+    Element.prototype.animate = function animate(): Animation {
+      return { finished: Promise.resolve(), cancel() {} } as unknown as Animation;
+    };
+  }
+  if (typeof Element.prototype.getAnimations !== 'function') {
+    Element.prototype.getAnimations = (): Animation[] => [];
+  }
+});

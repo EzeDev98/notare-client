@@ -5,7 +5,6 @@
 // list when its screen is rebuilt (steps 6 to 14) and the list ends empty.
 // Never add a file to it. New CSS must pass.
 const LEGACY = [
-  'src/app/RouteTransition.css',
   'src/app/layouts/AppLayout.css',
   'src/app/layouts/MobileNotesPanel.css',
   'src/app/layouts/PublicLayout.css',

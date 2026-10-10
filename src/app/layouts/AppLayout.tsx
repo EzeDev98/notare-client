@@ -10,12 +10,11 @@ import {
   useState,
 } from 'react';
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
-import { Link, NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router';
+import { Link, NavLink, useLocation, useMatch, useNavigate } from 'react-router';
 import { ArchiveIcon, BarsIcon, BellIcon, BookIcon, CogIcon, DesktopIcon, EditIcon, ExclamationTriangleIcon, HandshakeIcon, MoonIcon, PencilAltIcon, SearchIcon, ShareSquareIcon, SunIcon, TimesIcon, TrashIcon, UndoIcon, UsersIcon } from '@patternfly/react-icons';
 
 import { navItems, type NavItem } from '@/app/layouts/navItems';
-import { RouteFocus } from '@/app/RouteFocus';
-import { RouteTransition } from '@/app/RouteTransition';
+import { AnimatedRoutes } from '@/app/AnimatedRoutes';
 import { useAuth } from '@/app/providers/auth-context';
 import { useTheme } from '@/app/providers/theme-context';
 import type { ThemePreference } from '@/lib/theme/theme';
@@ -1110,8 +1109,6 @@ export function AppLayout() {
         } as CSSProperties
       }
     >
-      <RouteFocus targetId="main" />
-
       {/*
         Bug fix: sync-status and the conflict banner used to be plain
         in-flow children here, each mounting/unmounting with no grid-column/
@@ -1821,9 +1818,7 @@ export function AppLayout() {
           editor toolbar off-screen while writing. */}
       {/* tabIndex={-1}: focusable by RouteFocus, but not a tab stop. */}
       <main className="app-shell__main" id="main" tabIndex={-1}>
-        <RouteTransition>
-          <Outlet />
-        </RouteTransition>
+        <AnimatedRoutes fill />
       </main>
     </div>
   );
