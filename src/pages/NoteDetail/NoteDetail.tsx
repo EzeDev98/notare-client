@@ -13,6 +13,8 @@ import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDelayedFlag } from '@/shared/hooks/useDelayedFlag';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './NoteDetail.css';
+import { ROUTES } from '@/app/routes';
+import { LOADING_SPINNER_DELAY_MS } from '@/core/config/timings';
 
 /*
  * A note switch that lands on this route fresh (local <-> server, or the
@@ -28,7 +30,7 @@ import './NoteDetail.css';
  * fast resolution (the common case) never shows it at all, while a
  * genuinely slow one (offline, never-cached) still does.
  */
-const LOADING_SPINNER_DELAY_MS = 150;
+// Value: core/config/timings.ts.
 
 export function NoteDetailPage() {
   const { noteId: noteIdParam } = useParams();
@@ -105,7 +107,7 @@ export function NoteDetailPage() {
             <p className="note-detail__muted">
               This note doesn&apos;t exist, or it isn&apos;t available to you.
             </p>
-            <Link to="/notes">Back to your notes</Link>
+            <Link to={ROUTES.notes()}>Back to your notes</Link>
           </div>
         ) : null}
 
@@ -123,7 +125,7 @@ export function NoteDetailPage() {
               You&apos;re offline and this note isn&apos;t saved on this device yet. It will open once
               you&apos;re back online.
             </p>
-            <Link to="/notes">Back to your notes</Link>
+            <Link to={ROUTES.notes()}>Back to your notes</Link>
           </div>
         ) : null}
 

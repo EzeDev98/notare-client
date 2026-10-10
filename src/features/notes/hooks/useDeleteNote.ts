@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
 import { useToast } from '@/app/providers/toast-context';
-import { noteService } from '@/features/notes/api/noteService';
+import { gateway } from '@/core/adapter';
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import { isOffline } from '@/lib/http/errors';
@@ -70,7 +70,7 @@ export function useDeleteNote() {
       }
 
       try {
-        await noteService.softDeleteNote(written.serverId);
+        await gateway.deleteNote(written.serverId);
         await noteRepository.applyServerAck(
           note.localId,
           { version: note.version, updatedAt: note.updatedAt },

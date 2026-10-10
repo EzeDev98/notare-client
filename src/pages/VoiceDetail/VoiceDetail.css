@@ -78,7 +78,6 @@
   }
 }
 
-
 @media (prefers-reduced-motion: reduce) {
   .voice-detail__content[data-animate='true'] {
     animation: none;

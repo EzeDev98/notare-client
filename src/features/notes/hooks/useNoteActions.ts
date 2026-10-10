@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 
 import { useToast } from '@/app/providers/toast-context';
-import { noteService } from '@/features/notes/api/noteService';
+import { gateway } from '@/core/adapter';
 import { flag, type NoteView } from '@/features/notes/local/noteMappers';
 import { noteRepository } from '@/features/notes/local/noteRepository';
 
@@ -69,7 +69,7 @@ export function useNoteActions() {
       if (written.serverId === null) return;
 
       try {
-        const updated = await noteService.setPinned(written.serverId, next);
+        const updated = await gateway.setPinned(written.serverId, next);
         await noteRepository.applyServerAck(
           note.localId,
           { version: updated.version, updatedAt: updated.updatedAt },
@@ -120,7 +120,7 @@ export function useNoteActions() {
       if (written.serverId === null) return;
 
       try {
-        const updated = await noteService.setArchived(written.serverId, archived);
+        const updated = await gateway.setArchived(written.serverId, archived);
         await noteRepository.applyServerAck(
           note.localId,
           { version: updated.version, updatedAt: updated.updatedAt },

@@ -5,6 +5,7 @@ import { PauseIcon, PlayIcon } from '@patternfly/react-icons';
 import { useAudioBlob } from '@/features/voice/hooks/useAudioBlob';
 import type { VoiceNoteResponse } from '@/features/voice/types';
 import './InlineVoiceNote.css';
+import { ROUTES } from '@/app/routes';
 
 const WAVEFORM_BAR_COUNT = 32;
 const WAVEFORM_BARS = Array.from({ length: WAVEFORM_BAR_COUNT }, (_, index) => index);
@@ -106,6 +107,7 @@ function InlineVoiceNote({
   const pendingPlayRef = useRef(false);
 
   const blob = useAudioBlob(voiceNote.id, loadRequested);
+  const audioUrl = blob.status === 'ready' ? blob.url : null;
 
   useEffect(() => {
     if (blob.status === 'error') {
@@ -123,7 +125,7 @@ function InlineVoiceNote({
     void audio.play().catch(() => {
       setPlaying(false);
     });
-  }, [blob.status, blob.status === 'ready' ? blob.url : null]);
+  }, [blob.status, audioUrl]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -158,7 +160,7 @@ function InlineVoiceNote({
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [blob.status === 'ready' ? blob.url : null]);
+  }, [audioUrl]);
 
   function togglePlayback() {
     if (blob.status === 'idle' || blob.status === 'error') {
@@ -188,10 +190,7 @@ function InlineVoiceNote({
     <article className="inline-voice-note">
       <div className="inline-voice-note__bubble">
         <div className="inline-voice-note__main">
-          <div
-            className="inline-voice-note__avatar"
-            aria-hidden="true"
-          >
+          <div className="inline-voice-note__avatar" aria-hidden="true">
             {ownerInitials}
           </div>
 
@@ -202,11 +201,7 @@ function InlineVoiceNote({
             disabled={blob.status === 'loading'}
             aria-label={playing ? 'Pause voice note' : 'Play voice note'}
           >
-            {playing ? (
-              <PauseIcon aria-hidden="true" />
-            ) : (
-              <PlayIcon aria-hidden="true" />
-            )}
+            {playing ? <PauseIcon aria-hidden="true" /> : <PlayIcon aria-hidden="true" />}
           </button>
 
           <div className="inline-voice-note__wave" aria-hidden="true">
@@ -214,9 +209,7 @@ function InlineVoiceNote({
               <span
                 key={index}
                 className={`inline-voice-note__wave-bar${
-                  index / (WAVEFORM_BAR_COUNT - 1) <= progress
-                    ? ' is-played'
-                    : ''
+                  index / (WAVEFORM_BAR_COUNT - 1) <= progress ? ' is-played' : ''
                 }`}
               />
             ))}
@@ -225,9 +218,7 @@ function InlineVoiceNote({
 
         <div className="inline-voice-note__meta">
           <span className="inline-voice-note__duration">
-            {playing
-              ? formatDuration(currentTime)
-              : formatDuration(voiceNote.durationSeconds)}
+            {playing ? formatDuration(currentTime) : formatDuration(voiceNote.durationSeconds)}
           </span>
 
           {recordedTime ? (
@@ -241,10 +232,7 @@ function InlineVoiceNote({
         </div>
       </div>
 
-      <Link
-        className="inline-voice-note__transcribe"
-        to={`/voice/${String(voiceNote.id)}`}
-      >
+      <Link className="inline-voice-note__transcribe" to={ROUTES.legacy.voiceDetail(voiceNote.id)}>
         Transcribe
       </Link>
 

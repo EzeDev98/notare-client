@@ -6,12 +6,32 @@ import {
   type PointerEvent as ReactPointerEvent,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
 import { Link, NavLink, useLocation, useMatch, useNavigate } from 'react-router';
-import { ArchiveIcon, BarsIcon, BellIcon, BookIcon, CogIcon, DesktopIcon, EditIcon, ExclamationTriangleIcon, HandshakeIcon, MoonIcon, PencilAltIcon, SearchIcon, ShareSquareIcon, SunIcon, TimesIcon, TrashIcon, UndoIcon, UsersIcon } from '@patternfly/react-icons';
+import {
+  ArchiveIcon,
+  BarsIcon,
+  BellIcon,
+  BookIcon,
+  CogIcon,
+  DesktopIcon,
+  EditIcon,
+  ExclamationTriangleIcon,
+  HandshakeIcon,
+  MoonIcon,
+  PencilAltIcon,
+  SearchIcon,
+  ShareSquareIcon,
+  SunIcon,
+  TimesIcon,
+  TrashIcon,
+  UndoIcon,
+  UsersIcon,
+} from '@patternfly/react-icons';
 
 import { navItems, type NavItem } from '@/app/layouts/navItems';
 import { AnimatedRoutes } from '@/app/AnimatedRoutes';
@@ -31,8 +51,13 @@ import { useDeviceReset } from '@/features/auth/hooks/useDeviceReset';
 import { useDeleteNote } from '@/features/notes/hooks/useDeleteNote';
 import { useNoteActions } from '@/features/notes/hooks/useNoteActions';
 import { useNotes } from '@/features/notes/hooks/useNotes';
-import { noteService } from '@/features/notes/api/noteService';
-import { createLocalNote, fromNoteResponse, toView, type NoteView } from '@/features/notes/local/noteMappers';
+import { gateway } from '@/core/adapter';
+import {
+  createLocalNote,
+  fromNoteResponse,
+  toView,
+  type NoteView,
+} from '@/features/notes/local/noteMappers';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import { isEmptyNote } from '@/features/notes/local/isEmptyNote';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
@@ -44,6 +69,8 @@ import { ThemeToggle } from '@/design-system/components/ThemeToggle/ThemeToggle'
 import { Modal } from '@/design-system/components/Modal/Modal';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import './AppLayout.css';
+import { ROUTES, ROUTE_PATTERNS } from '@/app/routes';
+import { LEGACY_NOTE_LIFECYCLE_DELAY_MS as NOTE_LIFECYCLE_DELAY_MS } from '@/core/config/timings';
 
 /*
  * Archived, Trash, Voice, Shared with me, Collaboration, Account — the FOLDERS PANEL's
@@ -82,7 +109,7 @@ import './AppLayout.css';
  * animation is already a beat into its own motion rather than starting in
  * the same frame as it.
  */
-const NOTE_LIFECYCLE_DELAY_MS = 220;
+// Value: LEGACY_NOTE_LIFECYCLE_DELAY_MS in core/config/timings.ts (removed by U-02).
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -92,12 +119,12 @@ function delay(ms: number): Promise<void> {
 
 const desktopOnlyItems: NavItem[] = [
   {
-    to: '/archived',
+    to: ROUTES.legacy.archived(),
     label: 'Archived',
     icon: <ArchiveIcon aria-hidden="true" />,
   },
   {
-    to: '/trash',
+    to: ROUTES.legacy.trash(),
     label: 'Trash',
     icon: <TrashIcon aria-hidden="true" />,
   },
@@ -116,24 +143,24 @@ const desktopOnlyItems: NavItem[] = [
 // picks up the same NavLink rendering as everything else in this panel
 // without touching navItems.tsx at all.
 const sharedWithMeItem: NavItem = {
-  to: '/shared',
+  to: ROUTES.legacy.shared(),
   label: 'Shared with me',
   icon: <UsersIcon aria-hidden="true" />,
 };
 
 const voiceNotesItem: NavItem = {
-  ...navItems.find((item) => item.to === '/voice')!,
+  ...navItems.find((item) => item.to === ROUTES.legacy.voice())!,
   label: 'Voice notes',
 };
 
 const collaborationItem: NavItem = {
-  to: '/collaborations',
+  to: ROUTES.legacy.collaborations(),
   label: 'Collaborations',
   icon: <HandshakeIcon aria-hidden="true" />,
 };
 
 const accountItem: NavItem = {
-  ...navItems.find((item) => item.to === '/account/sessions')!,
+  ...navItems.find((item) => item.to === ROUTES.legacy.accountSessions())!,
   label: 'Accounts',
 };
 
@@ -265,8 +292,12 @@ export function AppLayout() {
    * toolbar's own top-left corner (below), and drag-resizable while open
    * via its own handle, same pointer-capture pattern as the sidebar's.
    */
-  const { isOpen: isFoldersOpen, toggle: toggleFolders, width: foldersWidth, setWidth: setFoldersWidth } =
-    useFoldersPanel();
+  const {
+    isOpen: isFoldersOpen,
+    toggle: toggleFolders,
+    width: foldersWidth,
+    setWidth: setFoldersWidth,
+  } = useFoldersPanel();
   const foldersDragStateRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
   function handleFoldersResizePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
@@ -305,12 +336,14 @@ export function AppLayout() {
    * /notes/:noteId/share themselves — sharing "the note you're sharing"
    * or "the note you're about to create" is not a real action.
    */
-  const noteDetailMatch = useMatch('/notes/:noteId');
+  const noteDetailMatch = useMatch(ROUTE_PATTERNS.note);
   const matchedNoteIdParam = noteDetailMatch?.params['noteId'];
   // Same validation parseNoteId (useNote.ts) applies — useMatch has no
   // concept of a numeric param, it matches any string in that segment.
   const activeNoteId =
-    matchedNoteIdParam !== undefined && /^\d+$/.test(matchedNoteIdParam) ? matchedNoteIdParam : null;
+    matchedNoteIdParam !== undefined && /^\d+$/.test(matchedNoteIdParam)
+      ? matchedNoteIdParam
+      : null;
 
   /*
    * Same reach as activeNoteId above, for the voice note detail route
@@ -320,7 +353,7 @@ export function AppLayout() {
    * toolbar's one Share icon serve VoiceDetailPage too, so that page no
    * longer needs its own in-page Share link.
    */
-  const voiceDetailMatch = useMatch('/voice/:voiceNoteId');
+  const voiceDetailMatch = useMatch(ROUTE_PATTERNS.legacy.voiceDetail);
   const matchedVoiceNoteIdParam = voiceDetailMatch?.params['voiceNoteId'];
   const activeVoiceNoteId =
     matchedVoiceNoteIdParam !== undefined && /^\d+$/.test(matchedVoiceNoteIdParam)
@@ -338,7 +371,7 @@ export function AppLayout() {
    * the trash toast and the server PATCH — so this reads Dexie directly
    * rather than re-deriving a NoteView from a bare id string.
    */
-  const localNoteMatch = useMatch('/notes/local/:localId');
+  const localNoteMatch = useMatch(ROUTE_PATTERNS.legacy.noteLocal);
   const activeLocalId = localNoteMatch?.params['localId'] ?? null;
 
   /*
@@ -384,17 +417,19 @@ export function AppLayout() {
    */
   type ActiveNoteKey = { kind: 'local'; id: string } | { kind: 'server'; id: number };
 
-  function currentActiveNoteKey(): ActiveNoteKey | null {
+  // Changes identity only when the active note changes, so the effect below
+  // runs on exactly the same navigations as before.
+  const activeNoteKey = useMemo<ActiveNoteKey | null>(() => {
     if (activeLocalId !== null) return { kind: 'local', id: activeLocalId };
     if (activeNoteId !== null) return { kind: 'server', id: Number(activeNoteId) };
     return null;
-  }
+  }, [activeLocalId, activeNoteId]);
 
-  const previousActiveNoteKeyRef = useRef<ActiveNoteKey | null>(currentActiveNoteKey());
+  const previousActiveNoteKeyRef = useRef<ActiveNoteKey | null>(activeNoteKey);
 
   useEffect(() => {
     const previous = previousActiveNoteKeyRef.current;
-    const current = currentActiveNoteKey();
+    const current = activeNoteKey;
     previousActiveNoteKeyRef.current = current;
 
     if (previous === null) return;
@@ -425,7 +460,7 @@ export function AppLayout() {
 
         await noteRepository.setDeleted(row.localId, true);
         try {
-          await noteService.softDeleteNote(row.serverId);
+          await gateway.deleteNote(row.serverId);
         } catch (error) {
           if (isOffline(error)) {
             await outboxRepository.enqueueDelete({ localId: row.localId, noteId: row.serverId });
@@ -440,7 +475,7 @@ export function AppLayout() {
     return () => {
       clearTimeout(timer);
     };
-  }, [activeLocalId, activeNoteId]);
+  }, [activeNoteKey]);
 
   const activeNoteRow = useLiveQuery(async () => {
     if (activeLocalId !== null) {
@@ -499,7 +534,7 @@ export function AppLayout() {
       // picking a different note, so it must not close the mobile panel
       // if it happens to be open.
       suppressMobileNotesCloseRef.current = true;
-      void navigate('/notes');
+      void navigate(ROUTES.notes());
     }
   }
 
@@ -532,16 +567,16 @@ export function AppLayout() {
     let row: NoteRow;
     let destination: string;
     try {
-      const created = await noteService.createNote({ content: '' });
+      const created = await gateway.createNote({ content: '' });
       row = fromNoteResponse(created);
-      destination = `/notes/${String(created.id)}`;
+      destination = ROUTES.note(created.id);
     } catch {
       row = {
         ...createLocalNote(authState.user.id),
         dirty: 0 as const,
         syncState: 'synced' as const,
       };
-      destination = `/notes/local/${row.localId}`;
+      destination = ROUTES.legacy.noteLocal(row.localId);
     }
 
     // Unblocked — this is what starts the sidebar's own enter animation for
@@ -602,7 +637,7 @@ export function AppLayout() {
     setPendingActiveLocalId(row.localId);
     await delay(NOTE_LIFECYCLE_DELAY_MS);
 
-    void navigate(`/notes/local/${row.localId}`, {
+    void navigate(ROUTES.legacy.noteLocal(row.localId), {
       replace: true,
       state: { skipEnterAnimation: true },
     });
@@ -634,7 +669,7 @@ export function AppLayout() {
     },
     onShare: (note) => {
       if (note.serverId === null) return;
-      void navigate(`/notes/${String(note.serverId)}/share`);
+      void navigate(ROUTES.legacy.noteShare(note.serverId));
     },
     onTogglePin: (note) => {
       void togglePin(note);
@@ -813,7 +848,7 @@ export function AppLayout() {
   function handleToolbarSearchSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = toolbarSearchTerm.trim();
-    void navigate(trimmed === '' ? '/search' : `/search?q=${encodeURIComponent(trimmed)}`);
+    void navigate(ROUTES.legacy.search(trimmed));
     setIsToolbarSearchExpanded(false);
   }
 
@@ -1053,10 +1088,10 @@ export function AppLayout() {
   const syncStatus = useSyncStatus();
   const syncMessage =
     syncStatus.status === 'offline'
-        ? { label: "Offline — you're working locally", tone: 'warn' as const }
-        : syncStatus.status === 'error'
-          ? { label: 'Sync trouble — retrying', tone: 'danger' as const }
-          : null;
+      ? { label: "Offline — you're working locally", tone: 'warn' as const }
+      : syncStatus.status === 'error'
+        ? { label: 'Sync trouble — retrying', tone: 'danger' as const }
+        : null;
 
   /*
    * "Reset this device" — the sidebar (directly under Accounts, below)
@@ -1323,7 +1358,7 @@ export function AppLayout() {
 
             {activeNoteId !== null ? (
               <Link
-                to={`/notes/${activeNoteId}/share`}
+                to={ROUTES.legacy.noteShare(activeNoteId)}
                 className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined app-shell__toolbar-share"
                 aria-label="Share this note"
               >
@@ -1331,7 +1366,7 @@ export function AppLayout() {
               </Link>
             ) : activeVoiceNoteId !== null ? (
               <Link
-                to={`/voice/${activeVoiceNoteId}/share`}
+                to={ROUTES.legacy.voiceShare(activeVoiceNoteId)}
                 className="app-shell__toolbar-icon-btn app-shell__toolbar-icon-btn--outlined app-shell__toolbar-share"
                 aria-label="Share this recording"
               >
@@ -1380,9 +1415,20 @@ export function AppLayout() {
                   borderless icon-then-input layout.
                 */}
                 <span className="app-shell__toolbar-search-icon" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
                     <circle cx="7" cy="7" r="5.25" stroke="currentColor" strokeWidth="1.5" />
-                    <path d="M11 11L14.5 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    <path
+                      d="M11 11L14.5 14.5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
                   </svg>
                 </span>
                 <input
@@ -1395,10 +1441,31 @@ export function AppLayout() {
                   }}
                   ref={toolbarSearchInputRef}
                 />
-                <button type="submit" className="app-shell__toolbar-search-submit" aria-label="Submit search">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 8H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    <path d="M9 4L13 8L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <button
+                  type="submit"
+                  className="app-shell__toolbar-search-submit"
+                  aria-label="Submit search"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M3 8H13"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M9 4L13 8L9 12"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </button>
                 {/*
@@ -1419,7 +1486,6 @@ export function AppLayout() {
                 </button>
               </form>
             </div>
-
           </div>
         </div>
       </div>
@@ -1473,7 +1539,6 @@ export function AppLayout() {
               <span className="app-shell__nav-label">Reset this device</span>
             </div>
           </li>
-
         </ul>
 
         {/*
@@ -1716,8 +1781,8 @@ export function AppLayout() {
           title="Reset this device?"
           description={
             <>
-              This deletes every note, draft, and cached file this browser
-              has stored locally, and signs you out.
+              This deletes every note, draft, and cached file this browser has stored locally, and
+              signs you out.
             </>
           }
           secondaryAction={{
@@ -1740,11 +1805,10 @@ export function AppLayout() {
           title="Unsynced changes remain"
           description={
             <>
-              Notare tried to sync before resetting, but some local changes
-              still have not reached the server — most likely because this
-              device is offline right now. Resetting anyway will permanently
-              lose them. Cancel and try again once you are back online, or
-              reset anyway and discard them.
+              Notare tried to sync before resetting, but some local changes still have not reached
+              the server — most likely because this device is offline right now. Resetting anyway
+              will permanently lose them. Cancel and try again once you are back online, or reset
+              anyway and discard them.
             </>
           }
           secondaryAction={{

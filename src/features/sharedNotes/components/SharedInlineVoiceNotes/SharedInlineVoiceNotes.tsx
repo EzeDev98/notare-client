@@ -89,6 +89,7 @@ function SharedInlineVoiceNote({
   const [currentTime, setCurrentTime] = useState(0);
 
   const blob = useAttachedAudioBlob(noteId, voiceNote.id);
+  const audioUrl = blob.status === 'ready' ? blob.url : null;
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -119,7 +120,7 @@ function SharedInlineVoiceNote({
       audio.removeEventListener('pause', handlePause);
       audio.removeEventListener('ended', handleEnded);
     };
-  }, [blob.status === 'ready' ? blob.url : null]);
+  }, [audioUrl]);
 
   function togglePlayback() {
     const audio = audioRef.current;
@@ -152,11 +153,7 @@ function SharedInlineVoiceNote({
             disabled={blob.status !== 'ready'}
             aria-label={playing ? 'Pause voice note' : 'Play voice note'}
           >
-            {playing ? (
-              <PauseIcon aria-hidden="true" />
-            ) : (
-              <PlayIcon aria-hidden="true" />
-            )}
+            {playing ? <PauseIcon aria-hidden="true" /> : <PlayIcon aria-hidden="true" />}
           </button>
 
           <div className="inline-voice-note__wave" aria-hidden="true">
@@ -177,7 +174,10 @@ function SharedInlineVoiceNote({
           </span>
 
           {recordedTime ? (
-            <time className="inline-voice-note__recorded-time" dateTime={String(voiceNote.createdAt)}>
+            <time
+              className="inline-voice-note__recorded-time"
+              dateTime={String(voiceNote.createdAt)}
+            >
               {recordedTime}
             </time>
           ) : null}
@@ -191,7 +191,12 @@ function SharedInlineVoiceNote({
       ) : null}
 
       {blob.status === 'ready' ? (
-        <audio ref={audioRef} src={blob.url} preload="metadata" className="inline-voice-note__audio" />
+        <audio
+          ref={audioRef}
+          src={blob.url}
+          preload="metadata"
+          className="inline-voice-note__audio"
+        />
       ) : null}
     </article>
   );

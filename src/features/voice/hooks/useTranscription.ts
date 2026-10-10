@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { transcriptionService } from '@/features/voice/api/transcriptionService';
+import { TRANSCRIPTION_POLL_MS } from '@/core/config/timings';
 
 export const transcriptionKeys = {
   detail: (voiceNoteId: number) => ['transcription', voiceNoteId] as const,
@@ -18,8 +19,6 @@ export const transcriptionKeys = {
  * — `refetchInterval` returning `false` disables the timer entirely
  * rather than polling a status that will never change again.
  */
-const POLL_INTERVAL_MS = 1_000;
-
 export function useTranscription(voiceNoteId: number | null, enabled = true) {
   return useQuery({
     queryKey: transcriptionKeys.detail(voiceNoteId ?? -1),
@@ -28,7 +27,7 @@ export function useTranscription(voiceNoteId: number | null, enabled = true) {
     enabled: enabled && voiceNoteId !== null,
     refetchInterval: (query) => {
       const status = query.state.data?.status;
-      return status === 'PENDING' || status === 'PROCESSING' ? POLL_INTERVAL_MS : false;
+      return status === 'PENDING' || status === 'PROCESSING' ? TRANSCRIPTION_POLL_MS : false;
     },
   });
 }

@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+  LEGACY_AUTOSAVE_DEBOUNCE_MS as DEBOUNCE_MS,
+  LEGACY_AUTOSAVE_MAX_WAIT_MS as MAX_WAIT_MS,
+} from '@/core/config/timings';
 
 /** Quiet period before saving. */
-const DEBOUNCE_MS = 120_000;
+// Value: LEGACY_AUTOSAVE_DEBOUNCE_MS in core/config/timings.ts (deleted in 8f).
 
 /**
  * Ceiling on how long unsaved work can sit, however continuously the user
@@ -12,7 +16,7 @@ const DEBOUNCE_MS = 120_000;
  * has been sent. This is the floor that stops that, and it is the one whose
  * absence loses the most work.
  */
-const MAX_WAIT_MS = 300_000;
+// Value: LEGACY_AUTOSAVE_MAX_WAIT_MS in core/config/timings.ts (deleted in 8f).
 
 interface SchedulerOptions {
   /** Performs the save. May throw; the scheduler keeps going regardless. */
@@ -119,7 +123,7 @@ export function useAutoSaveScheduler({ save, canSchedule, hasPendingWork }: Sche
      * ONE timer, not two. The delay is the debounce, shortened as the max-wait
      * ceiling approaches:
      *
-     *   elapsed 0     -> 1200ms   (ordinary debounce)
+     *   elapsed 0     -> 1.2s     (ordinary debounce)
      *   elapsed 9500  -> 500ms    (lands exactly at the 10s ceiling)
      *
      * Two independent timers would also work and would race each other at the

@@ -331,7 +331,6 @@ function EditorSurfaceBody({
     editor.commands.focus('end');
     // `content` deliberately excluded — this must fire only on a genuine
     // identity change, not on every keystroke's content update.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, focusKey, readOnly]);
 
   return (

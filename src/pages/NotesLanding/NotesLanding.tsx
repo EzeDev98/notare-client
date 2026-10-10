@@ -7,12 +7,13 @@ import { Button } from '@/design-system/components/Button/Button';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './NotesLanding.css';
+import { ROUTES } from '@/app/routes';
 
 // Same routing convention SidebarNoteItem and NoteCard already use —
 // localId for a note this device created offline and has no server id
 // for yet, serverId once it does.
 function routeFor(note: NoteView): string {
-  return note.serverId === null ? `/notes/local/${note.localId}` : `/notes/${String(note.serverId)}`;
+  return ROUTES.legacy.noteOf(note);
 }
 
 /**
@@ -64,7 +65,7 @@ export function NotesLandingPage() {
     <div className="notes-landing notes-landing--centre">
       <p className="notes-landing__body">Start a note to begin.</p>
 
-      <Link className="notes-landing__cta" to="/notes/new">
+      <Link className="notes-landing__cta" to={ROUTES.legacy.noteNew()}>
         {/*
           --color-logo, not the standard `variant="primary"` accent — this
           one CTA is meant to read as the brand mark itself (see

@@ -12,21 +12,8 @@ import { Modal } from '@/design-system/components/Modal/Modal';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './VoiceDetail.css';
-
-/**
- * Turns a route parameter into a voice-note id, or null. Same shape as
- * `parseNoteId` (`useNote.ts`) for the same reason: `Number('')` is `0`,
- * which would otherwise pass as a plausible id.
- *
- * Exported (not a page-local helper any more) so `ShareVoiceNotePage`
- * (`/voice/:voiceNoteId/share`) can parse the identical route param shape
- * without a second copy of this guard.
- */
-export function parseVoiceNoteId(param: string | undefined): number | null {
-  if (param === undefined) return null;
-  const id = Number(param);
-  return Number.isInteger(id) && id > 0 ? id : null;
-}
+import { ROUTES } from '@/app/routes';
+import { parseVoiceNoteId } from '@/pages/VoiceDetail/parseVoiceNoteId';
 
 /**
  * `/voice/:id` (architecture doc §4.2: "player with seeking, transcription
@@ -64,7 +51,7 @@ export function VoiceDetailPage() {
       <section className="voice-detail">
         <div className="voice-detail__centre">
           <h1>Voice note not found</h1>
-          <Link to="/voice">Back to voice notes</Link>
+          <Link to={ROUTES.legacy.voice()}>Back to voice notes</Link>
         </div>
       </section>
     );
@@ -81,7 +68,7 @@ export function VoiceDetailPage() {
     setError(null);
     deleteVoiceNote.mutate(id, {
       onSuccess: () => {
-        navigate('/voice');
+        navigate(ROUTES.legacy.voice());
       },
       onError: () => {
         setError('Could not delete this recording. Check your connection and try again.');
@@ -92,7 +79,7 @@ export function VoiceDetailPage() {
   return (
     <section className="voice-detail">
       <nav className="voice-detail__back">
-        <Link to="/voice" aria-label="Back to voice notes">
+        <Link to={ROUTES.legacy.voice()} aria-label="Back to voice notes">
           <AngleLeftIcon aria-hidden="true" />
         </Link>
       </nav>
@@ -138,7 +125,7 @@ export function VoiceDetailPage() {
               {voiceNote.data.noteId !== null ? (
                 <>
                   {' · '}
-                  <Link to={`/notes/${String(voiceNote.data.noteId)}`}>View linked note</Link>
+                  <Link to={ROUTES.note(voiceNote.data.noteId)}>View linked note</Link>
                 </>
               ) : null}
             </p>

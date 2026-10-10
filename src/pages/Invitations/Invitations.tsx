@@ -21,6 +21,7 @@ import { Modal } from '@/design-system/components/Modal/Modal';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Invitations.css';
+import { ROUTES } from '@/app/routes';
 
 type Tab = 'received' | 'sent';
 
@@ -34,7 +35,7 @@ export function InvitationsPage() {
       <BackButton />
       <header className="invitations__header">
         <h1>Collaborations</h1>
-        <Link to="/collaborations/invite" className="invitations__invite-link">
+        <Link to={ROUTES.legacy.collaborationsInvite()} className="invitations__invite-link">
           Invite someone
         </Link>
       </header>

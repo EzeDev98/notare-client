@@ -18,6 +18,27 @@ import prettier from 'eslint-config-prettier';
 
 const NEVER_UPWARD = 'Imports must point down the layer stack. See docs/architecture/structure.md.';
 
+// Route strings (7a, S-12). Only src/app/routes.ts may spell a screen path.
+// \x2f is a slash: ESLint selectors cannot hold a literal slash inside a regex.
+const ROUTE_RE =
+  '^\\x2f(notes|settings|sign-in|register|verify|reset|install|welcome|login|reset-password|archived|trash|search|shared|shared-voice|voice|collaborations|notifications|account)(\\x2f|\\?|$)';
+const ROUTE_STRING = {
+  selector: `Literal[value=/${ROUTE_RE}/], TemplateElement[value.raw=/${ROUTE_RE}/]`,
+  message: 'No path strings outside src/app/routes.ts. Use ROUTES from @/app/routes.',
+};
+
+// PatternFly stays inside the design-system ui/ folder.
+const PATTERNFLY_PATTERNS = [
+  {
+    group: ['@patternfly/react-icons', '@patternfly/react-icons/**'],
+    message: 'Icons are Lucide only (A-10). Import from lucide-react.',
+  },
+  {
+    group: ['@patternfly/*', '@patternfly/**'],
+    message: 'PatternFly is wrapped. Import from @/design-system, never @patternfly/* directly.',
+  },
+];
+
 export default tseslint.config(
   { ignores: ['dist/**', 'coverage/**', 'node_modules/**'] },
 
@@ -100,6 +121,8 @@ export default tseslint.config(
   {
     files: ['**/*.test.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
     rules: {
+      // Test helpers export components and functions together; there is no Fast Refresh in tests.
+      'react-refresh/only-export-components': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
     },
   },
@@ -287,17 +310,23 @@ export default tseslint.config(
         'error',
         {
           patterns: [
+            ...PATTERNFLY_PATTERNS,
             {
-              group: ['@patternfly/react-icons', '@patternfly/react-icons/**'],
-              message: 'Icons are Lucide only (A-10). Import from lucide-react.',
-            },
-            {
-              group: ['@patternfly/*', '@patternfly/**'],
-              message: 'PatternFly is wrapped. Import from @/design-system, never @patternfly/* directly.',
+              group: ['**/api/noteService', '**/api/voiceService', '**/api/sharedNoteService'],
+              message: 'Talk to the note server through `gateway` from @/core/adapter (step 7f).',
             },
           ],
         },
       ],
+    },
+  },
+
+  // The adapter is the one place that may import those services. Tests may too.
+  {
+    files: ['src/core/adapter/**/*.ts', '**/*.test.{ts,tsx}'],
+    ignores: ['src/design-system/ui/**'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': ['error', { patterns: PATTERNFLY_PATTERNS }],
     },
   },
 
@@ -312,6 +341,7 @@ export default tseslint.config(
           selector: "JSXOpeningElement[name.name='button']",
           message: 'Use <Button> or <IconButton> from @/design-system. Raw <button> lives in design-system/ui only.',
         },
+        ROUTE_STRING,
       ],
     },
   },
@@ -333,7 +363,26 @@ export default tseslint.config(
             "CallExpression[callee.name=/^(setTimeout|requestAnimationFrame)$/], CallExpression[callee.object.name='window'][callee.property.name=/^(setTimeout|requestAnimationFrame)$/]",
           message: 'No setTimeout or requestAnimationFrame in features or pages. Use the motion module and the timing config.',
         },
+        ROUTE_STRING,
       ],
+    },
+  },
+
+  // Route strings in .ts files (hooks, helpers). api/, lib/, sync/, pwa/ and the local
+  // database layer talk to the server or storage, not the router, so they keep their paths.
+  {
+    files: ['src/**/*.ts'],
+    ignores: [
+      'src/app/routes.ts',
+      'src/**/api/**',
+      'src/lib/**',
+      'src/sync/**',
+      'src/pwa/**',
+      'src/features/*/local/**',
+      '**/*.test.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': ['error', ROUTE_STRING],
     },
   },
 

@@ -4,6 +4,7 @@ import { TimesIcon, UndoIcon, UserIcon } from '@patternfly/react-icons';
 
 import { ThemeToggle } from '@/design-system/components/ThemeToggle/ThemeToggle';
 import './SettingsPanel.css';
+import { ROUTES } from '@/app/routes';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -59,7 +60,11 @@ export function SettingsPanel({
       </header>
 
       <div className="settings-panel__body">
-        <Link to="/account/sessions" className="settings-panel__account" onClick={onClose}>
+        <Link
+          to={ROUTES.legacy.accountSessions()}
+          className="settings-panel__account"
+          onClick={onClose}
+        >
           <UserIcon aria-hidden="true" />
           <span>Accounts</span>
         </Link>

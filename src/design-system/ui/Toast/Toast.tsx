@@ -20,7 +20,10 @@ interface ToastProps {
 /** One toast. Enters 8px up, leaves with a fast fade. The timer pauses while it is hovered or focused. */
 export function Toast({ entry, onClose, onGone }: ToastProps) {
   const [paused, setPaused] = useState(false);
-  const { mounted, ref } = usePresence<HTMLDivElement>(!entry.closing, { enter: toastIn, exit: fadeOut });
+  const { mounted, ref } = usePresence<HTMLDivElement>(!entry.closing, {
+    enter: toastIn,
+    exit: fadeOut,
+  });
 
   useEffect(() => {
     if (entry.closing || paused) return undefined;
@@ -59,7 +62,9 @@ export function Toast({ entry, onClose, onGone }: ToastProps) {
       {entry.tone === 'success' ? (
         <Icon icon={CircleCheck} className="ui-toast__icon ui-toast__icon--success" />
       ) : null}
-      {entry.tone === 'error' ? <Icon icon={CircleAlert} className="ui-toast__icon ui-toast__icon--error" /> : null}
+      {entry.tone === 'error' ? (
+        <Icon icon={CircleAlert} className="ui-toast__icon ui-toast__icon--error" />
+      ) : null}
       <p className="ui-toast__message">{entry.message}</p>
       {entry.action ? (
         <Button

@@ -1,7 +1,7 @@
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
 import { useEffect, useRef, useState } from 'react';
 
-import { noteService } from '@/features/notes/api/noteService';
+import { gateway } from '@/core/adapter';
 import { noteRepository } from '@/features/notes/local/noteRepository';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import { isAborted, isNotFound } from '@/lib/http/errors';
@@ -82,7 +82,7 @@ export function useNote(serverId: number | null): NoteState {
     const controller = new AbortController();
     setRemoteMiss('none');
 
-    noteService
+    gateway
       .getNote(serverId, { signal: controller.signal })
       .then(async (note) => {
         // 'skipped' when the local row has unsent edits — the repository

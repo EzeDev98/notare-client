@@ -1,38 +1,47 @@
-import { useRouteError, isRouteErrorResponse } from 'react-router';
+import { useEffect } from 'react';
+import { isRouteErrorResponse, useRouteError } from 'react-router';
+
+import { NotFoundScreen } from '@/app/NotFoundScreen';
+import { StatusScreen } from '@/app/StatusScreen';
+import { STATUS_COPY } from '@/app/statusContent';
+import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 
 /**
- * Rendered in place of a route that threw.
+ * Rendered in place of a route that threw (master 6.7.1).
  *
- * Attached to the LAYOUT routes rather than the router root, so the shell
- * survives and only the content area shows the failure. A single app-level
- * boundary would blank the entire screen because a notification panel broke.
+ * A path that matches nothing is "Page not found". Anything else is
+ * "Something went wrong" with a Reload button. The person never sees the
+ * error's message or stack: it goes to the console for us and the screen says
+ * only that their notes are safe, because they are (every write is local first).
  *
- * isRouteErrorResponse distinguishes an error React Router itself produced —
- * a 404 from no matching route, a thrown Response — from an exception a
- * component threw while rendering. They need different wording, and the
- * narrowing is a type guard: inside the branch, `error` is a
- * ErrorResponse rather than `unknown`.
- *
- * Step 3 replaces the generic message with the typed ApiError model, and
- * Step 2 gives this an actual design. For now it exists so that a thrown
- * error produces something legible instead of a blank page.
+ * Attached to the LAYOUT routes rather than the router root, so a render error
+ * in one screen is caught by its own layout.
  */
 export function RouteError() {
   const error = useRouteError();
 
-  if (isRouteErrorResponse(error)) {
-    return (
-      <section>
-        <h1>{error.status}</h1>
-        <p>{error.statusText}</p>
-      </section>
-    );
+  if (isRouteErrorResponse(error) && error.status === 404) {
+    return <NotFoundScreen />;
   }
 
+  return <CrashScreen error={error} />;
+}
+
+function CrashScreen({ error }: { error: unknown }) {
+  useDocumentTitle(STATUS_COPY.errorTitle);
+
+  useEffect(() => {
+    console.error(error);
+  }, [error]);
+
   return (
-    <section>
-      <h1>Something went wrong</h1>
-      <p>This screen failed to load. Try again, or go back.</p>
-    </section>
+    <StatusScreen
+      title={STATUS_COPY.errorTitle}
+      text={STATUS_COPY.errorText}
+      actionLabel={STATUS_COPY.errorAction}
+      onAction={() => {
+        window.location.reload();
+      }}
+    />
   );
 }

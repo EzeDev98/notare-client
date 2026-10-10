@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
-import { voiceService } from '@/features/voice/api/voiceService';
+import { gateway } from '@/core/adapter';
 
 export const voiceKeys = {
   all: ['voice-notes'] as const,
@@ -15,7 +15,7 @@ const PAGE_SIZE = 8;
 export function useVoiceNotes(page: number) {
   return useQuery({
     queryKey: voiceKeys.list(page),
-    queryFn: ({ signal }) => voiceService.listVoiceNotes(page, PAGE_SIZE, { signal }),
+    queryFn: ({ signal }) => gateway.listClips(page, PAGE_SIZE, { signal }),
     placeholderData: keepPreviousData,
   });
 }
@@ -53,7 +53,7 @@ export function useVoiceNotes(page: number) {
 export function useVoiceNotesByNote(noteId: number | null) {
   return useQuery({
     queryKey: voiceKeys.byNote(noteId ?? -1),
-    queryFn: ({ signal }) => voiceService.listVoiceNotesByNote(noteId as number, { signal }),
+    queryFn: ({ signal }) => gateway.listClipsByNote(noteId as number, { signal }),
     enabled: noteId !== null,
     placeholderData: (previousData, previousQuery) =>
       previousQuery?.queryKey[2] === (noteId ?? -1) ? previousData : undefined,
@@ -63,7 +63,7 @@ export function useVoiceNotesByNote(noteId: number | null) {
 export function useVoiceNote(id: number) {
   return useQuery({
     queryKey: voiceKeys.detail(id),
-    queryFn: ({ signal }) => voiceService.getVoiceNote(id, { signal }),
+    queryFn: ({ signal }) => gateway.getClip(id, { signal }),
     placeholderData: keepPreviousData,
   });
 }

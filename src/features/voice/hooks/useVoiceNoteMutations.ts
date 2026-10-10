@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { voiceService } from '@/features/voice/api/voiceService';
+import { gateway } from '@/core/adapter';
 import { voiceKeys } from '@/features/voice/hooks/useVoiceNotes';
 
 interface UploadVariables {
@@ -15,14 +15,14 @@ interface UploadVariables {
  * hook for "an upload that reports 0..1 over time"), so the progress
  * callback rides along inside the mutation variables instead — the
  * caller passes it in per-call, same as it would pass any other argument
- * `voiceService.uploadVoiceNote` needs.
+ * `gateway.uploadClip` needs.
  */
 export function useUploadVoiceNote() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ file, noteId, durationSeconds, onProgress }: UploadVariables) =>
-      voiceService.uploadVoiceNote(file, {
+      gateway.uploadClip(file, {
         // Conditionally spread, not passed straight through — this repo's
         // tsconfig has exactOptionalPropertyTypes on, so an object literal
         // with `noteId: undefined` does not satisfy a target typed
@@ -47,7 +47,7 @@ export function useDeleteVoiceNote(noteId: number | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => voiceService.deleteVoiceNote(id),
+    mutationFn: (id: number) => gateway.deleteClip(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: voiceKeys.all });
       if (noteId !== null) {

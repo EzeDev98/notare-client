@@ -63,9 +63,47 @@
     <meta name="theme-color" content="#FFFFFF" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Notare</title>
+    <style>
+      /*
+       * EXCEPTION (7c): the static splash cannot use design tokens, because they load
+       * after it paints. The raw values must match tokens.css (--p-bg-light, --p-bg-dark,
+       * --logo-size-lg). The logo files are used as supplied (H-4). Keep this under 30 lines.
+       * StartupSplash.tsx renders the same element with the same classes.
+       */
+      html {
+        background: #faf8f4;
+      }
+      html[data-theme='dark'] {
+        background: #17151a;
+      }
+      .startup-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        display: grid;
+        place-items: center;
+        background: #faf8f4;
+      }
+      html[data-theme='dark'] .startup-splash {
+        background: #17151a;
+      }
+      .startup-splash__logo {
+        width: 72px;
+        height: 72px;
+        background: url('/logo-light.png') center / contain no-repeat;
+      }
+      html[data-theme='dark'] .startup-splash__logo {
+        background-image: url('/logo-dark.png');
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static splash (7c). Shown until the app takes over; see StartupSplash.tsx. -->
+      <div class="startup-splash" role="status" aria-label="Loading Notare">
+        <div class="startup-splash__logo"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -9,8 +9,9 @@ import { TextField } from '@/design-system/components/TextField/TextField';
 import { fieldErrors, isForbidden, isOffline, isUnauthorized, statusOf } from '@/lib/http/errors';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Login.css';
+import { ROUTES } from '@/app/routes';
 
-const DEFAULT_DESTINATION = '/notes';
+const DEFAULT_DESTINATION = ROUTES.notes();
 
 /** True when we arrived here straight after verifying an account. */
 function readVerified(state: unknown): boolean {
@@ -95,7 +96,7 @@ export function LoginPage() {
          * is simply unverified, so send them where they can fix it, carrying
          * the identifier so they do not retype it.
          */
-        void navigate('/verify', { state: { identifier: usernameOrEmail.trim() } });
+        void navigate(ROUTES.verify(), { state: { identifier: usernameOrEmail.trim() } });
         return;
       } else if (statusOf(error) === 423) {
         // Locked or disabled by an administrator: nothing the user can fix here.
@@ -182,11 +183,11 @@ export function LoginPage() {
 
       <div className="login__links">
         <p>
-          <Link to="/reset-password">Forgot your password?</Link>
+          <Link to={ROUTES.resetPassword()}>Forgot your password?</Link>
         </p>
 
         <p>
-          New to Notare? <Link to="/register">Create an account</Link>
+          New to Notare? <Link to={ROUTES.register()}>Create an account</Link>
         </p>
       </div>
     </>

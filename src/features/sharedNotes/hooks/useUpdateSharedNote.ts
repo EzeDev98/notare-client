@@ -1,6 +1,6 @@
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 
-import { sharedNoteService } from '@/features/sharedNotes/api/sharedNoteService';
+import { gateway } from '@/core/adapter';
 import { sharedNotesKeys } from '@/features/sharedNotes/hooks/useSharedNotes';
 import type {
   SharedNoteSummaryResponse,
@@ -25,7 +25,7 @@ export function useUpdateSharedNote(noteId: number) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (body: UpdateSharedNoteRequest) => sharedNoteService.updateSharedNote(noteId, body),
+    mutationFn: (body: UpdateSharedNoteRequest) => gateway.updateSharedNote(noteId, body),
     onSuccess: (updated) => {
       queryClient.setQueryData(sharedNotesKeys.detail(noteId), updated);
 

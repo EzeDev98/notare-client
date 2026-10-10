@@ -3,15 +3,19 @@ import { Link, useParams } from 'react-router';
 
 import { EditorSurface } from '@/features/editor/components/EditorSurface/EditorSurface';
 import { SharedAudioPlayer } from '@/features/sharedVoiceNotes/components/SharedAudioPlayer/SharedAudioPlayer';
-import { isNoGrantError, useSharedVoiceNote } from '@/features/sharedVoiceNotes/hooks/useSharedVoiceNote';
+import {
+  isNoGrantError,
+  useSharedVoiceNote,
+} from '@/features/sharedVoiceNotes/hooks/useSharedVoiceNote';
 import { formatUserName, useUserLookup } from '@/features/userLookup/hooks/useUserLookup';
-import { parseVoiceNoteId } from '@/pages/VoiceDetail/VoiceDetail';
+import { parseVoiceNoteId } from '@/pages/VoiceDetail/parseVoiceNoteId';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 
 // Reuses `/shared/:id`'s stylesheet on purpose — see the doc comment below.
 import '@/pages/SharedNote/SharedNote.css';
+import { ROUTES } from '@/app/routes';
 
 /**
  * `/shared-voice/:id` — a standalone shared voice note's destination.
@@ -53,9 +57,7 @@ export function SharedVoiceDetailPage() {
   const ownerIds = query.data ? [query.data.ownerId] : [];
   const { profiles, isLoading: ownerNameLoading } = useUserLookup(ownerIds);
   const ownerName =
-    query.data && !ownerNameLoading
-      ? formatUserName(profiles.get(query.data.ownerId))
-      : undefined;
+    query.data && !ownerNameLoading ? formatUserName(profiles.get(query.data.ownerId)) : undefined;
 
   if (voiceNoteId === null) {
     return (
@@ -65,7 +67,7 @@ export function SharedVoiceDetailPage() {
 
           <div className="shared-note__centre">
             <h1>Voice note not found</h1>
-            <Link to="/shared">Back to shared with me</Link>
+            <Link to={ROUTES.legacy.shared()}>Back to shared with me</Link>
           </div>
         </div>
       </article>
@@ -102,11 +104,11 @@ export function SharedVoiceDetailPage() {
               response doesn't actually support.
             */}
             <p className="shared-note__muted">
-              This recording isn&apos;t available to you — it may have never
-              been shared with you, or access may have changed.
+              This recording isn&apos;t available to you — it may have never been shared with you,
+              or access may have changed.
             </p>
 
-            <Link to="/shared">Back to shared with me</Link>
+            <Link to={ROUTES.legacy.shared()}>Back to shared with me</Link>
           </div>
         ) : null}
 
@@ -152,11 +154,7 @@ export function SharedVoiceDetailPage() {
               This is NOT a note title (the note domain has none, 1B/2A) —
               it's the recording's own filename, always read-only here.
             */}
-            <EditorSurface
-              heading={filename === '' ? 'Voice note' : filename}
-              readOnly
-              hideBody
-            />
+            <EditorSurface heading={filename === '' ? 'Voice note' : filename} readOnly hideBody />
 
             <div className="shared-note__voice-card">
               <span className="shared-note__voice-icon" aria-hidden="true">
@@ -177,7 +175,7 @@ export function SharedVoiceDetailPage() {
 function SharedVoiceDetailChrome() {
   return (
     <nav className="shared-note__back">
-      <Link to="/shared">← Shared with me</Link>
+      <Link to={ROUTES.legacy.shared()}>← Shared with me</Link>
     </nav>
   );
 }

@@ -11,6 +11,7 @@ import {
 } from '@/lib/time';
 import { useLongPressContextMenu } from '@/shared/hooks/useLongPressContextMenu';
 import './SidebarNoteItem.css';
+import { ROUTES } from '@/app/routes';
 
 interface SidebarNoteItemProps {
   note: NoteView;
@@ -104,8 +105,7 @@ export function SidebarNoteItem({
 
   // localId, not serverId: an offline-created note has no server id yet
   // and still needs to be openable — same routing NoteCard already uses.
-  const to =
-    note.serverId === null ? `/notes/local/${note.localId}` : `/notes/${String(note.serverId)}`;
+  const to = ROUTES.legacy.noteOf(note);
 
   // Covers right-click and a two-finger Mac trackpad click via the native
   // `contextmenu` event, AND a touch-and-hold long press via its own timer

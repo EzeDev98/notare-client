@@ -15,6 +15,7 @@ import { PasswordField } from '@/design-system/components/PasswordField/Password
 import { TextField } from '@/design-system/components/TextField/TextField';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Register.css';
+import { ROUTES } from '@/app/routes';
 
 type Errors = Record<string, string | undefined>;
 
@@ -95,7 +96,7 @@ export function RegisterPage() {
      * prefills it and stays fully usable without it. Since B6 the identifier
      * can be an email, so nothing here must survive a reload.
      */
-    void navigate('/verify', { replace: true, state: { identifier: form.email.trim() } });
+    void navigate(ROUTES.verify(), { replace: true, state: { identifier: form.email.trim() } });
   }
 
   return (
@@ -179,7 +180,7 @@ export function RegisterPage() {
       </form>
 
       <div className="register__alt">
-        Already have an account? <Link to="/login">Sign in</Link>
+        Already have an account? <Link to={ROUTES.signIn()}>Sign in</Link>
       </div>
     </>
   );

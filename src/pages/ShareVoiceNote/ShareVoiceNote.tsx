@@ -15,13 +15,14 @@ import {
 import { useVoiceShares } from '@/features/voiceSharing/hooks/useVoiceShares';
 import type { SharePermission, VoiceShareResponse } from '@/features/voiceSharing/types';
 import { isBadRequest } from '@/lib/http/errors';
-import { parseVoiceNoteId } from '@/pages/VoiceDetail/VoiceDetail';
+import { parseVoiceNoteId } from '@/pages/VoiceDetail/parseVoiceNoteId';
 import { Button } from '@/design-system/components/Button/Button';
 import { Modal } from '@/design-system/components/Modal/Modal';
 import { Select } from '@/design-system/components/Select/Select';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './ShareVoiceNote.css';
+import { ROUTES } from '@/app/routes';
 
 /**
  * `/voice/:id/share` — the voice-note counterpart to `ShareNotePage`
@@ -66,7 +67,7 @@ export function ShareVoiceNotePage() {
         <ShareVoiceNoteChrome voiceNoteId={null} />
         <div className="share-voice-note__centre">
           <h1>Voice note not found</h1>
-          <Link to="/voice">Back to voice notes</Link>
+          <Link to={ROUTES.legacy.voice()}>Back to voice notes</Link>
         </div>
       </section>
     );
@@ -109,7 +110,9 @@ export function ShareVoiceNotePage() {
 function ShareVoiceNoteChrome({ voiceNoteId }: { voiceNoteId: number | null }) {
   return (
     <nav className="share-voice-note__back">
-      <Link to={voiceNoteId === null ? '/voice' : `/voice/${String(voiceNoteId)}`}>
+      <Link
+        to={voiceNoteId === null ? ROUTES.legacy.voice() : ROUTES.legacy.voiceDetail(voiceNoteId)}
+      >
         ← Back to recording
       </Link>
     </nav>
@@ -275,8 +278,8 @@ function ShareManager({ voiceNoteId }: { voiceNoteId: number }) {
           title="Remove this collaborator?"
           description={
             <>
-              <strong>{resolveName(confirmingRevoke.sharedWithUserId)}</strong>{' '}
-              will lose access to this voice note.
+              <strong>{resolveName(confirmingRevoke.sharedWithUserId)}</strong> will lose access to
+              this voice note.
             </>
           }
           secondaryAction={{
@@ -341,15 +344,17 @@ interface ShareFormProps {
  * second one this form would otherwise need for its own option labels.
  */
 function ShareForm({ candidates, resolveName, pending, onShare }: ShareFormProps) {
-  const [selectedId, setSelectedId] = useState<number | null>(candidates[0]?.collaboratorId ?? null);
+  const [selectedId, setSelectedId] = useState<number | null>(
+    candidates[0]?.collaboratorId ?? null,
+  );
   const [permission, setPermission] = useState<SharePermission>('READ');
 
   if (candidates.length === 0) {
     return (
       <p className="share-voice-note__no-candidates">
         Everyone who has accepted an invitation already has access. Invite someone new from{' '}
-        <Link to="/collaborations">Collaborations</Link> first, then come back here to share with
-        them.
+        <Link to={ROUTES.legacy.collaborations()}>Collaborations</Link> first, then come back here
+        to share with them.
       </p>
     );
   }

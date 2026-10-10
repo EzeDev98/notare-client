@@ -12,6 +12,7 @@ import type {
 import { Modal } from '@/design-system/components/Modal/Modal';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './InviteCollaborator.css';
+import { ROUTES } from '@/app/routes';
 
 const NOTES_ROUTE = '/';
 
@@ -122,7 +123,7 @@ export function InviteCollaboratorPage() {
   return (
     <section className="invite-collaborator">
       <nav className="invite-collaborator__back">
-        <Link to="/collaborations" aria-label="Back to Collaborations">
+        <Link to={ROUTES.legacy.collaborations()} aria-label="Back to Collaborations">
           <AngleLeftIcon aria-hidden="true" />
         </Link>
       </nav>

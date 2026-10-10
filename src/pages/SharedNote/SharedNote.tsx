@@ -20,6 +20,7 @@ import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 
 import './SharedNote.css';
+import { ROUTES } from '@/app/routes';
 
 /**
  * `/shared/:id`
@@ -83,7 +84,7 @@ export function SharedNotePage() {
           <SharedNoteChrome />
           <div className="shared-note__centre">
             <h1>Note not found</h1>
-            <Link to="/shared">Back to shared with me</Link>
+            <Link to={ROUTES.legacy.shared()}>Back to shared with me</Link>
           </div>
         </div>
       ) : (
@@ -141,7 +142,7 @@ function SharedNoteView({ noteId }: { noteId: number }) {
               shared with you, or access may have changed.
             </p>
 
-            <Link to="/shared">Back to shared with me</Link>
+            <Link to={ROUTES.legacy.shared()}>Back to shared with me</Link>
           </div>
         ) : null}
 
@@ -193,7 +194,7 @@ function SharedNoteView({ noteId }: { noteId: number }) {
 function SharedNoteChrome() {
   return (
     <nav className="shared-note__back">
-      <Link to="/shared">← Shared with me</Link>
+      <Link to={ROUTES.legacy.shared()}>← Shared with me</Link>
     </nav>
   );
 }

@@ -4,6 +4,7 @@ import { pushOutbox } from '@/sync/push';
 import { onLocalMutation } from '@/sync/mutationSignal';
 import { setSyncStatus } from '@/sync/syncStatus';
 import { consumeTransportFailure } from '@/sync/transportFailure';
+import { LEGACY_SYNC_POLL_MS, SYNC_AFTER_CHANGE_MS, SYNC_BACKOFF_MS } from '@/core/config/timings';
 
 /**
  * The sync engine (8F): everything push.ts (8C) and pull.ts (8D) deliberately
@@ -33,9 +34,6 @@ import { consumeTransportFailure } from '@/sync/transportFailure';
  */
 
 const LOCK_NAME = 'notare.sync';
-const SLOW_INTERVAL_MS = 60_000;
-const MUTATION_DEBOUNCE_MS = 2_000;
-const BACKOFF_SCHEDULE_MS = [5_000, 15_000, 30_000, SLOW_INTERVAL_MS];
 
 let fallbackChain: Promise<unknown> = Promise.resolve();
 
@@ -70,7 +68,7 @@ function clearBackoffTimer(): void {
 
 function scheduleBackoffRetry(): void {
   clearBackoffTimer();
-  const delay = BACKOFF_SCHEDULE_MS[Math.min(backoffStep, BACKOFF_SCHEDULE_MS.length - 1)]!;
+  const delay = SYNC_BACKOFF_MS[Math.min(backoffStep, SYNC_BACKOFF_MS.length - 1)]!;
   backoffStep += 1;
   backoffTimer = setTimeout(() => {
     backoffTimer = null;
@@ -89,7 +87,7 @@ function startInterval(): void {
   if (intervalTimer !== null) return;
   intervalTimer = setInterval(() => {
     void requestSync('interval');
-  }, SLOW_INTERVAL_MS);
+  }, LEGACY_SYNC_POLL_MS);
 }
 
 function handleOnline(): void {
@@ -101,7 +99,7 @@ function handleMutation(): void {
   mutationDebounceTimer = setTimeout(() => {
     mutationDebounceTimer = null;
     void requestSync('mutation');
-  }, MUTATION_DEBOUNCE_MS);
+  }, SYNC_AFTER_CHANGE_MS);
 }
 
 function handleVisibility(): void {

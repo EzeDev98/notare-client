@@ -11,6 +11,7 @@ import { formatUserInitials } from '@/features/userLookup/hooks/useUserLookup';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './NoteDetail.css';
+import { ROUTES } from '@/app/routes';
 
 /**
  * A note that has not reached the server yet.
@@ -74,7 +75,7 @@ export function LocalNoteDetailPage() {
             <p className="note-detail__muted">
               This note doesn&apos;t exist, or it isn&apos;t available to you.
             </p>
-            <Link to="/notes">Back to your notes</Link>
+            <Link to={ROUTES.notes()}>Back to your notes</Link>
           </div>
         ) : null}
 

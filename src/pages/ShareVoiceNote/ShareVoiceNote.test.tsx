@@ -181,9 +181,7 @@ describe('sharing a voice note (owner side)', () => {
     const dialog = screen.getByRole('dialog');
 
     expect(dialog).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', { name: 'Remove this collaborator?' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Remove this collaborator?' })).toBeInTheDocument();
     expect(dialog).toHaveTextContent('Jane Doe');
     expect(dialog).toHaveTextContent('will lose access to this voice note.');
 

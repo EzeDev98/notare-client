@@ -7,6 +7,7 @@ import { Button } from '@/design-system/components/Button/Button';
 import { Modal } from '@/design-system/components/Modal/Modal';
 import { MicrophoneIcon } from '@patternfly/react-icons';
 import './VoiceNoteCard.css';
+import { ROUTES } from '@/app/routes';
 
 interface VoiceNoteCardProps {
   voiceNote: VoiceNoteResponse;
@@ -32,7 +33,7 @@ export function VoiceNoteCard({ voiceNote, onDelete, deleting = false }: VoiceNo
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   return (
     <li className="voice-note-card">
-      <Link to={`/voice/${String(voiceNote.id)}`} className="voice-note-card__link">
+      <Link to={ROUTES.legacy.voiceDetail(voiceNote.id)} className="voice-note-card__link">
         <span className="voice-note-card__duration">{formatDuration(voiceNote.durationSeconds)}</span>
         <span className="voice-note-card__meta">
           {formatSize(voiceNote.sizeBytes)} ·{' '}

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { sharedNoteService } from '@/features/sharedNotes/api/sharedNoteService';
+import { gateway } from '@/core/adapter';
 import { sharedNotesKeys } from '@/features/sharedNotes/hooks/useSharedNotes';
 import { isNotFound } from '@/lib/http/errors';
 
@@ -16,7 +16,7 @@ import { isNotFound } from '@/lib/http/errors';
 export function useSharedNote(noteId: number) {
   return useQuery({
     queryKey: sharedNotesKeys.detail(noteId),
-    queryFn: ({ signal }) => sharedNoteService.getSharedNote(noteId, { signal }),
+    queryFn: ({ signal }) => gateway.getSharedNote(noteId, { signal }),
     retry: false,
   });
 }

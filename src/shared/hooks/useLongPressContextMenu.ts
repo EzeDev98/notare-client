@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
+import { LONG_PRESS_MS } from '@/core/config/timings';
 
-const LONG_PRESS_MS = 500;
 // A real long-press holds still. Movement past this is a scroll or a drag,
 // not a request for the menu — cancels the timer instead of opening it.
 const MOVE_THRESHOLD_PX = 10;

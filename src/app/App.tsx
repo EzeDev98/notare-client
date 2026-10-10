@@ -1,52 +1,91 @@
+import { useEffect, useRef, useState } from 'react';
 import { RouterProvider } from 'react-router';
 
 import { AuthProvider } from '@/app/providers/AuthProvider';
 import { QueryProvider } from '@/app/providers/QueryProvider';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
-import { ToastProvider } from '@/app/providers/ToastProvider';
+import { ToastProvider as LegacyToastProvider } from '@/app/providers/ToastProvider';
 import { router } from '@/app/router';
-import { useBootPhase } from '@/app/useBootPhase';
-import { AppSplash } from '@/pwa/components/AppSplash';
+import { OfflineFirstOpen } from '@/app/startup/OfflineFirstOpen';
+import { StartupSplash } from '@/app/startup/StartupSplash';
+import { STARTUP_COPY } from '@/app/startup/startupContent';
+import { useStartup } from '@/app/startup/useStartup';
+import { done, run } from '@/design-system/motion/motion';
+import { ToastProvider, useToast } from '@/design-system/ui';
 import { InstallPage } from '@/pwa/components/InstallPage';
 import { UpdateAvailableModal } from '@/pwa/components/UpdateAvailableModal';
 import { useEverStandalone } from '@/pwa/displayMode';
 
 /**
- * Step 2d/4a-4c/8c. Renders against useBootPhase()'s phase + splashStage
- * rather than checking AuthProvider's status directly.
+ * The single start-up hand-off (master 5.5). The splash (the same element as
+ * the static one in index.html) stays on top until useStartup has decided and
+ * moved the router, then fades out over the screen that is already there, so
+ * there is no redirect to see and no second splash.
  *
- * A child of AuthProvider, not a sibling before it: useBootPhase()
- * needs useAuth()'s context, and AuthProvider's init effect fires on
- * mount regardless of whether anything below it is reading that state
- * yet — nesting here doesn't delay when the restore starts, only what
- * is shown while it's in flight.
+ * Final answers only move forward: once the router is showing, nothing later
+ * (auth changes, a display-mode blip) swaps the tree back, because that would
+ * unmount everything and read as a reload.
  *
- * QueryProvider/ToastProvider/RouterProvider only mount once boot is
- * over: nothing under the router needs a query client or a toast host
- * while the splash or the mandatory InstallPage is the only thing on
- * screen.
- *
- * 'install' renders the actual InstallPage — see InstallPage's own doc
- * comments for why it is a hard gate (no skip/dismiss) and how it tells
- * "installed" apart from "prompt dismissed".
+ * A child of AuthProvider because useStartup reads the session.
+ */
+function AppStage() {
+  const { outcome, retry } = useStartup();
+  const { toast } = useToast();
+  const splashRef = useRef<HTMLDivElement>(null);
+  const [splashGone, setSplashGone] = useState(false);
+  const revealed = outcome !== 'waiting';
+
+  useEffect(() => {
+    const splash = splashRef.current;
+    if (!revealed || !splash) return;
+    let cancelled = false;
+    const fade = run(splash, [{ opacity: 1 }, { opacity: 0 }], {
+      duration: '--motion-reveal',
+      easing: '--ease-out',
+      fill: 'forwards',
+    });
+    void done(fade).then(() => {
+      if (!cancelled) setSplashGone(true);
+    });
+    return () => {
+      cancelled = true;
+      fade.cancel();
+    };
+  }, [revealed]);
+
+  async function retryAndWelcome(): Promise<boolean> {
+    const connected = await retry();
+    if (connected) toast(STARTUP_COPY.connected);
+    return connected;
+  }
+
+  return (
+    <>
+      {outcome === 'install' ? <InstallPage /> : null}
+      {outcome === 'offline' ? <OfflineFirstOpen onRetry={retryAndWelcome} /> : null}
+      {outcome === 'app' ? (
+        <QueryProvider>
+          <LegacyToastProvider>
+            <RouterProvider router={router} />
+          </LegacyToastProvider>
+        </QueryProvider>
+      ) : null}
+      {splashGone ? null : <StartupSplash ref={splashRef} />}
+    </>
+  );
+}
+
+/**
+ * The one toast host (step 7e). Mounted once, above the stage, so a toast works
+ * on every screen, including the ones that show before the router does (the
+ * offline first-open screen).
  */
 function AppBoot() {
-  const { phase, splashStage } = useBootPhase();
-
-  switch (phase) {
-    case 'splash':
-      return <AppSplash stage={splashStage} />;
-    case 'install':
-      return <InstallPage />;
-    case 'ready':
-      return (
-        <QueryProvider>
-          <ToastProvider>
-            <RouterProvider router={router} />
-          </ToastProvider>
-        </QueryProvider>
-      );
-  }
+  return (
+    <ToastProvider>
+      <AppStage />
+    </ToastProvider>
+  );
 }
 
 /**
@@ -56,17 +95,11 @@ function AppBoot() {
  * ThemeProvider is outermost: an error boundary rendering inside the router
  * should still be themed.
  *
- * Step 11. UpdateAvailableModal only renders once this session has
- * confirmed it IS the installed app (useEverStandalone() — the same
- * latch useBootPhase.ts uses for the install gate itself). A first-time
- * visitor still on the install gate, or just browsing in an ordinary
- * tab, has nothing installed for a newer version to matter to. Still
- * sits outside AuthProvider: offerable whether or not anyone is signed
- * in, once it's actually the installed app asking.
- *
- * AppBoot (Step 2d/4a/8c) is what actually decides, on every cold start,
- * between AppSplash, InstallPage, and the real app - see its own doc
- * comment.
+ * UpdateAvailableModal only renders once this session has confirmed it IS the
+ * installed app (useEverStandalone()). A first-time visitor on the install
+ * gate, or just browsing in an ordinary tab, has nothing installed for a newer
+ * version to matter to. Still sits outside AuthProvider: offerable whether or
+ * not anyone is signed in, once it's actually the installed app asking.
  */
 export function App() {
   const everStandalone = useEverStandalone();

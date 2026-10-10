@@ -18,6 +18,7 @@ import { BackButton } from '@/design-system/components/BackButton/BackButton';
 import { Button } from '@/design-system/components/Button/Button';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Notes.css';
+import { ROUTES } from '@/app/routes';
 
 export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
   useDocumentTitle(archived ? 'Archived' : 'Notes');
@@ -73,7 +74,7 @@ export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
       content: row.content,
     });
 
-    void navigate(`/notes/local/${row.localId}`, { state: { skipEnterAnimation: true } });
+    void navigate(ROUTES.legacy.noteLocal(row.localId), { state: { skipEnterAnimation: true } });
   }
 
   async function handleConfirmDelete() {
@@ -88,14 +89,14 @@ export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
     // navigates) with no empty-note guard — matching the existing "New
     // note" button on this same page, which is a plain Link to that route.
     onNewNote: () => {
-      void navigate('/notes/new');
+      void navigate(ROUTES.legacy.noteNew());
     },
     onDuplicate: (note) => {
       void handleDuplicateNote(note);
     },
     onShare: (note) => {
       if (note.serverId === null) return;
-      void navigate(`/notes/${String(note.serverId)}/share`);
+      void navigate(ROUTES.legacy.noteShare(note.serverId));
     },
     onTogglePin: (note) => {
       void togglePin(note);
@@ -116,10 +117,10 @@ export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
           <h1>{archived ? 'Archived' : 'Notes'}</h1>
           {archived ? null : (
             <div className="notes__header-actions">
-              <Link className="notes__search" to="/search">
+              <Link className="notes__search" to={ROUTES.legacy.search()}>
                 Search
               </Link>
-              <Link to="/notes/new">
+              <Link to={ROUTES.legacy.noteNew()}>
                 <Button variant="primary" size="sm">
                   New note
                 </Button>
@@ -157,7 +158,7 @@ export function NotesPage({ archived = false }: { archived?: boolean } = {}) {
           <p className="notes__empty-body">
             Your notes will appear here. Start with a thought, a list, or whatever is on your mind.
           </p>
-          <Link className="notes__empty-action" to="/notes/new">
+          <Link className="notes__empty-action" to={ROUTES.legacy.noteNew()}>
             <Button variant="primary">Write your first note</Button>
           </Link>
         </div>

@@ -1,0 +1,40 @@
+@layer components {
+  .status-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--gutter);
+    background: var(--color-bg);
+  }
+
+  .status-screen__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--gutter);
+    width: min(var(--content-width), 100%);
+    text-align: center;
+  }
+
+  .status-screen__text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--gap);
+  }
+
+  .status-screen__title {
+    margin: 0;
+    font-size: var(--text-lg);
+    line-height: var(--leading-lg);
+  }
+
+  .status-screen__text p {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    color: var(--color-text-muted);
+  }
+}

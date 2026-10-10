@@ -8,6 +8,7 @@ import { TextField } from '@/design-system/components/TextField/TextField';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './VerifyAccount.css';
+import { ROUTES } from '@/app/routes';
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
@@ -78,7 +79,7 @@ export function VerifyAccountPage() {
           type="button"
           variant="primary"
           onClick={() => {
-            void navigate('/login', { replace: true });
+            void navigate(ROUTES.signIn(), { replace: true });
           }}
         >
           Go to sign in
@@ -113,7 +114,7 @@ export function VerifyAccountPage() {
         </Button>
 
         <p>
-          <Link to="/login">Back to sign in</Link>
+          <Link to={ROUTES.signIn()}>Back to sign in</Link>
         </p>
       </div>
     </>

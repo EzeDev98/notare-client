@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { voiceService } from '@/features/voice/api/voiceService';
+import { gateway } from '@/core/adapter';
 
 export type AudioBlobState =
   | { status: 'idle' }
@@ -12,7 +12,7 @@ export type AudioBlobState =
  * Fetches a voice note's bytes as an authenticated `Blob` and exposes a
  * `blob:` object URL for `<audio src>` — the fallback path §1.4 sanctions
  * until the service worker (Step 11) can attach `Authorization` to a
- * native ranged `<audio>` request. See `voiceService.downloadVoiceNoteBlob`'s
+ * native ranged `<audio>` request. See `gateway.downloadClip`'s
  * own doc comment for the full reasoning.
  *
  * The object URL is revoked on unmount AND whenever `voiceNoteId` changes
@@ -35,8 +35,8 @@ export function useAudioBlob(voiceNoteId: number | null, enabled = false): Audio
 
     let cancelled = false;
 
-    voiceService
-      .downloadVoiceNoteBlob(voiceNoteId, { signal: controller.signal })
+    gateway
+      .downloadClip(voiceNoteId, { signal: controller.signal })
       .then((blob) => {
         if (cancelled) return;
         objectUrl = URL.createObjectURL(blob);

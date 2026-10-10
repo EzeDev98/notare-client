@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import type { SharedVoiceNoteSummaryResponse } from '@/features/sharedVoiceNotes/types';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
 import './SharedVoiceCard.css';
+import { ROUTES } from '@/app/routes';
 
 interface SharedVoiceCardProps {
   shared: SharedVoiceNoteSummaryResponse;
@@ -40,7 +41,7 @@ export function SharedVoiceCard({ shared, ownerName }: SharedVoiceCardProps) {
 
   return (
     <li className="shared-note-card shared-voice-card">
-      <Link className="shared-note-card__link" to={`/shared-voice/${String(shared.voiceNoteId)}`}>
+      <Link className="shared-note-card__link" to={ROUTES.legacy.sharedVoice(shared.voiceNoteId)}>
         <h2 className="shared-note-card__title">
           {filename === '' ? (
             <span className="shared-note-card__untitled">Voice note</span>

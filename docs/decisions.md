@@ -167,3 +167,15 @@ Not removed in Step 6. 23 files outside design-system/ still import @patternfly/
 ### Lint
 
 The raw <button> rule is clean on every file above today (npm run lint, 0 errors), so no eslint-disable comments were added. If a later step makes the rule stricter, add disable + TODO(step N) then.
+
+## Step 7 decisions
+
+| ID | Date | Decision | Status | Source |
+|---|---|---|---|---|
+| D-011 | 2026-10-10 | Install stays mandatory (O-14) and the install gate comes before sign-in. Decided in `src/app/startup/decideRoute.ts`; the flag is `INSTALL_MANDATORY` in `useStartup.ts`. Revisit in step 10e. | ADOPTED | Guide 7c |
+| D-012 | 2026-10-10 | No `/welcome` screen exists yet, so a signed-out visitor goes to `/sign-in`. Last open note on wide screens is not wired because nothing records it yet. | ADOPTED | Guide 7c |
+| D-013 | 2026-10-10 | Route files live in `src/app/` (routes.ts, routeConfig.tsx, router.tsx), as the build guide says. D-001 said `src/core/`; the guide wins for routes. Timings and the adapter are in `src/core/`. | ADOPTED | Guide 7a |
+| D-014 | 2026-10-10 | Old timings stay as `LEGACY_*` constants in `timings.ts` until the step that removes the behaviour (8f, U-02). Every other duration lives in `timings.ts`. | ADOPTED | Guide 7b |
+| D-015 | 2026-10-10 | One query client: stale 30s, refetch on focus, retry only transient failures (network, timeout, 5xx), at most twice. Spinners use first-load state only, never a background refetch. Rules live in `providers/queryRules.ts`. | ADOPTED | Guide 7d |
+| D-016 | 2026-10-10 | One toast host (the step 6 ToastProvider) is mounted above everything. The old `show({ message, action })` API forwards to it until its last caller moves. | ADOPTED | Guide 7e |
+| D-017 | 2026-10-10 | The adapter covers the note, voice and shared-note services only. Auth, notifications, sharing, collaboration and user lookup keep their own services. Only `src/core/adapter` may import the three note services. | ADOPTED | Guide 7f |

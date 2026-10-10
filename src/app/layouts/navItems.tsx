@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { BellIcon, FileAltIcon, MicrophoneIcon, UserIcon } from '@patternfly/react-icons';
+import { ROUTES } from '@/app/routes';
 
 export interface NavItem {
   to: string;
@@ -29,22 +30,22 @@ export interface NavItem {
  */
 export const navItems: NavItem[] = [
   {
-    to: '/notes',
+    to: ROUTES.notes(),
     label: 'Notes',
     icon: <FileAltIcon aria-hidden="true" />,
   },
   {
-    to: '/voice',
+    to: ROUTES.legacy.voice(),
     label: 'Voice',
     icon: <MicrophoneIcon aria-hidden="true" />,
   },
   {
-    to: '/notifications',
+    to: ROUTES.legacy.notifications(),
     label: 'Notifications',
     icon: <BellIcon aria-hidden="true" />,
   },
   {
-    to: '/account/sessions',
+    to: ROUTES.legacy.accountSessions(),
     label: 'Account',
     icon: <UserIcon aria-hidden="true" />,
   },

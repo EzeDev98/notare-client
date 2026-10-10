@@ -18,6 +18,7 @@ import { Button } from '@/design-system/components/Button/Button';
 import { Modal } from '@/design-system/components/Modal/Modal';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import './NotificationsPanel.css';
+import { ROUTES } from '@/app/routes';
 
 interface NotificationsPanelProps {
   onClose: () => void;
@@ -214,7 +215,7 @@ export function NotificationsPanel({
                   <div className="notifications-panel__row-main">
                     {notification.type === 'COLLABORATION_INVITED' ? (
                       <Link
-                        to="/collaborations"
+                        to={ROUTES.legacy.collaborations()}
                         className="notifications-panel__message notifications-panel__message-link"
                         onClick={onClose}
                       >

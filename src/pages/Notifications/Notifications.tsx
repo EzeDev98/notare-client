@@ -20,6 +20,7 @@ import { Modal } from '@/design-system/components/Modal/Modal';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Notifications.css';
+import { ROUTES } from '@/app/routes';
 
 export function NotificationsPage() {
   useDocumentTitle('Notifications');
@@ -257,7 +258,7 @@ export function NotificationsPage() {
                   <div className="notifications-page__row-main">
                     {notification.type === 'COLLABORATION_INVITED' ? (
                       <Link
-                        to="/collaborations"
+                        to={ROUTES.legacy.collaborations()}
                         className="notifications-page__message notifications-page__message-link"
                       >
                         {composeNotificationMessage(notification, resolveActor)}

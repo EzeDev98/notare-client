@@ -5,6 +5,7 @@ import { done } from '@/design-system/motion/motion';
 import { screenIn, screenOut, type Direction } from '@/design-system/motion/patterns';
 
 import './AnimatedRoutes.css';
+import { ROUTES } from '@/app/routes';
 
 /** 'none': swap with no animation. null: first render, nothing has happened yet. */
 type Mode = Direction | 'none' | null;
@@ -52,7 +53,7 @@ export function AnimatedRoutes({ fill = false }: { fill?: boolean }) {
   const state = location.state as { skipEnterAnimation?: boolean } | null;
   // A note opened from a note, or a hop the user did not ask for (a new note's
   // replace into its editor): an editor switch, not a page change.
-  const quiet = state?.skipEnterAnimation === true || location.pathname.startsWith('/notes/');
+  const quiet = state?.skipEnterAnimation === true || location.pathname.startsWith(`${ROUTES.notes()}/`);
 
   // The last outlet of the screen on show, kept so it can play its exit after
   // the router has already moved on.

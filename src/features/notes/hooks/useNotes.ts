@@ -2,7 +2,7 @@ import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLive
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/app/providers/auth-context';
-import { noteService } from '@/features/notes/api/noteService';
+import { gateway } from '@/core/adapter';
 import { toView, type NoteView } from '@/features/notes/local/noteMappers';
 import { noteRepository } from '@/features/notes/local/noteRepository';
 import { isAborted } from '@/lib/http/errors';
@@ -90,7 +90,7 @@ export function useNotes({ archived = false }: { archived?: boolean } = {}): Not
     const controller = new AbortController();
     setRefreshing(true);
 
-    noteService
+    gateway
       .listNotes({ page: 0, size: PAGE_SIZE, archived, signal: controller.signal })
       .then(async (page) => {
         await noteRepository.upsertSummaries(page.content, ownerId);

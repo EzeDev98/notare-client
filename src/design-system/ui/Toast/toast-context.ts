@@ -16,6 +16,14 @@ export interface ToastRequest {
   duration?: number | undefined;
 }
 
+/** The short form: `toast('Note archived.', { action: { label: 'Undo', onAction } })`. */
+export interface ToastOptions {
+  tone?: ToastTone | undefined;
+  action?: ToastAction | undefined;
+  /** Stay 6s instead of 4s. */
+  long?: boolean | undefined;
+}
+
 export interface ToastEntry {
   id: number;
   message: string;
@@ -28,7 +36,10 @@ export interface ToastEntry {
 export interface ToastContextValue {
   /** Shows a toast and returns its id. */
   show: (request: ToastRequest) => number;
-  dismiss: (id: number) => void;
+  /** The short form of `show`. Returns the toast's id. */
+  toast: (message: string, options?: ToastOptions) => number;
+  /** Closes one toast, or every open toast when no id is given. */
+  dismiss: (id?: number) => void;
 }
 
 export const ToastContext = createContext<ToastContextValue | null>(null);

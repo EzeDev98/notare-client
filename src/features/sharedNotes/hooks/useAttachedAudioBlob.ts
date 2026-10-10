@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
 
-import { sharedNoteService } from '@/features/sharedNotes/api/sharedNoteService';
+import { gateway } from '@/core/adapter';
 
 export type AudioBlobState =
-  | { status: 'loading' }
-  | { status: 'ready'; url: string }
-  | { status: 'error' };
+  { status: 'loading' } | { status: 'ready'; url: string } | { status: 'error' };
 
 /**
  * A note-attachment's audio, gated by the PARENT NOTE's grant — mirrors
@@ -16,7 +14,10 @@ export type AudioBlobState =
  * grant-gated) — the third, distinct authorization path
  * `SharedNoteService#getAttachedVoiceNoteAudio` exists for on the server.
  */
-export function useAttachedAudioBlob(noteId: number | null, voiceNoteId: number | null): AudioBlobState {
+export function useAttachedAudioBlob(
+  noteId: number | null,
+  voiceNoteId: number | null,
+): AudioBlobState {
   const [state, setState] = useState<AudioBlobState>({ status: 'loading' });
 
   useEffect(() => {
@@ -29,8 +30,8 @@ export function useAttachedAudioBlob(noteId: number | null, voiceNoteId: number 
     const controller = new AbortController();
     setState({ status: 'loading' });
 
-    sharedNoteService
-      .downloadAttachedVoiceNoteBlob(noteId, voiceNoteId, { signal: controller.signal })
+    gateway
+      .downloadSharedClip(noteId, voiceNoteId, { signal: controller.signal })
       .then((blob) => {
         objectUrl = URL.createObjectURL(blob);
         setState({ status: 'ready', url: objectUrl });

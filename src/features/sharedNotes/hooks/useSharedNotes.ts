@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
-import { sharedNoteService } from '@/features/sharedNotes/api/sharedNoteService';
+import { gateway } from '@/core/adapter';
 
 /**
  * Query key factory. A function, not a constant array, so a mutation can
@@ -16,7 +16,7 @@ export const sharedNotesKeys = {
 };
 
 /**
- * The "Shared with me" list, zero-based to match `sharedNoteService`'s own
+ * The "Shared with me" list, zero-based to match the gateway's own
  * convention (and the server's Pageable underneath it).
  *
  * `placeholderData: keepPreviousData` keeps the current page's rows on
@@ -27,7 +27,7 @@ export const sharedNotesKeys = {
 export function useSharedNotes(page = 0, size = 20) {
   return useQuery({
     queryKey: sharedNotesKeys.list(page, size),
-    queryFn: ({ signal }) => sharedNoteService.listSharedNotes({ page, size, signal }),
+    queryFn: ({ signal }) => gateway.listSharedNotes({ page, size, signal }),
     placeholderData: keepPreviousData,
   });
 }

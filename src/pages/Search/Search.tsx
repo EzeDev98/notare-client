@@ -14,8 +14,7 @@ import { TextField } from '@/design-system/components/TextField/TextField';
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './Search.css';
-
-const DEBOUNCE_MS = 300;
+import { SEARCH_DEBOUNCE_MS } from '@/core/config/timings';
 
 export function SearchPage() {
   useDocumentTitle('Search');
@@ -23,7 +22,7 @@ export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [term, setTerm] = useState(() => searchParams.get('q') ?? '');
-  const debouncedTerm = useDebouncedValue(term, DEBOUNCE_MS);
+  const debouncedTerm = useDebouncedValue(term, SEARCH_DEBOUNCE_MS);
 
   const state = useNoteSearch(debouncedTerm);
 

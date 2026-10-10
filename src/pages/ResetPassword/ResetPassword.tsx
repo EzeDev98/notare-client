@@ -14,6 +14,7 @@ import { PasswordField } from '@/design-system/components/PasswordField/Password
 import { TextField } from '@/design-system/components/TextField/TextField';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './ResetPassword.css';
+import { ROUTES } from '@/app/routes';
 
 type Step = 'request' | 'verify' | 'complete';
 
@@ -95,7 +96,7 @@ export function ResetPasswordPage() {
     const result = await reset.completeAction.run(reset.resetToken, password);
     if (result === null) return;
 
-    void navigate('/login', { replace: true, state: { passwordReset: true } });
+    void navigate(ROUTES.signIn(), { replace: true, state: { passwordReset: true } });
   }
 
   return (
@@ -197,7 +198,7 @@ export function ResetPasswordPage() {
       ) : null}
 
       <div className="reset__alt">
-        <Link to="/login">Back to sign in</Link>
+        <Link to={ROUTES.signIn()}>Back to sign in</Link>
       </div>
     </>
   );

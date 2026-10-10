@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router';
 
 import './NoteTabs.css';
+import { ROUTES } from '@/app/routes';
 
 /**
  * Three views of the same collection.
@@ -23,13 +24,13 @@ import './NoteTabs.css';
 export function NoteTabs() {
   return (
     <nav className="note-tabs" aria-label="Note views">
-      <NavLink className="note-tabs__tab" to="/notes" end>
+      <NavLink className="note-tabs__tab" to={ROUTES.notes()} end>
         Notes
       </NavLink>
-      <NavLink className="note-tabs__tab" to="/archived">
+      <NavLink className="note-tabs__tab" to={ROUTES.legacy.archived()}>
         Archived
       </NavLink>
-      <NavLink className="note-tabs__tab" to="/trash">
+      <NavLink className="note-tabs__tab" to={ROUTES.legacy.trash()}>
         Trash
       </NavLink>
     </nav>

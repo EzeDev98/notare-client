@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { RouteFallback } from '@/app/RouteFallback';
+import { ROUTES } from '@/app/routes';
 
 /**
  * Gates the authenticated application shell.
@@ -47,7 +48,7 @@ export function RequireAuth() {
        * here again, and the user is trapped.
        */
       const from = `${location.pathname}${location.search}`;
-      return <Navigate to="/login" state={{ from }} replace />;
+      return <Navigate to={ROUTES.signIn()} state={{ from }} replace />;
     }
 
     default: {

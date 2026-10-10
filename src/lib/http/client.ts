@@ -2,12 +2,11 @@ import { getAuthHooks } from '@/lib/http/authHooks';
 import { env } from '@/lib/config/env';
 import { ApiError } from '@/lib/http/errors';
 import { parseResponse } from '@/lib/http/parse';
+import { HTTP_TIMEOUT_MS } from '@/core/config/timings';
 
 /**
  * The one place this application speaks HTTP.
  */
-
-const DEFAULT_TIMEOUT_MS = 15_000;
 
 type QueryValue = string | number | boolean | undefined | (string | number)[];
 
@@ -76,7 +75,7 @@ async function request<T>(method: string, path: string, config: RequestConfig = 
   const prepared = prepareBody(config.body);
   const hooks = requiresAuth ? getAuthHooks() : null;
 
-  const timeoutSignal = AbortSignal.timeout(config.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+  const timeoutSignal = AbortSignal.timeout(config.timeoutMs ?? HTTP_TIMEOUT_MS);
   const signal = config.signal ? AbortSignal.any([config.signal, timeoutSignal]) : timeoutSignal;
 
   /**

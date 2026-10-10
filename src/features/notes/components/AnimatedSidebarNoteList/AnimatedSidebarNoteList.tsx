@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { NoteView } from '@/features/notes/local/noteMappers';
 import { SidebarNoteItem } from '@/features/notes/components/SidebarNoteItem/SidebarNoteItem';
 import './AnimatedSidebarNoteList.css';
+import { LEGACY_SIDEBAR_ANIMATION_MS as ANIMATION_MS } from '@/core/config/timings';
 
 /*
  * 640ms + cubic-bezier(0.4, 0, 0.2, 1) (Material's "standard" curve),
@@ -21,7 +22,7 @@ import './AnimatedSidebarNoteList.css';
  * this is also the duration this file's own cleanup timers wait before
  * clearing an enter/exit row's animationState.
  */
-const ANIMATION_MS = 640;
+// Value: LEGACY_SIDEBAR_ANIMATION_MS in core/config/timings.ts.
 const ANIMATION_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 /*
@@ -98,12 +99,14 @@ function isRowActive(
 interface RenderedNote {
   note: NoteView;
   animationState?: 'enter' | 'exit';
-  exitStyle?: {
-    top: number;
-    left: number;
-    width: number;
-    height: number;
-  } | undefined;
+  exitStyle?:
+    | {
+        top: number;
+        left: number;
+        width: number;
+        height: number;
+      }
+    | undefined;
 }
 
 export function AnimatedSidebarNoteList({
@@ -159,6 +162,15 @@ export function AnimatedSidebarNoteList({
     notes.map((note) => ({ note })),
   );
 
+  // The reconcile pass below needs the rows now on screen, but must run only
+  // when `notes` changes (it is the pass that changes them). A ref gives it the
+  // latest rows without making them a trigger. Declared first, so it is current
+  // when the reconcile pass runs in the same commit.
+  const renderedNotesRef = useRef(renderedNotes);
+  useLayoutEffect(() => {
+    renderedNotesRef.current = renderedNotes;
+  }, [renderedNotes]);
+
   /*
    * Reconcile `notes` (the real data) into `renderedNotes` (what's on
    * screen). Any number of rows can be added or removed in a single
@@ -173,7 +185,7 @@ export function AnimatedSidebarNoteList({
       return;
     }
 
-    const previous = renderedNotes;
+    const previous = renderedNotesRef.current;
 
     /*
      * FLIP's "First" measurement, taken before anything below changes
@@ -327,7 +339,8 @@ export function AnimatedSidebarNoteList({
 
       if (item.animationState === 'enter') {
         if (entered.has(item.note.localId)) {
-          safeAnimate(element, 
+          safeAnimate(
+            element,
             [
               { opacity: 0, transform: 'translate3d(0, -100%, 0)' },
               { opacity: 1, transform: 'translate3d(0, 0, 0)' },
@@ -340,7 +353,8 @@ export function AnimatedSidebarNoteList({
 
       if (item.animationState === 'exit') {
         if (exited.has(item.note.localId)) {
-          safeAnimate(element, 
+          safeAnimate(
+            element,
             [
               { opacity: 1, transform: 'translate3d(0, 0, 0)' },
               { opacity: 0, transform: 'translate3d(0, -100%, 0)' },
@@ -364,7 +378,8 @@ export function AnimatedSidebarNoteList({
 
       if (Math.abs(deltaY) < 0.5) continue;
 
-      safeAnimate(element, 
+      safeAnimate(
+        element,
         [
           { transform: 'translate3d(0, ' + deltaY + 'px, 0)' },
           { transform: 'translate3d(0, 0, 0)' },
@@ -423,20 +438,17 @@ export function AnimatedSidebarNoteList({
   // Only on unmount: stop any still-pending timers from firing a state
   // update on a component that's no longer there.
   useEffect(() => {
+    const timers = exitTimersRef.current;
     return () => {
-      for (const timer of exitTimersRef.current.values()) {
+      for (const timer of timers.values()) {
         window.clearTimeout(timer);
       }
-      exitTimersRef.current.clear();
+      timers.clear();
     };
   }, []);
 
   return (
-    <ul
-      ref={listRef}
-      className="app-shell__note-list"
-      role="list"
-    >
+    <ul ref={listRef} className="app-shell__note-list" role="list">
       {renderedNotes.map((item) => (
         <SidebarNoteItem
           key={item.note.localId}

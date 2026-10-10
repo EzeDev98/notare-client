@@ -31,7 +31,7 @@ function renderSharedVoiceDetail(path = '/shared-voice/7') {
 }
 
 describe('a shared voice note (recipient side)', () => {
-  it('renders the recording\'s info and opens the player', async () => {
+  it("renders the recording's info and opens the player", async () => {
     server.use(
       http.get(`${BASE}/shared-voice-notes/:voiceNoteId`, () =>
         HttpResponse.json(

@@ -18,6 +18,7 @@ import { Select } from '@/design-system/components/Select/Select';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './ShareNote.css';
+import { ROUTES } from '@/app/routes';
 
 /**
  * `/notes/:id/share` (architecture doc §4.2: "list grants, change
@@ -49,7 +50,7 @@ export function ShareNotePage() {
         <ShareNoteChrome noteId={null} />
         <div className="share-note__centre">
           <h1>Note not found</h1>
-          <Link to="/notes">Back to your notes</Link>
+          <Link to={ROUTES.notes()}>Back to your notes</Link>
         </div>
       </section>
     );
@@ -67,7 +68,7 @@ export function ShareNotePage() {
 function ShareNoteChrome({ noteId }: { noteId: number | null }) {
   return (
     <nav className="share-note__back">
-      <Link to={noteId === null ? '/notes' : `/notes/${String(noteId)}`}>← Back to note</Link>
+      <Link to={noteId === null ? ROUTES.notes() : ROUTES.note(noteId)}>← Back to note</Link>
     </nav>
   );
 }
@@ -314,7 +315,7 @@ function ShareForm({ candidates, resolveName, pending, onShare }: ShareFormProps
     return (
       <p className="share-note__no-candidates">
         Everyone who has accepted an invitation already has access. Invite someone new from{' '}
-        <Link to="/collaborations">Collaborations</Link> first, then come back here to share with
+        <Link to={ROUTES.legacy.collaborations()}>Collaborations</Link> first, then come back here to share with
         them.
       </p>
     );

@@ -2,8 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { userService } from '@/features/collaboration/api/userService';
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
-
-const SEARCH_DEBOUNCE_MS = 300;
+import { SEARCH_DEBOUNCE_MS } from '@/core/config/timings';
 
 /**
  * Debounces the raw keystrokes, not the query itself — `useQuery`'s key

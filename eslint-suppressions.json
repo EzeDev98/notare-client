@@ -201,11 +201,6 @@
       "count": 2
     }
   },
-  "src/pages/NewNote/NewNote.tsx": {
-    "no-restricted-imports": {
-      "count": 1
-    }
-  },
   "src/pages/Notes/Notes.tsx": {
     "@typescript-eslint/no-restricted-imports": {
       "count": 2

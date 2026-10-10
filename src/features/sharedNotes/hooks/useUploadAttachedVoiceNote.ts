@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { sharedNoteService } from '@/features/sharedNotes/api/sharedNoteService';
+import { gateway } from '@/core/adapter';
 import { attachedVoiceNotesKeys } from '@/features/sharedNotes/hooks/useAttachedVoiceNotes';
 
 interface UploadVariables {
@@ -12,7 +12,7 @@ interface UploadVariables {
 /**
  * Record a new voice note directly onto a SHARED note. Requires WRITE —
  * mirrors `useUploadVoiceNote` (the owner's mutation), but posts through
- * `sharedNoteService.uploadVoiceNote` (`POST /shared-notes/{noteId}/voice-notes`)
+ * `gateway.uploadSharedClip` (`POST /shared-notes/{noteId}/voice-notes`)
  * instead of the owner-only `/voice-notes` endpoint, so the server can run
  * the WRITE-grant check and the courtesy auto-share-back-to-owner (see
  * `SharedNoteServiceImpl#uploadVoiceNote`'s doc comment on the server).
@@ -26,7 +26,7 @@ export function useUploadAttachedVoiceNote(noteId: number) {
 
   return useMutation({
     mutationFn: ({ file, durationSeconds, onProgress }: UploadVariables) =>
-      sharedNoteService.uploadVoiceNote(noteId, file, {
+      gateway.uploadSharedClip(noteId, file, {
         ...(durationSeconds !== undefined ? { durationSeconds } : {}),
         ...(onProgress !== undefined ? { onProgress } : {}),
       }),

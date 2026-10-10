@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { notificationService } from '@/features/notifications/api/notificationService';
 import { notificationKeys } from '@/features/notifications/hooks/useNotifications';
+import { NOTIFICATIONS_POLL_MS } from '@/core/config/timings';
 
 /**
  * Architecture doc §2.5: "Polling only. Poll `/notifications/unread-count`
@@ -15,13 +16,13 @@ import { notificationKeys } from '@/features/notifications/hooks/useNotification
  * architecture doc's own G8 notes there is no push/SSE, so this is v1's
  * whole answer to "is there anything new."
  */
-const POLL_INTERVAL_MS = 60_000;
-
 export function useUnreadCount() {
   const query = useQuery({
     queryKey: notificationKeys.unreadCount(),
     queryFn: ({ signal }) => notificationService.getUnreadCount({ signal }),
-    refetchInterval: POLL_INTERVAL_MS,
+    refetchInterval: NOTIFICATIONS_POLL_MS,
+    // Hidden tabs stay quiet (D-14). This is React Query's default, stated so it stays that way.
+    refetchIntervalInBackground: false,
   });
 
   return query.data?.count ?? 0;

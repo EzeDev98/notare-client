@@ -14,6 +14,7 @@ import {
 } from '@/lib/time';
 import { useLongPressContextMenu } from '@/shared/hooks/useLongPressContextMenu';
 import './NoteCard.css';
+import { ROUTES } from '@/app/routes';
 
 export interface NoteCardActions {
   onTogglePin: (note: NoteView) => void;
@@ -109,11 +110,7 @@ export function NoteCard({
         className="note-card__link"
         // localId, not serverId: an offline-created note has no server id and
         // still needs to be openable.
-        to={
-          note.serverId === null
-            ? `/notes/local/${note.localId}`
-            : `/notes/${String(note.serverId)}`
-        }
+        to={ROUTES.legacy.noteOf(note)}
       >
         <h2 className="note-card__title">{displayLabel}</h2>
 

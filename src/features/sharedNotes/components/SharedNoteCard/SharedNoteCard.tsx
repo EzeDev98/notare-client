@@ -4,6 +4,7 @@ import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import type { SharedNoteSummaryResponse } from '@/features/sharedNotes/types';
 import { formatServerDateTimeAbsolute, formatServerDateTimeRelative } from '@/lib/time';
 import './SharedNoteCard.css';
+import { ROUTES } from '@/app/routes';
 
 interface SharedNoteCardProps {
   shared: SharedNoteSummaryResponse;
@@ -60,7 +61,7 @@ export function SharedNoteCard({ shared, ownerName }: SharedNoteCardProps) {
 
   return (
     <li className="shared-note-card">
-      <Link className="shared-note-card__link" to={`/shared/${String(shared.note.id)}`}>
+      <Link className="shared-note-card__link" to={ROUTES.legacy.sharedNote(shared.note.id)}>
         <h2 className="shared-note-card__title">{displayLabel}</h2>
 
         {remainder !== '' ? (

@@ -1,14 +1,17 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
+import { TOAST_LONG_MS, TOAST_MAX, TOAST_MS } from '@/core/config/timings';
+
 import { Toast } from './Toast';
-import { ToastContext, type ToastEntry, type ToastRequest } from './toast-context';
+import {
+  ToastContext,
+  type ToastEntry,
+  type ToastOptions,
+  type ToastRequest,
+} from './toast-context';
 
 import './Toast.css';
-
-const MAX_TOASTS = 3;
-const DEFAULT_MS = 4000;
-const LONG_MS = 6000;
 
 /**
  * Shows toasts in a portal at the bottom of the screen. At most 3 at a time:
@@ -22,21 +25,44 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     const id = nextId.current;
     nextId.current += 1;
     const tone = request.tone ?? 'neutral';
-    const duration = request.duration ?? (tone === 'error' || request.action ? LONG_MS : DEFAULT_MS);
-    const entry: ToastEntry = { id, message: request.message, tone, action: request.action, duration, closing: false };
-    setEntries((list) => [...list, entry].slice(-MAX_TOASTS));
+    const duration =
+      request.duration ?? (tone === 'error' || request.action ? TOAST_LONG_MS : TOAST_MS);
+    const entry: ToastEntry = {
+      id,
+      message: request.message,
+      tone,
+      action: request.action,
+      duration,
+      closing: false,
+    };
+    setEntries((list) => [...list, entry].slice(-TOAST_MAX));
     return id;
   }, []);
 
-  const dismiss = useCallback((id: number) => {
-    setEntries((list) => list.map((entry) => (entry.id === id ? { ...entry, closing: true } : entry)));
+  const toast = useCallback(
+    (message: string, options: ToastOptions = {}): number =>
+      show({
+        message,
+        tone: options.tone,
+        action: options.action,
+        duration: options.long ? TOAST_LONG_MS : undefined,
+      }),
+    [show],
+  );
+
+  const dismiss = useCallback((id?: number) => {
+    setEntries((list) =>
+      list.map((entry) =>
+        id === undefined || entry.id === id ? { ...entry, closing: true } : entry,
+      ),
+    );
   }, []);
 
   const remove = useCallback((id: number) => {
     setEntries((list) => list.filter((entry) => entry.id !== id));
   }, []);
 
-  const value = useMemo(() => ({ show, dismiss }), [show, dismiss]);
+  const value = useMemo(() => ({ show, toast, dismiss }), [show, toast, dismiss]);
 
   return (
     <ToastContext value={value}>

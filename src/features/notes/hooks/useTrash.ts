@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { useToast } from '@/app/providers/toast-context';
-import { noteService } from '@/features/notes/api/noteService';
+import { gateway } from '@/core/adapter';
 import { toView, type NoteView } from '@/features/notes/local/noteMappers';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import { isAborted } from '@/lib/http/errors';
@@ -74,7 +74,9 @@ async function mapWithConcurrency<T>(
   limit: number,
   task: (item: T) => Promise<void>,
 ): Promise<PromiseSettledResult<void>[]> {
-  const results: PromiseSettledResult<void>[] = new Array(items.length) as PromiseSettledResult<void>[];
+  const results: PromiseSettledResult<void>[] = new Array(
+    items.length,
+  ) as PromiseSettledResult<void>[];
   let nextIndex = 0;
 
   async function worker() {
@@ -126,7 +128,7 @@ export function useTrash(): TrashStateValue {
     const controller = new AbortController();
     setRefreshing(true);
 
-    noteService
+    gateway
       .listTrash({ page: 0, size: PAGE_SIZE, signal: controller.signal })
       .then(async (page) => {
         await noteRepository.upsertTrashedNotes(page.content, ownerId);
@@ -177,7 +179,7 @@ export function useTrash(): TrashStateValue {
       if (written.serverId === null) return;
 
       try {
-        const updated = await noteService.restoreNote(written.serverId);
+        const updated = await gateway.restoreNote(written.serverId);
         await noteRepository.applyServerAck(
           note.localId,
           { version: updated.version, updatedAt: updated.updatedAt },
@@ -225,7 +227,7 @@ export function useTrash(): TrashStateValue {
       }
 
       try {
-        await noteService.permanentlyDeleteNote(row.serverId);
+        await gateway.purgeNote(row.serverId);
       } catch {
         toast.show({ message: 'Could not delete that note. You need a connection for this.' });
         return;
@@ -258,19 +260,23 @@ export function useTrash(): TrashStateValue {
     async (selected: NoteView[]) => {
       if (selected.length === 0) return;
 
-      const results = await mapWithConcurrency(selected, DELETE_FOREVER_CONCURRENCY, async (note) => {
-        const row = await noteRepository.getByLocalId(note.localId);
-        if (!row) return;
+      const results = await mapWithConcurrency(
+        selected,
+        DELETE_FOREVER_CONCURRENCY,
+        async (note) => {
+          const row = await noteRepository.getByLocalId(note.localId);
+          if (!row) return;
 
-        if (row.serverId !== null) {
-          await noteService.permanentlyDeleteNote(row.serverId);
-        }
+          if (row.serverId !== null) {
+            await gateway.purgeNote(row.serverId);
+          }
 
-        // hardDelete, not setDeleted — same reasoning as deleteForever's
-        // own comment: a server-forgotten note can never be reconciled,
-        // so the local row would only linger as a ghost.
-        await noteRepository.hardDelete(note.localId);
-      });
+          // hardDelete, not setDeleted — same reasoning as deleteForever's
+          // own comment: a server-forgotten note can never be reconciled,
+          // so the local row would only linger as a ghost.
+          await noteRepository.hardDelete(note.localId);
+        },
+      );
 
       const failedCount = results.filter((result) => result.status === 'rejected').length;
       const succeededCount = results.length - failedCount;

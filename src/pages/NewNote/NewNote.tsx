@@ -2,12 +2,13 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useAuth } from '@/app/providers/auth-context';
-import { noteService } from '@/features/notes/api/noteService';
+import { gateway } from '@/core/adapter';
 import { createLocalNote, fromNoteResponse } from '@/features/notes/local/noteMappers';
 import { isEmptyNote } from '@/features/notes/local/isEmptyNote';
 import { noteRepository } from '@/features/notes/local/noteRepository';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './NewNote.css';
+import { ROUTES } from '@/app/routes';
 
 export function NewNotePage() {
   const navigate = useNavigate();
@@ -39,15 +40,10 @@ export function NewNotePage() {
       const existingEmpty = rows.find((row) => isEmptyNote(row));
 
       if (existingEmpty) {
-        void navigate(
-          existingEmpty.serverId !== null
-            ? `/notes/${String(existingEmpty.serverId)}`
-            : `/notes/local/${existingEmpty.localId}`,
-          {
-            replace: true,
-            state: { skipEnterAnimation: true },
-          },
-        );
+        void navigate(ROUTES.legacy.noteOf(existingEmpty), {
+          replace: true,
+          state: { skipEnterAnimation: true },
+        });
         return;
       }
 
@@ -70,11 +66,11 @@ export function NewNotePage() {
        * picks it up exactly as it always has.
        */
       try {
-        const created = await noteService.createNote({ content: '' });
+        const created = await gateway.createNote({ content: '' });
         const row = fromNoteResponse(created);
         await noteRepository.put(row);
 
-        void navigate(`/notes/${String(created.id)}`, {
+        void navigate(ROUTES.note(created.id), {
           replace: true,
           state: { skipEnterAnimation: true },
         });
@@ -86,7 +82,7 @@ export function NewNotePage() {
         };
         await noteRepository.put(row);
 
-        void navigate(`/notes/local/${row.localId}`, {
+        void navigate(ROUTES.legacy.noteLocal(row.localId), {
           replace: true,
           state: { skipEnterAnimation: true },
         });

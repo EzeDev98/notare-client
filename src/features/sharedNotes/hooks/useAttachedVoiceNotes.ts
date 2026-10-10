@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { sharedNoteService } from '@/features/sharedNotes/api/sharedNoteService';
+import { gateway } from '@/core/adapter';
 
 export const attachedVoiceNotesKeys = {
   all: ['shared-notes', 'attached-voice-notes'] as const,
@@ -18,7 +18,7 @@ export const attachedVoiceNotesKeys = {
 export function useAttachedVoiceNotes(noteId: number | null) {
   return useQuery({
     queryKey: attachedVoiceNotesKeys.byNote(noteId ?? -1),
-    queryFn: ({ signal }) => sharedNoteService.listAttachedVoiceNotes(noteId as number, { signal }),
+    queryFn: ({ signal }) => gateway.listSharedClips(noteId as number, { signal }),
     enabled: noteId !== null,
   });
 }

@@ -29,7 +29,8 @@ export const reduced = (): boolean => forced ?? reducedQuery();
 export type Frame = { opacity?: number | string; transform?: string };
 
 export type Timing = {
-  duration: '--motion-hover' | '--motion-fast' | '--motion-base' | '--motion-fly';
+  duration:
+    '--motion-hover' | '--motion-fast' | '--motion-base' | '--motion-fly' | '--motion-reveal';
   easing: '--ease-standard' | '--ease-out';
   /** Milliseconds. Ignored under reduced motion. */
   delay?: number;

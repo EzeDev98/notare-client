@@ -44,6 +44,8 @@ export interface TrashedNoteResponse {
 
 export interface CreateNoteRequest {
   content?: string;
+  /** The id this device gave the note. The server may ignore it today (step 17b). */
+  clientId?: string;
 }
 
 /**

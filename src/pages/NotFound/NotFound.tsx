@@ -1,19 +1,9 @@
-import { Link } from 'react-router';
-
-import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
+import { NotFoundScreen } from '@/app/NotFoundScreen';
 
 /**
- * Deep linking and PWA reloads make this reachable more often than it looks:
- * any URL the router does not match lands here, including a stale bookmark to
- * a note that has since been deleted.
+ * The `*` route. Deep linking and PWA reloads make this reachable more often
+ * than it looks: any URL the router does not match lands here.
  */
 export function NotFoundPage() {
-  useDocumentTitle('Page not found');
-
-  return (
-    <main>
-      <h1>Page not found</h1>
-      <Link to="/notes">Back to your notes</Link>
-    </main>
-  );
+  return <NotFoundScreen />;
 }

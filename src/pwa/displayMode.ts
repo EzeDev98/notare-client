@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { STANDALONE_RECHECK_LONG_MS, STANDALONE_RECHECK_MS } from '@/core/config/timings';
 
 /**
  * Step 1a. Detects whether the app is currently running as an installed,
@@ -74,12 +75,12 @@ export function isStandaloneDisplayMode(): boolean {
  * How long to wait before re-checking a synchronous initial read that may
  * have been a transient false negative — see the RELOAD BUG comment on
  * `useIsStandalone` below. Comfortably under `useBootPhase`'s
- * `SPLASH_MIN_MS` (1000ms): the point is for this correction to land WHILE
+ * `SPLASH_MIN_MS`: the point is for this correction to land WHILE
  * still on the splash screen in the common case, so a person reloading an
  * already-installed app never sees the mandatory InstallPage flash at all,
  * rather than merely recovering from it a moment after it appeared.
  */
-const STANDALONE_RECHECK_MS = 400;
+// Value: core/config/timings.ts.
 
 /**
  * Second, later checkpoint alongside STANDALONE_RECHECK_MS — some reloads
@@ -88,7 +89,7 @@ const STANDALONE_RECHECK_MS = 400;
  * checkpoint is kept as a second chance rather than assuming 400ms always
  * covers it.
  */
-const STANDALONE_RECHECK_LONG_MS = 1500;
+// Value: core/config/timings.ts.
 
 /**
  * Reactive form of the above, for components that need to re-render if

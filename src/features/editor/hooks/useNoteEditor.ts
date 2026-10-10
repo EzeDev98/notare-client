@@ -2,12 +2,8 @@ import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLive
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import { useAutoSaveScheduler } from '@/features/editor/hooks/useAutoSaveScheduler';
-import {
-  hasPendingWork,
-  initialSaveState,
-  saveReducer,
-} from '@/features/editor/saveState';
-import { noteService } from '@/features/notes/api/noteService';
+import { hasPendingWork, initialSaveState, saveReducer } from '@/features/editor/saveState';
+import { gateway } from '@/core/adapter';
 import { fromNoteResponse } from '@/features/notes/local/noteMappers';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import type { NoteRow } from '@/features/notes/local/noteRow';
@@ -208,8 +204,9 @@ export function useNoteEditor(initialRow: NoteRow) {
       if (current.serverId === null) {
         // Join an in-flight creation rather than starting a second one.
         creatingRef.current ??= (async () => {
-          const created = await noteService.createNote({
+          const created = await gateway.createNote({
             content: current.content,
+            clientId: current.clientId,
           });
 
           /*
@@ -253,7 +250,7 @@ export function useNoteEditor(initialRow: NoteRow) {
           creatingRef.current = null;
         }
       } else {
-        const updated = await noteService.autoSaveNote(current.serverId, {
+        const updated = await gateway.autoSaveNote(current.serverId, {
           content: current.content,
         });
 
