@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- TODO(step 11): delete or split, listed in docs/decisions.md */
 import {
   type AnimationEvent,
   type CSSProperties,

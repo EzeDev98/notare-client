@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- TODO(step 12): delete or split, listed in docs/decisions.md */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { MicrophoneIcon, PaperPlaneIcon, PauseIcon, PlayIcon, TrashIcon } from '@patternfly/react-icons';
 

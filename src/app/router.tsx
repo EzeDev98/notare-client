@@ -195,6 +195,19 @@ export const routes = [
     ],
   },
 
+  // Step 2i, dev only: the tokens page. Dropped from the production build; replaced by the gallery in step 6.
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: 'dev/tokens',
+          lazy: async () => {
+            const { TokensPage } = await import('@/dev/tokens/TokensPage');
+            return { Component: TokensPage };
+          },
+        },
+      ]
+    : []),
+
   {
     path: '*',
     lazy: async () => {

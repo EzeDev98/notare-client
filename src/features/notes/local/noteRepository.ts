@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- TODO(step 8c): delete or split, listed in docs/decisions.md */
 import { db } from '@/features/notes/local/database';
 import {
   flag,

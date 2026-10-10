@@ -43,7 +43,7 @@ export default tseslint.config(
       parserOptions: {
         // Finds the right tsconfig per file automatically, so src/ and
         // vite.config.ts each get linted against their own settings.
-        projectService: true,
+        projectService: { allowDefaultProject: ['vite-plugins/*.ts'] },
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -265,6 +265,85 @@ export default tseslint.config(
           ],
         },
       ],
+    },
+  },
+
+  // ==========================================================================
+  // DESIGN SYSTEM RULES (3C, 3D) — see docs/decisions.md.
+  //
+  // Flat config REPLACES a rule's options when a later block matches the same
+  // file, it does not merge them. So each rule below appears in as few blocks
+  // as possible, and no-restricted-syntax lists every selector a file needs.
+  // ==========================================================================
+
+  // PatternFly and react-icons: only the design-system ui/ folder may touch PF.
+  // Uses the typescript-eslint version so it does not clash with the layer
+  // rules above, which use the core no-restricted-imports.
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['src/design-system/ui/**'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@patternfly/react-icons', '@patternfly/react-icons/**'],
+              message: 'Icons are Lucide only (A-10). Import from lucide-react.',
+            },
+            {
+              group: ['@patternfly/*', '@patternfly/**'],
+              message: 'PatternFly is wrapped. Import from @/design-system, never @patternfly/* directly.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // No raw <button> outside the design-system ui/ folder.
+  {
+    files: ['src/**/*.tsx'],
+    ignores: ['src/design-system/ui/**', '**/*.test.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "JSXOpeningElement[name.name='button']",
+          message: 'Use <Button> or <IconButton> from @/design-system. Raw <button> lives in design-system/ui only.',
+        },
+      ],
+    },
+  },
+
+  // Same ban, plus: no timers in features and pages. Timings go through the
+  // motion module (step 4) and the config file (step 7).
+  {
+    files: ['src/features/**/*.tsx', 'src/pages/**/*.tsx'],
+    ignores: ['**/*.test.tsx'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "JSXOpeningElement[name.name='button']",
+          message: 'Use <Button> or <IconButton> from @/design-system. Raw <button> lives in design-system/ui only.',
+        },
+        {
+          selector:
+            "CallExpression[callee.name=/^(setTimeout|requestAnimationFrame)$/], CallExpression[callee.object.name='window'][callee.property.name=/^(setTimeout|requestAnimationFrame)$/]",
+          message: 'No setTimeout or requestAnimationFrame in features or pages. Use the motion module and the timing config.',
+        },
+      ],
+    },
+  },
+
+  // File size (3D). Files over the limit carry a disable comment with a
+  // TODO(step N); the rest of the legacy ones are in eslint-suppressions.json.
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    ignores: ['**/*.test.{ts,tsx}'],
+    rules: {
+      'max-lines': ['error', { max: 210, skipBlankLines: true, skipComments: true }],
     },
   },
 

@@ -1,0 +1,49 @@
+src/app/layouts/AppLayout.css:467:     #f2f2f2 / #e7e7e7) so it reads as its own control, not part of the
+src/app/layouts/AppLayout.css:843:     * Unset before, so this fell through to body's --color-bg (#FAFAF9, a
+src/app/layouts/AppLayout.css:845:     * --color-surface (pure white, #FFFFFF) right next to it. Same token
+src/app/layouts/AppLayout.css:854:     * straight back through to #FAFAF9 — exactly the flicker this rule
+src/app/layouts/AppLayout.css:859:     * var(--color-surface), not a literal #FFFFFF — the theme-aware token
+src/app/layouts/AppLayout.css:860:     * still resolves to #FFFFFF in light mode (which is the ask), but
+src/app/layouts/AppLayout.css:861:     * also correctly becomes #292524 under [data-theme='dark'] instead of
+src/app/layouts/AppLayout.css:1178:       * var(--color-surface), not a hardcoded #FAFAF9 — the divider's
+src/app/layouts/AppLayout.css:1582:       * hardcoded #FFFFFF — no visible change there), --color-surface's
+src/app/layouts/AppLayout.css:1852:  color: #FAFAF9 !important;
+src/app/layouts/AppLayout.css:1866:  color: #FAFAF9 !important;
+src/app/layouts/AppLayout.css:1874: * #FFFFFF, though — it was showing --color-accent's lavender. Same fix,
+src/app/layouts/AppLayout.css:1875: * same reason it needs !important, just for the active item and #FFFFFF
+src/app/layouts/AppLayout.css:1876: * specifically rather than the resting items' #FAFAF9.
+src/app/layouts/AppLayout.css:1879:  color: #FFFFFF !important;
+src/app/layouts/AppLayout.css:1884:  color: #FFFFFF !important;
+src/app/layouts/AppLayout.css:1891: * --color-icon's muted grey (#a8a29e), noticeably dimmer than the
+src/app/layouts/AppLayout.css:1908:  color: #FFFFFF !important;
+src/app/layouts/AppLayout.css:1912:  color: #FFFFFF !important;
+src/features/notes/components/SidebarNoteItem/SidebarNoteItem.css:47:    /* #EDEDEC — same literal colour as the active row's own background
+src/features/notes/components/SidebarNoteItem/SidebarNoteItem.css:50:    border-block-end: var(--border-width) solid #EDEDEC;
+src/features/notes/components/SidebarNoteItem/SidebarNoteItem.css:106:     * automatically in both themes: #ededec in light mode (identical to
+src/features/notes/components/SidebarNoteItem/SidebarNoteItem.css:107:     * the old hardcoded #EDEDEC — no visible change there), #33302c in
+src/features/notifications/components/NotificationsPanel/NotificationsPanel.css:228:    color: #ffffff !important;
+src/features/notifications/components/NotificationsPanel/NotificationsPanel.css:229:    background: #16a34a;
+src/features/notifications/components/NotificationsPanel/NotificationsPanel.css:241:    background: #15803d;
+src/features/notifications/components/NotificationsPanel/NotificationsPanel.css:250:    color: #ffffff !important;
+src/features/notifications/components/NotificationsPanel/NotificationsPanel.css:251:    background: #dc2626;
+src/pages/Notifications/Notifications.css:190:  color: #166534;
+src/pages/Notifications/Notifications.css:191:  background: #dcfce7;
+src/pages/Notifications/Notifications.css:192:  border-color: #bbf7d0;
+src/pages/Notifications/Notifications.css:196:  background: #bbf7d0;
+src/pages/Notifications/Notifications.css:202:  color: #b91c1c;
+src/pages/Notifications/Notifications.css:203:  background: #fee2e2;
+src/pages/Notifications/Notifications.css:204:  border-color: #fecaca;
+src/pages/Notifications/Notifications.css:208:  background: #fecaca;
+src/pages/InviteCollaborator/InviteCollaborator.css:43:  color: var(--text-secondary, #6b7280);
+src/pages/InviteCollaborator/InviteCollaborator.css:50:  color: var(--text-secondary, #6b7280);
+src/pages/InviteCollaborator/InviteCollaborator.css:56:  color: var(--color-danger, #dc2626);
+src/design-system/components/ThemeToggle/ThemeToggle.css:35:       (#e0f0ff), which reads as an unrelated color floating on top of
+src/design-system/components/ThemeToggle/ThemeToggle.css:67:       (--pf-v6-c-toggle-group__button--BackgroundColor: #ffffff), which is
+src/design-system/components/ThemeToggle/ThemeToggle.css:99:    background-color: #ffffff;
+src/design-system/components/ThemeToggle/ThemeToggle.css:111:   * #FAFAF9 (matching the folders panel's own resting nav icons), and
+src/design-system/components/ThemeToggle/ThemeToggle.css:114:   * the name of — goes to #FFFFFF, the same one-shade-brighter
+src/design-system/components/ThemeToggle/ThemeToggle.css:119:    color: #FAFAF9 !important;
+src/design-system/components/ThemeToggle/ThemeToggle.css:123:    color: #FFFFFF !important;
+src/design-system/components/ThemeToggle/ThemeToggle.css:127:   * The :focus rule above (line 98) forces a solid #ffffff background
+src/design-system/components/ThemeToggle/ThemeToggle.css:138:   * #1c1917 is this app's own darkest token value (dark.css's
+src/design-system/components/ThemeToggle/ThemeToggle.css:142:    color: #1c1917 !important;

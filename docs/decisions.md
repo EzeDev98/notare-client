@@ -13,6 +13,10 @@ Statuses: AGREED, ADOPTED, BUILT, PROPOSED, OPEN, REJECTED.
 | D-002 | 2026-10-09 | Transcription provider is Deepgram (server commit ecdad4f). Closes the provider half of O-23. | ADOPTED | Server code |
 | D-003 | 2026-10-09 | `POST /admin/database/wipe` exists only when `app.admin.wipe-enabled` is true (false by default, true in dev); the default secret is removed. | ADOPTED | Guide 1b |
 | D-004 | 2026-10-09 | `NOTARE-SERVER.md` was partly stale; where doc and code differ, the code wins (B-20). | ADOPTED | Master 0, B-20 |
+| D-005 | 2026-10-10 | Tokens follow Ahorra's file: same names, raw `--p-*` palette, `light-dark()` in the semantic layer, `@font-face` in its own `fonts.css` with `font-display: block`. | ADOPTED | Guide 2b to 2f, Ahorra `tokens.css` |
+| D-006 | 2026-10-10 | `bridge.css` maps both PatternFly layers (base `--100` tokens and semantic `--default` tokens), with no component styling and no `!important` (master 4.5). Ahorra's `!important` overrides are not adopted. Warning and information use the brand colour. | ADOPTED | Guide 2g, master 4.5 |
+| D-007 | 2026-10-10 | `reset.css` and `icons.css` are kept in `src/design-system/tokens/` (guide 2h would delete them, but they hold box-sizing, page-scroll and icon-size rules the app needs). | ADOPTED | Guide 2h |
+| D-008 | 2026-10-10 | The old z-index scale (overlay 1000, modal 1010, popover 1050, toast 1100) stays in `legacy-aliases.css`; the new 80 / 90 / 100 / 120 scale takes over when the layout files are rebuilt. | ADOPTED | Guide 2h |
 
 ## Decisions from the Q&A round (master 3.1)
 
@@ -51,7 +55,7 @@ Answered now means the owner choice is recorded here. Any other row keeps the ma
 | O-07 | Pinned notes in v1 | Include | ADOPTED | answered |
 | O-08 | Who sees remote cursor names | Editors see names; Viewers see avatars only | PROPOSED | Step 15 |
 | O-09 | Logo and app icon | Supplied files exactly | AGREED | answered |
-| O-10 | Accent vs logo violet (`#6D28D9`) | Keep `#6B5BB5` unless you want the brand to match the logo | OPEN | Step 2 |
+| O-10 | Accent vs logo violet (`#6D28D9`) | Keep `#6B5BB5`. The logo violet stays on the one button that uses it, through `--color-logo` in `legacy-aliases.css` | ADOPTED | answered |
 | O-11 | Banners push editor content down | Fixed-height slot under the header, or overlay strip | OPEN | Step 5 |
 | O-12 | List row title 16/24 vs body 14/20 | Row title 16/24, preview 14/20 | PROPOSED | Step 5 |
 | O-13 | Two-pane threshold | 800px container width | AGREED | answered |
@@ -89,3 +93,21 @@ Files and code scheduled for deletion (add to this list as steps find more):
 
 - `src/app/layouts/AppLayout.tsx` (step 11)
 - `src/design-system/legacy-aliases.css`, created in step 2 (step 14)
+- `src/design-system/tokens/reset.css`, replaced by a Notare reset (decide at step 3)
+- `src/design-system/tokens/icons.css`, replaced when icons move to Lucide (step 6)
+- `src/dev/tokens/`, the tokens page, replaced by the gallery (step 6)
+- Hex values still in component CSS: listed in `docs/baseline-hex.txt`; each file is cleaned when its screen is rebuilt (steps 6 to 14)
+
+## Step 3 lint rules
+
+- D-009: Stylelint has no `extends`; rules ported from Ahorra. Ahorra's `ignoreMediaFeatureNames` was inverted; Notare uses `{ px: ['/.*/'] }`. Legacy CSS is listed in `LEGACY` in `stylelint.config.js` (35 files). A file leaves the list when its screen is rebuilt (steps 6 to 14); the list must be empty at step 14.
+- D-010: ESLint legacy violations are bulk-suppressed in `eslint-suppressions.json` (baseline lint errors, max-lines, PF imports and raw buttons in old components). Run `npx eslint --prune-suppressions` after each rebuild step so the file shrinks. Never run `--suppress-all` again to hide new errors.
+- `NoteDetail.css` was missing the closing brace of its `@layer pages` block; fixed in step 3.
+
+### max-lines disabled in the file (3D)
+
+| File | Lines | Removal |
+| --- | --- | --- |
+| src/app/layouts/AppLayout.tsx | ~1,570 | Deleted in step 11 |
+| src/features/notes/local/noteRepository.ts | ~650 | Split in step 8c |
+| src/features/voice/components/VoiceRecorder/VoiceRecorder.tsx | ~440 | Deleted in step 12 |

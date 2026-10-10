@@ -1,0 +1,72 @@
+/* One family, one weight, no underline, no outline. Values come from tokens.css only.
+   Reduced motion is NOT handled here; it lives in the motion module (U-15). */
+@layer base {
+  body {
+    min-height: 100dvh;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-family);
+    font-weight: var(--font-weight);
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Browsers and PatternFly default these to bold. */
+  h1, h2, h3, h4, h5, h6, strong, b, th {
+    font-weight: var(--font-weight);
+  }
+
+  a, a:hover, a:focus, a:active, a:visited,
+  button, button:hover, button:focus, button:active {
+    text-decoration: none;
+  }
+
+  a, button {
+    color: inherit;
+    font-family: inherit;
+    font-weight: var(--font-weight);
+  }
+
+  /* Inputs are 16px so iOS Safari does not zoom on focus. */
+  input, select, textarea {
+    font-family: inherit;
+    font-weight: var(--font-weight);
+    font-size: var(--text-md);
+    line-height: var(--leading-md);
+  }
+
+  ::placeholder {
+    color: var(--color-text-muted);
+    opacity: 1;
+  }
+
+  /* No outline anywhere. Keyboard focus is a brand border plus a soft ring instead. */
+  *, *::before, *::after {
+    outline: none;
+  }
+
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    border-color: var(--focus-border);
+    box-shadow: 0 0 0 var(--focus-ring-size) var(--focus-ring-color);
+  }
+
+  /* Headings focused by code (route changes) show no ring. */
+  [tabindex='-1']:focus-visible {
+    box-shadow: none;
+  }
+
+  input[type='search']::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  /* The page behind everything (overscroll, rubber-band) follows the theme. */
+  :root {
+    background: var(--color-bg);
+  }
+
+  /* A screen change slides 16px sideways; clipping sideways overflow stops the scroll indicators flashing. */
+  html, body {
+    overflow-x: clip;
+  }
+}
