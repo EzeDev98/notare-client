@@ -79,6 +79,14 @@ export const CLIP_MAX_BYTES = 20 * 1024 * 1024;
 /** Most characters in one note. */
 export const NOTE_MAX_CHARS = 20_000;
 
+// --- Note status (features/notes/status) ------------------------------------
+
+/** "Saving on this device" shows for this long after a change. */
+export const SAVING_LOCAL_MS = 700;
+
+/** "Synced" can appear this long after a change, once the server has it. */
+export const SYNCED_AFTER_MS = 1_700;
+
 /** The length counter appears from this many characters. */
 export const NOTE_COUNTER_FROM = 19_000;
 
@@ -101,10 +109,3 @@ export const LEGACY_NOTE_LIFECYCLE_DELAY_MS = 220;
 
 /** Old single-toast provider. Goes when PatternFly-era components retire (decisions.md, 6e). */
 export const LEGACY_TOAST_MS = 8_000;
-
-/** Editor autosave: quiet period and ceiling. Deleted in step 8f (M-10). */
-export const LEGACY_AUTOSAVE_DEBOUNCE_MS = 120_000;
-export const LEGACY_AUTOSAVE_MAX_WAIT_MS = 300_000;
-
-/** Sync slow poll. Deleted in step 8f; sync becomes event-driven. */
-export const LEGACY_SYNC_POLL_MS = 60_000;

@@ -1,3 +1,4 @@
+import { canArchive, canPin } from '@/features/notes/permissions';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import type {
   NoteResponse,
@@ -34,12 +35,39 @@ export function newLocalId(): string {
   return crypto.randomUUID();
 }
 
+/**
+ * The version 4 fields a row keeps when the server's copy is applied over it.
+ * Without this, refreshing a note from the server would drop them.
+ */
+function keepLocalFields(
+  existing: NoteRow | undefined,
+): Pick<NoteRow, 'role'> & Partial<Pick<NoteRow, 'purgeAt' | 'ownerName' | 'bodyState'>> {
+  const purgeAt = existing?.purgeAt;
+  const ownerName = existing?.ownerName;
+  const bodyState = existing?.bodyState;
+  return {
+    role: existing?.role ?? 'owner',
+    ...(purgeAt === undefined ? {} : { purgeAt }),
+    ...(ownerName === undefined ? {} : { ownerName }),
+    ...(bodyState === undefined ? {} : { bodyState }),
+  };
+}
+
+/**
+ * The only way a row gets syncState 'synced' (step 8g, D-05): the server
+ * has the note (it has a serverId) AND nothing local is waiting to be sent.
+ * A note with no serverId is never synced, whatever else is true.
+ */
+export function syncStateFor(serverId: number | null, clean: boolean): NoteRow['syncState'] {
+  return clean && serverId !== null ? 'synced' : 'pending';
+}
+
 /** Builds a row for a note that exists only locally. */
 export function createLocalNote(
   ownerId: number | null,
-  fields: { content?: string } = {},
+  fields: { content?: string; id?: string } = {},
 ): NoteRow {
-  const localId = newLocalId();
+  const localId = fields.id ?? newLocalId();
 
   return {
     localId,
@@ -66,6 +94,7 @@ export function createLocalNote(
     dirty: 1,
     syncState: 'pending',
     localUpdatedAt: Date.now(),
+    role: 'owner',
   };
 }
 
@@ -90,10 +119,12 @@ export function isSameRow(existing: NoteRow, next: NoteRow): boolean {
  * caller that has newer local edits must not use this — see 7F.
  */
 export function fromNoteResponse(note: NoteResponse, existing?: NoteRow): NoteRow {
+  // One id for a note that is new here: localId and clientId are the same value.
+  const localId = existing?.localId ?? newLocalId();
   return {
-    localId: existing?.localId ?? newLocalId(),
+    localId,
     serverId: note.id,
-    clientId: existing?.clientId ?? newLocalId(),
+    clientId: existing?.clientId ?? localId,
     content: note.content ?? '',
     pinned: flag(note.pinned),
     archived: flag(note.archived),
@@ -115,6 +146,7 @@ export function fromNoteResponse(note: NoteResponse, existing?: NoteRow): NoteRo
     dirty: 0,
     syncState: 'synced',
     localUpdatedAt: existing?.localUpdatedAt ?? Date.now(),
+    ...keepLocalFields(existing),
     // Preserve the existing local ordering when a note is merely read/refreshed.
     // Opening a note is not a local mutation and must not move it to the top.
     // A genuinely new note still receives Date.now().
@@ -132,10 +164,11 @@ export function fromNoteSummary(
   ownerId: number | null,
   existing?: NoteRow,
 ): NoteRow {
+  const localId = existing?.localId ?? newLocalId();
   return {
-    localId: existing?.localId ?? newLocalId(),
+    localId,
     serverId: summary.id,
-    clientId: existing?.clientId ?? newLocalId(),
+    clientId: existing?.clientId ?? localId,
     content: existing?.content ?? '',
     pinned: flag(summary.pinned),
     archived: flag(summary.archived),
@@ -164,6 +197,7 @@ export function fromNoteSummary(
     // timestamp so reading a note does not move it to the top of the list.
     // Only a genuinely new local row gets a fresh timestamp here.
     localUpdatedAt: existing?.localUpdatedAt ?? Date.now(),
+    ...keepLocalFields(existing),
   };
 }
 
@@ -252,8 +286,9 @@ export function toView(row: NoteRow): NoteView {
      * have to know that, and `pinned === 1` in JSX would be the encoding
      * leaking into the view.
      */
-    pinned: row.pinned === 1,
-    archived: row.archived === 1,
+    // Pin and archive are the owner's private view state: never applied to a shared note (8k).
+    pinned: row.pinned === 1 && canPin(row.role),
+    archived: row.archived === 1 && canArchive(row.role),
     version: row.version,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,

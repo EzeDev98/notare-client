@@ -62,7 +62,7 @@ Answered now means the owner choice is recorded here. Any other row keeps the ma
 | O-14 | Install step mandatory or skippable | Mandatory only if the app cannot work uninstalled; else "Continue in browser" | OPEN | Step 10 |
 | O-15 | PIN on device or with account | Device only (app must open offline) | AGREED | answered |
 | O-16 | How the "10 empty notes" appeared | Owner describes timing, offline or online, cache clear | OPEN | Step 8 |
-| O-17 | Clips recorded on device first, uploaded later | Confirm; decides local model and upload contract | PROPOSED | Step 8 |
+| O-17 | Clips recorded on device first, uploaded later | Confirm; decides local model and upload contract | AGREED | Step 8 |
 | O-18 | Legal copy (Terms, Privacy) is placeholder | Adapt Ahorra's text; lawyer review before release | OPEN | Step 13 |
 | O-19 | Onboarding card mentions `#` formatting | Reword | PROPOSED | Step 5 |
 | O-20 | Placeholder text | "Start writing" in editor; longer line only in an empty state | PROPOSED | Step 12 |
@@ -109,7 +109,7 @@ Files and code scheduled for deletion (add to this list as steps find more):
 | File | Lines | Removal |
 | --- | --- | --- |
 | src/app/layouts/AppLayout.tsx | ~1,570 | Deleted in step 11 |
-| src/features/notes/local/noteRepository.ts | ~650 | Split in step 8c |
+| src/features/notes/local/noteRepository.ts | ~650 | Split in step 8c (done; the file is now a re-export, delete it after one release) |
 | src/features/voice/components/VoiceRecorder/VoiceRecorder.tsx | ~440 | Deleted in step 12 |
 
 ## Stray motion (step 4e)
@@ -179,3 +179,12 @@ The raw <button> rule is clean on every file above today (npm run lint, 0 errors
 | D-015 | 2026-10-10 | One query client: stale 30s, refetch on focus, retry only transient failures (network, timeout, 5xx), at most twice. Spinners use first-load state only, never a background refetch. Rules live in `providers/queryRules.ts`. | ADOPTED | Guide 7d |
 | D-016 | 2026-10-10 | One toast host (the step 6 ToastProvider) is mounted above everything. The old `show({ message, action })` API forwards to it until its last caller moves. | ADOPTED | Guide 7e |
 | D-017 | 2026-10-10 | The adapter covers the note, voice and shared-note services only. Auth, notifications, sharing, collaboration and user lookup keep their own services. Only `src/core/adapter` may import the three note services. | ADOPTED | Guide 7f |
+
+## Step 8 decisions
+
+| ID | Date | Decision | Status | Source |
+|---|---|---|---|---|
+| D-018 | 2026-10-10 | A note's identity is its `clientId`, the UUID made on the device. `localId` is that same value used as the Dexie key (equal on every row from database version 4), and `serverId` is only the server's label for it. Before version 4 the two differed for notes that arrived from the server. | ADOPTED | Guide 8a |
+| D-019 | 2026-10-10 | Database version 4 adds `clips`, `transcripts`, `shared`, `people` and `notifications`, and puts `role`, `purgeAt`, `ownerName` and `bodyState` on `notes` rows (optional in the type until 8k). The upgrade sets `role = 'owner'` and moves each note's key to its `clientId` (skipping any row where that is ambiguous), carrying its outbox rows. It never deletes or edits unsent content. | ADOPTED | Guide 8b |
+| D-020 | 2026-10-10 | A recording is saved on the device first (`clips`, upload state `local`) and the sync engine uploads it after its note has a server id. A failed upload is retried only by "Try again". The queue is `src/sync/clipUpload.ts`. Matches O-17. | ADOPTED | Guide 8j |
+| D-021 | 2026-10-10 | What a role may do is decided only in `features/notes/permissions.ts` (nine functions, master 6.3.1). Screens call those functions and never read `role`. `role` is a required field on every note row. | ADOPTED | Guide 8k |

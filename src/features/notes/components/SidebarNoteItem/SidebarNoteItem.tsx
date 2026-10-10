@@ -71,12 +71,14 @@ export function SidebarNoteItem({
   exitStyle,
 }: SidebarNoteItemProps & {
   animationState?: 'enter' | 'exit' | undefined;
-  exitStyle?: {
-    top: number;
-    left: number;
-    width: number;
-    height: number;
-  } | undefined;
+  exitStyle?:
+    | {
+        top: number;
+        left: number;
+        width: number;
+        height: number;
+      }
+    | undefined;
 }) {
   const { label: displayTitle, remainder } = deriveNoteLabel(note.content);
   /*
@@ -96,7 +98,9 @@ export function SidebarNoteItem({
   // honest date instead of a "not saved yet" status message.
   const localInstant = new Date(note.localUpdatedAt).toISOString();
   const dateLabel =
-    note.updatedAt !== null ? formatServerDateTimeRelative(note.updatedAt) : formatInstantRelative(localInstant);
+    note.updatedAt !== null
+      ? formatServerDateTimeRelative(note.updatedAt)
+      : formatInstantRelative(localInstant);
   const dateTimeAttr = note.updatedAt ?? localInstant;
   const dateTitle =
     note.updatedAt !== null
@@ -137,7 +141,11 @@ export function SidebarNoteItem({
         .join(' ')}
       {...longPress}
     >
-      <Link to={to} className="sidebar-note-item__link" aria-current={isActive ? 'page' : undefined}>
+      <Link
+        to={to}
+        className="sidebar-note-item__link"
+        aria-current={isActive ? 'page' : undefined}
+      >
         <span className="sidebar-note-item__title">{displayTitle}</span>
         <span className="sidebar-note-item__meta">
           <span className="sidebar-note-item__date">

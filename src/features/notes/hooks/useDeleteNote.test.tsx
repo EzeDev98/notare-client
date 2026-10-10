@@ -90,7 +90,9 @@ describe('deleting a note', () => {
       const row = makeRow({ serverId: 3 });
       await seedNotes(row);
 
-      server.use(http.delete(`${BASE}/notes/:noteId`, () => new HttpResponse(null, { status: 500 })));
+      server.use(
+        http.delete(`${BASE}/notes/:noteId`, () => new HttpResponse(null, { status: 500 })),
+      );
 
       const { result } = renderDelete();
       await result.current(toView(row));

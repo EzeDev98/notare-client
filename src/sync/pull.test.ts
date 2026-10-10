@@ -2,7 +2,11 @@ import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { db } from '@/features/notes/local/database';
-import { noteRepository, outboxRepository, metaRepository } from '@/features/notes/local/noteRepository';
+import {
+  noteRepository,
+  outboxRepository,
+  metaRepository,
+} from '@/features/notes/local/noteRepository';
 import { pullChanges } from '@/sync/pull';
 import { makeNote, makeRow } from '~/fixtures/notes';
 import { server } from '~/msw/server';
@@ -78,7 +82,13 @@ describe('pullChanges — merging changed notes', () => {
   });
 
   it('updates a clean row outright with the server copy', async () => {
-    const row = makeRow({ serverId: 10, localId: 'local-10', dirty: 0, version: 0, content: 'Old' });
+    const row = makeRow({
+      serverId: 10,
+      localId: 'local-10',
+      dirty: 0,
+      version: 0,
+      content: 'Old',
+    });
     await noteRepository.put(row);
 
     pullOnce({
@@ -104,7 +114,9 @@ describe('pullChanges — merging changed notes', () => {
     await noteRepository.put(row);
 
     pullOnce({
-      changed: [{ note: makeNote({ id: 11, version: 0, content: 'Same as before' }), clientId: null }],
+      changed: [
+        { note: makeNote({ id: 11, version: 0, content: 'Same as before' }), clientId: null },
+      ],
     });
 
     await pullChanges(1);
@@ -125,7 +137,10 @@ describe('pullChanges — merging changed notes', () => {
     });
     await noteRepository.put(row);
 
-    const theirs = { note: makeNote({ id: 12, version: 3, content: 'Someone else edited' }), clientId: null };
+    const theirs = {
+      note: makeNote({ id: 12, version: 3, content: 'Someone else edited' }),
+      clientId: null,
+    };
     pullOnce({ changed: [theirs] });
 
     await pullChanges(1);

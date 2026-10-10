@@ -60,13 +60,7 @@ describe('NoteContextMenu', () => {
     const onShare = vi.fn();
 
     render(
-      <NoteContextMenu
-        note={note}
-        x={0}
-        y={0}
-        actions={makeActions({ onShare })}
-        onClose={noop}
-      />,
+      <NoteContextMenu note={note} x={0} y={0} actions={makeActions({ onShare })} onClose={noop} />,
     );
 
     const shareItem = screen.getByRole('menuitem', { name: 'Share note' });
@@ -102,7 +96,13 @@ describe('NoteContextMenu', () => {
     const onDelete = vi.fn();
 
     render(
-      <NoteContextMenu note={note} x={0} y={0} actions={makeActions({ onDelete })} onClose={onClose} />,
+      <NoteContextMenu
+        note={note}
+        x={0}
+        y={0}
+        actions={makeActions({ onDelete })}
+        onClose={onClose}
+      />,
     );
 
     await user.keyboard('{Escape}');
@@ -198,9 +198,7 @@ describe('NoteContextMenu', () => {
     const note = toView(makeRow());
     const onClose = vi.fn();
 
-    render(
-      <NoteContextMenu note={note} x={0} y={0} actions={makeActions()} onClose={onClose} />,
-    );
+    render(<NoteContextMenu note={note} x={0} y={0} actions={makeActions()} onClose={onClose} />);
 
     // menuitems already close via runAndClose — the menu SURFACE itself
     // (the role="menu" container, not one of its buttons) is what this

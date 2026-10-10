@@ -53,16 +53,18 @@ import { useNoteActions } from '@/features/notes/hooks/useNoteActions';
 import { useNotes } from '@/features/notes/hooks/useNotes';
 import { gateway } from '@/core/adapter';
 import {
-  createLocalNote,
-  fromNoteResponse,
-  toView,
-  type NoteView,
-} from '@/features/notes/local/noteMappers';
-import type { NoteRow } from '@/features/notes/local/noteRow';
+  discardDraft,
+  duplicateNote,
+  findBlankDraft,
+  startDraft,
+} from '@/features/notes/createNote';
+import { clipRepository } from '@/features/notes/local/clipRepository';
+import { toView, type NoteView } from '@/features/notes/local/noteMappers';
 import { isEmptyNote } from '@/features/notes/local/isEmptyNote';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import { isOffline } from '@/lib/http/errors';
 import { NotificationsPanel } from '@/features/notifications/components/NotificationsPanel/NotificationsPanel';
+import { useClipCounts } from '@/features/voice/hooks/useClips';
 import { useSync } from '@/sync/useSync';
 import { useSyncStatus } from '@/sync/useSyncStatus';
 import { ThemeToggle } from '@/design-system/components/ThemeToggle/ThemeToggle';
@@ -444,6 +446,9 @@ export function AppLayout() {
      * timer fires cancels it via the cleanup below rather than deleting a
      * note that may no longer even be the blank one this effect first saw.
      */
+    // A blank draft was never written anywhere: leaving it just forgets it.
+    if (previous.kind === 'local') discardDraft(previous.id);
+
     const timer = setTimeout(() => {
       void (async () => {
         const row =
@@ -451,7 +456,9 @@ export function AppLayout() {
             ? await noteRepository.getByLocalId(previous.id)
             : await noteRepository.getByServerId(previous.id);
 
-        if (!row || row.deleted !== 0 || !isEmptyNote(row)) return;
+        if (!row || row.deleted !== 0) return;
+        const clipCount = await clipRepository.countForNote(row.localId);
+        if (!isEmptyNote({ content: row.content, clipCount })) return;
 
         if (row.serverId === null) {
           await noteRepository.hardDelete(row.localId);
@@ -545,59 +552,24 @@ export function AppLayout() {
    * "New note" in a note's own menu still just creates a fresh note, it
    * is not "duplicate this note" (that is its own, separate item below).
    */
-  async function handleCreateNote() {
-    if (hasEmptyNote) return;
+  function handleCreateNote() {
     if (authState.status !== 'authenticated' && authState.status !== 'refreshing') return;
 
-    /*
-     * Saved to the server immediately, not deferred to the first
-     * keystroke. VoiceRecorder only ever mounts once a note has a
-     * serverId (NoteDetailPage / LocalNoteDetailPage both gate on
-     * `row.serverId !== null`), so a note that stayed local-only until
-     * the user typed something left the mic invisible until that first
-     * autosave round-tripped. Creating on the server up front makes the
-     * mic available the instant the note opens, whether the person ever
-     * types into it or not.
-     *
-     * Falls back to the previous local-only row when the request fails
-     * (typically offline): the note still opens instantly, and the
-     * ordinary create-on-first-edit path (useNoteEditor's own `save`)
-     * picks it up exactly as it always has.
-     */
-    let row: NoteRow;
-    let destination: string;
-    try {
-      const created = await gateway.createNote({ content: '' });
-      row = fromNoteResponse(created);
-      destination = ROUTES.note(created.id);
-    } catch {
-      row = {
-        ...createLocalNote(authState.user.id),
-        dirty: 0 as const,
-        syncState: 'synced' as const,
-      };
-      destination = ROUTES.legacy.noteLocal(row.localId);
-    }
+    // A blank note already exists: open that one instead of making another.
+    const blank = findBlankDraft();
+    if (blank !== undefined && blank.id === activeLocalId) return;
 
-    // Unblocked — this is what starts the sidebar's own enter animation for
-    // the new row, immediately on click.
-    await noteRepository.put(row);
+    // Nothing is written until the person types (createNote.ts). A blank
+    // draft that is left again simply disappears.
+    const destination =
+      blank !== undefined
+        ? ROUTES.legacy.noteLocal(blank.id)
+        : emptyNote !== undefined
+          ? ROUTES.legacy.noteOf(emptyNote)
+          : ROUTES.legacy.noteLocal(startDraft(authState.user.id).id);
 
-    // See pendingActiveLocalId's own comment above: the new row should
-    // slide in already highlighted, not pick up the highlight only once
-    // navigate() below actually lands.
-    setPendingActiveLocalId(row.localId);
-
-    // See NOTE_LIFECYCLE_DELAY_MS's own comment above: held here, between
-    // the write and the navigate, so the main pane's instant swap to the
-    // new note lands a beat into the sidebar's animation rather than on its
-    // very first frame.
-    await delay(NOTE_LIFECYCLE_DELAY_MS);
-
-    // See suppressMobileNotesCloseRef's own comment above — creating a
-    // note lands on its own route as a side effect of creating it, not
-    // because the user picked a different note from the list, so it
-    // must not close the mobile panel if it happens to be open.
+    // Creating a note lands on its own route as a side effect, not because
+    // the user picked a different note, so it must not close the mobile panel.
     suppressMobileNotesCloseRef.current = true;
     void navigate(destination, {
       replace: true,
@@ -623,16 +595,15 @@ export function AppLayout() {
     // Duplicating an empty note would produce a second empty note while one
     // already exists — the same "only one empty note at a time" invariant
     // the toolbar's own New note icon enforces via hasEmptyNote above.
-    if (isEmptyNote(note) && hasEmptyNote) return;
+    if (
+      isEmptyNote({ content: note.content, clipCount: clipCounts[note.localId] ?? 0 }) &&
+      hasEmptyNote
+    ) {
+      return;
+    }
 
-    const row = createLocalNote(authState.user.id, { content: note.content });
-
-    await noteRepository.put(row);
-    await outboxRepository.enqueueCreate({
-      localId: row.localId,
-      clientId: row.clientId,
-      content: row.content,
-    });
+    const row = await duplicateNote(authState.user.id, note.localId, note.content);
+    if (row === null) return;
 
     setPendingActiveLocalId(row.localId);
     await delay(NOTE_LIFECYCLE_DELAY_MS);
@@ -662,7 +633,7 @@ export function AppLayout() {
 
   const noteContextMenuActions: NoteContextMenuActions = {
     onNewNote: () => {
-      void handleCreateNote();
+      handleCreateNote();
     },
     onDuplicate: (note) => {
       void handleDuplicateNote(note);
@@ -1121,7 +1092,11 @@ export function AppLayout() {
   // no longer necessarily a local-only one. "One empty note at a time"
   // has to mean any empty note, synced or not, or this guard would let a
   // second one through the moment the first one round-trips.
-  const emptyNote = notes?.find((note) => isEmptyNote(note));
+  // A note with a clip is never empty (8e).
+  const clipCounts = useClipCounts();
+  const emptyNote = notes?.find((note) =>
+    isEmptyNote({ content: note.content, clipCount: clipCounts[note.localId] ?? 0 }),
+  );
 
   const hasEmptyNote = emptyNote !== undefined;
 
@@ -1300,7 +1275,7 @@ export function AppLayout() {
             aria-disabled={hasEmptyNote}
             data-unavailable={hasEmptyNote || undefined}
             onClick={() => {
-              void handleCreateNote();
+              handleCreateNote();
             }}
           >
             <EditIcon aria-hidden="true" />
@@ -1759,7 +1734,7 @@ export function AppLayout() {
           isClosing={isMobileNotesClosing}
           onAnimationEnd={handleMobileNotesAnimationEnd}
           onCreateNote={() => {
-            void handleCreateNote();
+            handleCreateNote();
           }}
           onDeleteActive={handleDeleteActiveNote}
           hasActiveNote={activeNoteRow != null}

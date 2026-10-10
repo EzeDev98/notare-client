@@ -59,6 +59,7 @@ export function makeRow(overrides: Partial<NoteRow> = {}): NoteRow {
     lastModifiedBy: 1,
     dirty: 0,
     syncState: 'synced',
+    role: 'owner',
     localUpdatedAt: 1_754_038_800_000,
     ...overrides,
   };

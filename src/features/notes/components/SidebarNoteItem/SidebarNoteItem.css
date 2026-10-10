@@ -47,7 +47,7 @@
     /* #EDEDEC — same literal colour as the active row's own background
        (.sidebar-note-item__link[aria-current='page'], below), not the
        --color-border token, per request. */
-    border-block-end: var(--border-width) solid #EDEDEC;
+    border-block-end: var(--border-width) solid #ededec;
   }
 
   .sidebar-note-item:last-child::after {
@@ -66,7 +66,9 @@
    *     selector) — that divider sits right above the selected row.
    */
   .sidebar-note-item:has(.sidebar-note-item__link[aria-current='page'])::after,
-  .sidebar-note-item:has(+ .sidebar-note-item .sidebar-note-item__link[aria-current='page'])::after {
+  .sidebar-note-item:has(
+      + .sidebar-note-item .sidebar-note-item__link[aria-current='page']
+    )::after {
     display: none;
   }
 

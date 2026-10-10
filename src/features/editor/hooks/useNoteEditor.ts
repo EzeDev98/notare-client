@@ -1,14 +1,10 @@
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
-import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useAutoSaveScheduler } from '@/features/editor/hooks/useAutoSaveScheduler';
-import { hasPendingWork, initialSaveState, saveReducer } from '@/features/editor/saveState';
-import { gateway } from '@/core/adapter';
-import { fromNoteResponse } from '@/features/notes/local/noteMappers';
+import { getDraft, persistDraftIfContent } from '@/features/notes/createNote';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import type { NoteRow } from '@/features/notes/local/noteRow';
-import { isOffline } from '@/lib/http/errors';
-import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
+import { isQuotaError, setStorageFull } from '@/features/notes/status/storageFull';
 
 /**
  * See `draftOverride`'s own doc comment below for what this is for.
@@ -38,14 +34,11 @@ interface DraftOverride {
  *   place holding the draft, and the UI observes it.
  *
  * LOCAL WRITES ARE NOT DEBOUNCED. A keystroke costs an IndexedDB put —
- * microseconds, and it never leaves the machine. Debouncing it would recreate
- * the loss window for no benefit. The 1.2s debounce now applies only to the
- * network request.
+ * microseconds, and it never leaves the machine. There is no autosave timer
+ * any more (step 8f): the sync engine pushes the outbox shortly after the last
+ * change.
  */
 export function useNoteEditor(initialRow: NoteRow) {
-  const [saveState, dispatch] = useReducer(saveReducer, initialSaveState);
-  const online = useOnlineStatus();
-
   /*
    * The editor host remains mounted while navigation changes the
    * selected note. localId therefore MUST follow the incoming row.
@@ -148,218 +141,76 @@ export function useNoteEditor(initialRow: NoteRow) {
   const rowRef = useRef(row);
   rowRef.current = row;
 
-  useEffect(() => {
-    dispatch(online ? { type: 'WENT_ONLINE' } : { type: 'WENT_OFFLINE' });
-  }, [online]);
-
   /*
-   * Creation is single-flight. Between the first keystroke and the POST
-   * returning there is no server id, and a second save would create a SECOND
-   * NOTE holding half the user's words.
+   * Edits are written in order, one after another. A later keystroke can then
+   * never be overtaken by an earlier one that happened to finish last.
    */
-  const creatingRef = useRef<Promise<void> | null>(null);
+  const writeChainRef = useRef<Promise<void>>(Promise.resolve());
 
   /**
-   * Writes a change to LOCAL STORAGE, immediately.
+   * Writes a change to LOCAL STORAGE and to the outbox, immediately.
    *
-   * This is the save that matters. The network one is reconciliation.
+   * Nothing is debounced. A keystroke costs one IndexedDB put on one row. The
+   * outbox keeps ONE row per note (the newest text), and the sync engine
+   * pushes it SYNC_AFTER_CHANGE_MS after the last change (step 8f, M-10).
    */
   const setDraft = useCallback(
     (changes: { content?: string }) => {
       // Synchronous first — see draftOverride's own doc comment above.
-      // Reads rowRef, not `row`/`liveRow` directly, so a second setDraft
-      // call before Dexie catches up still merges onto the FIRST call's
-      // override rather than the stale pre-edit row.
       const next = {
         content: changes.content ?? rowRef.current.content,
       };
       setDraftOverride(next);
-      void noteRepository.applyLocalEdit(localId, changes);
-      dispatch({ type: 'EDITED' });
 
-      /*
-       * Keeps an already-queued outbox row current with every further
-       * edit — a no-op when nothing is queued (the common case). See
-       * `syncQueuedContent`'s own doc comment for why this runs
-       * UNCONDITIONALLY rather than gated on `saveState.status ===
-       * 'offline'`: that gate looks right but races the same dispatch
-       * that put the row there in the first place. Checking the outbox
-       * table directly has no such window.
-       */
-      void outboxRepository.syncQueuedContent(localId, next.content);
+      // A new note is only in memory until it has text (createNote.ts).
+      const draft = getDraft(localId);
+      if (draft) draft.content = next.content;
+
+      writeChainRef.current = writeChainRef.current
+        .then(async () => {
+          const pending = getDraft(localId);
+          if (pending) {
+            // The first non-blank character writes the row and queues its CREATE.
+            if ((await persistDraftIfContent(pending)) === null) return;
+          }
+
+          await noteRepository.applyLocalEdit(localId, changes);
+
+          // Read back, so the queued operation matches what is now on disk
+          // (the note may have gained a server id since the last keystroke).
+          const latest = await noteRepository.getByLocalId(localId);
+          if (!latest) return;
+
+          if (latest.serverId === null) {
+            await outboxRepository.enqueueCreate({
+              localId,
+              clientId: latest.clientId,
+              content: latest.content,
+            });
+          } else {
+            await outboxRepository.enqueueUpdate({
+              localId,
+              noteId: latest.serverId,
+              content: latest.content,
+            });
+          }
+
+          // A write worked, so the device is not full (step 8h).
+          setStorageFull(false);
+        })
+        .catch((error: unknown) => {
+          if (isQuotaError(error)) setStorageFull(true);
+        });
     },
     [localId],
   );
 
-  /** Pushes the local row to the server. Throws; the caller interprets. */
-  const save = useCallback(async (): Promise<void> => {
-    const current = rowRef.current;
-
-    // Nothing to send. The row is clean, so the server already has this.
-    if (current.dirty === 0) return;
-
-    dispatch({ type: 'SAVE_STARTED' });
-
-    try {
-      if (current.serverId === null) {
-        // Join an in-flight creation rather than starting a second one.
-        creatingRef.current ??= (async () => {
-          const created = await gateway.createNote({
-            content: current.content,
-            clientId: current.clientId,
-          });
-
-          /*
-           * RE-READ BEFORE WRITING — the same guard the update branch below
-           * has, and its absence here was a live data-loss bug.
-           *
-           * A POST is slow and the user keeps typing. fromNoteResponse marks
-           * the row CLEAN and carries the server's echo of the OLDER text, so
-           * writing it wholesale did two things at once: overwrote the newer
-           * local content, and cleared `dirty` so nothing would ever push it.
-           * Everything typed during the round trip disappeared on the next
-           * render, silently.
-           *
-           * The row keeps its localId and clientId either way — same note, now
-           * with a server id, so every reference to it stays valid.
-           */
-          const latest = (await noteRepository.getByLocalId(localId)) ?? current;
-          const textUnchanged = latest.content === current.content;
-
-          await noteRepository.put({
-            ...fromNoteResponse(created, latest),
-            content: latest.content,
-            dirty: textUnchanged ? 0 : 1,
-            syncState: textUnchanged ? 'synced' : 'pending',
-          });
-
-          /*
-           * 8B: drop a queued CREATE for this note if one exists.
-           *
-           * It would exist if an earlier offline attempt already enqueued
-           * one and THIS attempt is a reconnect retry that just succeeded
-           * directly. Leaving it would mean 8C creates the SAME note a
-           * second time once the outbox is drained.
-           */
-          await outboxRepository.clearForNote(localId);
-        })();
-
-        try {
-          await creatingRef.current;
-        } finally {
-          creatingRef.current = null;
-        }
-      } else {
-        const updated = await gateway.autoSaveNote(current.serverId, {
-          content: current.content,
-        });
-
-        /*
-         * Re-read before writing.
-         *
-         * The user may have typed while the request was in flight, and the
-         * server's echo is of the OLDER text. Writing the response wholesale
-         * would overwrite newer local content with a stale copy — the single
-         * worst thing an editor can do.
-         *
-         * So: take the server's version and timestamps, keep whatever text is
-         * currently local, and stay dirty if it has moved on.
-         */
-        const latest = (await noteRepository.getByLocalId(localId)) ?? current;
-        const textUnchanged = latest.content === current.content;
-
-        await noteRepository.put({
-          ...latest,
-          serverId: updated.id,
-          version: updated.version,
-          updatedAt: updated.updatedAt,
-          lastModifiedBy: updated.lastModifiedBy,
-          dirty: textUnchanged ? 0 : 1,
-          syncState: textUnchanged ? 'synced' : 'pending',
-        });
-
-        // 8B: same reasoning as the CREATE branch above — a direct success
-        // retires whatever this note had queued, since the outbox's copy is
-        // now either applied already or superseded by what was just sent.
-        await outboxRepository.clearForNote(localId);
-      }
-
-      dispatch({ type: 'SAVE_SUCCEEDED' });
-    } catch (error) {
-      if (isOffline(error)) {
-        /*
-         * The row stays dirty and stays in the database. That was already
-         * true before 8B — this is where offline-first pays.
-         *
-         * WHAT 8B ADDS: the attempt is now recorded in the outbox, so this
-         * note no longer depends on THIS EDITOR STAYING OPEN to ever reach
-         * the server. 8C's batch push can pick it up from a cold start —
-         * the app reopened, or a different note's editor open instead.
-         *
-         * Read the freshest row rather than `current`: the fetch fails close
-         * to instantly, but a coalesced re-queue should always carry
-         * whatever is newest, the same discipline the success path already
-         * applies just above.
-         *
-         * `current` (not a fresh Dexie read) is what actually carries the
-         * newest text now that `rowRef` includes the optimistic override —
-         * before this fix, a second offline edit arriving while the first
-         * save() was still in flight could read a Dexie row one keystroke
-         * behind the override, coalesce against THAT, and leave the freshly
-         * typed tail stranded outside the queued row.
-         */
-        const latest = (await noteRepository.getByLocalId(localId)) ?? current;
-        const newestContent =
-          latest.localUpdatedAt >= current.localUpdatedAt ? latest.content : current.content;
-
-        if (current.serverId === null) {
-          await outboxRepository.enqueueCreate({
-            localId,
-            clientId: latest.clientId,
-            content: newestContent,
-          });
-        } else {
-          await outboxRepository.enqueueUpdate({
-            localId,
-            noteId: current.serverId,
-            content: newestContent,
-          });
-        }
-
-        dispatch({ type: 'WENT_OFFLINE' });
-      } else {
-        dispatch({ type: 'SAVE_FAILED', retryable: true });
-      }
-      throw error;
-    }
-  }, [localId]);
-
-  const saveStateRef = useRef(saveState);
-  saveStateRef.current = saveState;
-
-  const scheduler = useAutoSaveScheduler({
-    save,
-    canSchedule: () => saveStateRef.current.status !== 'offline',
-    hasPendingWork: () => hasPendingWork(saveStateRef.current),
-  });
-
-  const markEdited = useCallback(() => {
-    scheduler.schedule();
-  }, [scheduler]);
-
-  /* Reconnecting flushes without waiting for the next keystroke. */
-  useEffect(() => {
-    if (online && hasPendingWork(saveStateRef.current)) {
-      void scheduler.flush();
-    }
-  }, [online, scheduler]);
+  /** Resolves once every edit made so far is on this device. Cmd/Ctrl+S uses it. */
+  const flush = useCallback((): Promise<void> => writeChainRef.current, []);
 
   return {
     row,
-    saveState,
     setDraft,
-    markEdited,
-    save,
-    flush: scheduler.flush,
+    flush,
   };
 }

@@ -1,9 +1,5 @@
 import { httpClient } from '@/lib/http/client';
-import type {
-  SyncBatchResponse,
-  SyncOperationRequest,
-  SyncPullResponse,
-} from '@/sync/types';
+import type { SyncBatchResponse, SyncOperationRequest, SyncPullResponse } from '@/sync/types';
 
 /**
  * Same shape as `noteService`: one place that knows the path, and nothing

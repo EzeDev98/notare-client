@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 
 import { EditorSurface } from '@/features/editor/components/EditorSurface/EditorSurface';
+import { canEdit } from '@/features/notes/permissions';
 import { SaveIndicator } from '@/features/editor/components/SaveIndicator/SaveIndicator';
 import { useEditorShortcuts } from '@/features/editor/hooks/useEditorShortcuts';
 import { useNoteEditor } from '@/features/editor/hooks/useNoteEditor';
@@ -45,27 +46,19 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
 
   useEditorShortcuts({ onSave: editor.flush });
 
-
-  /*
-   * No word count here any more, and SaveIndicator renders nothing at all
-   * for the routine states (its own doc comment explains why) — so this is
-   * the ONLY thing that can sit above the editor, and only when there is
-   * genuinely something worth a person's attention. The rest of the time
-   * this renders nothing, and the note's own first line starts right at
-   * the top of the writing surface.
-   */
+  // SaveIndicator shows the note's one status word (step 8h).
   return (
     <>
-      <SaveIndicator state={editor.saveState} />
+      <SaveIndicator noteId={editor.row.localId} />
 
       <NoteDateHeading key={editor.row.localId} row={editor.row} />
 
       <EditorSurface
         content={editor.row.content}
         focusKey={editor.row.localId}
+        readOnly={!canEdit(editor.row.role)}
         onContentChange={(value) => {
           editor.setDraft({ content: value });
-          editor.markEdited();
         }}
         contentAccessory={contentAccessory}
       />

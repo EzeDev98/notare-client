@@ -132,9 +132,8 @@
     text-align: center;
   }
 
-
-@layer pages {
-  /*
+  @layer pages {
+    /*
    * Ordinary in-flow content now, not a footer — see NoteDetailPage's
    * own comment on why the old boxed-footer treatment (background,
    * border, max-height, its own scroll) was actively causing the
@@ -143,43 +142,42 @@
    * scrolls with the rest of the note now, like any other content
    * below it.
    */
-  .note-detail__voice {
-    margin-block-start: var(--space-10);
-    padding-block-start: var(--space-6);
-    border-block-start: var(--border-width) solid var(--color-border);
+    .note-detail__voice {
+      margin-block-start: var(--space-10);
+      padding-block-start: var(--space-6);
+      border-block-start: var(--border-width) solid var(--color-border);
 
-    /*
+      /*
      * Keep the voice-note region as one stable document section.
      * The section may grow when recordings arrive, but it must never
      * disappear and reappear as part of a note switch.
      */
-    min-block-size: 0;
-    contain: layout paint;
+      min-block-size: 0;
+      contain: layout paint;
+    }
+
+    .note-detail__voice-heading {
+      margin: 0 0 var(--space-3);
+      font-size: var(--text-md);
+    }
+
+    .note-detail__voice-list {
+      display: grid;
+      gap: var(--space-2);
+      margin-block-start: var(--space-4);
+      padding: 0;
+    }
+
+    .note-detail__voice-centre {
+      display: flex;
+      align-items: center;
+      padding-block: var(--space-3);
+    }
   }
 
-  .note-detail__voice-heading {
-    margin: 0 0 var(--space-3);
-    font-size: var(--text-md);
+  @media (prefers-reduced-motion: reduce) {
+    .note-detail__editor-region[data-animate='true'] {
+      animation: none;
+    }
   }
-
-  .note-detail__voice-list {
-    display: grid;
-    gap: var(--space-2);
-    margin-block-start: var(--space-4);
-    padding: 0;
-  }
-
-  .note-detail__voice-centre {
-    display: flex;
-    align-items: center;
-    padding-block: var(--space-3);
-  }
-}
-
-
-@media (prefers-reduced-motion: reduce) {
-  .note-detail__editor-region[data-animate='true'] {
-    animation: none;
-  }
-}
 }

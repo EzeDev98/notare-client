@@ -1,21 +1,22 @@
+import { purgeExpiredTrash } from '@/features/notes/local/housekeeping';
+import { uploadPendingClips } from '@/sync/clipUpload';
 import { releaseLegacyConflicts } from '@/sync/releaseLegacyConflicts';
 import { pullChanges } from '@/sync/pull';
 import { pushOutbox } from '@/sync/push';
 import { onLocalMutation } from '@/sync/mutationSignal';
 import { setSyncStatus } from '@/sync/syncStatus';
 import { consumeTransportFailure } from '@/sync/transportFailure';
-import { LEGACY_SYNC_POLL_MS, SYNC_AFTER_CHANGE_MS, SYNC_BACKOFF_MS } from '@/core/config/timings';
+import { SYNC_AFTER_CHANGE_MS, SYNC_BACKOFF_MS } from '@/core/config/timings';
 
 /**
  * The sync engine (8F): everything push.ts (8C) and pull.ts (8D) deliberately
  * left unscheduled — "WHEN this runs is not this function's concern," their
  * own doc comments say, naming this file as the place that concern lives.
  *
- * TRIGGERS (architecture doc §3.8): app start, the browser's `online` event,
- * the tab becoming visible, a debounced local mutation, and a slow ~60s
- * interval while online and visible. Never a bare `setInterval` running in a
- * backgrounded tab forever — the interval is created on `visible` and
- * cleared on every other visibility state, not just left running.
+ * TRIGGERS (architecture doc §3.8, step 8f): app start, the browser's `online`
+ * event, the tab becoming visible, and a debounced local mutation
+ * (SYNC_AFTER_CHANGE_MS after the last change). There is no polling interval:
+ * sync is event-driven, and this file is the only scheduler (A-05).
  *
  * CROSS-TAB LOCK: `notare.sync`, same `navigator.locks` mechanism and the
  * same graceful same-tab-only fallback as `notare.auth.refresh` (4D,
@@ -28,9 +29,7 @@ import { LEGACY_SYNC_POLL_MS, SYNC_AFTER_CHANGE_MS, SYNC_BACKOFF_MS } from '@/co
  * BACKOFF: only engages after a TRANSPORT failure (see transportFailure.ts)
  * — a genuine "the server is unreachable right now" signal, not the routine
  * "nothing was queued" no-op every empty push/pull already returns instantly
- * from. Schedule is capped at the same 60s the steady-state interval already
- * uses, so a backing-off run is never waiting longer than normal operation
- * already would.
+ * from. The schedule (SYNC_BACKOFF_MS) is capped at its last step.
  */
 
 const LOCK_NAME = 'notare.sync';
@@ -56,7 +55,6 @@ let inFlight: Promise<void> | null = null;
 let backoffStep = 0;
 let backoffTimer: ReturnType<typeof setTimeout> | null = null;
 let mutationDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-let intervalTimer: ReturnType<typeof setInterval> | null = null;
 let unsubscribeMutation: (() => void) | null = null;
 
 function clearBackoffTimer(): void {
@@ -76,20 +74,6 @@ function scheduleBackoffRetry(): void {
   }, delay);
 }
 
-function stopInterval(): void {
-  if (intervalTimer !== null) {
-    clearInterval(intervalTimer);
-    intervalTimer = null;
-  }
-}
-
-function startInterval(): void {
-  if (intervalTimer !== null) return;
-  intervalTimer = setInterval(() => {
-    void requestSync('interval');
-  }, LEGACY_SYNC_POLL_MS);
-}
-
 function handleOnline(): void {
   void requestSync('online');
 }
@@ -104,13 +88,7 @@ function handleMutation(): void {
 
 function handleVisibility(): void {
   if (document.visibilityState === 'visible') {
-    startInterval();
     void requestSync('visible');
-  } else {
-    // The anti-pattern named in the architecture doc: a `setInterval` that
-    // keeps firing in a tab nobody is looking at. Cleared here, recreated by
-    // `startInterval` the moment the tab is visible again.
-    stopInterval();
   }
 }
 
@@ -124,6 +102,8 @@ function handleVisibility(): void {
 async function attempt(): Promise<boolean> {
   consumeTransportFailure(); // discard anything stale from an earlier, unrelated run
   await pushOutbox();
+  // Clips go after notes, so a note made offline has its server id by now (step 8j).
+  await uploadPendingClips();
   await pullChanges(ownerIdRef);
   return !consumeTransportFailure();
 }
@@ -219,19 +199,16 @@ export function start(ownerId: number | null): () => void {
   document.addEventListener('visibilitychange', handleVisibility);
   unsubscribeMutation = onLocalMutation(handleMutation);
 
-  if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-    startInterval();
-  }
-
   void requestSync('start');
   void releaseLegacyConflicts().catch(() => undefined);
+  // Once per start: remove deleted notes whose purge date has passed (step 8i).
+  void purgeExpiredTrash().catch(() => undefined);
 
   return function stop(): void {
     window.removeEventListener('online', handleOnline);
     document.removeEventListener('visibilitychange', handleVisibility);
     unsubscribeMutation?.();
     unsubscribeMutation = null;
-    stopInterval();
     clearBackoffTimer();
     if (mutationDebounceTimer !== null) {
       clearTimeout(mutationDebounceTimer);
@@ -251,7 +228,6 @@ export function resetSyncEngineForTests(): void {
   inFlight = null;
   backoffStep = 0;
   clearBackoffTimer();
-  stopInterval();
   if (mutationDebounceTimer !== null) {
     clearTimeout(mutationDebounceTimer);
     mutationDebounceTimer = null;

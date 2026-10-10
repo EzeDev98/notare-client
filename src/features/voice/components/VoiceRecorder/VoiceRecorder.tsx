@@ -1,7 +1,15 @@
 /* eslint-disable max-lines -- TODO(step 12): delete or split, listed in docs/decisions.md */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { MicrophoneIcon, PaperPlaneIcon, PauseIcon, PlayIcon, TrashIcon } from '@patternfly/react-icons';
+import {
+  MicrophoneIcon,
+  PaperPlaneIcon,
+  PauseIcon,
+  PlayIcon,
+  TrashIcon,
+} from '@patternfly/react-icons';
 
+import { useToast } from '@/app/providers/toast-context';
+import { CLIP_MAX_SECONDS } from '@/core/config/timings';
 import { useMediaRecorderState } from '@/features/voice/hooks/useMediaRecorderState';
 import { Button } from '@/design-system/components/Button/Button';
 import { Modal } from '@/design-system/components/Modal/Modal';
@@ -46,7 +54,7 @@ interface VoiceRecorderProps {
    * CURRENTLY open) would silently attach a recording to the wrong note —
    * exactly the bug this prop exists to close.
    */
-  noteId: number;
+  noteId: string | number;
   onUploaded?: () => void;
 }
 
@@ -104,6 +112,7 @@ function Waveform({ paused }: { paused: boolean }) {
  */
 export function VoiceRecorder({ upload, noteId, onUploaded }: VoiceRecorderProps) {
   const recorder = useMediaRecorderState();
+  const toast = useToast();
   const [progress, setProgress] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   // Which trash button opened the confirmation, so the single Modal below
@@ -112,9 +121,7 @@ export function VoiceRecorder({ upload, noteId, onUploaded }: VoiceRecorderProps
   // paths (stop-then-reset vs. an immediate reset), same as
   // handleDiscardWhileRecording/recorder.reset did before this modal
   // existed. null means the modal is closed.
-  const [confirmingDiscard, setConfirmingDiscard] = useState<'recording' | 'stopped' | null>(
-    null,
-  );
+  const [confirmingDiscard, setConfirmingDiscard] = useState<'recording' | 'stopped' | null>(null);
 
   /*
    * The note that started the CURRENT recording — null whenever there is
@@ -124,7 +131,7 @@ export function VoiceRecorder({ upload, noteId, onUploaded }: VoiceRecorderProps
    * looking at right now" apart from "the note I'm actually recording
    * for".
    */
-  const [recordingOwnerNoteId, setRecordingOwnerNoteId] = useState<number | null>(null);
+  const [recordingOwnerNoteId, setRecordingOwnerNoteId] = useState<string | number | null>(null);
   const isForeignRecording = recordingOwnerNoteId !== null && recordingOwnerNoteId !== noteId;
 
   const discardOnStopRef = useRef(false);
@@ -262,6 +269,16 @@ export function VoiceRecorder({ upload, noteId, onUploaded }: VoiceRecorderProps
      * anymore. Fires the SAME upload the manual retry button (below)
      * uses, right as the stopped blob becomes available.
      */
+    // Stopped by the length limit: keep the clip and tell the person (step 8j).
+    if (recorder.status.hitLimit) {
+      uploadOnStopRef.current = false;
+      toast.show({
+        message: `Recording stopped at ${formatElapsed(CLIP_MAX_SECONDS)}. Your clip is saved.`,
+      });
+      startUpload(recorder.status.blob, recorder.status.durationSeconds);
+      return;
+    }
+
     if (uploadOnStopRef.current) {
       uploadOnStopRef.current = false;
       startUpload(recorder.status.blob, recorder.status.durationSeconds);
@@ -373,7 +390,8 @@ export function VoiceRecorder({ upload, noteId, onUploaded }: VoiceRecorderProps
   }
 
   const isActive =
-    !isForeignRecording && (recorder.status.state === 'recording' || recorder.status.state === 'stopped');
+    !isForeignRecording &&
+    (recorder.status.state === 'recording' || recorder.status.state === 'stopped');
 
   return (
     <div

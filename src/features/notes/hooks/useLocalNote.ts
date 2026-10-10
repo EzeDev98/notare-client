@@ -1,6 +1,7 @@
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
 import { useRef } from 'react';
 
+import { draftRow } from '@/features/notes/createNote';
 import { noteRepository } from '@/features/notes/local/noteRepository';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 
@@ -26,7 +27,8 @@ export type LocalNoteState =
 export function useLocalNote(localId: string | undefined): LocalNoteState {
   const row = useLiveQuery(async () => {
     if (localId === undefined || localId.trim() === '') return null;
-    return (await noteRepository.getByLocalId(localId)) ?? null;
+    // A new note is only in memory until the person types (createNote.ts).
+    return (await noteRepository.getByLocalId(localId)) ?? draftRow(localId) ?? null;
   }, [localId]);
 
   /*

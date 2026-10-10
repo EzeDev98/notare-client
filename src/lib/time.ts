@@ -121,6 +121,14 @@ export function parseServerDateTime(value: string): Date | null {
   return corrected;
 }
 
+/**
+ * The reverse of parseServerDateTime: a Date as the server's zoneless
+ * wall-clock string ("2026-08-08T10:00:00.000").
+ */
+export function toServerDateTime(date: Date): string {
+  return new Date(date.getTime() + serverOffsetMinutes(date) * 60_000).toISOString().slice(0, -1);
+}
+
 /** Relative time for a zoneless server timestamp. */
 export function formatServerDateTimeRelative(value: string, now: Date = new Date()): string {
   const parsed = parseServerDateTime(value);

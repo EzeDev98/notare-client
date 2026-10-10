@@ -56,7 +56,11 @@ export function reconcileFromSync(
       // one. Reuse the server's instead when it sent one, or a note this
       // device created offline gets a second, disconnected local identity
       // the moment its own push ack arrives and tries to match by serverId.
-      if (clientId) row.clientId = clientId;
+      // The note's identity is its clientId, so the local key follows it.
+      if (clientId) {
+        row.clientId = clientId;
+        row.localId = clientId;
+      }
       row.ownerId = ownerId;
       await noteRepository.put(row);
       return 'inserted';

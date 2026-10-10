@@ -27,9 +27,12 @@ export const transcriptionService = {
     voiceNoteId: number,
     { signal }: Cancellable = {},
   ): Promise<TranscriptionResponse> {
-    return httpClient.post<TranscriptionResponse>(`/voice-notes/${String(voiceNoteId)}/transcription`, {
-      ...(signal ? { signal } : {}),
-    });
+    return httpClient.post<TranscriptionResponse>(
+      `/voice-notes/${String(voiceNoteId)}/transcription`,
+      {
+        ...(signal ? { signal } : {}),
+      },
+    );
   },
 
   /** `GET /voice-notes/{id}/transcription` — "poll for status" (§13). */
@@ -37,8 +40,11 @@ export const transcriptionService = {
     voiceNoteId: number,
     { signal }: Cancellable = {},
   ): Promise<TranscriptionResponse> {
-    return httpClient.get<TranscriptionResponse>(`/voice-notes/${String(voiceNoteId)}/transcription`, {
-      ...(signal ? { signal } : {}),
-    });
+    return httpClient.get<TranscriptionResponse>(
+      `/voice-notes/${String(voiceNoteId)}/transcription`,
+      {
+        ...(signal ? { signal } : {}),
+      },
+    );
   },
 };

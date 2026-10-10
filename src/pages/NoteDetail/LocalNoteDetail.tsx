@@ -4,8 +4,10 @@ import { useAuth } from '@/app/providers/auth-context';
 import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
 import { useLocalNote } from '@/features/notes/hooks/useLocalNote';
 import { InlineVoiceNotes } from '@/features/voice/components/InlineVoiceNote/InlineVoiceNote';
-import { VoiceRecorder, type VoiceUploadHandle } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
-import { useUploadVoiceNote } from '@/features/voice/hooks/useVoiceNoteMutations';
+import { canRecord } from '@/features/notes/permissions';
+import { LocalClips } from '@/features/voice/components/LocalClips/LocalClips';
+import { VoiceRecorder } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
+import { useSaveClip } from '@/features/voice/hooks/useSaveClip';
 import { useVoiceNotesByNote } from '@/features/voice/hooks/useVoiceNotes';
 import { formatUserInitials } from '@/features/userLookup/hooks/useUserLookup';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
@@ -49,22 +51,13 @@ export function LocalNoteDetailPage() {
   // changes route when that happens: the mic simply becomes available here.
   const serverId = state.status === 'ready' ? state.row.serverId : null;
   const voiceNotes = useVoiceNotesByNote(serverId);
-  const uploadMutation = useUploadVoiceNote();
-  const upload: VoiceUploadHandle = {
-    mutate: (variables, options) =>
-      uploadMutation.mutate(
-        { ...variables, ...(serverId !== null ? { noteId: serverId } : {}) },
-        options,
-      ),
-    isPending: uploadMutation.isPending,
-    isError: uploadMutation.isError,
-  };
+  // The recording goes onto this device first and uploads later (step 8j).
+  const upload = useSaveClip(state.status === 'ready' ? state.row.localId : undefined);
 
   // 1C/4G: no title field — the note domain has none. Same pattern as
   // NoteDetailPage's document title.
   const label = state.status === 'ready' ? deriveNoteLabel(state.row.content).label : null;
   useDocumentTitle(label ?? 'Note');
-
 
   return (
     <article className="note-detail">
@@ -80,24 +73,24 @@ export function LocalNoteDetailPage() {
         ) : null}
 
         {state.status === 'ready' ? (
-          <div
-            className="note-detail__editor-region"
-          >
+          <div className="note-detail__editor-region">
             <NoteEditorHost
               row={state.row}
               contentAccessory={
-                voiceNotes.data && voiceNotes.data.length > 0 ? (
-                  <InlineVoiceNotes voiceNotes={voiceNotes.data} ownerInitials={ownerInitials} />
-                ) : null
+                <>
+                  {voiceNotes.data && voiceNotes.data.length > 0 ? (
+                    <InlineVoiceNotes voiceNotes={voiceNotes.data} ownerInitials={ownerInitials} />
+                  ) : null}
+                  <LocalClips noteId={state.row.localId} />
+                </>
               }
             />
           </div>
         ) : null}
-
       </div>
 
-      {state.status === 'ready' && state.row.serverId !== null ? (
-        <VoiceRecorder upload={upload} noteId={state.row.serverId} />
+      {state.status === 'ready' && canRecord(state.row.role) ? (
+        <VoiceRecorder upload={upload} noteId={state.row.localId} />
       ) : null}
     </article>
   );

@@ -77,7 +77,7 @@
    * THIS BUTTON's color — would stop reaching it.
    */
   .inline-voice-note__play svg {
-    inline-size: 1.05rem;    /* intentionally smaller than 20px — compact chat-bubble UI, keep as-is */
+    inline-size: 1.05rem; /* intentionally smaller than 20px — compact chat-bubble UI, keep as-is */
     block-size: 1.05rem;
     color: inherit;
   }

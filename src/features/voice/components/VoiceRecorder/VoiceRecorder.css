@@ -81,8 +81,13 @@
   }
 
   @keyframes voice-recorder-wave {
-    0%, 100% { transform: scaleY(0.3); }
-    50% { transform: scaleY(1); }
+    0%,
+    100% {
+      transform: scaleY(0.3);
+    }
+    50% {
+      transform: scaleY(1);
+    }
   }
 
   .voice-recorder__timer {

@@ -1,5 +1,6 @@
 import { db } from '@/features/notes/local/database';
-import { outboxRepository } from '@/features/notes/local/noteRepository';
+import { noteCommands } from '@/features/notes/local/noteCommands';
+import { outboxRepository } from '@/features/notes/local/outboxRepository';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 
 /**
@@ -16,7 +17,11 @@ export async function releaseLegacyConflicts(): Promise<void> {
   for (const row of stuck) {
     const cleaned: Record<string, unknown> = { ...row };
     delete cleaned['conflictNote'];
-    await db.notes.put({ ...(cleaned as unknown as NoteRow), syncState: 'pending', dirty: 1 });
+    await noteCommands.put({
+      ...(cleaned as unknown as NoteRow),
+      syncState: 'pending',
+      dirty: 1,
+    });
 
     if (row.serverId === null) {
       await outboxRepository.enqueueCreate({

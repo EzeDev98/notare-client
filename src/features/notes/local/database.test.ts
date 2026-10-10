@@ -112,7 +112,9 @@ describe('mapping', () => {
   });
 
   it('does not blank content when a list summary updates a row', () => {
-    const existing = fromNoteResponse(makeNote({ id: 4, content: 'the whole note', pinned: false }));
+    const existing = fromNoteResponse(
+      makeNote({ id: 4, content: 'the whole note', pinned: false }),
+    );
     const merged = fromNoteSummary(makeNoteSummary({ id: 4, pinned: true }), 1, existing);
 
     /*
@@ -185,7 +187,11 @@ describe('the version 1 -> 2 migration (8A)', () => {
   });
 
   it('queues a DELETE for a note trashed offline', async () => {
-    const trashed = { ...fromNoteResponse(makeNote({ id: 5 })), deleted: 1 as const, dirty: 1 as const };
+    const trashed = {
+      ...fromNoteResponse(makeNote({ id: 5 })),
+      deleted: 1 as const,
+      dirty: 1 as const,
+    };
 
     const outbox = await migrateFromV1([trashed]);
 

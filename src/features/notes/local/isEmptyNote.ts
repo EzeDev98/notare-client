@@ -1,7 +1,7 @@
-import type { NoteView } from './noteMappers';
-
-// 1B/5B: no title field — the note domain has none, so emptiness is
-// content-only now.
-export function isEmptyNote(note: Pick<NoteView, 'content'>): boolean {
-  return note.content.trim() === '';
+/**
+ * A note is empty only when its text is blank AND it has no clips (step 8e).
+ * A note holding just a voice clip is a real note.
+ */
+export function isEmptyNote(note: { content: string; clipCount: number }): boolean {
+  return note.content.trim() === '' && note.clipCount === 0;
 }

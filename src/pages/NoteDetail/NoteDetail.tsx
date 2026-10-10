@@ -6,8 +6,10 @@ import { InlineVoiceNotes } from '@/features/voice/components/InlineVoiceNote/In
 import { formatUserInitials } from '@/features/userLookup/hooks/useUserLookup';
 import { parseNoteId, useNote } from '@/features/notes/hooks/useNote';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
-import { VoiceRecorder, type VoiceUploadHandle } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
-import { useUploadVoiceNote } from '@/features/voice/hooks/useVoiceNoteMutations';
+import { canRecord } from '@/features/notes/permissions';
+import { LocalClips } from '@/features/voice/components/LocalClips/LocalClips';
+import { VoiceRecorder } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
+import { useSaveClip } from '@/features/voice/hooks/useSaveClip';
 import { useVoiceNotesByNote } from '@/features/voice/hooks/useVoiceNotes';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDelayedFlag } from '@/shared/hooks/useDelayedFlag';
@@ -37,10 +39,7 @@ export function NoteDetailPage() {
   const serverId = parseNoteId(noteIdParam);
 
   const state = useNote(serverId);
-  const showLoadingSpinner = useDelayedFlag(
-    state.status === 'loading',
-    LOADING_SPINNER_DELAY_MS,
-  );
+  const showLoadingSpinner = useDelayedFlag(state.status === 'loading', LOADING_SPINNER_DELAY_MS);
   const { state: authState } = useAuth();
   /*
    * Every recording InlineVoiceNotes renders on THIS page is the current
@@ -56,31 +55,14 @@ export function NoteDetailPage() {
   );
 
   const voiceNotes = useVoiceNotesByNote(serverId);
-  const uploadMutation = useUploadVoiceNote();
-  /**
-   * Adapts `useUploadVoiceNote` (whose variables carry an OPTIONAL noteId,
-   * since it also backs the standalone `/voice` recorder with no note at
-   * all) to `VoiceRecorder`'s fixed-note `VoiceUploadHandle` shape, closing
-   * over this page's own `serverId`. Rebuilt each render — no useMemo —
-   * since nothing here depends on this object's referential identity across
-   * renders; only VoiceRecorder's own click handlers close over it.
-   */
-  const upload: VoiceUploadHandle = {
-    mutate: (variables, options) =>
-      uploadMutation.mutate(
-        { ...variables, ...(serverId !== null ? { noteId: serverId } : {}) },
-        options,
-      ),
-    isPending: uploadMutation.isPending,
-    isError: uploadMutation.isError,
-  };
+  // The recording goes onto this device first and uploads later (step 8j).
+  const upload = useSaveClip(state.status === 'ready' ? state.row.localId : undefined);
 
   // 1C/4G: no title field — the note domain has none. label is null only
   // while the note hasn't loaded yet; deriveNoteLabel always returns
   // something once ready, so there is no more separate "Untitled" case.
   const label = state.status === 'ready' ? deriveNoteLabel(state.row.content).label : null;
   useDocumentTitle(label ?? 'Note');
-
 
   return (
     <article className="note-detail">
@@ -122,8 +104,8 @@ export function NoteDetailPage() {
               reasonably conclude they had lost it.
             */}
             <p className="note-detail__muted">
-              You&apos;re offline and this note isn&apos;t saved on this device yet. It will open once
-              you&apos;re back online.
+              You&apos;re offline and this note isn&apos;t saved on this device yet. It will open
+              once you&apos;re back online.
             </p>
             <Link to={ROUTES.notes()}>Back to your notes</Link>
           </div>
@@ -134,9 +116,12 @@ export function NoteDetailPage() {
             <NoteEditorHost
               row={state.row}
               contentAccessory={
-                voiceNotes.data && voiceNotes.data.length > 0 ? (
-                  <InlineVoiceNotes voiceNotes={voiceNotes.data} ownerInitials={ownerInitials} />
-                ) : null
+                <>
+                  {voiceNotes.data && voiceNotes.data.length > 0 ? (
+                    <InlineVoiceNotes voiceNotes={voiceNotes.data} ownerInitials={ownerInitials} />
+                  ) : null}
+                  <LocalClips noteId={state.row.localId} />
+                </>
               }
             />
           </div>
@@ -167,8 +152,8 @@ export function NoteDetailPage() {
         same spot regardless of how far the note content above is
         scrolled — "firm and intact", not shaky.
       */}
-      {state.status === 'ready' && state.row.serverId !== null ? (
-        <VoiceRecorder upload={upload} noteId={state.row.serverId} />
+      {state.status === 'ready' && canRecord(state.row.role) ? (
+        <VoiceRecorder upload={upload} noteId={state.row.localId} />
       ) : null}
     </article>
   );

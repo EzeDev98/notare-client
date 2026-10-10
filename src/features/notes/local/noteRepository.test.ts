@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { db } from '@/features/notes/local/database';
 import { createLocalNote, fromNoteResponse } from '@/features/notes/local/noteMappers';
-import { metaRepository, noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
+import {
+  metaRepository,
+  noteRepository,
+  outboxRepository,
+} from '@/features/notes/local/noteRepository';
 import { makeNote, makeNoteSummary } from '~/fixtures/notes';
 
 beforeEach(async () => {
@@ -61,7 +65,10 @@ describe('searching', () => {
     ]);
 
     await expect(noteRepository.search('meeting', 1).then(contents)).resolves.toEqual(
-      expect.arrayContaining(['Meeting notes: set the agenda', 'Groceries: discussed the MEETING room']),
+      expect.arrayContaining([
+        'Meeting notes: set the agenda',
+        'Groceries: discussed the MEETING room',
+      ]),
     );
   });
 
@@ -78,7 +85,9 @@ describe('searching', () => {
   });
 
   it('includes archived notes — archiving from search must not hide the result', async () => {
-    await db.notes.bulkPut([{ ...createLocalNote(1, { content: 'archived meeting' }), archived: 1 }]);
+    await db.notes.bulkPut([
+      { ...createLocalNote(1, { content: 'archived meeting' }), archived: 1 },
+    ]);
 
     await expect(noteRepository.search('meeting', 1).then(contents)).resolves.toEqual([
       'archived meeting',
@@ -238,7 +247,6 @@ describe('transactions', () => {
     });
   });
 });
-
 
 describe('meta', () => {
   it('round-trips the sync cursor without touching its format', async () => {

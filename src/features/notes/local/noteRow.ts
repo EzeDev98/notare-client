@@ -20,10 +20,17 @@ import type { ServerDateTime } from '@/lib/http/types';
  * The mapping between the two lives in one file (mappers.ts), so the
  * translation is thought about once rather than everywhere.
  */
+/** What this person may do with a note (master 6.3.1). Shared notes live in `shared`. */
+export type NoteRole = 'owner' | 'editor' | 'viewer';
+
 export interface NoteRow {
   /**
    * PRIMARY KEY. A UUID we generate, stable from the moment the note exists
    * locally.
+   *
+   * THE NOTE'S IDENTITY IS ITS clientId. From database version 4 on, localId
+   * equals clientId on every row; localId is just the name that identity has as
+   * the Dexie key. serverId is only the server's label for the same note.
    *
    * NOT the server id, which is null for anything created offline —
    * IndexedDB rejects a null primary key outright. More importantly, an
@@ -114,4 +121,22 @@ export interface NoteRow {
    * number because it is ours and never round-trips.
    */
   localUpdatedAt: number;
+
+  /*
+   * Added in database version 4. Not indexed. Rows written before version 4
+   * get `role` from the upgrade; the others are absent until a step fills
+   * them, so they are optional. `role` is required (step 8k).
+   */
+
+  /** What this person may do (features/notes/permissions.ts). */
+  role: NoteRole;
+
+  /** When the note will be removed for good, epoch ms. Set when it is deleted (8i). */
+  purgeAt?: number | null;
+
+  /** The owner's display name, for notes someone else owns. */
+  ownerName?: string | null;
+
+  /** The editing document's saved state (a Yjs update). Not used until step 18. */
+  bodyState?: Uint8Array | null;
 }

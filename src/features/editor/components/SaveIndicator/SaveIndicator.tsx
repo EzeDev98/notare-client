@@ -1,21 +1,13 @@
-import type { SaveState } from '@/features/editor/saveState';
+import { StatusSlot } from '@/design-system/ui';
+import { useNoteStatus } from '@/features/notes/hooks/useNoteStatus';
+import { NOTE_STATUS_WORDS } from '@/features/notes/status/noteStatusContent';
 
 /**
- * Intentionally renders nothing visible for any save state.
- *
- * Saving is a background concern. Local edits are already safe in IndexedDB
- * and the server copy catches up on its own, so no status line is shown for
- * progress, offline or a failed attempt. Any in-flow text here inserts a line
- * above the note and shoves the writing surface (and the mic) around each
- * time it appears or clears.
- *
- * The one state that needs a person is a conflict, and ConflictPanel renders
- * that as its own full panel, so it does not need this component.
- *
- * Kept as a component (rather than deleting the call sites) so a future
- * non-layout signal, for example a dot in the toolbar, has one place to live.
+ * The note's one status word (step 8h). All the deciding is in useNoteStatus;
+ * this only shows it. StatusSlot reserves the width, so nothing around it moves
+ * when the word changes.
  */
-export function SaveIndicator({ state }: { state: SaveState }) {
-  void state;
-  return null;
+export function SaveIndicator({ noteId }: { noteId: string }) {
+  const status = useNoteStatus(noteId);
+  return <StatusSlot status={status === null ? '' : NOTE_STATUS_WORDS[status]} />;
 }

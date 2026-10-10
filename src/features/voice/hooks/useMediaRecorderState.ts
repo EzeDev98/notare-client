@@ -1,5 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 
+import { CLIP_MAX_SECONDS } from '@/core/config/timings';
+
 /**
  * "`MediaRecorder`: permissions, device selection, MIME negotiation
  * against the server allowlist" (architecture doc §2.6, 10A).
@@ -41,7 +43,14 @@ export type RecorderStatus =
   | { state: 'permission-denied' }
   | { state: 'unsupported' }
   | { state: 'recording'; startedAt: number; paused: boolean }
-  | { state: 'stopped'; blob: Blob; durationSeconds: number; mimeType: string }
+  | {
+      state: 'stopped';
+      blob: Blob;
+      durationSeconds: number;
+      mimeType: string;
+      /** The recording stopped itself at CLIP_MAX_SECONDS. The clip is kept. */
+      hitLimit: boolean;
+    }
   | { state: 'error'; message: string };
 
 /**
@@ -64,8 +73,14 @@ export function useMediaRecorderState() {
   // reflects actual SPOKEN time, not wall-clock time including pauses.
   const pausedTotalMsRef = useRef<number>(0);
   const pausedAtRef = useRef<number | null>(null);
+  const limitTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hitLimitRef = useRef(false);
 
   const stopTracks = useCallback(() => {
+    if (limitTimerRef.current !== null) {
+      clearInterval(limitTimerRef.current);
+      limitTimerRef.current = null;
+    }
     streamRef.current?.getTracks().forEach((track) => {
       track.stop();
     });
@@ -73,7 +88,11 @@ export function useMediaRecorderState() {
   }, []);
 
   const start = useCallback(async () => {
-    if (typeof navigator === 'undefined' || !navigator.mediaDevices || typeof MediaRecorder === 'undefined') {
+    if (
+      typeof navigator === 'undefined' ||
+      !navigator.mediaDevices ||
+      typeof MediaRecorder === 'undefined'
+    ) {
       setStatus({ state: 'unsupported' });
       return;
     }
@@ -118,8 +137,10 @@ export function useMediaRecorderState() {
       const durationSeconds = (Date.now() - startedAtRef.current - totalPausedMs) / 1000;
       const blob = new Blob(chunksRef.current, { type: mimeType });
       chunksRef.current = [];
+      const hitLimit = hitLimitRef.current;
+      hitLimitRef.current = false;
       stopTracks();
-      setStatus({ state: 'stopped', blob, durationSeconds, mimeType });
+      setStatus({ state: 'stopped', blob, durationSeconds, mimeType, hitLimit });
     };
 
     recorder.onerror = () => {
@@ -128,12 +149,26 @@ export function useMediaRecorderState() {
     };
 
     startedAtRef.current = Date.now();
+    hitLimitRef.current = false;
     recorder.start();
     setStatus({ state: 'recording', startedAt: startedAtRef.current, paused: false });
+
+    // A recording stops itself at the limit and keeps what it has (step 8j).
+    limitTimerRef.current = setInterval(() => {
+      const openPauseMs = pausedAtRef.current === null ? 0 : Date.now() - pausedAtRef.current;
+      const spokenMs = Date.now() - startedAtRef.current - pausedTotalMsRef.current - openPauseMs;
+      if (spokenMs >= CLIP_MAX_SECONDS * 1000) {
+        hitLimitRef.current = true;
+        mediaRecorderRef.current?.stop();
+      }
+    }, 500);
   }, [stopTracks]);
 
   const stop = useCallback(() => {
-    if (mediaRecorderRef.current?.state === 'recording' || mediaRecorderRef.current?.state === 'paused') {
+    if (
+      mediaRecorderRef.current?.state === 'recording' ||
+      mediaRecorderRef.current?.state === 'paused'
+    ) {
       mediaRecorderRef.current.stop();
     }
   }, []);

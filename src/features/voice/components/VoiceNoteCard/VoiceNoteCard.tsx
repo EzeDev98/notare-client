@@ -34,7 +34,9 @@ export function VoiceNoteCard({ voiceNote, onDelete, deleting = false }: VoiceNo
   return (
     <li className="voice-note-card">
       <Link to={ROUTES.legacy.voiceDetail(voiceNote.id)} className="voice-note-card__link">
-        <span className="voice-note-card__duration">{formatDuration(voiceNote.durationSeconds)}</span>
+        <span className="voice-note-card__duration">
+          {formatDuration(voiceNote.durationSeconds)}
+        </span>
         <span className="voice-note-card__meta">
           {formatSize(voiceNote.sizeBytes)} ·{' '}
           <time dateTime={voiceNote.createdAt}>

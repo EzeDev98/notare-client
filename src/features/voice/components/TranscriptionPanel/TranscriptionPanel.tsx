@@ -66,9 +66,7 @@ export function TranscriptionPanel({ voiceNoteId }: TranscriptionPanelProps) {
   if (data.status === 'FAILED') {
     return (
       <div className="transcription-panel" role="alert">
-        <p className="transcription-panel__error">
-          Transcription failed: {data.errorMessage}
-        </p>
+        <p className="transcription-panel__error">Transcription failed: {data.errorMessage}</p>
         {/* submitTranscription is idempotent and resets FAILED -> PENDING
             (transcriptionService.ts's own doc comment) — this is a retry,
             not a second, different action. */}
@@ -93,7 +91,9 @@ export function TranscriptionPanel({ voiceNoteId }: TranscriptionPanelProps) {
         <p className="transcription-panel__meta">
           {data.language !== null ? data.language : null}
           {data.language !== null && data.confidence !== null ? ' · ' : null}
-          {data.confidence !== null ? `${String(Math.round(data.confidence * 100))}% confidence` : null}
+          {data.confidence !== null
+            ? `${String(Math.round(data.confidence * 100))}% confidence`
+            : null}
         </p>
       ) : null}
     </div>

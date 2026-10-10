@@ -2,12 +2,7 @@ import { http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { noteService } from '@/features/notes/api/noteService';
-import {
-  isAborted,
-  isApiError,
-  isNotFound,
-  isRetriable,
-} from '@/lib/http/errors';
+import { isAborted, isApiError, isNotFound, isRetriable } from '@/lib/http/errors';
 import { bootDefaultError, problemDetail } from '~/fixtures/errors';
 import { resetNoteFixtures } from '~/fixtures/notes';
 import { server } from '~/msw/server';
@@ -116,7 +111,6 @@ describe('auto-save', () => {
 
     expect(note.version).toBe(1);
   });
-
 });
 
 describe('writes', () => {

@@ -36,7 +36,8 @@ interface UploadVoiceNoteOptions extends Cancellable {
 function buildUploadUrl(noteId?: number, durationSeconds?: number): string {
   const params = new URLSearchParams();
   if (noteId !== undefined) params.set('noteId', String(noteId));
-  if (durationSeconds !== undefined) params.set('durationSeconds', String(Math.round(durationSeconds)));
+  if (durationSeconds !== undefined)
+    params.set('durationSeconds', String(Math.round(durationSeconds)));
   const query = params.toString();
   return `${env.apiBaseUrl}${VOICE_NOTES}${query === '' ? '' : `?${query}`}`;
 }
