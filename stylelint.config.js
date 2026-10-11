@@ -5,20 +5,9 @@
 // list when its screen is rebuilt (steps 6 to 14) and the list ends empty.
 // Never add a file to it. New CSS must pass.
 const LEGACY = [
-  'src/app/layouts/AppLayout.css',
-  'src/app/layouts/MobileNotesPanel.css',
-  'src/app/layouts/SettingsPanel.css',
-  'src/pages/Invitations/Invitations.css',
   'src/pages/InviteCollaborator/InviteCollaborator.css',
-  'src/pages/Notes/Notes.css',
-  'src/pages/NotesLanding/NotesLanding.css',
-  'src/pages/Notifications/Notifications.css',
-  'src/pages/Search/Search.css',
-  'src/pages/Sessions/Sessions.css',
   'src/pages/ShareNote/ShareNote.css',
-  'src/pages/ShareVoiceNote/ShareVoiceNote.css',
   'src/pages/SharedNote/SharedNote.css',
-  'src/pages/SharedNotes/SharedNotes.css',
   'src/pages/Trash/Trash.css',
   'src/design-system/components/Button/Button.css',
   'src/design-system/components/Logo/Logo.css',
@@ -27,11 +16,7 @@ const LEGACY = [
   'src/design-system/components/Toast/Toast.css',
   'src/features/collaboration/components/CollaboratorPicker/CollaboratorPicker.css',
   'src/features/editor/components/EditorSurface/EditorSurface.css',
-  'src/features/notes/components/NoteCard/NoteCard.css',
   'src/features/notes/components/NoteContextMenu/NoteContextMenu.css',
-  'src/features/notes/components/NoteTabs/NoteTabs.css',
-  'src/features/notes/components/SidebarNoteItem/SidebarNoteItem.css',
-  'src/features/notifications/components/NotificationsPanel/NotificationsPanel.css',
   'src/features/sharedNotes/components/SharedNoteCard/SharedNoteCard.css',
   'src/features/voice/components/InlineVoiceNote/InlineVoiceNote.css',
   'src/features/voice/components/VoiceNoteCard/VoiceNoteCard.css',
@@ -66,8 +51,8 @@ export default {
   },
   overrides: [
     {
-      // The layout components and the page base may centre and size a screen.
-      files: ['src/design-system/components/layout/*.css', 'src/design-system/base.css'],
+      // The layout components, the page base and the app shell may centre and size a screen.
+      files: ['src/design-system/components/layout/*.css', 'src/design-system/base.css', 'src/app/shell/*.css'],
       rules: { 'declaration-property-value-disallowed-list': null },
     },
     {

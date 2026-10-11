@@ -12,30 +12,6 @@
       "count": 1
     }
   },
-  "src/app/layouts/AppLayout.tsx": {
-    "@typescript-eslint/no-restricted-imports": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 11
-    }
-  },
-  "src/app/layouts/MobileNotesPanel.tsx": {
-    "@typescript-eslint/no-restricted-imports": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 4
-    }
-  },
-  "src/app/layouts/SettingsPanel.tsx": {
-    "@typescript-eslint/no-restricted-imports": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "src/app/layouts/navItems.tsx": {
     "@typescript-eslint/no-restricted-imports": {
       "count": 2
@@ -114,36 +90,9 @@
       "count": 1
     }
   },
-  "src/features/notes/components/AnimatedSidebarNoteList/AnimatedSidebarNoteList.tsx": {
-    "max-lines": {
-      "count": 1
-    },
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "src/features/notes/components/NoteCard/NoteCard.tsx": {
-    "@typescript-eslint/no-restricted-imports": {
-      "count": 2
-    }
-  },
   "src/features/notes/components/NoteContextMenu/NoteContextMenu.tsx": {
     "no-restricted-syntax": {
       "count": 7
-    }
-  },
-  "src/features/notifications/components/NotificationsPanel/NotificationsPanel.tsx": {
-    "@typescript-eslint/no-restricted-imports": {
-      "count": 2
-    },
-    "max-lines": {
-      "count": 1
-    },
-    "no-restricted-imports": {
-      "count": 1
-    },
-    "no-restricted-syntax": {
-      "count": 4
     }
   },
   "src/features/sharedNotes/components/SharedInlineVoiceNotes/SharedInlineVoiceNotes.tsx": {
@@ -185,28 +134,9 @@
       "count": 6
     }
   },
-  "src/pages/Invitations/Invitations.tsx": {
-    "@typescript-eslint/no-restricted-imports": {
-      "count": 2
-    },
-    "max-lines": {
-      "count": 1
-    },
-    "no-restricted-syntax": {
-      "count": 4
-    }
-  },
   "src/pages/InviteCollaborator/InviteCollaborator.tsx": {
     "@typescript-eslint/no-restricted-imports": {
       "count": 2
-    }
-  },
-  "src/pages/Notes/Notes.tsx": {
-    "@typescript-eslint/no-restricted-imports": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 1
     }
   },
   "src/pages/NotesLanding/NotesLanding.tsx": {
@@ -214,42 +144,7 @@
       "count": 2
     }
   },
-  "src/pages/Notifications/Notifications.test.tsx": {
-    "@typescript-eslint/no-unsafe-assignment": {
-      "count": 1
-    }
-  },
-  "src/pages/Notifications/Notifications.tsx": {
-    "@typescript-eslint/no-restricted-imports": {
-      "count": 2
-    },
-    "max-lines": {
-      "count": 1
-    },
-    "no-restricted-imports": {
-      "count": 1
-    },
-    "no-restricted-syntax": {
-      "count": 3
-    }
-  },
-  "src/pages/Sessions/Sessions.tsx": {
-    "@typescript-eslint/no-restricted-imports": {
-      "count": 2
-    }
-  },
   "src/pages/ShareNote/ShareNote.tsx": {
-    "@typescript-eslint/no-restricted-imports": {
-      "count": 3
-    },
-    "max-lines": {
-      "count": 1
-    },
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "src/pages/ShareVoiceNote/ShareVoiceNote.tsx": {
     "@typescript-eslint/no-restricted-imports": {
       "count": 3
     },
@@ -266,19 +161,6 @@
     },
     "no-restricted-syntax": {
       "count": 2
-    }
-  },
-  "src/pages/SharedNotes/SharedNotes.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "src/pages/SharedVoiceDetail/SharedVoiceDetail.tsx": {
-    "@typescript-eslint/no-restricted-imports": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 1
     }
   },
   "src/pages/Trash/Trash.tsx": {

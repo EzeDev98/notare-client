@@ -1,57 +1,10 @@
 @layer pages {
-  /* Fills the main content area exactly — .app-shell__main is the only
-     scroll container (AppLayout.css's own rule), so centring here needs
-     the full available height, not just this element's own content
-     height. */
+  /* The note pane before a note is chosen: the empty state is centred in the pane. */
   .notes-landing {
-    min-block-size: 100%;
-  }
-
-  /*
-   * Step 15. flex, not grid. `display: grid; place-items: center` centres
-   * EACH CHILD within its own auto-generated row — with two children
-   * (the text, the button) and a tall container, the leftover vertical
-   * space gets split between those two rows before centering happens
-   * within each, which is exactly why the text and button ended up far
-   * apart instead of clustered together. A column flexbox's
-   * `justify-content: center` centres the whole group of children as
-   * ONE cluster (respecting `gap` between them), which is what "centre
-   * this content" actually means when there's more than one child.
-   */
-  .notes-landing--centre {
     display: flex;
-    flex-direction: column;
+    flex: 1;
     align-items: center;
     justify-content: center;
-    gap: var(--space-4);
-    padding: var(--space-8);
-    text-align: center;
-  }
-
-  .notes-landing__body {
-    margin: 0;
-    color: var(--color-text-secondary);
-  }
-
-  .notes-landing__cta {
-    text-decoration: none;
-  }
-
-  .notes-landing__cta-button {
-    background-color: var(--color-logo) !important;
-  }
-
-  .notes-landing__cta-button:hover:not(:disabled) {
-    filter: brightness(0.92);
-  }
-
-  .notes-landing__cta-button .pf-v6-c-button__text {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-  }
-
-  .notes-landing__cta-button .pf-v6-svg {
-    color: var(--color-text-on-accent) !important;
+    min-block-size: 100%;
   }
 }

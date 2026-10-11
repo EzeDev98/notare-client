@@ -109,8 +109,6 @@ export const STANDALONE_RECHECK_LONG_MS = 1_500;
 /** Sidebar list enter and exit animation. Matches the CSS. Goes with the old sidebar. */
 export const LEGACY_SIDEBAR_ANIMATION_MS = 640;
 
-/** Pause between a note write and its navigation (AppLayout). Removed by U-02. */
-export const LEGACY_NOTE_LIFECYCLE_DELAY_MS = 220;
 
 /** Old single-toast provider. Goes when PatternFly-era components retire (decisions.md, 6e). */
 export const LEGACY_TOAST_MS = 8_000;

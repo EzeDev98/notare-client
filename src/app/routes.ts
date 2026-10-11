@@ -12,7 +12,8 @@
  * routeConfig.tsx. Builders produce real URLs; patterns never leave the router.
  */
 
-export type NotesView = 'all' | 'shared' | 'archived' | 'deleted';
+export const NOTES_VIEWS = ['all', 'shared', 'archived', 'deleted'] as const;
+export type NotesView = (typeof NOTES_VIEWS)[number];
 
 const enc = encodeURIComponent;
 
@@ -75,6 +76,9 @@ export const ROUTES = {
   notes: (view: NotesView = 'all') => (view === 'all' ? '/notes' : `/notes?view=${view}`),
   /** One note, one route. `id` is the note's id as the caller holds it. */
   note: (id: string | number) => `/notes/${enc(String(id))}`,
+
+  /** A note's path that keeps the list on the view it was opened from. */
+  inView: (path: string, view: NotesView) => (view === 'all' ? path : `${path}?view=${view}`),
 
   settings: () => '/settings',
   settingsAccount: () => '/settings/account',

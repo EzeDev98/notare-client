@@ -18,11 +18,12 @@ const PAGE_SIZE = 20;
  * doesn't blank the screen mid-fetch, same reasoning `useSharedNotes`
  * already established for this codebase's other paged online-only lists.
  */
-export function useNotifications(unreadOnly: boolean, page: number) {
+export function useNotifications(unreadOnly: boolean, page: number, enabled = true) {
   return useQuery({
     queryKey: notificationKeys.list(unreadOnly, page),
     queryFn: ({ signal }) =>
       notificationService.listNotifications({ unreadOnly, page, size: PAGE_SIZE, signal }),
     placeholderData: keepPreviousData,
+    enabled,
   });
 }

@@ -1,5 +1,7 @@
 import { useId, type ReactNode } from 'react';
 
+import '../VisuallyHidden/VisuallyHidden.css';
+
 import './FormField.css';
 
 export interface FieldA11y {
@@ -10,6 +12,8 @@ export interface FieldA11y {
 
 interface FormFieldProps {
   label: string;
+  /** Keeps the label for screen readers and draws no text. */
+  hideLabel?: boolean | undefined;
   optional?: boolean | undefined;
   hint?: string | undefined;
   error?: string | undefined;
@@ -22,7 +26,7 @@ interface FormFieldProps {
  * Label, control, and one reserved line below for the hint or the error.
  * The error replaces the hint in the same line, so the layout never moves.
  */
-export function FormField({ label, optional = false, hint, error, className, children }: FormFieldProps) {
+export function FormField({ label, hideLabel = false, optional = false, hint, error, className, children }: FormFieldProps) {
   const id = useId();
   const messageId = `${id}-message`;
   const message = error ?? hint;
@@ -34,7 +38,7 @@ export function FormField({ label, optional = false, hint, error, className, chi
   const classes = ['ui-form-field', className].filter(Boolean).join(' ');
   return (
     <div className={classes}>
-      <label className="ui-form-field__label" htmlFor={id}>
+      <label className={hideLabel ? 'ui-form-field__label ui-visually-hidden' : 'ui-form-field__label'} htmlFor={id}>
         {label}
         {optional ? <span className="ui-form-field__optional">Optional</span> : null}
       </label>

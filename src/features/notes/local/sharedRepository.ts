@@ -8,6 +8,10 @@ export const sharedRepository = {
     return db.shared.orderBy('updatedAt').reverse().toArray();
   },
 
+  count(): Promise<number> {
+    return db.shared.count();
+  },
+
   get(noteId: number): Promise<SharedRow | undefined> {
     return db.shared.get(noteId);
   },

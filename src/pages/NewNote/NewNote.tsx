@@ -2,11 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 
 import { useAuth } from '@/app/providers/auth-context';
-import { ROUTES } from '@/app/routes';
-import { findBlankDraft, startDraft } from '@/features/notes/createNote';
-import { clipRepository } from '@/features/notes/local/clipRepository';
-import { isEmptyNote } from '@/features/notes/local/isEmptyNote';
-import { noteRepository } from '@/features/notes/local/noteRepository';
+import { newNotePath } from '@/features/notes/newNotePath';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './NewNote.css';
 
@@ -33,27 +29,7 @@ export function NewNotePage() {
       void navigate(path, { replace: true, state: { skipEnterAnimation: true } });
     }
 
-    void (async () => {
-      // One blank note at a time. A blank draft already open is reused.
-      const draft = findBlankDraft();
-      if (draft) {
-        open(ROUTES.legacy.noteLocal(draft.id));
-        return;
-      }
-
-      // A blank note already on this device (from before drafts) is reused too.
-      const rows = await noteRepository.listActive(currentUserId);
-      for (const row of rows) {
-        const clipCount = await clipRepository.countForNote(row.localId);
-        if (isEmptyNote({ content: row.content, clipCount })) {
-          open(ROUTES.legacy.noteOf(row));
-          return;
-        }
-      }
-
-      // Nothing is written. The note exists once the person types.
-      open(ROUTES.legacy.noteLocal(startDraft(currentUserId).id));
-    })();
+    void newNotePath(currentUserId).then(open);
   }, [currentUserId, navigate]);
 
   return (

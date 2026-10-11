@@ -1,12 +1,12 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router';
 
-import { AppLayout } from '@/app/layouts/AppLayout';
 import { PublicLayout } from '@/app/layouts/PublicLayout';
 import { RequireAuth } from '@/app/RequireAuth';
 import { RouteError } from '@/app/RouteError';
 import { RouteFallback } from '@/app/RouteFallback';
 import { ROUTE_ENTRIES, ROUTE_REDIRECTS, type RouteEntry } from '@/app/routeConfig';
 import { ROUTES, ROUTE_PATTERNS } from '@/app/routes';
+import { Shell } from '@/app/shell/Shell';
 
 /*
  * The tree is built from routeConfig.tsx: a route sits under the signed-in
@@ -42,7 +42,7 @@ export const routes = [
     errorElement: <RouteError />,
     children: [
       {
-        element: <AppLayout />,
+        element: <Shell />,
         HydrateFallback: RouteFallback,
         children: ROUTE_ENTRIES.filter((e) => e.guards.requiresAuth).map(toRoute),
       },

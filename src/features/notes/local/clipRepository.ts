@@ -24,6 +24,11 @@ export const clipRepository = {
     return db.clips.where('noteId').equals(noteId).count();
   },
 
+  /** The clip the server knows as `serverId`, or nothing if it is not on this device. */
+  findByServerId(serverId: number): Promise<ClipRow | undefined> {
+    return db.clips.filter((clip) => clip.serverId === serverId).first();
+  },
+
   /** Clip counts for every note at once. Reads keys only, never the audio. */
   async countsByNote(): Promise<Record<string, number>> {
     const keys = await db.clips.orderBy('noteId').keys();

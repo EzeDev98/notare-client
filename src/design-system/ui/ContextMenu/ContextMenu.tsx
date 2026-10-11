@@ -2,6 +2,7 @@ import { Archive, Copy, LogOut, Pin, Trash2, Users } from 'lucide-react';
 import type { ComponentProps } from 'react';
 
 import { Menu } from '../Menu/Menu';
+import type { PopoverPoint } from '../Popover/Popover';
 import type { MenuEntry } from '../Menu/MenuList';
 
 export type NoteRole = 'owner' | 'editor' | 'viewer';
@@ -21,6 +22,9 @@ interface ContextMenuProps {
   onArchive?: Handler;
   onDelete?: Handler;
   onLeave?: Handler;
+  /** Open at a screen point (right-click, long-press). */
+  point?: PopoverPoint | null | undefined;
+  onPointClose?: (() => void) | undefined;
   /** Draw the trigger and spread triggerProps onto it, as for Menu. */
   children: ComponentProps<typeof Menu>['children'];
 }
@@ -45,10 +49,16 @@ export function ContextMenu({
   onArchive,
   onDelete,
   onLeave,
+  point,
+  onPointClose,
   children,
 }: ContextMenuProps) {
   const copyText: MenuEntry = { label: 'Copy as text', icon: Copy, onSelect: run(onCopyText) };
   const makeCopy: MenuEntry = { label: 'Make a copy', icon: Copy, onSelect: run(onMakeCopy) };
+  // Without a handler the item is left out, so a feature that is switched off shows nothing.
+  const leave: MenuEntry[] = onLeave
+    ? ['separator', { label: 'Leave this note', icon: LogOut, onSelect: run(onLeave), danger: true }]
+    : [];
   const items: MenuEntry[] =
     role === 'owner'
       ? [
@@ -62,12 +72,11 @@ export function ContextMenu({
       : [
           ...(where === 'editor' ? [copyText] : []),
           makeCopy,
-          'separator',
-          { label: 'Leave this note', icon: LogOut, onSelect: run(onLeave), danger: true },
+          ...leave,
         ];
 
   return (
-    <Menu label="Note options" items={items}>
+    <Menu label="Note options" items={items} point={point} onPointClose={onPointClose}>
       {children}
     </Menu>
   );

@@ -1,0 +1,71 @@
+@layer pages {
+  /* The pane scrolls inside itself; nothing else on the list screen scrolls. */
+  .home__scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .home__inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+    width: min(var(--content-width), 100%);
+    margin-inline: auto;
+    padding: 0 var(--gutter) calc(var(--gutter) * 2);
+  }
+
+  .home__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--gap);
+  }
+
+  .home__title {
+    font-size: var(--text-lg);
+    line-height: var(--leading-lg);
+  }
+
+  .home__count {
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
+    color: var(--color-text-muted);
+  }
+
+  .home__sub {
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    color: var(--color-text-muted);
+  }
+
+  .home__people {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+  }
+
+  .home__people .n-person {
+    padding-inline: var(--gutter);
+  }
+
+  .home__people .home__none {
+    padding: var(--gap) var(--gutter);
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    color: var(--color-text-muted);
+  }
+
+  .n-find {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+  }
+
+  /* In the 320px list pane the content fills it. */
+  @container (min-width: 800px) {
+    .home__inner {
+      width: 100%;
+    }
+  }
+}

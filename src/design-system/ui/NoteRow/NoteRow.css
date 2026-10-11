@@ -88,6 +88,11 @@
     height: var(--leading-xs);
   }
 
+  .n-row .ui-menu-anchor {
+    flex: none;
+    margin-inline-end: calc(var(--gap) / -2);
+  }
+
   .n-row__glyphs svg {
     width: var(--glyph-size);
     height: var(--glyph-size);

@@ -1,3 +1,5 @@
+import { noteCount } from '@/design-system/lib/noteCount';
+
 import { Avatar, type Tint } from '../Avatar/Avatar';
 import { Button } from '../Button/Button';
 import '../Button/Button.css';
@@ -26,12 +28,10 @@ interface DrawerContentProps {
   onSignOut: () => void;
 }
 
-const notes = (count: number): string => `${String(count)} ${count === 1 ? 'note' : 'notes'}`;
-
 function syncText(sync: DrawerContentProps['sync']): string {
   const waiting = sync.waiting ?? 0;
-  if (sync.state === 'offline') return waiting > 0 ? `Offline. ${notes(waiting)} waiting to sync` : 'Offline';
-  if (sync.state === 'syncing') return `Syncing ${notes(waiting)}`;
+  if (sync.state === 'offline') return waiting > 0 ? `Offline. ${noteCount(waiting)} waiting to sync` : 'Offline';
+  if (sync.state === 'syncing') return `Syncing ${noteCount(waiting)}`;
   return 'All notes synced';
 }
 

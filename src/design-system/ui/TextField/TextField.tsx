@@ -5,6 +5,8 @@ import { FormField } from '../FormField/FormField';
 
 export type TextFieldProps = Omit<ComponentPropsWithRef<'input'>, 'id' | 'children'> & {
   label: string;
+  /** Keeps the label for screen readers and draws no text. */
+  hideLabel?: boolean;
   hint?: string;
   error?: string;
   optional?: boolean;
@@ -19,6 +21,7 @@ export type TextFieldProps = Omit<ComponentPropsWithRef<'input'>, 'id' | 'childr
 /** Label, 40px input with 16px text, and one reserved hint/error line. */
 export function TextField({
   label,
+  hideLabel,
   hint,
   error,
   optional,
@@ -32,7 +35,7 @@ export function TextField({
 }: TextFieldProps) {
   const locked = submitting || readOnly;
   return (
-    <FormField label={label} hint={hint} error={error} optional={optional} className={className}>
+    <FormField label={label} hideLabel={hideLabel} hint={hint} error={error} optional={optional} className={className}>
       {(a11y) => (
         <Control invalid={Boolean(error)} disabled={disabled} readOnly={locked} trailing={Boolean(trailing)}>
           {leading ? <span className="ui-control__affix">{leading}</span> : null}

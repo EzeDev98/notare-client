@@ -6,6 +6,11 @@ import { usePresence } from '@/design-system/motion/usePresence';
 
 import './Popover.css';
 
+export interface PopoverPoint {
+  x: number;
+  y: number;
+}
+
 interface PopoverProps {
   open: boolean;
   /** Called when the user clicks elsewhere, scrolls the page or resizes the window. */
@@ -15,6 +20,8 @@ interface PopoverProps {
   /** menu: the list sets its own width. anchor: as wide as the anchor. */
   match?: 'menu' | 'anchor' | undefined;
   align?: 'start' | 'end' | undefined;
+  /** Draw next to this screen point instead of the anchor (right-click, long-press). */
+  point?: PopoverPoint | null | undefined;
   children: ReactNode;
 }
 
@@ -25,14 +32,13 @@ const tokenPx = (name: string): number =>
  * A floating list below its anchor (above, when there is no room). Fades in over
  * the fast token and out again. Drawn from tokens, never the browser's own list.
  */
-export function Popover({ open, onClose, anchorRef, match = 'menu', align = 'start', children }: PopoverProps) {
+export function Popover({ open, onClose, anchorRef, match = 'menu', align = 'start', point, children }: PopoverProps) {
   const { mounted, ref } = usePresence<HTMLDivElement>(open, { enter: menuIn, exit: menuOut });
 
   useLayoutEffect(() => {
     const element = ref.current;
-    const anchor = anchorRef.current;
-    if (!mounted || !element || !anchor) return;
-    const rect = anchor.getBoundingClientRect();
+    const rect = point ? new DOMRect(point.x, point.y, 0, 0) : anchorRef.current?.getBoundingClientRect();
+    if (!mounted || !element || !rect) return;
     const gap = tokenPx('--gap') / 2;
     element.style.width = match === 'anchor' ? `${String(rect.width)}px` : '';
     const { offsetWidth: width, offsetHeight: height } = element;
@@ -41,7 +47,7 @@ export function Popover({ open, onClose, anchorRef, match = 'menu', align = 'sta
     const left = Math.max(gap, Math.min(wanted, window.innerWidth - width - gap));
     element.style.left = `${String(left)}px`;
     element.style.top = `${String(below ? rect.bottom + gap : rect.top - gap - height)}px`;
-  }, [mounted, open, match, align, anchorRef, ref]);
+  }, [mounted, open, match, align, point, anchorRef, ref]);
 
   useEffect(() => {
     if (!open) return undefined;

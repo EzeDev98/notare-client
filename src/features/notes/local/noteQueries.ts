@@ -41,6 +41,14 @@ function byRecent(a: NoteRow, b: NoteRow): number {
   return b.localUpdatedAt - a.localUpdatedAt;
 }
 
+/** The numbers the drawer shows. `waiting` is every row the server has not accepted yet. */
+export interface NoteCounts {
+  all: number;
+  archived: number;
+  deleted: number;
+  waiting: number;
+}
+
 export const noteQueries = {
   /** The main list: mine, not trashed, not archived. */
   async listActive(ownerId: number): Promise<NoteRow[]> {
@@ -111,6 +119,23 @@ export const noteQueries = {
       .toArray();
 
     return rows.sort(byRecent);
+  },
+
+  /** Counts only, on the same compound index as the lists and on `dirty`. */
+  async counts(ownerId: number): Promise<NoteCounts> {
+    const [all, archived, deleted, waiting] = await Promise.all([
+      db.notes.where('[ownerId+deleted+archived]').equals([ownerId, 0, 0]).count(),
+      db.notes.where('[ownerId+deleted+archived]').equals([ownerId, 0, 1]).count(),
+      db.notes
+        .where('[ownerId+deleted+archived]')
+        .anyOf([
+          [ownerId, 1, 0],
+          [ownerId, 1, 1],
+        ])
+        .count(),
+      db.notes.where('dirty').equals(1).count(),
+    ]);
+    return { all, archived, deleted, waiting };
   },
 
   getByLocalId(localId: string): Promise<NoteRow | undefined> {
