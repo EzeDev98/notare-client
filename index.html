@@ -64,6 +64,12 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Notare</title>
     <style>
+      /* The one declaration of the CSS layer order, weakest to strongest. It lives here, not in a
+         stylesheet, because the production minifier drops a bare @layer statement and the order
+         then depends on which layer appears first in the bundle. */
+      @layer patternfly, reset, tokens, base, components, pages, utilities;
+    </style>
+    <style>
       /*
        * EXCEPTION (7c): the static splash cannot use design tokens, because they load
        * after it paints. The raw values must match tokens.css (--p-bg-light, --p-bg-dark,

@@ -53,13 +53,13 @@ const SHELL_CACHE = `notare-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `notare-runtime-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
-// Only files with STABLE names — anything Vite outputs from `src/` is
-// hashed per build, so there is no fixed list of "the app's JS/CSS" to
-// precache here. Those are instead added to RUNTIME_CACHE the first time
-// each is actually requested (see handleStaticAsset below) — a repeat
-// visit works offline; a genuinely first visit to a brand-new route on a
-// dead connection does not, which is the honest limit of this approach
-// without a build-time manifest (Workbox's job, not taken on here).
+// The whole app shell, precached at install (D-18): every JS/CSS/font/image
+// the build emitted, spliced in by vite-plugins/serviceWorkerVersion.ts as a
+// JSON array. Like CACHE_VERSION, this literal only exists in the emitted
+// dist/sw.js — never edit it by hand.
+const BUILD_ASSETS = __NOTARE_PRECACHE__;
+
+// Files with STABLE names that are not part of the bundle.
 const PRECACHE_URLS = [
   OFFLINE_URL,
   '/manifest.webmanifest',
@@ -71,7 +71,7 @@ const PRECACHE_URLS = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.addAll(PRECACHE_URLS)));
+  event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.addAll([...PRECACHE_URLS, ...BUILD_ASSETS])));
   // No self.skipWaiting() here — see the message listener below. 11D
   // wants the person to approve activation (UpdateAvailableModal's
   // "Update now"), not a mid-session takeover nobody asked for.
@@ -127,6 +127,44 @@ self.addEventListener('activate', (event) => {
  */
 let authToken = null;
 
+/*
+ * D-16: the same token, persisted by authTokenRelay.ts in IndexedDB
+ * (DB 'notare-sw', store 'auth', key 'token') so it survives this worker
+ * being terminated and respawned. Read only when the in-memory copy is
+ * empty. Any failure resolves to null — the request then goes out
+ * unauthenticated, exactly as before.
+ */
+function readPersistedToken() {
+  return new Promise((resolve) => {
+    try {
+      const open = indexedDB.open('notare-sw', 1);
+      open.onupgradeneeded = () => {
+        if (!open.result.objectStoreNames.contains('auth')) open.result.createObjectStore('auth');
+      };
+      open.onerror = () => resolve(null);
+      open.onsuccess = () => {
+        const db = open.result;
+        try {
+          const get = db.transaction('auth', 'readonly').objectStore('auth').get('token');
+          get.onsuccess = () => {
+            db.close();
+            resolve(typeof get.result === 'string' ? get.result : null);
+          };
+          get.onerror = () => {
+            db.close();
+            resolve(null);
+          };
+        } catch {
+          db.close();
+          resolve(null);
+        }
+      };
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
 self.addEventListener('message', (event) => {
   const data = event.data;
   if (!data || typeof data !== 'object') return;
@@ -139,8 +177,38 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   } else if (data.type === 'AUTH_TOKEN') {
     authToken = typeof data.token === 'string' ? data.token : null;
+  } else if (data.type === 'CHECK_OFFLINE') {
+    // The installing screen's checks (10d). Answers on the port the page sent.
+    const port = event.ports[0];
+    if (port) event.waitUntil(checkOffline().then((report) => port.postMessage(report)));
   }
 });
+
+/**
+ * What this worker really holds, for the onboarding "Checked" lines — looked
+ * up in the cache, never assumed:
+ *   precached     every file in the build list is in SHELL_CACHE.
+ *   opensOffline  the saved page is there AND every script and stylesheet it
+ *                 names is too, so launching with no connection would boot.
+ */
+async function checkOffline() {
+  const cache = await caches.open(SHELL_CACHE);
+
+  const wanted = [...PRECACHE_URLS, ...BUILD_ASSETS];
+  const hits = await Promise.all(wanted.map((url) => cache.match(url)));
+  const precached = hits.every(Boolean);
+
+  let opensOffline = false;
+  const shell = (await cache.match(APP_SHELL_KEY)) ?? (await cache.match('/'));
+  if (shell) {
+    const html = await shell.clone().text();
+    const refs = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((m) => m[1]);
+    const found = await Promise.all(refs.map((url) => cache.match(url)));
+    opensOffline = refs.length > 0 && found.every(Boolean);
+  }
+
+  return { precached, opensOffline };
+}
 
 function isVoiceStreamRequest(url) {
   return url.pathname.includes('/voice-notes/') && url.pathname.endsWith('/stream');
@@ -159,7 +227,8 @@ function isVoiceStreamRequest(url) {
  */
 async function handleVoiceStream(request) {
   const headers = new Headers(request.headers);
-  if (authToken !== null) headers.set('Authorization', authToken);
+  const token = authToken ?? (await readPersistedToken());
+  if (token !== null) headers.set('Authorization', token);
   return fetch(new Request(request, { headers }));
 }
 
@@ -180,7 +249,7 @@ async function handleNavigation(request) {
     }
     return response;
   } catch {
-    const shell = await cache.match(APP_SHELL_KEY);
+    const shell = (await cache.match(APP_SHELL_KEY)) ?? (await cache.match('/'));
     if (shell) return shell;
     const offline = await cache.match(OFFLINE_URL);
     return offline ?? new Response('Offline', { status: 503, statusText: 'Offline' });
@@ -190,8 +259,22 @@ async function handleNavigation(request) {
 /** Stale-while-revalidate for everything else GET — the app's JS/CSS/
  * images, populated into RUNTIME_CACHE the first time each is fetched. */
 async function handleStaticAsset(request) {
+  // A cache-only request (the "opens without a connection" check) is answered
+  // from the shell cache or not at all — it must never reach the network, or
+  // it would pass even when nothing is cached.
+  if (request.cache === 'only-if-cached') {
+    const { pathname } = new URL(request.url);
+    const hit = await caches.match(pathname === '/index.html' ? '/' : request, {
+      cacheName: SHELL_CACHE,
+    });
+    return hit ?? new Response('', { status: 504, statusText: 'Not cached' });
+  }
+
   const cache = await caches.open(RUNTIME_CACHE);
-  const cached = await cache.match(request);
+  // Precached shell files live in SHELL_CACHE; anything else seen at runtime
+  // in RUNTIME_CACHE.
+  const cached =
+    (await caches.match(request, { cacheName: SHELL_CACHE })) ?? (await cache.match(request));
 
   const network = fetch(request)
     .then((response) => {

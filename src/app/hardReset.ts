@@ -150,7 +150,7 @@ async function deleteAllDatabases(): Promise<void> {
   db.close();
   await closeAuthDatabase();
 
-  const knownNames = [db.name, 'notare-auth'];
+  const knownNames = [db.name, 'notare-auth', 'notare-sw'];
 
   let enumeratedNames: string[] = [];
   if (typeof indexedDB !== 'undefined' && typeof indexedDB.databases === 'function') {

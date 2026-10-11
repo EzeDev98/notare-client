@@ -49,6 +49,11 @@ export const SPLASH_MIN_MS = 500;
 /** The longest the start-up waits for the font before showing the app anyway. */
 export const FONT_WAIT_MAX_MS = 1_500;
 
+// --- Install checks (pwa/installChecks.ts, step 10d) ------------------------
+
+/** The longest an install check waits for the service worker before it counts as failed. */
+export const INSTALL_CHECK_TIMEOUT_MS = 15_000;
+
 // --- Toasts (design-system/ui/Toast) ---------------------------------------
 
 /** Default toast time. */

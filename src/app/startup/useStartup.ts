@@ -5,10 +5,9 @@ import { router } from '@/app/router';
 import { decideRoute } from '@/app/startup/decideRoute';
 import { FONT_WAIT_MAX_MS, SPLASH_MIN_MS } from '@/core/config/timings';
 import { db } from '@/features/notes/local/database';
+import { metaRepository } from '@/features/notes/local/metaRepository';
+import { META_KEYS } from '@/features/notes/local/metaRow';
 import { useEverStandalone } from '@/pwa/displayMode';
-
-/** Install is required before anything else. Revisit in step 10e (O-14). */
-const INSTALL_MANDATORY = true;
 
 /** Vitest sets MODE to 'test'. Waits collapse to zero there so tests need no fake timers. */
 const IS_TEST = import.meta.env.MODE === 'test';
@@ -38,6 +37,16 @@ function fontReady(): Promise<void> {
   return Promise.race([loaded, wait(FONT_WAIT_MAX_MS)]);
 }
 
+/** The saved answer to "Continue in browser" (O-14). `chosenNow` covers a save that failed. */
+async function readInstallChoice(chosenNow: boolean): Promise<'browser' | null> {
+  if (chosenNow) return 'browser';
+  try {
+    return (await metaRepository.get<string>(META_KEYS.installChoice)) === 'browser' ? 'browser' : null;
+  } catch {
+    return null;
+  }
+}
+
 async function hasLocalNotes(): Promise<boolean> {
   try {
     return (await db.notes.count()) > 0;
@@ -58,6 +67,8 @@ export function useStartup(): {
   outcome: StartupOutcome;
   /** Decide again, for the offline screen. True when it got past offline. */
   retry: () => Promise<boolean>;
+  /** The person chose to carry on in the browser: remember it and move on (O-14). */
+  continueInBrowser: () => Promise<void>;
 } {
   const { state } = useAuth();
   const installed = useEverStandalone();
@@ -69,6 +80,7 @@ export function useStartup(): {
   const latest = useRef({ hasSession, installed });
   latest.current = { hasSession, installed };
   const deciding = useRef(false);
+  const browserChosen = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,7 +99,7 @@ export function useStartup(): {
       search,
       hasSession: latest.current.hasSession,
       installed: latest.current.installed,
-      installMandatory: INSTALL_MANDATORY,
+      installChoice: await readInstallChoice(browserChosen.current),
       online: navigator.onLine,
       hasLocalData: await hasLocalNotes(),
     });
@@ -113,10 +125,20 @@ export function useStartup(): {
     if (outcome === 'install' && installed) void decide();
   }, [outcome, installed, decide]);
 
+  const continueInBrowser = useCallback(async (): Promise<void> => {
+    browserChosen.current = true;
+    try {
+      await metaRepository.set(META_KEYS.installChoice, 'browser');
+    } catch {
+      // Not saved: this session still carries on, and the gate asks again next time.
+    }
+    await decide();
+  }, [decide]);
+
   const retry = useCallback(async (): Promise<boolean> => {
     if (!navigator.onLine) return false;
     return (await decide()) !== 'offline';
   }, [decide]);
 
-  return { outcome, retry };
+  return { outcome, retry, continueInBrowser };
 }

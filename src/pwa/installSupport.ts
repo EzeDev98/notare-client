@@ -21,7 +21,7 @@
  * reports `'MacIntel'`, identical to a real Mac. The disambiguator is
  * touch support — no Mac has `maxTouchPoints > 1`, every iPad does.
  */
-function isIOS(): boolean {
+export function isIOS(): boolean {
   if (typeof navigator === 'undefined') return false;
 
   const userAgentIsIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);

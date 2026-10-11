@@ -23,7 +23,7 @@
  *
  * A @layer STATEMENT is allowed before @import; ordinary rules are not.
  */
-@layer patternfly, reset, tokens, base, components, pages, utilities;
+/* The layer order is declared in index.html (the production minifier drops it from here). */
 
 @import '@patternfly/react-core/dist/styles/base.css' layer(patternfly);
 @import './tokens/reset.css';

@@ -25,19 +25,23 @@ export function serviceWorkerVersionPlugin(): Plugin {
   return {
     name: 'notare:sw-version',
     apply: 'build',
-    generateBundle() {
+    generateBundle(_options, bundle) {
       const template = readFileSync(SOURCE_PATH, 'utf8');
 
-      if (!template.includes(PLACEHOLDER)) {
-        throw new Error(
-          `service-worker/sw.js: expected to find ${PLACEHOLDER} to stamp — has CACHE_VERSION's declaration changed?`,
-        );
+      for (const placeholder of [PLACEHOLDER, PRECACHE_PLACEHOLDER]) {
+        if (!template.includes(placeholder)) {
+          throw new Error(
+            `service-worker/sw.js: expected to find ${placeholder} to stamp — has its declaration changed?`,
+          );
+        }
       }
 
       this.emitFile({
         type: 'asset',
         fileName: 'sw.js',
-        source: template.replace(PLACEHOLDER, readBuildVersion()),
+        source: template
+          .replaceAll(PLACEHOLDER, readBuildVersion())
+          .replaceAll(PRECACHE_PLACEHOLDER, JSON.stringify(collectPrecacheUrls(Object.keys(bundle)))),
       });
     },
   };
@@ -45,6 +49,30 @@ export function serviceWorkerVersionPlugin(): Plugin {
 
 const SOURCE_PATH = fileURLToPath(new URL('../service-worker/sw.js', import.meta.url));
 const PLACEHOLDER = '__NOTARE_SW_VERSION__';
+const PRECACHE_PLACEHOLDER = '__NOTARE_PRECACHE__';
+
+/** Files in /public that the app needs but that never pass through the bundle. */
+const PUBLIC_SHELL_FILES = [
+  '/',
+  '/offline.html',
+  '/fonts/red-hat-text-latin-400-normal.woff2',
+  '/fonts/red-hat-text-latin-ext-400-normal.woff2',
+];
+
+/**
+ * The whole app shell, known only at build time: every hashed JS/CSS/font/
+ * image Rollup emitted (lazy route chunks included, so a deep link works
+ * offline on the very first visit) plus the unhashed public files above.
+ * Source maps and index.html are left out — the shell document is cached
+ * under '/' and refreshed by handleNavigation.
+ */
+function collectPrecacheUrls(bundleFileNames: string[]): string[] {
+  const emitted = bundleFileNames
+    .filter((name) => /.(js|css|woff2?|png|svg|webp|webmanifest)$/.test(name))
+    .map((name) => `/${name}`);
+
+  return [...new Set([...PUBLIC_SHELL_FILES, ...emitted])];
+}
 
 /**
  * A git short SHA, not a timestamp: reproducible for a given commit (so

@@ -21,4 +21,6 @@ export const META_KEYS = {
    */
   syncCursor: 'sync.cursor',
   lastFullSyncAt: 'sync.lastFullSyncAt',
+  /** 'browser' once the person chose to carry on in the browser instead of installing (O-14). */
+  installChoice: 'install.choice',
 } as const;

@@ -59,7 +59,7 @@ Answered now means the owner choice is recorded here. Any other row keeps the ma
 | O-11 | Banners push editor content down | Fixed-height slot under the header, or overlay strip | OPEN | Step 5 |
 | O-12 | List row title 16/24 vs body 14/20 | Row title 16/24, preview 14/20 | PROPOSED | Step 5 |
 | O-13 | Two-pane threshold | 800px container width | AGREED | answered |
-| O-14 | Install step mandatory or skippable | Mandatory only if the app cannot work uninstalled; else "Continue in browser" | OPEN | Step 10 |
+| O-14 | Install step mandatory or skippable | Mandatory only if the app cannot work uninstalled; else "Continue in browser" | ADOPTED | Step 10 |
 | O-15 | PIN on device or with account | Device only (app must open offline) | AGREED | answered |
 | O-16 | How the "10 empty notes" appeared | Owner describes timing, offline or online, cache clear | OPEN | Step 8 |
 | O-17 | Clips recorded on device first, uploaded later | Confirm; decides local model and upload contract | AGREED | Step 8 |
@@ -172,7 +172,7 @@ The raw <button> rule is clean on every file above today (npm run lint, 0 errors
 
 | ID | Date | Decision | Status | Source |
 |---|---|---|---|---|
-| D-011 | 2026-10-10 | Install stays mandatory (O-14) and the install gate comes before sign-in. Decided in `src/app/startup/decideRoute.ts`; the flag is `INSTALL_MANDATORY` in `useStartup.ts`. Revisit in step 10e. | ADOPTED | Guide 7c |
+| D-011 | 2026-10-10 | Install is skippable (O-14, decided in step 10e). The install gate comes before sign-in until the app is installed or the person taps "Continue in browser", which saves `install.choice = 'browser'` in the meta table. Decided in `src/app/startup/decideRoute.ts` from `installChoice`, read by `useStartup.ts`. | ADOPTED | Guide 7c |
 | D-012 | 2026-10-10 | No `/welcome` screen exists yet, so a signed-out visitor goes to `/sign-in`. Last open note on wide screens is not wired because nothing records it yet. | ADOPTED | Guide 7c |
 | D-013 | 2026-10-10 | Route files live in `src/app/` (routes.ts, routeConfig.tsx, router.tsx), as the build guide says. D-001 said `src/core/`; the guide wins for routes. Timings and the adapter are in `src/core/`. | ADOPTED | Guide 7a |
 | D-014 | 2026-10-10 | Old timings stay as `LEGACY_*` constants in `timings.ts` until the step that removes the behaviour (8f, U-02). Every other duration lives in `timings.ts`. | ADOPTED | Guide 7b |

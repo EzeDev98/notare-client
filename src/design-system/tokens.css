@@ -126,6 +126,7 @@
     --logo-size-lg: 72px;
     --tile-size: 40px;
     --tile-emoji: 20px;
+    --hero-size: 72px;
   }
 
   /* Settings, Appearance: force a theme. No attribute means follow the system. */

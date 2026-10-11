@@ -110,3 +110,27 @@ export function stagger(els: Element[], frames: Frame[], t: Timing): Animation[]
   const step = reduced() ? 0 : ms('--motion-stagger');
   return els.map((el, i) => run(el, frames, { ...t, delay: i < STAGGER_CAP ? i * step : 0 }));
 }
+
+/**
+ * The onboarding typed line (master pitfall 16): its WIDTH, in pixels, in
+ * `steps` equal jumps, so each letter appears whole. Never `ch`, which moves
+ * with the font. The one animation here that is not transform or opacity, and
+ * the caller skips it under reduced motion.
+ */
+export function typeIn(el: HTMLElement, widthPx: number, steps: number, delay: number): Animation {
+  return el.animate([{ width: '0px' }, { width: `${String(widthPx)}px` }], {
+    duration: ms('--motion-reveal') * 2,
+    easing: `steps(${String(steps)}, end)`,
+    delay,
+    fill: 'backwards',
+  });
+}
+
+/** A caret that blinks for as long as it is on screen. Hard on and off, no fade. */
+export function blink(el: Element): Animation {
+  return el.animate([{ opacity: 1 }, { opacity: 0 }], {
+    duration: ms('--motion-reveal') * 1.5,
+    iterations: Infinity,
+    easing: 'steps(1, end)',
+  });
+}

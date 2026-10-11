@@ -24,6 +24,9 @@ interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
 }
 
+/** What promptInstall found out: the person's answer, or that there was no prompt to show. */
+export type InstallOutcome = 'accepted' | 'dismissed' | 'unavailable';
+
 type InstallListener = (available: boolean) => void;
 
 let deferredEvent: BeforeInstallPromptEvent | null = null;
@@ -69,8 +72,8 @@ export function getInstallAvailability(): boolean {
  * Can only be called from a user gesture (a click handler) — the spec
  * requires it; calling it elsewhere silently does nothing.
  */
-export async function promptInstall(): Promise<void> {
-  if (deferredEvent === null) return;
+export async function promptInstall(): Promise<InstallOutcome> {
+  if (deferredEvent === null) return 'unavailable';
   const event = deferredEvent;
   // The captured event is single-use regardless of outcome.
   deferredEvent = null;
@@ -79,6 +82,7 @@ export async function promptInstall(): Promise<void> {
   console.debug(`[pwa] install prompt outcome: ${outcome}`);
   dismissedOrInstalled = true;
   notify(false);
+  return outcome;
 }
 
 /**

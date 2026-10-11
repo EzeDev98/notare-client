@@ -20,7 +20,6 @@ const LEGACY = [
   'src/pages/SharedNote/SharedNote.css',
   'src/pages/SharedNotes/SharedNotes.css',
   'src/pages/Trash/Trash.css',
-  'src/pwa/components/InstallPage.css',
   'src/design-system/components/Button/Button.css',
   'src/design-system/components/Logo/Logo.css',
   'src/design-system/components/Modal/Modal.css',

@@ -1,0 +1,300 @@
+@layer pages {
+  .ob-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gutter);
+  }
+
+  .ob-head {
+    gap: calc(var(--gap) / 4);
+  }
+
+  .ob-foot {
+    padding-top: calc(var(--gutter) / 2);
+  }
+
+  .ob-note {
+    text-align: center;
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    color: var(--color-text-muted);
+  }
+
+  .ob-go {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--gap) / 2);
+  }
+
+  .ob-go svg {
+    animation: ob-nudge 1.4s ease-in-out infinite;
+  }
+
+  /* The typed demo */
+  .ob-demo {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--gap) / 2);
+  }
+
+  .ob-say {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--gap) / 2);
+    height: var(--input-height);
+    padding-inline: var(--card-pad);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-field-line);
+    border-radius: var(--radius);
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    overflow: hidden;
+  }
+
+  .ob-say svg {
+    color: var(--color-text-muted);
+  }
+
+  .ob-say__text {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .ob-say__caret {
+    flex: none;
+    width: var(--cursor-width);
+    height: var(--leading-sm);
+    background: var(--color-brand);
+  }
+
+  .ob-row {
+    display: flex;
+    align-items: center;
+    gap: var(--gap);
+    padding: var(--card-pad);
+    background: var(--color-surface);
+    border: var(--border-width) solid var(--color-line);
+    border-radius: var(--radius);
+  }
+
+  .ob-row__mid {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+  }
+
+  .ob-row__mid small {
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
+    color: var(--color-text-muted);
+  }
+
+  /* "Not synced" and "Synced" sit in the same spot and swap by opacity. */
+  .ob-sync {
+    display: grid;
+    justify-items: end;
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
+    color: var(--color-text-muted);
+  }
+
+  .ob-sync > span {
+    display: inline-flex;
+    grid-area: 1 / 1;
+    align-items: center;
+    gap: calc(var(--gap) / 4);
+  }
+
+  .ob-sync svg {
+    width: calc(var(--icon-size) * 0.75);
+    height: calc(var(--icon-size) * 0.75);
+  }
+
+  .ob-sync__b {
+    color: var(--color-brand);
+    opacity: 0;
+  }
+
+  /* Cards: the four features and the manual steps */
+  .ob-list {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--gap) / 2);
+    padding: 0;
+    list-style: none;
+  }
+
+  .ob-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--gap);
+  }
+
+  .ob-card__title {
+    font-size: var(--text-md);
+    line-height: var(--leading-md);
+  }
+
+  .ob-card__text {
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    color: var(--color-text-muted);
+  }
+
+  .ob-step__label {
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
+    color: var(--color-text-muted);
+  }
+
+  .ob-step__text {
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+  }
+
+  /* Heroes */
+  .ob-hero {
+    display: grid;
+    place-items: center;
+    width: var(--hero-size);
+    height: var(--hero-size);
+    color: var(--color-brand);
+  }
+
+  .ob-hero svg {
+    width: calc(var(--hero-size) * 0.5);
+    height: calc(var(--hero-size) * 0.5);
+  }
+
+  .ob-hero--pulse svg {
+    animation: ob-pulse 1.6s ease-in-out infinite;
+  }
+
+  .ob-xfer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(var(--hero-size) * 5 / 3);
+    height: var(--hero-size);
+  }
+
+  .ob-xfer__phone {
+    position: relative;
+    z-index: 1;
+    width: calc(var(--hero-size) * 0.5);
+    height: calc(var(--hero-size) * 0.5);
+    color: var(--color-brand);
+    animation: ob-recv 1.6s ease-in-out infinite;
+  }
+
+  .ob-xfer__arrow {
+    width: calc(var(--hero-size) * 0.4);
+    height: calc(var(--hero-size) * 0.4);
+    margin-inline-end: calc(var(--gap) / -2);
+    fill: var(--color-brand);
+    stroke: none;
+    animation: ob-feed 1.6s ease-in infinite;
+  }
+
+  /* The three install checks */
+  .ob-check {
+    display: flex;
+    align-items: center;
+    gap: var(--gap);
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    color: var(--color-text-muted);
+    transition: color var(--motion-base) var(--ease-standard);
+  }
+
+  .ob-check__mark {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: var(--icon-size);
+    height: var(--icon-size);
+    color: var(--color-text-muted);
+  }
+
+  .ob-check--done {
+    color: var(--color-text);
+  }
+
+  .ob-check--done .ob-check__mark {
+    color: var(--color-brand);
+  }
+
+  /* A check that did not pass says so: alert icon in the error colour, never a tick. */
+  .ob-check--failed {
+    color: var(--color-text);
+  }
+
+  .ob-check--failed .ob-check__mark {
+    color: var(--color-error);
+  }
+
+  @keyframes ob-feed {
+    0% {
+      opacity: 0;
+      transform: translateX(calc(var(--hero-size) * -0.25));
+    }
+
+    25% {
+      opacity: 1;
+    }
+
+    75% {
+      opacity: 1;
+      transform: translateX(calc(var(--hero-size) / 6));
+    }
+
+    100% {
+      opacity: 0;
+      transform: translateX(calc(var(--hero-size) * 0.3));
+    }
+  }
+
+  @keyframes ob-recv {
+    0%,
+    70% {
+      transform: none;
+    }
+
+    85% {
+      transform: scale(1.07);
+    }
+
+    100% {
+      transform: none;
+    }
+  }
+
+  @keyframes ob-nudge {
+    50% {
+      transform: translateX(calc(var(--gap) * 0.625));
+    }
+  }
+
+  @keyframes ob-pulse {
+    50% {
+      transform: scale(1.06);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ob-xfer__phone,
+    .ob-xfer__arrow,
+    .ob-go svg,
+    .ob-hero--pulse svg {
+      animation: none;
+    }
+
+    .ob-xfer__arrow {
+      opacity: 0;
+    }
+  }
+}

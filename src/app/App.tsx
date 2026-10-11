@@ -11,8 +11,8 @@ import { StartupSplash } from '@/app/startup/StartupSplash';
 import { STARTUP_COPY } from '@/app/startup/startupContent';
 import { useStartup } from '@/app/startup/useStartup';
 import { done, run } from '@/design-system/motion/motion';
+import { OnboardingPage } from '@/pages/Onboarding/Onboarding';
 import { ToastProvider, useToast } from '@/design-system/ui';
-import { InstallPage } from '@/pwa/components/InstallPage';
 import { UpdateAvailableModal } from '@/pwa/components/UpdateAvailableModal';
 import { useEverStandalone } from '@/pwa/displayMode';
 
@@ -29,7 +29,7 @@ import { useEverStandalone } from '@/pwa/displayMode';
  * A child of AuthProvider because useStartup reads the session.
  */
 function AppStage() {
-  const { outcome, retry } = useStartup();
+  const { outcome, retry, continueInBrowser } = useStartup();
   const { toast } = useToast();
   const splashRef = useRef<HTMLDivElement>(null);
   const [splashGone, setSplashGone] = useState(false);
@@ -61,7 +61,7 @@ function AppStage() {
 
   return (
     <>
-      {outcome === 'install' ? <InstallPage /> : null}
+      {outcome === 'install' ? <OnboardingPage onContinueInBrowser={continueInBrowser} /> : null}
       {outcome === 'offline' ? <OfflineFirstOpen onRetry={retryAndWelcome} /> : null}
       {outcome === 'app' ? (
         <QueryProvider>

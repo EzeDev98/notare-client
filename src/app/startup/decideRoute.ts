@@ -15,8 +15,8 @@ export interface StartupInput {
   hasSession: boolean;
   /** Running as the installed app. */
   installed: boolean;
-  /** Install is required before anything else (O-14). */
-  installMandatory: boolean;
+  /** The person chose to carry on in the browser instead of installing (O-14, step 10e). */
+  installChoice: 'browser' | null;
   online: boolean;
   /** This device already holds notes. */
   hasLocalData: boolean;
@@ -41,7 +41,7 @@ const go = (to: string, from?: string): Decision =>
  * person never sees an intermediate redirect.
  *
  * Order matters:
- *   1. Install gate, while install is mandatory and the app is not installed.
+ *   1. Install gate, until the app is installed or the person chose to continue in the browser.
  *   2. First open with nothing to show and no connection: the offline screen.
  *   3. The bare address "/" goes to sign in or to the notes list.
  *   4. An old address (/login, /reset-password) goes straight to its new one.
@@ -54,7 +54,7 @@ const go = (to: string, from?: string): Decision =>
  * phone keyboard appearing on launch (D-13).
  */
 export function decideRoute(input: StartupInput): Decision {
-  if (input.installMandatory && !input.installed) return { kind: 'install' };
+  if (!input.installed && input.installChoice !== 'browser') return { kind: 'install' };
   if (!input.hasSession && !input.online && !input.hasLocalData) return { kind: 'offline' };
 
   const { pathname, search, hasSession } = input;
