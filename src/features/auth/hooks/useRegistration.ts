@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 
+import { REGISTER_CONFLICT } from '@/features/auth/authContent';
 import { authService } from '@/features/auth/api/authService';
 import { useAuthAction } from '@/features/auth/hooks/useAuthAction';
 import type { RegistrationRequest, RegistrationResponse } from '@/features/auth/types';
@@ -17,5 +18,5 @@ export function useRegistration() {
     [],
   );
 
-  return useAuthAction(register, 'That username or email is already registered.');
+  return useAuthAction(register, REGISTER_CONFLICT);
 }

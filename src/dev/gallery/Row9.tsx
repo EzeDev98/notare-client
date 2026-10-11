@@ -68,7 +68,7 @@ export function Row9() {
             <FormScreen
               title="Sign in"
               description="Welcome back to Notare."
-              logo={<Logo scheme={resolved} size="lg" label="Notare" />}
+              hero={<Logo scheme={resolved} size="lg" label="Notare" />}
               onBack={close}
               onSubmit={(event) => {
                 event.preventDefault();

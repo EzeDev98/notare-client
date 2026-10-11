@@ -4,7 +4,7 @@ import './FormField.css';
 
 export interface FieldA11y {
   id: string;
-  'aria-describedby': string;
+  'aria-describedby'?: string;
   'aria-invalid'?: true;
 }
 
@@ -25,7 +25,12 @@ interface FormFieldProps {
 export function FormField({ label, optional = false, hint, error, className, children }: FormFieldProps) {
   const id = useId();
   const messageId = `${id}-message`;
-  const a11y: FieldA11y = { id, 'aria-describedby': messageId, ...(error ? { 'aria-invalid': true as const } : {}) };
+  const message = error ?? hint;
+  const a11y: FieldA11y = {
+    id,
+    ...(message ? { 'aria-describedby': messageId } : {}),
+    ...(error ? { 'aria-invalid': true as const } : {}),
+  };
   const classes = ['ui-form-field', className].filter(Boolean).join(' ');
   return (
     <div className={classes}>
@@ -34,13 +39,15 @@ export function FormField({ label, optional = false, hint, error, className, chi
         {optional ? <span className="ui-form-field__optional">Optional</span> : null}
       </label>
       {children(a11y)}
-      <p
-        id={messageId}
-        className={`ui-form-field__message ${error ? 'ui-form-error' : 'ui-form-field__hint'}`}
-        aria-live="polite"
-      >
-        {error ?? hint}
-      </p>
+      {message ? (
+        <p
+          id={messageId}
+          className={`ui-form-field__message ${error ? 'ui-form-error' : 'ui-form-field__hint'}`}
+          role={error ? 'alert' : undefined}
+        >
+          {message}
+        </p>
+      ) : null}
     </div>
   );
 }

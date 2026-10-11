@@ -19,8 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint:js": "eslint .",
-    "lint:css": "stylelint \"src/**/*.css\"",
-    "prepare": "husky"
+    "lint:css": "stylelint \"src/**/*.css\""
   },
   "dependencies": {
     "@patternfly/react-core": "^6.6.1",

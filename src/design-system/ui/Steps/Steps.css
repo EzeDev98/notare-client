@@ -15,6 +15,7 @@
     height: calc(var(--border-width) * 4);
     border-radius: var(--radius-sm);
     background: var(--color-line);
+    transition: background-color var(--motion-base) var(--ease-standard);
   }
 
   .ui-steps__bar--done {

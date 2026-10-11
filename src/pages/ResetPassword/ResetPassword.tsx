@@ -1,6 +1,25 @@
-import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { useRef, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router';
 
+import { ROUTES } from '@/app/routes';
+import {
+  Button,
+  FormScreen,
+  InfoBanner,
+  OtpField,
+  PasswordField,
+  Steps,
+  TextField,
+  useToast,
+} from '@/design-system/ui';
+import {
+  RESEND_COOLDOWN_SECONDS,
+  RESET_CODE,
+  RESET_MESSAGES,
+  RESET_NEW_PASSWORD,
+  RESET_REQUEST,
+  TOASTS,
+} from '@/features/auth/authContent';
 import { usePasswordReset } from '@/features/auth/hooks/usePasswordReset';
 import {
   validateConfirmation,
@@ -8,34 +27,26 @@ import {
   validateOtpCode,
   validatePassword,
 } from '@/features/auth/validation';
-import { Button } from '@/design-system/components/Button/Button';
-import { FormAlert } from '@/design-system/components/FormAlert/FormAlert';
-import { PasswordField } from '@/design-system/components/PasswordField/PasswordField';
-import { TextField } from '@/design-system/components/TextField/TextField';
+import { useCountdown } from '@/shared/hooks/useCountdown';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
-import './ResetPassword.css';
-import { ROUTES } from '@/app/routes';
 
 type Step = 'request' | 'verify' | 'complete';
+
+const TOTAL_STEPS = 3;
+const STEP_NUMBER: Record<Step, number> = { request: 1, verify: 2, complete: 3 };
 
 /**
  * The whole reset flow on ONE route, with the step in component state.
  *
- * Three routes would be the obvious structure and has a fatal property: the
- * resetToken from step two has to reach step three, so it travels in router
- * state and is lost on reload. Unlike 4F's identifier, a resetToken CANNOT be
- * retyped — the user would be stuck holding a valid code with no way to spend
- * it.
- *
- * One route does not survive a reload either, but it does not PROMISE to.
- * Reloading restarts the flow honestly rather than landing on a URL that looks
- * addressable and is not.
+ * The resetToken from the code step has to reach the password step and cannot be
+ * retyped, so it must not travel in router state or a URL. One route restarts the
+ * flow honestly on reload instead of landing on an address that looks resumable.
  */
 export function ResetPasswordPage() {
-  useDocumentTitle('Reset your password');
-
   const navigate = useNavigate();
+  const { toast } = useToast();
   const reset = usePasswordReset();
+  const cooldown = useCountdown();
 
   const [step, setStep] = useState<Step>('request');
   const [email, setEmail] = useState('');
@@ -44,27 +55,61 @@ export function ResetPasswordPage() {
   const [confirmation, setConfirmation] = useState('');
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
 
-  async function handleRequest(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmationRef = useRef<HTMLInputElement>(null);
 
+  const view =
+    step === 'request'
+      ? RESET_REQUEST
+      : step === 'verify'
+        ? { ...RESET_CODE, description: RESET_CODE.description(email.trim()) }
+        : RESET_NEW_PASSWORD;
+  useDocumentTitle(view.title);
+
+  const busy =
+    step === 'request'
+      ? reset.requestAction.submitting
+      : step === 'verify'
+        ? reset.verifyAction.submitting
+        : reset.completeAction.submitting;
+
+  // A resend that fails (offline) still reads from the request action, so it shows on the code step too.
+  const formError = step === 'complete' ? reset.completeAction.formError : reset.requestAction.formError;
+
+  // exactOptionalPropertyTypes: the field wants no `error` key at all when there is none.
+  const errorProp = (message: string | undefined | null): { error?: string } =>
+    message ? { error: message } : {};
+
+  function handleBack(): void {
+    if (step === 'request') {
+      void navigate(ROUTES.signIn());
+      return;
+    }
+    // From the code step the email may be wrong; from the password step the code is spent.
+    reset.setResetToken(null);
+    setErrors({});
+    setStep('request');
+  }
+
+  async function handleRequest(): Promise<void> {
     const emailError = validateEmail(email);
     setErrors({ email: emailError });
-    if (emailError !== undefined) return;
+    if (emailError !== undefined) {
+      emailRef.current?.focus();
+      return;
+    }
 
     const result = await reset.requestAction.run(email.trim());
     if (result === null) return;
 
-    /*
-     * Advances regardless of whether the address is registered — the server
-     * answers identically either way, deliberately, and branching here would
-     * reintroduce the account-enumeration oracle it exists to prevent.
-     */
+    // Advances whether or not the address is registered: the server answers the same either way.
+    cooldown.start(RESEND_COOLDOWN_SECONDS);
+    setCode('');
     setStep('verify');
   }
 
-  async function handleVerify(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-
+  async function handleVerify(): Promise<void> {
     const codeError = validateOtpCode(code);
     setErrors({ code: codeError });
     if (codeError !== undefined) return;
@@ -76,19 +121,23 @@ export function ResetPasswordPage() {
     setStep('complete');
   }
 
-  async function handleComplete(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
-
-    const next = {
+  async function handleComplete(): Promise<void> {
+    const found = {
       password: validatePassword(password),
       confirmation: validateConfirmation(password, confirmation),
     };
-    setErrors(next);
-    if (next.password !== undefined || next.confirmation !== undefined) return;
+    setErrors(found);
+    if (found.password !== undefined) {
+      passwordRef.current?.focus();
+      return;
+    }
+    if (found.confirmation !== undefined) {
+      confirmationRef.current?.focus();
+      return;
+    }
 
     if (reset.resetToken === null) {
-      // Only reachable if state was lost — start again rather than fail
-      // mysteriously at the server.
+      // Only reachable if state was lost: start again rather than fail at the server.
       setStep('request');
       return;
     }
@@ -96,110 +145,118 @@ export function ResetPasswordPage() {
     const result = await reset.completeAction.run(reset.resetToken, password);
     if (result === null) return;
 
-    void navigate(ROUTES.signIn(), { replace: true, state: { passwordReset: true } });
+    toast(TOASTS.passwordUpdated, { tone: 'success' });
+    void navigate(ROUTES.signIn(), { replace: true });
+  }
+
+  async function handleResend(): Promise<void> {
+    if (cooldown.remaining > 0 || reset.requestAction.submitting) return;
+    const result = await reset.requestAction.run(email.trim());
+    if (result === null) return;
+    cooldown.start(RESEND_COOLDOWN_SECONDS);
+    toast(RESET_MESSAGES.resentToast, { tone: 'success' });
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    if (busy) return;
+    if (step === 'request') void handleRequest();
+    else if (step === 'verify') void handleVerify();
+    else void handleComplete();
   }
 
   return (
-    <>
-      <h1 className="public-shell__heading">Reset your password</h1>
-
-      {step === 'request' ? (
-        <form className="reset__form" onSubmit={(event) => void handleRequest(event)} noValidate>
-          <p className="reset__lead">Enter your email address and we&apos;ll send you a code.</p>
-
-          {reset.requestAction.formError !== null ? (
-            <FormAlert variant="danger" role="alert">{reset.requestAction.formError}</FormAlert>
-          ) : null}
-
-          <TextField
-            label="Email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            error={errors['email']}
-            onChange={(event) => {
-              setEmail(event.target.value);
-              setErrors({});
-            }}
-          />
-
-          <Button type="submit" variant="primary" loading={reset.requestAction.submitting}>
-            Send code
+    <FormScreen
+      title={view.title}
+      description={view.description}
+      step={<Steps current={STEP_NUMBER[step]} total={TOTAL_STEPS} />}
+      variant={step === 'verify' ? 'code' : undefined}
+      onBack={handleBack}
+      onSubmit={handleSubmit}
+      footer={
+        <>
+          {formError !== null ? <InfoBanner tone="error">{formError}</InfoBanner> : null}
+          <Button type="submit" variant="primary" block busy={busy}>
+            {view.submit}
           </Button>
-        </form>
+          {step === 'verify' ? (
+            <Button
+              variant="ghost"
+              block
+              disabled={cooldown.remaining > 0}
+              onClick={() => void handleResend()}
+            >
+              {cooldown.remaining > 0 ? RESET_CODE.resendIn(cooldown.remaining) : RESET_CODE.resend}
+            </Button>
+          ) : null}
+        </>
+      }
+    >
+      {step === 'request' ? (
+        <TextField
+          ref={emailRef}
+          label={RESET_REQUEST.labels.email}
+          type="email"
+          autoComplete="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          submitting={busy}
+          value={email}
+          {...errorProp(errors['email'])}
+          onChange={(event) => {
+            setEmail(event.target.value);
+            setErrors({});
+            reset.requestAction.reset();
+          }}
+        />
       ) : null}
 
       {step === 'verify' ? (
-        <form className="reset__form" onSubmit={(event) => void handleVerify(event)} noValidate>
-          {/* Non-committal: the server does not confirm whether the address is
-              registered, and neither should this. */}
-          <p className="reset__lead" role="status">
-            If an account exists for {email}, a code is on its way. Codes expire after 10 minutes.
-          </p>
-
-          {reset.verifyAction.formError !== null ? (
-            <FormAlert variant="danger" role="alert">{reset.verifyAction.formError}</FormAlert>
-          ) : null}
-
-          <TextField
-            label="Reset code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            value={code}
-            error={errors['code']}
-            onChange={(event) => {
-              setCode(event.target.value);
-              setErrors({});
-            }}
-          />
-
-          <Button type="submit" variant="primary" loading={reset.verifyAction.submitting}>
-            Continue
-          </Button>
-        </form>
+        <OtpField
+          label={RESET_CODE.otpLabel}
+          value={code}
+          disabled={busy}
+          autoFocus
+          {...errorProp(errors['code'] ?? reset.verifyAction.formError)}
+          onChange={(value) => {
+            setCode(value);
+            setErrors({});
+            reset.verifyAction.reset();
+          }}
+        />
       ) : null}
 
       {step === 'complete' ? (
-        <form className="reset__form" onSubmit={(event) => void handleComplete(event)} noValidate>
-          <p className="reset__lead">Choose a new password.</p>
-
-          {reset.completeAction.formError !== null ? (
-            <FormAlert variant="danger" role="alert">{reset.completeAction.formError}</FormAlert>
-          ) : null}
-
+        <>
           <PasswordField
-            label="New password"
+            ref={passwordRef}
+            label={RESET_NEW_PASSWORD.labels.password}
+            hint={RESET_NEW_PASSWORD.hint}
             autoComplete="new-password"
-            hint="At least 8 characters, with an uppercase letter, a lowercase letter and a digit."
+            submitting={busy}
             value={password}
-            error={errors['password']}
+            {...errorProp(errors['password'])}
             onChange={(event) => {
               setPassword(event.target.value);
               setErrors({});
+              reset.completeAction.reset();
             }}
           />
-
           <PasswordField
-            label="Confirm new password"
+            ref={confirmationRef}
+            label={RESET_NEW_PASSWORD.labels.confirmPassword}
             autoComplete="new-password"
+            submitting={busy}
             value={confirmation}
-            error={errors['confirmation']}
+            {...errorProp(errors['confirmation'])}
             onChange={(event) => {
               setConfirmation(event.target.value);
               setErrors({});
+              reset.completeAction.reset();
             }}
           />
-
-          <Button type="submit" variant="primary" loading={reset.completeAction.submitting}>
-            Reset password
-          </Button>
-        </form>
+        </>
       ) : null}
-
-      <div className="reset__alt">
-        <Link to={ROUTES.signIn()}>Back to sign in</Link>
-      </div>
-    </>
+    </FormScreen>
   );
 }

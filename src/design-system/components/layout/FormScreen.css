@@ -3,26 +3,13 @@
     margin-inline-start: calc(var(--gap) / -2);
   }
 
-  .ui-form-screen__head {
+  .ui-form-screen__hero {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: calc(var(--gap) / 2);
+    justify-content: center;
+  }
+
+  .ui-form-screen__head {
     margin-block: var(--gutter);
-    text-align: center;
-  }
-
-  .ui-form-screen__title {
-    margin: 0;
-    font-size: var(--text-lg);
-    line-height: var(--leading-lg);
-  }
-
-  .ui-form-screen__description {
-    margin: 0;
-    font-size: var(--text-sm);
-    line-height: var(--leading-sm);
-    color: var(--color-text-muted);
   }
 
   .ui-form-screen__body {
@@ -42,5 +29,14 @@
     display: flex;
     flex-direction: column;
     gap: var(--gap);
+  }
+
+  .ui-form-screen--code .ui-form-screen__body {
+    align-self: center;
+    width: fit-content;
+  }
+
+  .ui-form-screen--code .ui-otp {
+    justify-content: center;
   }
 }

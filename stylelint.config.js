@@ -7,7 +7,6 @@
 const LEGACY = [
   'src/app/layouts/AppLayout.css',
   'src/app/layouts/MobileNotesPanel.css',
-  'src/app/layouts/PublicLayout.css',
   'src/app/layouts/SettingsPanel.css',
   'src/pages/Invitations/Invitations.css',
   'src/pages/InviteCollaborator/InviteCollaborator.css',
@@ -21,7 +20,6 @@ const LEGACY = [
   'src/pages/SharedNote/SharedNote.css',
   'src/pages/SharedNotes/SharedNotes.css',
   'src/pages/Trash/Trash.css',
-  'src/pages/VerifyAccount/VerifyAccount.css',
   'src/pwa/components/InstallPage.css',
   'src/design-system/components/Button/Button.css',
   'src/design-system/components/Logo/Logo.css',

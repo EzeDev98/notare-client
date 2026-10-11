@@ -1,0 +1,21 @@
+@layer components {
+  .ui-screen-head {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--gap) / 2);
+    text-align: center;
+  }
+
+  .ui-screen-head__title {
+    margin: 0;
+    font-size: var(--text-lg);
+    line-height: var(--leading-lg);
+  }
+
+  .ui-screen-head__description {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    color: var(--color-text-muted);
+  }
+}

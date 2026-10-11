@@ -42,6 +42,11 @@ const APP: RouteGuards = { requiresAuth: true, publicOnly: false, requiresOnboar
  * the steps that build those screens (8, 9, 15); each is one line here.
  */
 export const ROUTE_ENTRIES: RouteEntry[] = [
+  {
+    path: P.welcome,
+    guards: SIGNED_OUT,
+    load: () => import('@/pages/Welcome/Welcome').then((m) => m.WelcomePage),
+  },
   { path: P.signIn, guards: SIGNED_OUT, load: () => Promise.resolve(LoginPage) },
   {
     path: P.register,

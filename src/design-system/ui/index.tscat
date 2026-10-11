@@ -1,0 +1,1 @@
+export { ScreenHead } from '../components/layout/ScreenHead';

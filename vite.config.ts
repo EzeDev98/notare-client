@@ -24,6 +24,8 @@ export default defineConfig(({ mode }) => {
     // `apply: 'build'`) — see service-worker/sw.js and
     // vite-plugins/serviceWorkerVersion.ts for why sw.js needs a plugin at
     // all instead of just living in /public like every other static file.
+    build: { chunkSizeWarningLimit: 1500 },
+
     plugins: [patternflyLayerPlugin(), react(), serviceWorkerVersionPlugin()],
 
     resolve: {

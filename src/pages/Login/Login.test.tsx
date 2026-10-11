@@ -7,6 +7,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { AuthProvider } from '@/app/providers/AuthProvider';
 import { RequireAuth } from '@/app/RequireAuth';
 import { LoginPage } from '@/pages/Login/Login';
+import { ERRORS } from '@/features/auth/authContent';
 import { clearSession, resetTokenStoreForTests } from '@/features/auth/tokenStore';
 import { resetRefreshCoordinatorForTests } from '@/features/auth/refreshCoordinator';
 import { expectNoAxeViolations } from '~/a11y';
@@ -99,7 +100,7 @@ describe('the login form', () => {
     expect(alert).toHaveTextContent(/incorrect username or password/i);
   });
 
-  it('explains an unverified account instead of calling it a permission error', async () => {
+  it('explains an unverified account and offers to check email', async () => {
     // DisabledException: the account exists and the password was right.
     server.use(
       http.post(`${BASE}/login/login`, () =>
@@ -114,19 +115,29 @@ describe('the login form', () => {
     await user.type(screen.getByLabelText('Password', { selector: 'input' }), 'Passw0rd');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
-    /*
-     * ROUTED, not told. 4E showed a form-level message here; 4F sends them to
-     * the verification screen instead, carrying the identifier so they do not
-     * retype it.
-     *
-     * The difference matters: "please verify your email" is true but not
-     * actionable — the user is left on a screen that cannot help them. A 403
-     * from login is the one case where the server is telling us exactly what
-     * the user needs to do next, so we should do it.
-     */
+    // Told what happened, with a button that does the next step.
+    expect(await screen.findByText(ERRORS.notVerified)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: ERRORS.notVerifiedAction }));
     expect(
       await screen.findByRole('heading', { name: /verify your account/i }),
     ).toBeInTheDocument();
+  });
+
+  it('says an administratively locked account is unavailable', async () => {
+    server.use(
+      http.post(`${BASE}/login/login`, () =>
+        problemDetail(423, { title: 'Locked', detail: 'Account locked.' }),
+      ),
+    );
+
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.type(await screen.findByLabelText(/username or email/i), 'testuser');
+    await user.type(screen.getByLabelText('Password', { selector: 'input' }), 'Passw0rd');
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(ERRORS.accountUnavailable);
   });
 });
 

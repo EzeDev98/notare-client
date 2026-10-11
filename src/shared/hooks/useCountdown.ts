@@ -9,8 +9,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * minutes of wall clock. Computing the remaining time from a deadline is
  * correct regardless of when the tick actually happens.
  */
-export function useCountdown(): { remaining: number; start: (seconds: number) => void } {
-  const [remaining, setRemaining] = useState(0);
+export function useCountdown(initialSeconds = 0): { remaining: number; start: (seconds: number) => void } {
+  const [remaining, setRemaining] = useState(initialSeconds);
   const deadlineRef = useRef<number | null>(null);
 
   const start = useCallback((seconds: number) => {
@@ -22,8 +22,8 @@ export function useCountdown(): { remaining: number; start: (seconds: number) =>
     if (remaining <= 0) return;
 
     const id = setInterval(() => {
-      const deadline = deadlineRef.current;
-      if (deadline === null) return;
+      const deadline = deadlineRef.current ?? Date.now() + remaining * 1000;
+      deadlineRef.current = deadline;
 
       const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
       setRemaining(left);

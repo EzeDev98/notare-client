@@ -1,122 +1,136 @@
-import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { Mail } from 'lucide-react';
+import { useRef, useState, type FormEvent } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 
+import { ROUTES } from '@/app/routes';
+import { Button, FormScreen, IconTile, TextField, useToast } from '@/design-system/ui';
+import {
+  CHECK_EMAIL,
+  CHECK_EMAIL_MESSAGES,
+  ERRORS,
+  RESEND_COOLDOWN_SECONDS,
+} from '@/features/auth/authContent';
 import { useAccountVerification } from '@/features/auth/hooks/useAccountVerification';
-import { Button } from '@/design-system/components/Button/Button';
-import { FormAlert } from '@/design-system/components/FormAlert/FormAlert';
-import { TextField } from '@/design-system/components/TextField/TextField';
+import { maskEmail } from '@/features/auth/maskEmail';
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
-import './VerifyAccount.css';
-import { ROUTES } from '@/app/routes';
+import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
 
-const RESEND_COOLDOWN_SECONDS = 60;
-
-/** Prefill from router state, tolerating its absence (e.g. after a reload). */
-function readIdentifier(state: unknown): string {
-  if (typeof state !== 'object' || state === null) return '';
-  const value: unknown = (state as { identifier?: unknown }).identifier;
-  return typeof value === 'string' ? value : '';
+/** Router state is a convenience only: the screen must work without it (e.g. after a reload). */
+function readState(state: unknown): { identifier: string; justSent: boolean } {
+  if (typeof state !== 'object' || state === null) return { identifier: '', justSent: false };
+  const value = state as { identifier?: unknown; justSent?: unknown };
+  return {
+    identifier: typeof value.identifier === 'string' ? value.identifier : '',
+    justSent: value.justSent === true,
+  };
 }
 
 /**
- * Informational only. Verification happens on internal-auth through the link
- * in the email, so there is nothing to type here. Reached after registering,
- * and again when a login is refused because the email is still unverified.
+ * Check your email. Verification itself happens through the emailed link, so there is
+ * nothing to type here; this screen only offers Go to sign in and Resend.
  */
 export function VerifyAccountPage() {
-  useDocumentTitle('Check your email');
+  useDocumentTitle(CHECK_EMAIL.title);
 
   const location = useLocation();
   const navigate = useNavigate();
-  const cooldown = useCountdown();
+  const online = useOnlineStatus();
+  const { toast } = useToast();
   const verification = useAccountVerification();
 
-  const initialIdentifier = readIdentifier(location.state);
+  const { identifier: initialIdentifier, justSent } = readState(location.state);
+  const cooldown = useCountdown(justSent ? RESEND_COOLDOWN_SECONDS : 0);
+
   const [identifier, setIdentifier] = useState(initialIdentifier);
   const [error, setError] = useState<string | undefined>(undefined);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  const identifierRef = useRef<HTMLInputElement>(null);
 
-  const isEmail = initialIdentifier.includes('@');
+  // "Lost" variant: we do not know who to resend to, so we ask.
+  const lost = initialIdentifier === '';
+  const showsAddress = initialIdentifier.includes('@');
 
   async function handleResend(): Promise<void> {
-    if (identifier.trim() === '') {
-      setError('Enter your email or Notarian ID.');
+    if (resending || cooldown.remaining > 0) return;
+
+    const value = identifier.trim();
+    if (value === '') {
+      setError(CHECK_EMAIL_MESSAGES.identifierRequired);
+      identifierRef.current?.focus();
+      return;
+    }
+    if (!online) {
+      toast(ERRORS.offline, { tone: 'error' });
       return;
     }
 
-    /*
-     * The countdown starts BEFORE the request and runs regardless of outcome.
-     * The server always answers 200, so nothing in the response can tell us
-     * whether an email was actually sent; the client owns the visible cooldown.
-     */
+    setResending(true);
+    // The server answers 200 whether or not the account exists, so a failure is not reportable.
+    await verification.resend(value);
+    setResending(false);
     cooldown.start(RESEND_COOLDOWN_SECONDS);
-    setNotice('If that account exists and is unverified, a new email is on its way.');
+    toast(CHECK_EMAIL_MESSAGES.resentToast, { tone: 'success' });
+  }
 
-    await verification.resend(identifier.trim());
+  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+    // Enter in the lost-identifier field resends instead of reloading the page.
+    event.preventDefault();
+    void handleResend();
   }
 
   return (
-    <>
-      <h1 className="public-shell__heading">Check your email</h1>
-      <p className="public-shell__subtitle">
-        {isEmail ? (
-          <>
-            We&apos;ve sent a verification link to <strong>{initialIdentifier}</strong>.
-          </>
-        ) : (
-          <>We&apos;ve sent a verification link to the email address on your account.</>
-        )}{' '}
-        Open it to verify your account, then sign in.
-      </p>
-
-      <div className="verify__form">
-        {notice !== null ? (
-          <FormAlert variant="info" role="status">{notice}</FormAlert>
-        ) : null}
-
-        <Button
-          type="button"
-          variant="primary"
-          onClick={() => {
-            void navigate(ROUTES.signIn(), { replace: true });
-          }}
-        >
-          Go to sign in
-        </Button>
-
-        {/* Only when we lost the identifier (e.g. a reload) — otherwise resend just works. */}
-        {initialIdentifier === '' ? (
-          <TextField
-            label="Email or Notarian ID"
-            autoComplete="email"
-            value={identifier}
-            error={error}
-            onChange={(event) => {
-              setIdentifier(event.target.value);
-              setError(undefined);
+    <FormScreen
+      title={CHECK_EMAIL.title}
+      description={
+        showsAddress
+          ? CHECK_EMAIL.description(maskEmail(initialIdentifier))
+          : CHECK_EMAIL.descriptionLost
+      }
+      hero={<IconTile icon={Mail} />}
+      onBack={() => {
+        void navigate(ROUTES.signIn(), { replace: true });
+      }}
+      onSubmit={handleSubmit}
+      footer={
+        <>
+          <Button
+            variant="primary"
+            block
+            onClick={() => {
+              void navigate(ROUTES.signIn(), { replace: true });
             }}
-          />
-        ) : null}
-      </div>
-
-      <div className="verify__links">
-        <p>Didn&apos;t get it? Check your spam folder, or</p>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={cooldown.remaining > 0}
-          onClick={() => void handleResend()}
-        >
-          {cooldown.remaining > 0
-            ? `Resend in ${String(cooldown.remaining)}s`
-            : 'Send the email again'}
-        </Button>
-
-        <p>
-          <Link to={ROUTES.signIn()}>Back to sign in</Link>
-        </p>
-      </div>
-    </>
+          >
+            {CHECK_EMAIL_MESSAGES.goToSignIn}
+          </Button>
+          <Button
+            variant="ghost"
+            block
+            busy={resending}
+            disabled={cooldown.remaining > 0}
+            onClick={() => void handleResend()}
+          >
+            {cooldown.remaining > 0 ? CHECK_EMAIL.resendIn(cooldown.remaining) : CHECK_EMAIL.resend}
+          </Button>
+        </>
+      }
+    >
+      {lost ? (
+        <TextField
+          ref={identifierRef}
+          label={CHECK_EMAIL.identifierLabel}
+          autoComplete="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          submitting={resending}
+          value={identifier}
+          {...(error ? { error } : {})}
+          onChange={(event) => {
+            setIdentifier(event.target.value);
+            setError(undefined);
+          }}
+        />
+      ) : null}
+    </FormScreen>
   );
 }

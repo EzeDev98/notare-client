@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 
+import { ERRORS, RESET_MESSAGES } from '@/features/auth/authContent';
 import { authService } from '@/features/auth/api/authService';
 import { useAuthAction } from '@/features/auth/hooks/useAuthAction';
 import type { VerifyResetOtpResponse } from '@/features/auth/types';
@@ -43,9 +44,9 @@ export function usePasswordReset() {
 
   // Identical response whether or not the email is registered, so the only
   // honest failure message is a transport one.
-  const requestAction = useAuthAction(request, 'Something went wrong. Please try again.');
-  const verifyAction = useAuthAction(verify, 'That code is invalid or has expired.');
-  const completeAction = useAuthAction(complete, 'That reset link has expired. Start again.');
+  const requestAction = useAuthAction(request, ERRORS.generic);
+  const verifyAction = useAuthAction(verify, ERRORS.wrongCode);
+  const completeAction = useAuthAction(complete, RESET_MESSAGES.linkExpired);
 
   return {
     resetToken,

@@ -47,3 +47,4 @@ export { SelectionBar } from './SelectionBar/SelectionBar';
 export { StatusSlot } from './StatusSlot/StatusSlot';
 export { TranscriptPanel } from './TranscriptPanel/TranscriptPanel';
 export { VoiceBlock, type VoiceState } from './VoiceBlock/VoiceBlock';
+export { ScreenHead } from '../components/layout/ScreenHead';

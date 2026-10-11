@@ -58,7 +58,7 @@ export function decideRoute(input: StartupInput): Decision {
   if (!input.hasSession && !input.online && !input.hasLocalData) return { kind: 'offline' };
 
   const { pathname, search, hasSession } = input;
-  if (pathname === '/') return go(hasSession ? ROUTES.notes() : ROUTES.signIn());
+  if (pathname === '/') return go(hasSession ? ROUTES.notes() : ROUTES.welcome());
 
   const moved = ROUTE_REDIRECTS.find((r) => matchPath({ path: r.from, end: true }, pathname));
   if (moved) return go(moved.to);
