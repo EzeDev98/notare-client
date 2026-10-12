@@ -1,16 +1,8 @@
 import { Link, useParams } from 'react-router';
 
-import { useAuth } from '@/app/providers/auth-context';
 import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
-import { InlineVoiceNotes } from '@/features/voice/components/InlineVoiceNote/InlineVoiceNote';
-import { formatUserInitials } from '@/features/userLookup/hooks/useUserLookup';
 import { parseNoteId, useNote } from '@/features/notes/hooks/useNote';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
-import { canRecord } from '@/features/notes/permissions';
-import { LocalClips } from '@/features/voice/components/LocalClips/LocalClips';
-import { VoiceRecorder } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
-import { useSaveClip } from '@/features/voice/hooks/useSaveClip';
-import { useVoiceNotesByNote } from '@/features/voice/hooks/useVoiceNotes';
 import { Spinner } from '@/design-system/components/Spinner/Spinner';
 import { useDelayedFlag } from '@/shared/hooks/useDelayedFlag';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
@@ -40,24 +32,6 @@ export function NoteDetailPage() {
 
   const state = useNote(serverId);
   const showLoadingSpinner = useDelayedFlag(state.status === 'loading', LOADING_SPINNER_DELAY_MS);
-  const { state: authState } = useAuth();
-  /*
-   * Every recording InlineVoiceNotes renders on THIS page is the current
-   * user's own — see InlineVoiceNotesProps's own doc comment for why a
-   * single value is correct here and not a per-recording lookup the way
-   * SharedInlineVoiceNotes needs. `formatUserInitials` accepts `undefined`
-   * for "no profile", which covers the brief window before auth restores.
-   */
-  const ownerInitials = formatUserInitials(
-    authState.status === 'authenticated' || authState.status === 'refreshing'
-      ? authState.user
-      : undefined,
-  );
-
-  const voiceNotes = useVoiceNotesByNote(serverId);
-  // The recording goes onto this device first and uploads later (step 8j).
-  const upload = useSaveClip(state.status === 'ready' ? state.row.localId : undefined);
-
   // 1C/4G: no title field — the note domain has none. label is null only
   // while the note hasn't loaded yet; deriveNoteLabel always returns
   // something once ready, so there is no more separate "Untitled" case.
@@ -113,48 +87,10 @@ export function NoteDetailPage() {
 
         {state.status === 'ready' ? (
           <div className="note-detail__editor-region">
-            <NoteEditorHost
-              row={state.row}
-              contentAccessory={
-                <>
-                  {voiceNotes.data && voiceNotes.data.length > 0 ? (
-                    <InlineVoiceNotes voiceNotes={voiceNotes.data} ownerInitials={ownerInitials} />
-                  ) : null}
-                  <LocalClips noteId={state.row.localId} />
-                </>
-              }
-            />
+            <NoteEditorHost row={state.row} />
           </div>
         ) : null}
-
-        {/*
-          serverId, not localId — sharing/voice notes are grants and
-          uploads against the SERVER's note row, so a note that has never
-          synced has nothing to attach a recording to yet. Inside the
-          scroll region now, not a separate footer box — past recordings
-          are note content, they scroll with everything else above them.
-          Only the RECORDER itself (below) needs to float.
-        */}
       </div>
-
-      {/*
-        THE floating mic / recording dock — the ONLY thing anchored to
-        .note-detail's own box (position:relative there), and the ONLY
-        thing outside .note-detail__scroll. Previously this lived INSIDE
-        a separate "voice notes" footer section that was ALSO
-        flex-shrink:0 with its own background/border/padding — two
-        different bottom-anchored things (a real boxed footer, and an
-        absolutely-positioned dock inside it) competing for the same
-        corner of the screen, which is what made the recording bar look
-        broken and overlap the page. Now there is exactly one bottom-right
-        element, full stop: it doesn't consume any layout space, so
-        nothing else needs to make room for it, and it stays in the exact
-        same spot regardless of how far the note content above is
-        scrolled — "firm and intact", not shaky.
-      */}
-      {state.status === 'ready' && canRecord(state.row.role) ? (
-        <VoiceRecorder upload={upload} noteId={state.row.localId} />
-      ) : null}
     </article>
   );
 }

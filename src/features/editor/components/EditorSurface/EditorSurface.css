@@ -29,7 +29,24 @@
   }
 
   .editor-surface__body {
+    /* The selection bar floats inside this box. */
+    position: relative;
     min-block-size: 60vh;
+  }
+
+  /* Step 12f: "Start writing" shows while the whole note is empty (O-20). */
+  .editor-surface__content p.is-editor-empty:first-child::before {
+    float: inline-start;
+    block-size: 0;
+    content: attr(data-placeholder);
+    color: var(--color-text-muted);
+    pointer-events: none;
+  }
+
+  /* The counter's height is reserved, so it appearing moves nothing. */
+  .editor-surface__counter {
+    min-block-size: var(--leading-xs);
+    padding-block-start: var(--gap);
   }
 
   .editor-surface__content {
@@ -227,7 +244,7 @@
  */
 .note-date {
   position: sticky;
-  inset-block-start: 0;
+  inset-block-start: var(--bar-height);
   z-index: var(--z-sticky);
   margin: 0;
   padding-block: var(--space-2);

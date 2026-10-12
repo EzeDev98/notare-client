@@ -24,9 +24,24 @@ export const noteCommands = {
    * landing in the same tick can both read the pre-edit row and the second
    * write wins wholesale — losing whichever field the first one changed.
    */
+  /**
+   * Step 12b: saves the body built from a note's old text the first time it is
+   * opened. Opening is not an edit, so this does NOT set dirty, change the sync
+   * state or restamp localUpdatedAt (the note must not jump to the top of the
+   * list). It never replaces a body that already exists.
+   */
+  saveSeedBodyState(localId: string, bodyState: Uint8Array): Promise<void> {
+    return db.transaction('rw', db.notes, async () => {
+      const existing = await db.notes.get(localId);
+      if (!existing || existing.bodyState) return;
+
+      await db.notes.put({ ...existing, bodyState });
+    });
+  },
+
   applyLocalEdit(
     localId: string,
-    changes: Partial<Pick<NoteRow, 'content' | 'pinned' | 'archived'>>,
+    changes: Partial<Pick<NoteRow, 'content' | 'pinned' | 'archived' | 'bodyState'>>,
   ): Promise<void> {
     return db.transaction('rw', db.notes, async () => {
       const existing = await db.notes.get(localId);

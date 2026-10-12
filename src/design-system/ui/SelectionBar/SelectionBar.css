@@ -13,6 +13,11 @@
     z-index: var(--z-menu);
   }
 
+  /* The link field is wider than the two buttons. */
+  .n-selbar .ui-control {
+    width: calc(var(--menu-width) * 1.2);
+  }
+
   .n-sel {
     background: var(--color-focus-tint);
     border-radius: var(--radius-sm);

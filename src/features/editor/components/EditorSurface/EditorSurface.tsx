@@ -1,21 +1,10 @@
-import type { Editor, Storage } from '@tiptap/core';
 import { EditorContent, useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
 import { useEffect, useRef, type ReactNode } from 'react';
-import { Markdown, type MarkdownStorage } from 'tiptap-markdown';
+
+import { editorExtensions } from '@/features/editor/editorExtensions';
+import { docToText, textToDoc } from '@/features/editor/plainTextBody';
 
 import './EditorSurface.css';
-
-/**
- * `tiptap-markdown` ships `MarkdownStorage` but does not merge it into
- * `@tiptap/core`'s own `Storage` interface (no `declare module` in its
- * `.d.ts`) — so `editor.storage.markdown` is genuinely untyped, not a
- * mistake on this file's part. One cast, in one place, documented here
- * rather than repeated at every call site.
- */
-function getMarkdownContent(editor: Editor): string {
-  return (editor.storage as Storage & { markdown: MarkdownStorage }).markdown.getMarkdown();
-}
 
 interface EditorSurfaceSharedProps {
   /** Read-only for a READ collaborator, or a voice share (always read-only today). */
@@ -72,16 +61,6 @@ interface EditorSurfaceHeadingProps extends EditorSurfaceSharedProps {
 }
 
 type EditorSurfaceProps = EditorSurfaceBodyProps | EditorSurfaceHeadingProps;
-
-/**
- * Same fixed cap the old `<textarea maxLength={20_000}>` enforced for free.
- * TipTap has no built-in equivalent, so `onUpdate` below truncates the
- * serialized markdown itself. `useNoteEditor.ts`'s `keepBoth` already slices
- * a merged conflict to the same number for the same reason — kept in sync
- * here, not imported from there, since that file is sync-engine code and
- * this one is display code (`docs/architecture/structure.md`'s layering).
- */
-const MAX_CONTENT_LENGTH = 20_000;
 
 /**
  * The writing surface.
@@ -187,7 +166,7 @@ function EditorSurfaceBody({
    */
   const editor = useEditor(
     {
-      content,
+      content: textToDoc(content),
       editable: !readOnly,
       // TipTap's own injected stylesheet lands OUTSIDE this app's @layer
       // system entirely, which means it would beat every layered rule in
@@ -205,53 +184,10 @@ function EditorSurfaceBody({
           'aria-label': 'Note content',
         },
       },
-      extensions: [
-        StarterKit.configure({
-          // Three levels, matching the app's own heading scale
-          // (typography.css: h1 is page-title-only, h2/h3 share one size)
-          // rather than the six Markdown nominally allows.
-          heading: { levels: [1, 2, 3] },
-          // StarterKit bundles Link (v3) with `openOnClick: true` by
-          // default — clicking a link inside an EDITABLE note would
-          // navigate the browser away instead of placing the caret, which
-          // is exactly the kind of interaction conflict step 1 was told to
-          // avoid. Off here; nothing else about Link's config changes.
-          link: { openOnClick: false },
-        }),
-        Markdown.configure({
-          // Content stays Markdown TEXT end to end — never HTML. The
-          // server, the sync engine, and search all assume a plain
-          // string; HTML output would silently break every one of them.
-          html: false,
-          tightLists: true,
-          linkify: true,
-          // CommonMark treats a single `\n` inside a paragraph as
-          // insignificant whitespace, not a line break — verified directly:
-          // with this OFF, `one\ntwo\nthree` (a plain multi-line note, which
-          // is every note ever written in the old <textarea>, since it had
-          // no concept of "blank line between paragraphs") collapses to one
-          // run-on paragraph, "one two three", the instant it is opened.
-          // `breaks: true` makes a single newline a real hard break
-          // (`<br>`) instead — matching exactly how a <textarea> always
-          // rendered `\n`, so every note already in the database still
-          // looks the way it did before this rewrite. Round-trip verified
-          // stable: serializing and re-parsing produces byte-identical
-          // Markdown, so this does not churn stored content on open.
-          breaks: true,
-          // The actual fix for the reported bug: pasted `# heading`,
-          // `**bold**`, `- item` etc. become real formatting instead of
-          // literal characters landing in the document.
-          transformPastedText: true,
-          // ...and copying text back OUT of a note gives Markdown, not
-          // HTML, so round-tripping through the system clipboard stays
-          // lossless in both directions.
-          transformCopiedText: true,
-        }),
-      ],
+      extensions: editorExtensions,
       onUpdate: ({ editor: instance }) => {
-        const markdown = getMarkdownContent(instance);
-        const next =
-          markdown.length > MAX_CONTENT_LENGTH ? markdown.slice(0, MAX_CONTENT_LENGTH) : markdown;
+        const markdown = docToText(instance.getJSON());
+        const next = markdown;
         // TipTap fires onUpdate once on mount/(re)construction even when
         // nothing was typed — ProseMirror's own initial-doc normalisation
         // (and tiptap-markdown's parse/serialise round trip) counts as a
@@ -306,7 +242,7 @@ function EditorSurfaceBody({
     if (content === lastEmittedContentRef.current) return;
 
     lastEmittedContentRef.current = content;
-    editor.commands.setContent(content, { emitUpdate: false });
+    editor.commands.setContent(textToDoc(content), { emitUpdate: false });
   }, [editor, content]);
 
   /*

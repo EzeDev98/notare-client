@@ -1,15 +1,7 @@
 import { Link, useParams } from 'react-router';
 
-import { useAuth } from '@/app/providers/auth-context';
 import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
 import { useLocalNote } from '@/features/notes/hooks/useLocalNote';
-import { InlineVoiceNotes } from '@/features/voice/components/InlineVoiceNote/InlineVoiceNote';
-import { canRecord } from '@/features/notes/permissions';
-import { LocalClips } from '@/features/voice/components/LocalClips/LocalClips';
-import { VoiceRecorder } from '@/features/voice/components/VoiceRecorder/VoiceRecorder';
-import { useSaveClip } from '@/features/voice/hooks/useSaveClip';
-import { useVoiceNotesByNote } from '@/features/voice/hooks/useVoiceNotes';
-import { formatUserInitials } from '@/features/userLookup/hooks/useUserLookup';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './NoteDetail.css';
@@ -39,21 +31,6 @@ export function LocalNoteDetailPage() {
   const { localId } = useParams();
   const state = useLocalNote(localId);
 
-  const { state: authState } = useAuth();
-
-  const ownerInitials = formatUserInitials(
-    authState.status === 'authenticated' || authState.status === 'refreshing'
-      ? authState.user
-      : undefined,
-  );
-
-  // Null until the first background sync assigns a server id. The page never
-  // changes route when that happens: the mic simply becomes available here.
-  const serverId = state.status === 'ready' ? state.row.serverId : null;
-  const voiceNotes = useVoiceNotesByNote(serverId);
-  // The recording goes onto this device first and uploads later (step 8j).
-  const upload = useSaveClip(state.status === 'ready' ? state.row.localId : undefined);
-
   // 1C/4G: no title field — the note domain has none. Same pattern as
   // NoteDetailPage's document title.
   const label = state.status === 'ready' ? deriveNoteLabel(state.row.content).label : null;
@@ -74,24 +51,10 @@ export function LocalNoteDetailPage() {
 
         {state.status === 'ready' ? (
           <div className="note-detail__editor-region">
-            <NoteEditorHost
-              row={state.row}
-              contentAccessory={
-                <>
-                  {voiceNotes.data && voiceNotes.data.length > 0 ? (
-                    <InlineVoiceNotes voiceNotes={voiceNotes.data} ownerInitials={ownerInitials} />
-                  ) : null}
-                  <LocalClips noteId={state.row.localId} />
-                </>
-              }
-            />
+            <NoteEditorHost row={state.row} />
           </div>
         ) : null}
       </div>
-
-      {state.status === 'ready' && canRecord(state.row.role) ? (
-        <VoiceRecorder upload={upload} noteId={state.row.localId} />
-      ) : null}
     </article>
   );
 }

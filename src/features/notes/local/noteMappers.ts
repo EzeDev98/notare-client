@@ -41,10 +41,17 @@ export function newLocalId(): string {
  */
 function keepLocalFields(
   existing: NoteRow | undefined,
+  incomingContent?: string,
 ): Pick<NoteRow, 'role'> & Partial<Pick<NoteRow, 'purgeAt' | 'ownerName' | 'bodyState'>> {
   const purgeAt = existing?.purgeAt;
   const ownerName = existing?.ownerName;
-  const bodyState = existing?.bodyState;
+  // The server's text replaced ours (another device edited the note), so the
+  // saved body no longer matches it. Drop it; the editor builds a new one from
+  // the text the next time the note opens (step 12b).
+  const bodyState =
+    incomingContent !== undefined && existing !== undefined && existing.content !== incomingContent
+      ? null
+      : existing?.bodyState;
   return {
     role: existing?.role ?? 'owner',
     ...(purgeAt === undefined ? {} : { purgeAt }),
@@ -146,7 +153,7 @@ export function fromNoteResponse(note: NoteResponse, existing?: NoteRow): NoteRo
     dirty: 0,
     syncState: 'synced',
     localUpdatedAt: existing?.localUpdatedAt ?? Date.now(),
-    ...keepLocalFields(existing),
+    ...keepLocalFields(existing, note.content ?? ''),
     // Preserve the existing local ordering when a note is merely read/refreshed.
     // Opening a note is not a local mutation and must not move it to the top.
     // A genuinely new note still receives Date.now().

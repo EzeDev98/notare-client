@@ -48,6 +48,14 @@ export const toastOut = fadeOut;
 
 export const toastIn = (el: Element): Animation => run(el, settle(rise(SHIFT.toast)), IN);
 
+/** A note appearing in the editor: fades in. */
+export const noteIn = (el: Element): Animation => run(el, [{ opacity: 0 }, { opacity: 1 }], IN);
+
+/** Floating bars over the editor (selection bar, keyboard strip): rise a little and fade in. */
+export const barIn = (el: Element): Animation =>
+  run(el, settle(rise(SHIFT.menu)), { duration: '--motion-fast', easing: '--ease-out' });
+export const barOut = fadeOut;
+
 export const bannerIn = (el: Element): Animation =>
   run(el, settle(`${rise(-SHIFT.banner)} scale(${String(SCALE)})`), IN);
 

@@ -13,4 +13,13 @@
   .n-accessory__spacer {
     flex: 1;
   }
+
+  /* Over the keyboard: it covers the text and never moves it. */
+  .n-accessory--docked {
+    position: fixed;
+    z-index: var(--z-menu);
+    border-radius: 0;
+    border-inline: 0;
+    border-block-end: 0;
+  }
 }
