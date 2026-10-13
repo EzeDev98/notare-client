@@ -4,6 +4,7 @@
 import { defineConfig } from 'vitest/config';
 import { loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath, URL } from 'node:url';
 import { patternflyLayerPlugin } from './vite-plugins/patternflyLayer';
 import { serviceWorkerVersionPlugin } from './vite-plugins/serviceWorkerVersion';
@@ -19,7 +20,11 @@ export default defineConfig(({ mode }) => {
   const nodeEnv = loadEnv(mode, process.cwd(), '');
   const proxyTarget = nodeEnv['NOTARE_DEV_PROXY_TARGET'] ?? 'http://localhost:2001';
 
+  const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
+
   return {
+    define: { __APP_VERSION__: JSON.stringify(pkg.version) },
+
     // serviceWorkerVersionPlugin only ever runs for `vite build` (its own
     // `apply: 'build'`) — see service-worker/sw.js and
     // vite-plugins/serviceWorkerVersion.ts for why sw.js needs a plugin at

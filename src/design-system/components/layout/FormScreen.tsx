@@ -1,4 +1,4 @@
-import { ChevronLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
 
 import { IconButton } from '@/design-system/ui/IconButton/IconButton';
@@ -40,7 +40,7 @@ export function FormScreen({
   return (
     <ScreenContainer
       className={variant === 'code' ? 'ui-form-screen ui-form-screen--code' : 'ui-form-screen'}
-      bar={onBack ? <IconButton icon={ChevronLeft} label="Back" className="ui-form-screen__back" onClick={onBack} /> : null}
+      bar={onBack ? <IconButton icon={ArrowLeft} label="Back" className="ui-form-screen__back" onClick={onBack} /> : null}
     >
       {hero ? <div className="ui-form-screen__hero">{hero}</div> : null}
       {step}

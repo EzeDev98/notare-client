@@ -1,4 +1,4 @@
-import { ChevronLeft, Ellipsis, Plus } from 'lucide-react';
+import { ArrowLeft, Ellipsis, Plus } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -58,7 +58,7 @@ export function NoteEditorHeader({
 
   return (
     <div className="note-header">
-      <IconButton className="note-header__back" icon={ChevronLeft} label="Back" onClick={goBack} />
+      <IconButton className="note-header__back" icon={ArrowLeft} label="Back" onClick={goBack} />
 
       {showInsert ? (
         <InsertMenu onVoice={onInsertVoice} onChecklist={onInsertChecklist}>

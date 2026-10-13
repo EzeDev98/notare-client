@@ -1,4 +1,4 @@
-import { ChevronLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { IconButton, ScreenContainer, ScreenHead } from '@/design-system/ui';
@@ -35,7 +35,7 @@ export function OnboardingScreen({
     <ScreenContainer
       bar={
         onBack ? (
-          <IconButton icon={ChevronLeft} label="Back" className="ui-form-screen__back" onClick={onBack} />
+          <IconButton icon={ArrowLeft} label="Back" className="ui-form-screen__back" onClick={onBack} />
         ) : (
           <span aria-hidden="true" />
         )

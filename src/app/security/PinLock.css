@@ -1,0 +1,39 @@
+@layer pages {
+  /* Wrapper only: it adds no box, so the app inside lays out exactly as before. */
+  .pin-gate__app {
+    display: contents;
+  }
+
+  .pin-lock {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-splash);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--gutter);
+    overflow-y: auto;
+    background: var(--color-bg);
+  }
+
+  .pin-lock__panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--gutter);
+    width: 100%;
+    max-width: var(--modal-width);
+    text-align: center;
+  }
+
+  .pin-lock__title {
+    font-size: var(--text-lg);
+    line-height: var(--leading-lg);
+  }
+
+  .pin-lock__desc {
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    color: var(--color-text-muted);
+  }
+}

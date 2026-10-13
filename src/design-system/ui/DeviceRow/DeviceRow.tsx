@@ -10,10 +10,12 @@ interface DeviceRowProps {
   /** This device: a tag instead of Sign out. */
   current?: boolean | undefined;
   onSignOut?: (() => void) | undefined;
+  /** Sign out is working: the button shows a spinner and ignores clicks. */
+  busy?: boolean | undefined;
 }
 
 /** A signed-in device with its last activity. */
-export function DeviceRow({ name, lastSeen, current = false, onSignOut }: DeviceRowProps) {
+export function DeviceRow({ name, lastSeen, current = false, onSignOut, busy = false }: DeviceRowProps) {
   return (
     <div className="n-person">
       <div className="n-person__text">
@@ -23,7 +25,7 @@ export function DeviceRow({ name, lastSeen, current = false, onSignOut }: Device
       {current ? (
         <Tag tone="brand">This device</Tag>
       ) : (
-        <Button variant="secondary" onClick={onSignOut}>
+        <Button variant="secondary" busy={busy} onClick={onSignOut}>
           Sign out
         </Button>
       )}

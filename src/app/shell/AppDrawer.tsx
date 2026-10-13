@@ -4,6 +4,7 @@ import { useAuth } from '@/app/providers/auth-context';
 import { useTheme } from '@/app/providers/theme-context';
 import { ROUTES } from '@/app/routes';
 import { DrawerContent, Overlay, type Tint } from '@/design-system/ui';
+import { displayName } from '@/features/auth/displayName';
 import type { CurrentUser } from '@/features/auth/types';
 
 import { DRAWER_VIEWS, SHELL_COPY } from './shellContent';
@@ -47,7 +48,7 @@ function SignedInDrawer({ user, open, onClose }: AppDrawerProps & { user: Curren
     <Overlay open={open} onClose={onClose} variant="drawer" title={SHELL_COPY.drawerName}>
       <DrawerContent
         logoScheme={resolved}
-        name={`${user.firstName} ${user.lastName}`.trim() || user.username}
+        name={displayName(user)}
         email={user.email}
         tint={tintFor(user.id)}
         items={items}

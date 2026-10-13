@@ -1,5 +1,6 @@
 import type { ChangeEvent, ClipboardEvent, FocusEvent, KeyboardEvent } from 'react';
 import { useRef } from 'react';
+import { flushSync } from 'react-dom';
 
 import { FormField } from '../FormField/FormField';
 
@@ -48,7 +49,10 @@ export function OtpField({
   };
 
   const commit = (next: string) => {
-    onChange(next);
+    // Rendered before the cursor moves, so the focus handler sees the digit just typed, not the old value.
+    flushSync(() => {
+      onChange(next);
+    });
     if (next.length === length && next !== value) onComplete?.(next);
   };
 
@@ -117,6 +121,7 @@ export function OtpField({
               pattern="[0-9]*"
               autoComplete={index === 0 ? 'one-time-code' : 'off'}
               autoFocus={autoFocus && index === 0}
+              data-autofocus={autoFocus && index === 0 ? '' : undefined}
               disabled={disabled}
               aria-label={`Digit ${String(index + 1)} of ${String(length)}`}
               aria-describedby={a11y['aria-describedby']}

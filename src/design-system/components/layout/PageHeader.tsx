@@ -1,4 +1,4 @@
-import { ChevronLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { IconButton } from '@/design-system/ui/IconButton/IconButton';
@@ -17,7 +17,7 @@ interface PageHeaderProps {
 export function PageHeader({ title, onBack, action }: PageHeaderProps) {
   return (
     <header className="ui-page-header">
-      {onBack ? <IconButton icon={ChevronLeft} label="Back" className="ui-page-header__back" onClick={onBack} /> : null}
+      {onBack ? <IconButton icon={ArrowLeft} label="Back" className="ui-page-header__back" onClick={onBack} /> : null}
       <h1 className="ui-page-header__title">{title}</h1>
       {action ? <div className="ui-page-header__action">{action}</div> : null}
     </header>

@@ -95,6 +95,26 @@ export const SYNCED_AFTER_MS = 1_700;
 /** The length counter appears from this many characters. */
 export const NOTE_COUNTER_FROM = 19_000;
 
+// --- Settings (pages/Settings) -----------------------------------------------
+
+/** Storage counts as nearly full from this percent of the quota. */
+export const STORAGE_NEAR_FULL_PERCENT = 90;
+
+/** Sync now stays busy at least this long, so a quick run still shows it worked. */
+export const SYNC_NOW_MIN_BUSY_MS = 1_000;
+
+/** "Last synced" re-reads the clock this often so "5 min ago" stays right. */
+export const LAST_SYNCED_REFRESH_MS = 30_000;
+
+/** Coming back from the background after at least this long shows the PIN lock screen again. */
+export const PIN_LOCK_DELAY_MS = 30_000;
+
+/** Digits in the PIN. */
+export const PIN_LENGTH = 4;
+
+/** Wrong PINs allowed before the lock asks the person to sign in again. */
+export const PIN_MAX_TRIES = 5;
+
 // --- Old screens: removed when the screen that uses them is rebuilt --------
 
 /** NoteDetail waits this long before showing its loading spinner. */

@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 import { gateway } from '@/core/adapter';
+import { mayDownloadClips } from '@/features/notes/local/clipDownloadPolicy';
 import { clipRepository } from '@/features/notes/local/clipRepository';
 
 /** "0:42". Whole seconds, minutes unpadded. */
@@ -63,6 +64,8 @@ async function blobFor(clipId: string): Promise<{ blob: Blob; seconds: number }>
   const seconds = clip.durationSeconds ?? 0;
   if (clip.audio) return { blob: clip.audio, seconds };
   if (clip.serverId === null) throw new Error('Clip has no audio');
+
+  if (!(await mayDownloadClips())) throw new Error('Voice clips download on Wi-Fi only');
 
   const blob = await gateway.downloadClip(clip.serverId);
   try {

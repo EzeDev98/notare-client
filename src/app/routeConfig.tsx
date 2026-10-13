@@ -75,6 +75,56 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     guards: APP,
     load: () => import('@/pages/NoteDetail/NoteDetail').then((m) => m.NoteDetailPage),
   },
+  {
+    path: P.settings,
+    guards: APP,
+    load: () => import('@/pages/Settings/SettingsHub').then((m) => m.SettingsHubPage),
+  },
+  {
+    path: P.settingsAccount,
+    guards: APP,
+    load: () => import('@/pages/Settings/SettingsAccount').then((m) => m.SettingsAccountPage),
+  },
+  {
+    path: P.settingsAppearance,
+    guards: APP,
+    load: () => import('@/pages/Settings/SettingsAppearance').then((m) => m.SettingsAppearancePage),
+  },
+  {
+    path: P.settingsSync,
+    guards: APP,
+    load: () => import('@/pages/Settings/SettingsSync').then((m) => m.SettingsSyncPage),
+  },
+  {
+    path: P.settingsDevices,
+    guards: APP,
+    load: () => import('@/pages/Settings/SettingsDevices').then((m) => m.SettingsDevicesPage),
+  },
+  {
+    path: P.settingsSecurity,
+    guards: APP,
+    load: () => import('@/pages/Settings/SettingsSecurity').then((m) => m.SettingsSecurityPage),
+  },
+  {
+    path: P.settingsDeleted,
+    guards: APP,
+    load: () => import('@/pages/Settings/SettingsDeleted').then((m) => m.SettingsDeletedPage),
+  },
+  {
+    path: P.settingsAbout,
+    guards: APP,
+    load: () => import('@/pages/Settings/SettingsAbout').then((m) => m.SettingsAboutPage),
+  },
+  {
+    path: P.settingsTerms,
+    guards: APP,
+    load: () => import('@/pages/Settings/SettingsLegal').then((m) => m.SettingsTermsPage),
+  },
+  {
+    path: P.settingsPrivacy,
+    guards: APP,
+    load: () => import('@/pages/Settings/SettingsLegal').then((m) => m.SettingsPrivacyPage),
+  },
 
   // Old screens. Each line goes when its screen is rebuilt.
   {

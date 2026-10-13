@@ -23,6 +23,8 @@ export interface FinalSyncResult {
    * caller must not treat a hung/offline sync as silent success.
    */
   hadUnsyncedChanges: boolean;
+  /** How many changes are waiting: the larger of the unsent notes and the queued writes. */
+  unsyncedCount: number;
 }
 
 /**
@@ -54,7 +56,10 @@ export async function attemptFinalSync(ownerId: number | null): Promise<FinalSyn
     outboxRepository.count(),
   ]);
 
-  return { hadUnsyncedChanges: dirtyRows.length > 0 || queuedCount > 0 };
+  return {
+    hadUnsyncedChanges: dirtyRows.length > 0 || queuedCount > 0,
+    unsyncedCount: Math.max(dirtyRows.length, queuedCount),
+  };
 }
 
 /**

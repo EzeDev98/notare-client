@@ -12,6 +12,7 @@
 type UpdateListener = (available: boolean) => void;
 
 let waitingWorker: ServiceWorker | null = null;
+let activeRegistration: ServiceWorkerRegistration | null = null;
 const listeners = new Set<UpdateListener>();
 
 function notify(available: boolean): void {
@@ -41,6 +42,31 @@ export function onUpdateAvailable(listener: UpdateListener): () => void {
 // waiting and activates immediately, claiming whatever page is open). That
 // case must never reload — see the module doc comment.
 let updateRequested = false;
+
+/**
+ * Asks the browser to look for a new service worker now (Settings > About).
+ * "latest" when there is nothing newer, or when no worker is registered (dev
+ * mode, or a browser without service workers). Rejects when the check itself
+ * fails, for example offline, so the caller can say so.
+ */
+export async function checkForUpdates(): Promise<'latest' | 'available'> {
+  if (waitingWorker !== null) return 'available';
+  if (activeRegistration === null) return 'latest';
+  await activeRegistration.update();
+  const installing = activeRegistration.installing;
+  if (installing !== null) {
+    await new Promise<void>((resolve) => {
+      const timer = window.setTimeout(resolve, 10_000);
+      installing.addEventListener('statechange', () => {
+        if (installing.state === 'installed' || installing.state === 'redundant') {
+          window.clearTimeout(timer);
+          resolve();
+        }
+      });
+    });
+  }
+  return waitingWorker !== null ? 'available' : 'latest';
+}
 
 export function applyUpdate(): void {
   if (waitingWorker === null) return;
@@ -76,6 +102,7 @@ export function registerServiceWorker(): void {
     navigator.serviceWorker
       .register('/sw.js')
       .then((registration) => {
+        activeRegistration = registration;
         // A worker was ALREADY waiting when this tab loaded (e.g. a
         // previous tab installed an update and this one just opened).
         if (registration.waiting) {

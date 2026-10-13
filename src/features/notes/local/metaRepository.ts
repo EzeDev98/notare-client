@@ -12,6 +12,10 @@ export const metaRepository = {
     await db.meta.put({ key, value });
   },
 
+  async remove(key: string): Promise<void> {
+    await db.meta.delete(key);
+  },
+
   /**
    * The sync cursor, kept as an opaque string.
    *

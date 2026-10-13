@@ -6,6 +6,7 @@ import { QueryProvider } from '@/app/providers/QueryProvider';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
 import { ToastProvider as LegacyToastProvider } from '@/app/providers/ToastProvider';
 import { router } from '@/app/router';
+import { PinGate } from '@/app/security/PinGate';
 import { OfflineFirstOpen } from '@/app/startup/OfflineFirstOpen';
 import { StartupSplash } from '@/app/startup/StartupSplash';
 import { STARTUP_COPY } from '@/app/startup/startupContent';
@@ -66,7 +67,9 @@ function AppStage() {
       {outcome === 'app' ? (
         <QueryProvider>
           <LegacyToastProvider>
-            <RouterProvider router={router} />
+            <PinGate>
+              <RouterProvider router={router} />
+            </PinGate>
           </LegacyToastProvider>
         </QueryProvider>
       ) : null}

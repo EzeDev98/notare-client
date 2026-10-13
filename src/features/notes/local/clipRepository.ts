@@ -74,6 +74,32 @@ export const clipRepository = {
     await db.clips.update(id, { uploadState: 'synced', serverId, audio: null });
   },
 
+  /** Bytes of audio held on this device. Reads sizes, not the audio. */
+  async audioBytes(): Promise<number> {
+    let total = 0;
+    await db.clips.each((clip) => {
+      total += clip.audio?.size ?? 0;
+    });
+    return total;
+  },
+
+  /**
+   * Frees space: drops the audio of clips the server already has. Clips that
+   * have not synced are never touched. Returns the bytes released.
+   */
+  releaseSyncedAudio(): Promise<number> {
+    return db.transaction('rw', db.clips, async () => {
+      let freed = 0;
+      const rows = await db.clips.where('uploadState').equals('synced').toArray();
+      for (const clip of rows) {
+        if (clip.audio === null) continue;
+        freed += clip.audio.size;
+        await db.clips.update(clip.id, { audio: null });
+      }
+      return freed;
+    });
+  },
+
   /** "Try again" on a failed upload. */
   async retry(id: string): Promise<void> {
     await db.clips.update(id, { uploadState: 'local' });
