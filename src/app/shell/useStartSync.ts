@@ -1,3 +1,4 @@
+import { useAuth } from '@/app/providers/auth-context';
 import { useRefreshSocial } from '@/app/shell/useRefreshSocial';
 import { useSessionUser } from '@/app/shell/useSessionUser';
 import { useSync } from '@/sync/useSync';
@@ -9,6 +10,8 @@ import { useSync } from '@/sync/useSync';
  */
 export function useStartSync(): void {
   const user = useSessionUser();
-  useSync(user?.id ?? null);
-  useRefreshSocial(user?.id ?? null);
+  const { state } = useAuth();
+  const paused = state.status === 'session-expired';
+  useSync(user?.id ?? null, paused);
+  useRefreshSocial(paused ? null : (user?.id ?? null));
 }

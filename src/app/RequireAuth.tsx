@@ -15,6 +15,9 @@ export function RequireAuth() {
   const { state } = useAuth();
   const location = useLocation();
 
+  // Expired mid-use: stay where you are. The status banner offers Sign in (step 14a).
+  if (state.status === 'session-expired' && state.user !== null) return <Outlet />;
+
   switch (state.status) {
     case 'initializing':
       /*

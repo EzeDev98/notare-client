@@ -1,3 +1,4 @@
+import { sessionUserOf } from '@/features/auth/sessionUser';
 import { useState } from 'react';
 
 import { useAuth } from '@/app/providers/auth-context';
@@ -27,10 +28,7 @@ export type DeviceResetStage = 'idle' | 'syncing' | 'erasing';
 export function useDeviceReset() {
   const { state: authState, logout } = useAuth();
 
-  const ownerId =
-    authState.status === 'authenticated' || authState.status === 'refreshing'
-      ? authState.user.id
-      : null;
+  const ownerId = sessionUserOf(authState)?.id ?? null;
 
   const [confirmation, setConfirmation] = useState<DeviceResetConfirmation>(null);
   const [busy, setBusy] = useState(false);

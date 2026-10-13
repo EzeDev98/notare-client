@@ -39,8 +39,9 @@ export type AuthState =
    *  second refresh, not so the UI can show something. */
   | { status: 'refreshing'; user: CurrentUser }
   /** The session ended and the user did not ask for it. Needs an explanation,
-   *  and unsaved local work must survive. Terminal for the refresh path. */
-  | { status: 'session-expired'; reason: 'refresh-failed' | 'revoked' };
+   *  and unsaved local work must survive. Terminal for the refresh path.
+   *  `user` is who was signed in, so their notes stay on screen (step 14a). */
+  | { status: 'session-expired'; reason: 'refresh-failed' | 'revoked'; user: CurrentUser | null };
 
 export interface AuthTokens {
   accessToken: string;

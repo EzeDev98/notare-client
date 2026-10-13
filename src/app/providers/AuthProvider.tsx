@@ -1,3 +1,4 @@
+import { sessionUserOf } from '@/features/auth/sessionUser';
 import { useCallback, useEffect, useReducer, type ReactNode } from 'react';
 
 import { AuthContext } from '@/app/providers/auth-context';
@@ -129,5 +130,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'LOGGED_OUT' });
   }, []);
 
-  return <AuthContext value={{ state, login, logout }}>{children}</AuthContext>;
+  /*
+   * Sign in again after the session expired (step 14a). Unlike login() this
+   * never passes through `authenticating` and never clears the session on
+   * failure: that would unmount the editor and throw the person back to the
+   * sign-in page, which is exactly what this exists to avoid.
+   */
+  const reauthenticate = useCallback(
+    async (password: string) => {
+      const current = sessionUserOf(state);
+      if (current === null) throw new Error('There is no session to renew.');
+
+      const result = await authService.login({ usernameOrEmail: current.username, password });
+      await setStoredRefreshToken(result.refreshToken);
+      setAccessToken(result.accessToken, result.expiresIn);
+
+      const user = await authService.getCurrentUser();
+      dispatch({ type: 'LOGIN_SUCCEEDED', user });
+    },
+    [state],
+  );
+
+  return <AuthContext value={{ state, login, logout, reauthenticate }}>{children}</AuthContext>;
 }

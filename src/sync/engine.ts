@@ -4,7 +4,7 @@ import { releaseLegacyConflicts } from '@/sync/releaseLegacyConflicts';
 import { pullChanges } from '@/sync/pull';
 import { pushOutbox } from '@/sync/push';
 import { onLocalMutation } from '@/sync/mutationSignal';
-import { setSyncStatus } from '@/sync/syncStatus';
+import { getSyncStatus, setSyncStatus } from '@/sync/syncStatus';
 import { consumeTransportFailure } from '@/sync/transportFailure';
 import { SYNC_AFTER_CHANGE_MS, SYNC_BACKOFF_MS } from '@/core/config/timings';
 
@@ -137,6 +137,7 @@ async function run(): Promise<void> {
     setSyncStatus({
       status: 'error',
       lastError: error instanceof Error ? error.message : 'Sync failed',
+      failures: getSyncStatus().failures + 1,
     });
     console.error('[sync] run failed', error);
     scheduleBackoffRetry();
@@ -151,14 +152,14 @@ async function run(): Promise<void> {
   }
 
   if (outcome === 'transport-failure') {
-    setSyncStatus({ status: 'offline' });
+    setSyncStatus({ status: 'offline', failures: getSyncStatus().failures + 1 });
     scheduleBackoffRetry();
     return;
   }
 
   backoffStep = 0;
   clearBackoffTimer();
-  setSyncStatus({ status: 'idle', lastSyncedAt: Date.now(), lastError: null });
+  setSyncStatus({ status: 'idle', lastSyncedAt: Date.now(), lastError: null, failures: 0 });
 }
 
 /**

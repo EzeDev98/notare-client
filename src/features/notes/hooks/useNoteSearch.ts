@@ -1,3 +1,4 @@
+import { sessionUserOf } from '@/features/auth/sessionUser';
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
 
 import { useAuth } from '@/app/providers/auth-context';
@@ -31,10 +32,7 @@ export type SearchState =
  */
 export function useNoteSearch(term: string): SearchState {
   const { state: authState } = useAuth();
-  const ownerId =
-    authState.status === 'authenticated' || authState.status === 'refreshing'
-      ? authState.user.id
-      : null;
+  const ownerId = sessionUserOf(authState)?.id ?? null;
 
   const trimmed = term.trim();
 

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 
+import { useAuth } from '@/app/providers/auth-context';
 import { SAVING_LOCAL_MS, SYNCED_AFTER_MS } from '@/core/config/timings';
 import { noteRepository } from '@/features/notes/local/noteRepository';
 import { deriveNoteStatus, type NoteStatus } from '@/features/notes/status/noteStatus';
 import { useStorageFull } from '@/features/notes/status/storageFull';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
+import { isSyncPaused } from '@/sync/syncStatus';
 import { useSyncStatus } from '@/sync/useSyncStatus';
 
 /**
@@ -24,6 +26,7 @@ export function useNoteStatus(noteId: string | undefined): NoteStatus | null {
   const online = useOnlineStatus();
   const sync = useSyncStatus();
   const storageFull = useStorageFull();
+  const { state: auth } = useAuth();
 
   // The clock only moves at the two moments the answer can change on its own.
   const [now, setNow] = useState(() => Date.now());
@@ -54,7 +57,8 @@ export function useNoteStatus(noteId: string | undefined): NoteStatus | null {
     row,
     now,
     online,
-    syncFailing: sync.status === 'error' || (online && sync.status === 'offline'),
+    syncFailing: isSyncPaused(sync),
     storageFull,
+    signedOut: auth.status === 'session-expired',
   });
 }

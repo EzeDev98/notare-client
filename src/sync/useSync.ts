@@ -12,6 +12,10 @@ import { start } from '@/sync/engine';
  * a non-React module cannot do for itself: know when React mounted and
  * unmounted it.
  */
-export function useSync(ownerId: number | null): void {
-  useEffect(() => start(ownerId), [ownerId]);
+/**
+ * `paused` (session expired, step 14a) stops the triggers but leaves the outbox
+ * alone; turning it off starts the engine again and the queue drains.
+ */
+export function useSync(ownerId: number | null, paused = false): void {
+  useEffect(() => start(paused ? null : ownerId), [ownerId, paused]);
 }

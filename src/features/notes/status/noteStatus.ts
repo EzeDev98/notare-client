@@ -19,6 +19,8 @@ export interface NoteStatusInput {
   syncFailing: boolean;
   /** A write to this device failed because storage is full. */
   storageFull: boolean;
+  /** The session expired: nothing can sync until the person signs in again (step 14a). */
+  signedOut?: boolean | undefined;
 }
 
 /**
@@ -34,12 +36,15 @@ export function deriveNoteStatus({
   online,
   syncFailing,
   storageFull,
+  signedOut = false,
 }: NoteStatusInput): NoteStatus {
   if (row.role === 'viewer') return 'view-only';
   if (storageFull) return 'not-saved';
 
   const age = now - row.localUpdatedAt;
   if (row.dirty === 1 && age < SAVING_LOCAL_MS) return 'saving-local';
+
+  if (signedOut) return 'saved-local';
 
   const clean = row.dirty === 0 && row.serverId !== null && row.syncState === 'synced';
   if (clean) return age < SYNCED_AFTER_MS ? 'saved-local' : 'synced';

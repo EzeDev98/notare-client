@@ -38,6 +38,7 @@ export function SignedIn({ children, user = TEST_USER }: { children: ReactNode; 
         state: { status: 'authenticated', user },
         login: () => Promise.resolve(),
         logout: () => Promise.resolve(),
+        reauthenticate: () => Promise.resolve(),
       }}
     >
       {children}

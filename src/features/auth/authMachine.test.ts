@@ -61,7 +61,7 @@ describe('refresh', () => {
      * session-expired rather than unauthenticated, because unsaved work must
      * survive and the user needs an explanation.
      */
-    expect(state).toEqual({ status: 'session-expired', reason: 'refresh-failed' });
+    expect(state).toEqual({ status: 'session-expired', reason: 'refresh-failed', user });
   });
 
   it('ignores REFRESH_STARTED when there is no session', () => {
@@ -90,6 +90,7 @@ describe('ending a session', () => {
     expect(authReducer(authenticated, { type: 'SESSION_REVOKED' })).toEqual({
       status: 'session-expired',
       reason: 'revoked',
+      user,
     });
   });
 });
@@ -102,7 +103,7 @@ describe('totality', () => {
       { status: 'authenticating' },
       authenticated,
       { status: 'refreshing', user },
-      { status: 'session-expired', reason: 'refresh-failed' },
+      { status: 'session-expired', reason: 'refresh-failed', user },
     ];
 
     const actions: AuthAction[] = [

@@ -6,6 +6,8 @@ export interface AuthContextValue {
   state: AuthState;
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
+  /** Renew an expired session with the password, without unmounting the app (step 14a). */
+  reauthenticate: (password: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

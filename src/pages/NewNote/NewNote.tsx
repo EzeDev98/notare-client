@@ -1,3 +1,4 @@
+import { sessionUserOf } from '@/features/auth/sessionUser';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -13,10 +14,7 @@ export function NewNotePage() {
 
   useDocumentTitle('New note');
 
-  const currentUserId =
-    authState.status === 'authenticated' || authState.status === 'refreshing'
-      ? authState.user.id
-      : null;
+  const currentUserId = sessionUserOf(authState)?.id ?? null;
 
   useEffect(() => {
     if (currentUserId === null || creationStartedRef.current) {

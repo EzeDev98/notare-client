@@ -1,3 +1,4 @@
+import { sessionUserOf } from '@/features/auth/sessionUser';
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -99,10 +100,7 @@ async function mapWithConcurrency<T>(
 
 export function useTrash(): TrashStateValue {
   const { state: authState } = useAuth();
-  const ownerId =
-    authState.status === 'authenticated' || authState.status === 'refreshing'
-      ? authState.user.id
-      : null;
+  const ownerId = sessionUserOf(authState)?.id ?? null;
 
   const toast = useToast();
   const [refreshing, setRefreshing] = useState(false);

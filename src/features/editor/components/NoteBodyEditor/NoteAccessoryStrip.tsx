@@ -7,7 +7,7 @@ import { createPortal } from 'react-dom';
 import { barIn, barOut } from '@/design-system/motion/patterns';
 import { usePresence } from '@/design-system/motion/usePresence';
 import { AccessoryStrip } from '@/design-system/ui';
-import { insertVoiceClip } from '@/features/editor/voiceClip/recordingIds';
+import { useInsertVoice } from '@/features/editor/voiceClip/useInsertVoice';
 import { useCoarsePointer } from '@/shared/hooks/useCoarsePointer';
 
 /**
@@ -18,6 +18,7 @@ import { useCoarsePointer } from '@/shared/hooks/useCoarsePointer';
  */
 export function NoteAccessoryStrip({ editor }: { editor: Editor }) {
   const coarse = useCoarsePointer();
+  const insertVoice = useInsertVoice();
 
   const state = useEditorState({
     editor,
@@ -71,7 +72,7 @@ export function NoteAccessoryStrip({ editor }: { editor: Editor }) {
         editor.chain().focus().redo().run();
       }}
       onVoice={() => {
-        insertVoiceClip(editor);
+        insertVoice(editor);
       }}
     />,
     document.body,

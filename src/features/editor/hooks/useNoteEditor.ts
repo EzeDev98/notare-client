@@ -1,10 +1,10 @@
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { getDraft, persistDraftIfContent } from '@/features/notes/createNote';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import type { NoteRow } from '@/features/notes/local/noteRow';
-import { isQuotaError, setStorageFull } from '@/features/notes/status/storageFull';
+import { isQuotaError, setStorageFull, useStorageFull } from '@/features/notes/status/storageFull';
 
 /**
  * The editor's link to local storage (steps 6, 8, 12c).
@@ -30,6 +30,11 @@ export function useNoteEditor(initialRow: NoteRow) {
    * promises, not a copy of the note.
    */
   const writeChainRef = useRef<Promise<void>>(Promise.resolve());
+
+  // The newest change that could not be written because the device is full (14c).
+  // The text is also still in the Y.Doc; this is what gets written again once there is room.
+  const unsavedRef = useRef<{ content: string; bodyState: Uint8Array } | null>(null);
+  const storageFull = useStorageFull();
 
   /**
    * Writes a change to local storage and to the outbox. `content` is the text
@@ -73,13 +78,22 @@ export function useNoteEditor(initialRow: NoteRow) {
 
           // A write worked, so the device is not full (step 8h).
           setStorageFull(false);
+          unsavedRef.current = null;
         })
         .catch((error: unknown) => {
-          if (isQuotaError(error)) setStorageFull(true);
+          if (!isQuotaError(error)) return;
+          unsavedRef.current = changes;
+          setStorageFull(true);
         });
     },
     [localId],
   );
+
+  // Space was freed: write what could not be saved while the banner showed.
+  useEffect(() => {
+    if (storageFull || !unsavedRef.current) return;
+    setDraft(unsavedRef.current);
+  }, [storageFull, setDraft]);
 
   /** Resolves once every change made so far is on this device. Cmd/Ctrl+S uses it. */
   const flush = useCallback((): Promise<void> => writeChainRef.current, []);

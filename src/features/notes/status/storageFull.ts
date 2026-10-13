@@ -25,6 +25,11 @@ function getSnapshot(): boolean {
   return full;
 }
 
+/** Is the device full right now? For code that is not a component. */
+export function isStorageFull(): boolean {
+  return full;
+}
+
 export function useStorageFull(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }

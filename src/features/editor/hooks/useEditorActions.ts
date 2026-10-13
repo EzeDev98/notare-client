@@ -1,3 +1,4 @@
+import { sessionUserOf } from '@/features/auth/sessionUser';
 import { useNavigate } from 'react-router';
 import type { Doc } from 'yjs';
 
@@ -35,8 +36,7 @@ export function useEditorActions(row: NoteRow, doc: Doc): EditorMoreActions {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { state } = useAuth();
-  const userId =
-    state.status === 'authenticated' || state.status === 'refreshing' ? state.user.id : null;
+  const userId = sessionUserOf(state)?.id ?? null;
 
   const { localId } = row;
   const pinned = row.pinned === 1;

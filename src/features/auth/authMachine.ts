@@ -1,3 +1,4 @@
+import { sessionUserOf } from '@/features/auth/sessionUser';
 import type { AuthState, CurrentUser } from '@/features/auth/types';
 
 /**
@@ -82,13 +83,13 @@ export function authReducer(state: AuthState, action: AuthAction): AuthState {
        * whose refresh failed mid-sentence expects their sentence to still be
        * there.
        */
-      return { status: 'session-expired', reason: 'refresh-failed' };
+      return { status: 'session-expired', reason: 'refresh-failed', user: sessionUserOf(state) };
 
     case 'LOGGED_OUT':
       return { status: 'unauthenticated' };
 
     case 'SESSION_REVOKED':
-      return { status: 'session-expired', reason: 'revoked' };
+      return { status: 'session-expired', reason: 'revoked', user: sessionUserOf(state) };
 
     default: {
       // Add an action and forget it here, and this stops compiling.

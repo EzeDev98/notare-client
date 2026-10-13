@@ -17,11 +17,21 @@ export interface SyncStatus {
   lastSyncedAt: number | null;
   /** Set on 'error', cleared on the next clean run. */
   lastError: string | null;
+  /** Failed runs in a row while the browser said online. Back to 0 on a clean run (step 14b). */
+  failures: number;
+}
+
+/** Failed runs in a row before the app says "Sync paused" (step 14b). */
+export const SYNC_PAUSED_AFTER_FAILURES = 2;
+
+/** Has the engine failed often enough to show "Sync paused"? */
+export function isSyncPaused(status: SyncStatus): boolean {
+  return status.failures >= SYNC_PAUSED_AFTER_FAILURES;
 }
 
 const listeners = new Set<() => void>();
 
-let current: SyncStatus = { status: 'idle', lastSyncedAt: null, lastError: null };
+let current: SyncStatus = { status: 'idle', lastSyncedAt: null, lastError: null, failures: 0 };
 
 export function getSyncStatus(): SyncStatus {
   return current;
@@ -46,6 +56,6 @@ export function setSyncStatus(patch: Partial<SyncStatus>): void {
 
 /** Test-only: back to the resting state, with no listeners left attached. */
 export function resetSyncStatusForTests(): void {
-  current = { status: 'idle', lastSyncedAt: null, lastError: null };
+  current = { status: 'idle', lastSyncedAt: null, lastError: null, failures: 0 };
   listeners.clear();
 }

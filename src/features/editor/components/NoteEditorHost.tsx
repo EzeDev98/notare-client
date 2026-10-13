@@ -1,13 +1,14 @@
 import type { Editor } from '@tiptap/core';
 import { useState, type ReactNode } from 'react';
 
+import { StatusBanner } from '@/app/status/StatusBanner';
 import { NoteBodyEditor } from '@/features/editor/components/NoteBodyEditor/NoteBodyEditor';
 import { canEdit, canTranscribe } from '@/features/notes/permissions';
 import { NoteEditorHeader } from '@/features/editor/components/NoteEditorHeader/NoteEditorHeader';
 import { useEditorShortcuts } from '@/features/editor/hooks/useEditorShortcuts';
 import { useNoteEditor } from '@/features/editor/hooks/useNoteEditor';
 import { insertChecklist } from '@/features/editor/editorCommands';
-import { insertVoiceClip } from '@/features/editor/voiceClip/recordingIds';
+import { useInsertVoice } from '@/features/editor/voiceClip/useInsertVoice';
 import { useEditorActions } from '@/features/editor/hooks/useEditorActions';
 import { useNoteBody } from '@/features/editor/hooks/useNoteBody';
 import { useTranscriptionRunner } from '@/features/voice/hooks/useTranscriptionRunner';
@@ -49,6 +50,7 @@ function NoteDateHeading({ row }: { row: NoteRow }) {
 
 export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
   const editor = useNoteEditor(row);
+  const insertVoice = useInsertVoice();
   const { doc, bodyKey } = useNoteBody(row, editor.row, editor.setDraft);
   const [tiptap, setTiptap] = useState<Editor | null>(null);
   const more = useEditorActions(editor.row, doc);
@@ -74,11 +76,13 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
         onInsertVoice={
           tiptap
             ? () => {
-                insertVoiceClip(tiptap);
+                insertVoice(tiptap);
               }
             : undefined
         }
       />
+
+      <StatusBanner />
 
       <NoteDateHeading key={editor.row.localId} row={editor.row} />
 

@@ -1,3 +1,4 @@
+import { sessionUserOf } from '@/features/auth/sessionUser';
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -44,10 +45,7 @@ export interface NotesState {
 
 export function useNotes({ archived = false }: { archived?: boolean } = {}): NotesState {
   const { state: authState } = useAuth();
-  const ownerId =
-    authState.status === 'authenticated' || authState.status === 'refreshing'
-      ? authState.user.id
-      : null;
+  const ownerId = sessionUserOf(authState)?.id ?? null;
 
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
