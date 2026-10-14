@@ -8,18 +8,12 @@ const LEGACY = [
   'src/pages/InviteCollaborator/InviteCollaborator.css',
   'src/pages/ShareNote/ShareNote.css',
   'src/pages/SharedNote/SharedNote.css',
-  'src/pages/Trash/Trash.css',
   'src/design-system/components/Button/Button.css',
-  'src/design-system/components/Logo/Logo.css',
   'src/design-system/components/Modal/Modal.css',
-  'src/design-system/components/ThemeToggle/ThemeToggle.css',
   'src/design-system/components/Toast/Toast.css',
   'src/features/collaboration/components/CollaboratorPicker/CollaboratorPicker.css',
   'src/features/editor/components/EditorSurface/EditorSurface.css',
-  'src/features/notes/components/NoteContextMenu/NoteContextMenu.css',
-  'src/features/sharedNotes/components/SharedNoteCard/SharedNoteCard.css',
   'src/features/voice/components/InlineVoiceNote/InlineVoiceNote.css',
-  'src/features/voice/components/VoiceNoteCard/VoiceNoteCard.css',
   'src/features/voice/components/VoiceRecorder/VoiceRecorder.css',
 ];
 

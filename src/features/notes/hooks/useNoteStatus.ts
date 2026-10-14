@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/app/providers/auth-context';
 import { SAVING_LOCAL_MS, SYNCED_AFTER_MS } from '@/core/config/timings';
 import { noteRepository } from '@/features/notes/local/noteRepository';
+import type { NoteRole } from '@/features/notes/local/noteRow';
 import { deriveNoteStatus, type NoteStatus } from '@/features/notes/status/noteStatus';
 import { useStorageFull } from '@/features/notes/status/storageFull';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
@@ -17,7 +18,7 @@ import { useSyncStatus } from '@/sync/useSyncStatus';
  * Returns null while the note is not on disk (a blank draft) or still loading,
  * which shows nothing.
  */
-export function useNoteStatus(noteId: string | undefined): NoteStatus | null {
+export function useNoteStatus(noteId: string | undefined, role?: NoteRole | undefined): NoteStatus | null {
   const row = useLiveQuery(async () => {
     if (noteId === undefined || noteId === '') return null;
     return (await noteRepository.getByLocalId(noteId)) ?? null;
@@ -54,7 +55,7 @@ export function useNoteStatus(noteId: string | undefined): NoteStatus | null {
   if (!row) return null;
 
   return deriveNoteStatus({
-    row,
+    row: role === undefined ? row : { ...row, role },
     now,
     online,
     syncFailing: isSyncPaused(sync),

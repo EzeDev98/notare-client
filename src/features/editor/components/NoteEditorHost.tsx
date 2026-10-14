@@ -11,6 +11,7 @@ import { insertChecklist } from '@/features/editor/editorCommands';
 import { useInsertVoice } from '@/features/editor/voiceClip/useInsertVoice';
 import { useEditorActions } from '@/features/editor/hooks/useEditorActions';
 import { useNoteBody } from '@/features/editor/hooks/useNoteBody';
+import { useKeepCopy, useShareAccess } from '@/features/editor/hooks/useShareAccess';
 import { useTranscriptionRunner } from '@/features/voice/hooks/useTranscriptionRunner';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import { parseServerDateTime } from '@/lib/time';
@@ -54,6 +55,10 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
   const { doc, bodyKey } = useNoteBody(row, editor.row, editor.setDraft);
   const [tiptap, setTiptap] = useState<Editor | null>(null);
   const more = useEditorActions(editor.row, doc);
+  const access = useShareAccess(editor.row);
+  const keepCopy = useKeepCopy(editor.row);
+  // A change to your access takes effect at once: the note turns read-only or editable to match.
+  const viewRow = access ? { ...editor.row, role: access.role } : editor.row;
   // Owners only until the server lets editors transcribe shared clips (step 17, B-11).
   const mayTranscribe = canTranscribe(editor.row.role) && editor.row.role === 'owner';
   useTranscriptionRunner(row.localId, mayTranscribe);
@@ -64,7 +69,7 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
   return (
     <>
       <NoteEditorHeader
-        row={editor.row}
+        row={viewRow}
         more={more}
         onInsertChecklist={
           tiptap
@@ -82,7 +87,7 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
         }
       />
 
-      <StatusBanner />
+      <StatusBanner access={access} onKeepCopy={keepCopy} />
 
       <NoteDateHeading key={editor.row.localId} row={editor.row} />
 
@@ -91,7 +96,7 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
         noteId={row.localId}
         doc={doc}
         onEditor={setTiptap}
-        readOnly={!canEdit(editor.row.role)}
+        readOnly={!canEdit(viewRow.role)}
         canTranscribe={mayTranscribe}
         contentAccessory={contentAccessory}
       />

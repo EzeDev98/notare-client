@@ -27,7 +27,7 @@ export function RouteError() {
   return <CrashScreen error={error} />;
 }
 
-function CrashScreen({ error }: { error: unknown }) {
+export function CrashScreen({ error }: { error: unknown }) {
   useDocumentTitle(STATUS_COPY.errorTitle);
 
   useEffect(() => {

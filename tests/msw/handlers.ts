@@ -2,10 +2,8 @@ import { http, HttpResponse } from 'msw';
 
 import { makeNote, makeNoteSummary, makePage } from '../fixtures/notes';
 import { makeSharedNoteSummary } from '../fixtures/sharedNotes';
-import { makeSharedVoiceNoteSummary } from '../fixtures/sharedVoiceNotes';
 import { makeCollaboration, makeUserSummary } from '../fixtures/collaboration';
 import { makeShare } from '../fixtures/shares';
-import { makeVoiceShare } from '../fixtures/voiceShares';
 import { makeLookupUser } from '../fixtures/userLookup';
 import { makeNotification } from '../fixtures/notifications';
 import { makeTranscription, makeVoiceNote } from '../fixtures/voice';
@@ -220,40 +218,6 @@ export const handlers = [
 
   http.delete(`${BASE}/notes/:noteId/shares/:userId`, () => new HttpResponse(null, { status: 204 })),
 
-  // ---- voice-note sharing (owner side) -------------------------------
-
-  http.get(`${BASE}/voice-notes/:voiceNoteId/shares`, ({ params }) =>
-    HttpResponse.json(makePage([makeVoiceShare({ voiceNoteId: Number(params['voiceNoteId']) })])),
-  ),
-
-  http.post(`${BASE}/voice-notes/:voiceNoteId/shares`, async ({ params, request }) => {
-    const body = (await request.json()) as { sharedWithUserId: number; permission: 'READ' | 'WRITE' };
-    return HttpResponse.json(
-      makeVoiceShare({
-        voiceNoteId: Number(params['voiceNoteId']),
-        sharedWithUserId: body.sharedWithUserId,
-        permission: body.permission,
-      }),
-      { status: 201 },
-    );
-  }),
-
-  http.put(`${BASE}/voice-notes/:voiceNoteId/shares/:userId`, async ({ params, request }) => {
-    const body = (await request.json()) as { permission: 'READ' | 'WRITE' };
-    return HttpResponse.json(
-      makeVoiceShare({
-        voiceNoteId: Number(params['voiceNoteId']),
-        sharedWithUserId: Number(params['userId']),
-        permission: body.permission,
-      }),
-    );
-  }),
-
-  http.delete(
-    `${BASE}/voice-notes/:voiceNoteId/shares/:userId`,
-    () => new HttpResponse(null, { status: 204 }),
-  ),
-
   // ---- notifications ------------------------------------------------------
 
   http.get(`${BASE}/notifications`, () => HttpResponse.json(makePage([makeNotification()]))),
@@ -318,24 +282,5 @@ export const handlers = [
 
   http.get(`${BASE}/voice-notes/:voiceNoteId/transcription`, ({ params }) =>
     HttpResponse.json(makeTranscription({ voiceNoteId: Number(params['voiceNoteId']) })),
-  ),
-
-  // ---- shared voice notes (recipient side) -----------------------------
-
-  http.get(`${BASE}/shared-voice-notes`, () =>
-    HttpResponse.json(makePage([makeSharedVoiceNoteSummary()])),
-  ),
-
-  http.get(`${BASE}/shared-voice-notes/:voiceNoteId`, ({ params }) =>
-    HttpResponse.json(
-      makeSharedVoiceNoteSummary({ voiceNoteId: Number(params['voiceNoteId']) }),
-    ),
-  ),
-
-  http.get(`${BASE}/shared-voice-notes/:voiceNoteId/download`, () =>
-    new HttpResponse(new Uint8Array([0, 1, 2, 3]), {
-      status: 200,
-      headers: { 'content-type': 'audio/webm' },
-    }),
   ),
 ];

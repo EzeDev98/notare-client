@@ -1,7 +1,8 @@
 import { getAuthHooks } from '@/lib/http/authHooks';
 import { env } from '@/lib/config/env';
-import { ApiError } from '@/lib/http/errors';
+import { ApiError, UPDATE_REQUIRED_STATUS } from '@/lib/http/errors';
 import { parseResponse } from '@/lib/http/parse';
+import { signalUpdateRequired } from '@/lib/http/updateRequired';
 import { HTTP_TIMEOUT_MS } from '@/core/config/timings';
 
 /**
@@ -149,6 +150,9 @@ async function request<T>(method: string, path: string, config: RequestConfig = 
       ({ response } = await attempt());
     }
   }
+
+  // Too old to talk to the server: tell the app, which blocks with "Update required" (14e).
+  if (response.status === UPDATE_REQUIRED_STATUS) signalUpdateRequired();
 
   return parseResponse<T>(response);
 }

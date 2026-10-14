@@ -37,10 +37,21 @@ function pickSupportedMimeType(): string | null {
   return null;
 }
 
+/** The browser's answer for the microphone, or null where it cannot say (Safari, older browsers). */
+async function microphonePermission(): Promise<PermissionState | null> {
+  try {
+    if (!('permissions' in navigator)) return null;
+    return (await navigator.permissions.query({ name: 'microphone' as PermissionName })).state;
+  } catch {
+    return null;
+  }
+}
+
 export type RecorderStatus =
   | { state: 'idle' }
   | { state: 'requesting-permission' }
   | { state: 'permission-denied' }
+  | { state: 'no-microphone' }
   | { state: 'unsupported' }
   | { state: 'recording'; startedAt: number; paused: boolean }
   | {
@@ -105,14 +116,20 @@ export function useMediaRecorderState() {
 
     setStatus({ state: 'requesting-permission' });
 
+    // Already blocked: say so now, instead of waiting for a prompt that cannot come (14f).
+    if ((await microphonePermission()) === 'denied') {
+      setStatus({ state: 'permission-denied' });
+      return;
+    }
+
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      // Covers both an explicit deny and no microphone present — jsdom/
-      // browsers don't distinguish these in a way worth a third state;
-      // the recovery action (check mic permissions/hardware) is the same.
-      setStatus({ state: 'permission-denied' });
+    } catch (error) {
+      // No microphone at all is its own state; any other refusal reads as blocked (14f).
+      const name = error instanceof DOMException ? error.name : '';
+      const missing = name === 'NotFoundError' || name === 'OverconstrainedError';
+      setStatus({ state: missing ? 'no-microphone' : 'permission-denied' });
       return;
     }
 

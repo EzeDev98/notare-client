@@ -70,7 +70,7 @@ export function NoteEditorHeader({
 
       <span className="note-header__spacer" />
 
-      <SaveIndicator noteId={row.localId} />
+      <SaveIndicator noteId={row.localId} role={row.role} />
 
       {people.length > 0 ? <AvatarStack people={people} /> : null}
 

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { CLIP_MAX_SECONDS } from '@/core/config/timings';
-import { useToast } from '@/design-system/ui';
+import { Button, Overlay, useToast } from '@/design-system/ui';
 import { VoiceBlock, type VoiceState } from '@/design-system/ui/VoiceBlock/VoiceBlock';
+import { EDITOR_COPY } from '@/features/editor/editorContent';
 import { isQuotaError, setStorageFull } from '@/features/notes/status/storageFull';
 import { useMediaRecorderState } from '@/features/voice/hooks/useMediaRecorderState';
 import { formatClock } from '@/features/voice/player';
@@ -28,6 +29,8 @@ export function RecordingBlock({ recordingId, noteId, onSaved, onRemove }: Recor
   const [now, setNow] = useState(() => Date.now());
   const startedRef = useRef(false);
   const handledRef = useRef(false);
+  const retriedRef = useRef(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const { start, stop, status } = recorder;
 
@@ -72,8 +75,14 @@ export function RecordingBlock({ recordingId, noteId, onSaved, onRemove }: Recor
     })();
   }, [status, noteId, recordingId, onSaved, onRemove, toast]);
 
+  // Try again and it is still blocked: explain where to allow it (14f).
+  useEffect(() => {
+    if (status.state === 'permission-denied' && retriedRef.current) setHelpOpen(true);
+  }, [status.state]);
+
   const tryAgain = (): void => {
     startedRef.current = true;
+    retriedRef.current = true;
     void start();
   };
   const remove = (): void => {
@@ -92,6 +101,7 @@ export function RecordingBlock({ recordingId, noteId, onSaved, onRemove }: Recor
     case 'permission-denied':
       state = 'mic-blocked';
       break;
+    case 'no-microphone':
     case 'unsupported':
     case 'error':
       state = 'no-mic';
@@ -102,5 +112,25 @@ export function RecordingBlock({ recordingId, noteId, onSaved, onRemove }: Recor
 
   const elapsed = status.state === 'recording' ? (now - status.startedAt) / 1000 : 0;
 
-  return <VoiceBlock state={state} time={formatClock(elapsed)} onStop={stop} onTryAgain={tryAgain} onRemove={remove} />;
+  const closeHelp = (): void => {
+    setHelpOpen(false);
+  };
+
+  return (
+    <>
+      <VoiceBlock state={state} time={formatClock(elapsed)} onStop={stop} onTryAgain={tryAgain} onRemove={remove} />
+      <Overlay
+        open={helpOpen}
+        onClose={closeHelp}
+        title={EDITOR_COPY.mic.helpTitle}
+        footer={
+          <Button variant="primary" onClick={closeHelp}>
+            {EDITOR_COPY.mic.gotIt}
+          </Button>
+        }
+      >
+        <p>{EDITOR_COPY.mic.help}</p>
+      </Overlay>
+    </>
+  );
 }

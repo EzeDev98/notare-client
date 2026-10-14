@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { RouterProvider } from 'react-router';
 
+import { AppErrorBoundary } from '@/app/AppErrorBoundary';
 import { AuthProvider } from '@/app/providers/AuthProvider';
 import { QueryProvider } from '@/app/providers/QueryProvider';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
@@ -14,8 +15,8 @@ import { useStartup } from '@/app/startup/useStartup';
 import { done, run } from '@/design-system/motion/motion';
 import { OnboardingPage } from '@/pages/Onboarding/Onboarding';
 import { ToastProvider, useToast } from '@/design-system/ui';
-import { UpdateAvailableModal } from '@/pwa/components/UpdateAvailableModal';
-import { useEverStandalone } from '@/pwa/displayMode';
+import { UpdateRequiredModal } from '@/pwa/components/UpdateRequiredModal';
+import { useUpdatedToast } from '@/pwa/useUpdatedToast';
 
 /**
  * The single start-up hand-off (master 5.5). The splash (the same element as
@@ -35,6 +36,7 @@ function AppStage() {
   const splashRef = useRef<HTMLDivElement>(null);
   const [splashGone, setSplashGone] = useState(false);
   const revealed = outcome !== 'waiting';
+  useUpdatedToast(revealed);
 
   useEffect(() => {
     const splash = splashRef.current;
@@ -56,7 +58,7 @@ function AppStage() {
 
   async function retryAndWelcome(): Promise<boolean> {
     const connected = await retry();
-    if (connected) toast(STARTUP_COPY.connected);
+    if (connected) toast(STARTUP_COPY.connected, { tone: 'success' });
     return connected;
   }
 
@@ -98,21 +100,18 @@ function AppBoot() {
  * ThemeProvider is outermost: an error boundary rendering inside the router
  * should still be themed.
  *
- * UpdateAvailableModal only renders once this session has confirmed it IS the
- * installed app (useEverStandalone()). A first-time visitor on the install
- * gate, or just browsing in an ordinary tab, has nothing installed for a newer
- * version to matter to. Still sits outside AuthProvider: offerable whether or
- * not anyone is signed in, once it's actually the installed app asking.
+ * UpdateRequiredModal sits outside AuthProvider: the server can say "too old"
+ * whether or not anyone is signed in, and nothing should be usable behind it.
  */
 export function App() {
-  const everStandalone = useEverStandalone();
-
   return (
     <ThemeProvider>
-      {everStandalone ? <UpdateAvailableModal /> : null}
-      <AuthProvider>
-        <AppBoot />
-      </AuthProvider>
+      <AppErrorBoundary>
+        <UpdateRequiredModal />
+        <AuthProvider>
+          <AppBoot />
+        </AuthProvider>
+      </AppErrorBoundary>
     </ThemeProvider>
   );
 }

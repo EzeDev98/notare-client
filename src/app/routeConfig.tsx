@@ -143,11 +143,6 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     load: () => import('@/pages/ShareNote/ShareNote').then((m) => m.ShareNotePage),
   },
   {
-    path: P.legacy.trash,
-    guards: APP,
-    load: () => import('@/pages/Trash/Trash').then((m) => m.TrashPage),
-  },
-  {
     path: P.legacy.sharedNote,
     guards: APP,
     load: () => import('@/pages/SharedNote/SharedNote').then((m) => m.SharedNotePage),
@@ -157,16 +152,6 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     guards: APP,
     load: () =>
       import('@/pages/InviteCollaborator/InviteCollaborator').then((m) => m.InviteCollaboratorPage),
-  },
-  {
-    path: P.legacy.voice,
-    guards: APP,
-    load: () => import('@/pages/VoiceNotes/VoiceNotes').then((m) => m.VoiceNotesPage),
-  },
-  {
-    path: P.legacy.voiceDetail,
-    guards: APP,
-    load: () => import('@/pages/VoiceDetail/VoiceDetail').then((m) => m.VoiceDetailPage),
   },
 ];
 

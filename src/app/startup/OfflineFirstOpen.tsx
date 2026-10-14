@@ -1,7 +1,9 @@
 import { useState } from 'react';
 
 import { useTheme } from '@/app/providers/theme-context';
+import { OFFLINE_RETRY_MIN_BUSY_MS } from '@/core/config/timings';
 import { Button, InfoBanner, Logo } from '@/design-system/ui';
+import { wait } from '@/lib/wait';
 
 import { STARTUP_COPY } from './startupContent';
 
@@ -21,7 +23,7 @@ export function OfflineFirstOpen({ onRetry }: { onRetry: () => Promise<boolean> 
   async function retry() {
     if (busy) return;
     setBusy(true);
-    const connected = await onRetry();
+    const [connected] = await Promise.all([onRetry(), wait(OFFLINE_RETRY_MIN_BUSY_MS)]);
     setBusy(false);
     setStillOffline(!connected);
   }

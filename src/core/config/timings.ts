@@ -49,6 +49,9 @@ export const SPLASH_MIN_MS = 500;
 /** The longest the start-up waits for the font before showing the app anyway. */
 export const FONT_WAIT_MAX_MS = 1_500;
 
+/** "Try again" on the offline first-open screen stays busy at least this long, so a retry always shows it ran. */
+export const OFFLINE_RETRY_MIN_BUSY_MS = 1_000;
+
 // --- Install checks (pwa/installChecks.ts, step 10d) ------------------------
 
 /** The longest an install check waits for the service worker before it counts as failed. */
@@ -105,6 +108,9 @@ export const SYNC_NOW_MIN_BUSY_MS = 1_000;
 
 /** "Last synced" re-reads the clock this often so "5 min ago" stays right. */
 export const LAST_SYNCED_REFRESH_MS = 30_000;
+
+/** If an update reload has not happened this long after Reload, the screen is given back. */
+export const UPDATE_RELOAD_GIVE_UP_MS = 5_000;
 
 /** Coming back from the background after at least this long shows the PIN lock screen again. */
 export const PIN_LOCK_DELAY_MS = 30_000;

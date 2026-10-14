@@ -108,3 +108,10 @@ export function isRetriable(error: unknown): boolean {
   if (detail.kind === 'problem' || detail.kind === 'http') return detail.status >= 500;
   return false;
 }
+
+/** The server answers 426 when this version of the app is too old to talk to it (contract set in step 17). */
+export const UPDATE_REQUIRED_STATUS = 426;
+
+export function isUpdateRequired(error: unknown): boolean {
+  return statusOf(error) === UPDATE_REQUIRED_STATUS;
+}
