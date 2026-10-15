@@ -1,24 +1,7 @@
 // Stylelint: the design rules as tooling (Guide step 3, A-09). No "extends":
 // every rule is listed here, as in Ahorra's config.
 
-// LEGACY CSS. Written before the design rules existed. Each file leaves this
-// list when its screen is rebuilt (steps 6 to 14) and the list ends empty.
-// Never add a file to it. New CSS must pass.
-const LEGACY = [
-  'src/pages/InviteCollaborator/InviteCollaborator.css',
-  'src/pages/ShareNote/ShareNote.css',
-  'src/pages/SharedNote/SharedNote.css',
-  'src/design-system/components/Button/Button.css',
-  'src/design-system/components/Modal/Modal.css',
-  'src/design-system/components/Toast/Toast.css',
-  'src/features/collaboration/components/CollaboratorPicker/CollaboratorPicker.css',
-  'src/features/editor/components/EditorSurface/EditorSurface.css',
-  'src/features/voice/components/InlineVoiceNote/InlineVoiceNote.css',
-  'src/features/voice/components/VoiceRecorder/VoiceRecorder.css',
-];
-
 export default {
-  ignoreFiles: LEGACY,
   rules: {
     // No raw colours: use a token.
     'color-no-hex': true,
@@ -54,7 +37,6 @@ export default {
       files: [
         'src/design-system/tokens.css',
         'src/design-system/bridge.css',
-        'src/design-system/legacy-aliases.css',
       ],
       rules: {
         'color-no-hex': null,

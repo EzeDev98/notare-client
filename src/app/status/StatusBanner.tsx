@@ -106,7 +106,7 @@ export function StatusBanner({
       action: STATUS_COPY.sharingStopped.action,
       ...(onKeepCopy ? { onAction: onKeepCopy } : {}),
     });
-  } else if (access && access.kind !== 'stopped') {
+  } else if (access) {
     conditions.push({
       key: 'access-changed',
       body: STATUS_COPY.accessChanged[access.kind](access.owner),

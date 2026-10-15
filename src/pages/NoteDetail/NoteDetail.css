@@ -1,178 +1,29 @@
 @layer pages {
-  /*
-   * §30: reading a note should feel like a clean document, not a dashboard
-   * card. Everything here serves that — generous vertical space, restrained
-   * chrome, and no borders or shadows around the text itself.
-   *
-   * NOT capped to --measure-prose / centred. That reads as a marketing
-   * article, not a page in a notes app — the reference app's own note view
-   * fills the pane edge to edge behind a small, consistent side margin, so
-   * the writing surface is the same width as the toolbar and header above
-   * it rather than an island floating in the middle of the screen.
-   *
-   * A flex COLUMN filling .app-shell__main's box, not a plain block — see
-   * .note-detail__scroll's own comment for why: this element's job is now
-   * just to host two siblings (a scrolling region, and the floating
-   * voice recorder), not to hold content itself.
-   */
+  /* A flex column filling the pane: one scrolling region inside it. */
   .note-detail {
+    position: relative;
     display: flex;
     flex-direction: column;
     block-size: 100%;
-    /* Positioning context for .voice-recorder__dock (VoiceRecorder.css) —
-       "80% of the note editor interface" only means something relative to
-       THIS box, not the viewport. */
-    position: relative;
   }
 
-  /*
-   * THE scroll container. Everything that used to be .note-detail's own
-   * padding lives here instead — back link, states, the editor, and now
-   * the past-recordings list too (.note-detail__voice, below). flex:1
-   * claims whatever the rest of .note-detail doesn't need,
-   * min-block-size:0 lets it actually shrink to that instead of growing
-   * around its content, and overflow-y:auto is what makes THIS scroll
-   * independently rather than the note detail page as a whole — the
-   * identical three-property
-   * pattern .app-shell__note-list already uses for the sidebar.
-   */
   .note-detail__scroll {
     flex: 1;
     min-block-size: 0;
     overflow-y: auto;
-    padding: 0 var(--space-8) var(--space-16);
-  }
-
-  /*
-   * Mobile/tablet only. At the >=1024px sidebar breakpoint the sidebar's
-   * own live note list already IS "all notes" — a persistent, better way
-   * back than a link at the top of whichever note happens to be open —
-   * so this becomes redundant there and is hidden (media query below).
-   * Still needed below 1024px: the compact nav's "Notes" item opens the
-   * latest note (NotesLandingPage), not a list, so this remains the only
-   * way back to browsing at those sizes.
-   */
-  .note-detail__back {
-    display: flex;
-    align-items: center;
-    font-size: var(--text-base);
-  }
-
-  .note-detail__back a {
-    text-decoration: none;
-  }
-
-  @media (min-width: 1024px) {
-    .note-detail__back {
-      display: none;
-    }
-  }
-
-  .note-detail__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--space-4);
-    margin-block-start: var(--space-8);
-  }
-
-  .note-detail__title {
-    margin: 0;
-    /* Titles wrap rather than truncate here — unlike the list, where a
-     * consistent card height matters more than the full title. */
-    overflow-wrap: break-word;
-  }
-
-  .note-detail__actions {
-    flex-shrink: 0;
-  }
-
-  .note-detail__meta {
-    display: flex;
-    gap: var(--space-2);
-    align-items: center;
-    margin-block: var(--space-3) 0;
-    color: var(--color-text-secondary);
-    font-size: var(--text-xs);
-  }
-
-  .note-detail__badge {
-    padding: var(--space-1) var(--space-2);
-    background-color: var(--color-accent-subtle);
-    border-radius: var(--radius-sm);
-  }
-
-  .note-detail__content {
-    margin-block-start: var(--space-8);
-
-    /* The reading size and leading from 2A — one step above UI text, with the
-     * air long-form reading needs. */
-    font-size: var(--text-md);
-    line-height: var(--line-height-relaxed);
-
-    /*
-     * pre-wrap preserves the newlines and runs of spaces the user typed, while
-     * still wrapping long lines. `pre` alone would not wrap and would force a
-     * horizontal scrollbar on any long paragraph.
-     */
-    white-space: pre-wrap;
-    /* A pasted URL with no spaces should wrap rather than widen the page. */
-    overflow-wrap: break-word;
-  }
-
-  .note-detail__muted {
-    color: var(--color-text-secondary);
+    padding: 0 calc(var(--gap) * 4) calc(var(--gap) * 8);
   }
 
   .note-detail__centre {
     display: grid;
     justify-items: center;
-    gap: var(--space-3);
-    padding-block: var(--space-16);
+    gap: var(--card-pad);
+    padding-block: calc(var(--gap) * 8);
     text-align: center;
   }
 
-  @layer pages {
-    /*
-   * Ordinary in-flow content now, not a footer — see NoteDetailPage's
-   * own comment on why the old boxed-footer treatment (background,
-   * border, max-height, its own scroll) was actively causing the
-   * overlap: it was a second bottom-anchored box competing with the
-   * recorder's floating dock for the same corner. This section just
-   * scrolls with the rest of the note now, like any other content
-   * below it.
-   */
-    .note-detail__voice {
-      margin-block-start: var(--space-10);
-      padding-block-start: var(--space-6);
-      border-block-start: var(--border-width) solid var(--color-border);
-
-      /*
-     * Keep the voice-note region as one stable document section.
-     * The section may grow when recordings arrive, but it must never
-     * disappear and reappear as part of a note switch.
-     */
-      min-block-size: 0;
-      contain: layout paint;
-    }
-
-    .note-detail__voice-heading {
-      margin: 0 0 var(--space-3);
-      font-size: var(--text-md);
-    }
-
-    .note-detail__voice-list {
-      display: grid;
-      gap: var(--space-2);
-      margin-block-start: var(--space-4);
-      padding: 0;
-    }
-
-    .note-detail__voice-centre {
-      display: flex;
-      align-items: center;
-      padding-block: var(--space-3);
-    }
+  .note-detail__muted {
+    color: var(--color-text-muted);
   }
 
   @media (prefers-reduced-motion: reduce) {

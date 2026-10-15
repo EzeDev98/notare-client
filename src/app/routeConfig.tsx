@@ -137,22 +137,6 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     guards: APP,
     load: () => import('@/pages/NoteDetail/LocalNoteDetail').then((m) => m.LocalNoteDetailPage),
   },
-  {
-    path: P.legacy.noteShare,
-    guards: APP,
-    load: () => import('@/pages/ShareNote/ShareNote').then((m) => m.ShareNotePage),
-  },
-  {
-    path: P.legacy.sharedNote,
-    guards: APP,
-    load: () => import('@/pages/SharedNote/SharedNote').then((m) => m.SharedNotePage),
-  },
-  {
-    path: P.legacy.collaborationsInvite,
-    guards: APP,
-    load: () =>
-      import('@/pages/InviteCollaborator/InviteCollaborator').then((m) => m.InviteCollaboratorPage),
-  },
 ];
 
 /** Old URLs kept for one release so bookmarks and emailed links still work. */

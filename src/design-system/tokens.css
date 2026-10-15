@@ -106,6 +106,7 @@
     --bar-height: 56px;
     --drawer-width: 280px;
     --modal-width: 400px;
+    --z-sticky: 10;
     --z-overlay: 80;
     --z-menu: 90;
     --z-toast: 100;

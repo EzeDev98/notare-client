@@ -135,6 +135,3 @@ export const STANDALONE_RECHECK_LONG_MS = 1_500;
 /** Sidebar list enter and exit animation. Matches the CSS. Goes with the old sidebar. */
 export const LEGACY_SIDEBAR_ANIMATION_MS = 640;
 
-
-/** Old single-toast provider. Goes when PatternFly-era components retire (decisions.md, 6e). */
-export const LEGACY_TOAST_MS = 8_000;

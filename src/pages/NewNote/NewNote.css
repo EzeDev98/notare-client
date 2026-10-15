@@ -1,41 +1,10 @@
 @layer pages {
-  /*
-   * D3/7H. Same visual treatment as .note-detail (same reading-page feel is
-   * correct here — a new note IS a note), but its own file and its own class
-   * names, per structure.md: every page in pages/ owns Xxx.tsx + Xxx.css.
-   *
-   * The previous version reached across to NoteDetail.css's classes instead.
-   * That worked only by accident: NoteDetail's chunk (and its CSS) is
-   * lazy-loaded per route, so a user landing on /notes/new directly — the
-   * only way to reach this page — never triggered that import. The layout
-   * was silently unstyled. Giving this page its own stylesheet is not
-   * housekeeping; it is the actual fix.
-   *
-   * NOT capped to --measure-prose / centred — same reasoning as
-   * NoteDetail.css's own comment on its identical rule: the writing surface
-   * should fill the pane behind a small, consistent side margin, not float
-   * as a narrow column in the middle of the screen.
-   */
+  /* A new note is a note: same full-pane column as the note page. */
   .new-note {
     position: relative;
     display: flex;
     flex-direction: column;
     block-size: 100%;
     min-block-size: 0;
-  }
-
-  .new-note__scroll {
-    flex: 1;
-    min-block-size: 0;
-    overflow-y: auto;
-    padding: var(--space-6) var(--space-8) var(--space-16);
-  }
-
-  .new-note__centre {
-    display: grid;
-    justify-items: center;
-    gap: var(--space-3);
-    padding-block: var(--space-16);
-    text-align: center;
   }
 }

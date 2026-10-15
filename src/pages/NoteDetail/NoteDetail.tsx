@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router';
 import { NoteEditorHost } from '@/features/editor/components/NoteEditorHost';
 import { parseNoteId, useNote } from '@/features/notes/hooks/useNote';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
-import { Spinner } from '@/design-system/components/Spinner/Spinner';
+import { Spinner } from '@/design-system/ui';
 import { useDelayedFlag } from '@/shared/hooks/useDelayedFlag';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import './NoteDetail.css';

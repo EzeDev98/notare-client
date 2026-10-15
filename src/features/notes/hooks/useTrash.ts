@@ -3,7 +3,7 @@ import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLive
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/app/providers/auth-context';
-import { useToast } from '@/app/providers/toast-context';
+import { useToast } from '@/design-system/ui';
 import { gateway } from '@/core/adapter';
 import { toView, type NoteView } from '@/features/notes/local/noteMappers';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';

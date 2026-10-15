@@ -5,7 +5,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { routes } from '@/app/router';
 import { QueryProvider } from '@/app/providers/QueryProvider';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
-import { ToastProvider } from '@/app/providers/ToastProvider';
+import { ToastProvider } from '@/design-system/ui';
 import { SignedIn, resetDatabase } from '~/harness';
 
 const AUTHENTICATED_PATHS: Array<{ path: string; expectedTitle: string }> = [

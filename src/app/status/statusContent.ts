@@ -17,6 +17,18 @@ export const STATUS_COPY = {
     body: 'New changes cannot be saved. Free up space to keep writing.',
     action: 'Free up space',
   },
+  theOwner: 'The owner',
+  sharingStopped: {
+    title: 'Sharing stopped',
+    body: (owner: string): string =>
+      `${owner} stopped sharing this note with you. Keep a copy to carry on, or go back.`,
+    action: 'Keep a copy',
+    copied: 'Saved a copy in your notes.',
+  },
+  accessChanged: {
+    viewer: (owner: string): string => `${owner} changed your access to Viewer. Your last edit was saved.`,
+    editor: (owner: string): string => `${owner} gave you edit access.`,
+  },
   noSpaceToRecord: 'No space left on this device. Free up space to record.',
   signIn: {
     title: 'Sign in again',

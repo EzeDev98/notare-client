@@ -1,40 +1,12 @@
 @layer components {
-  /*
-   * §30: the note should read like a clean document. No borders, no boxes, no
-   * visible field chrome — the interface disappears and the text is the page.
-   */
-  .editor-surface__heading,
-  .editor-surface__content {
-    inline-size: 100%;
-    background: transparent;
-    border: none;
-    padding: 0;
-    color: var(--color-text);
-    /* Fields do not inherit fonts (2A), and here that matters twice over. */
-    font-family: inherit;
-  }
-
-  /*
-   * The one remaining caller (SharedVoiceDetail, read-only) — NOT a note
-   * title field. Same visual weight the title field used to carry, kept so
-   * a standalone voice share still reads as "the same note interface" per
-   * `EditorSurface.tsx`'s own doc comment, not because this is titling
-   * anything.
-   */
-  .editor-surface__heading {
-    font-size: var(--text-lg);
-    font-weight: var(--weight-semibold);
-    line-height: var(--line-height-tight);
-    letter-spacing: var(--tracking-tight);
-  }
-
+  /* The note reads like a clean document: no borders, no boxes, no field chrome. */
   .editor-surface__body {
     /* The selection bar floats inside this box. */
     position: relative;
     min-block-size: 60vh;
   }
 
-  /* Step 12f: "Start writing" shows while the whole note is empty (O-20). */
+  /* "Start writing" shows while the whole note is empty. */
   .editor-surface__content p.is-editor-empty:first-child::before {
     float: inline-start;
     block-size: 0;
@@ -50,76 +22,38 @@
   }
 
   .editor-surface__content {
-    margin-block-start: var(--space-6);
+    inline-size: 100%;
+    margin-block-start: calc(var(--gap) * 3);
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: var(--text-md);
+    line-height: 1.7;
 
-    /* §1A: the blinking caret IS the writing indicator now that there's no
-     * title field above it — give it the brand accent so it reads as an
-     * intentional signal, not a stray default black cursor. */
-    caret-color: var(--color-accent);
+    /* The blinking caret is the writing indicator. */
+    caret-color: var(--color-brand);
 
-    /* ProseMirror requires this; injectCSS is off, so it is set here. */
+    /* ProseMirror requires these; injectCSS is off, so they are set here. */
     white-space: pre-wrap;
     word-wrap: break-word;
-
-    /* The reading size and leading from 2A — the same values the read view
-     * used, so switching between them is not a visual jump. */
-    font-size: var(--text-md);
-    line-height: var(--line-height-relaxed);
-
-    /*
-     * A contenteditable div sizes to its content natively — no JS height
-     * measurement needed the way the old <textarea> required (its own
-     * `resize`/`overflow-y` rules went with it). §30's "the page scrolls,
-     * not a box inside it" is now just the platform default rather than
-     * something this file has to enforce.
-     */
   }
 
-  /*
-   * Everything below is new for the TipTap surface, and everything in it
-   * reuses an existing token — nothing here invents a new color, radius,
-   * spacing step, or font. The goal is a note that still reads as ONE
-   * continuous piece of writing, formatted, not a page assembled from
-   * differently-themed blocks.
-   */
-
-  /*
-   * Paragraph/heading/list/quote/code-block spacing. Reset.css (deliberately)
-   * zeroes margin on h1–h6/p/blockquote app-wide — "spacing is always a
-   * decision," not a default — so the decision for THIS surface is made
-   * here: space appears only BETWEEN sibling blocks, never above the first
-   * or below the last, so the note's first line still sits flush with
-   * `margin-block-start` above and nothing trails after the last paragraph.
-   */
+  /* Space appears only between sibling blocks, never above the first or below the last. */
   .editor-surface__content > * + * {
-    margin-block-start: var(--space-4);
+    margin-block-start: var(--gutter);
   }
 
-  /*
-   * In-note headings reuse the app's own heading sizes (typography.css: h1
-   * is 20px/semibold, h2/h3 share 16px/semibold) rather than inventing a
-   * second scale — but NOT the global `h1` rule itself, which is written
-   * for PAGE titles specifically (centered, `--font-heading`). This
-   * `@layer components` block beats that `@layer base` rule regardless of
-   * selector specificity (see icons.css/Toast.css/Button.css for the same
-   * pattern elsewhere in this codebase), so a note's own `# heading` never
-   * picks up page-title centering by accident.
-   *
-   * `font-family: inherit`, not `--font-heading` — a note is one
-   * continuous typographic voice (§30); switching fonts between a note's
-   * own headings and its body paragraphs would be a jump WITHIN the same
-   * piece of writing, which is worse than the app's page titles and body
-   * text using different faces from each other (they are different kinds
-   * of content to begin with).
-   */
+  /* In-note headings follow the note's own voice, not the page-title style. */
   .editor-surface__content h1,
   .editor-surface__content h2,
   .editor-surface__content h3 {
-    font-family: inherit;
-    font-weight: var(--weight-semibold);
-    line-height: var(--line-height-snug);
-    text-align: left;
     color: var(--color-text);
+    font-family: inherit;
+    font-weight: var(--font-weight);
+    line-height: 1.35;
+    text-align: left;
   }
 
   .editor-surface__content h1 {
@@ -131,46 +65,36 @@
     font-size: var(--text-md);
   }
 
-  /*
-   * Lists keep their native markers (TipTap's <ul>/<ol> carry no
-   * `role="list"`, so reset.css's `:where([role='list'])` rule — which
-   * strips markers for STRUCTURAL lists elsewhere in the app — never
-   * matches these; a note's bullet list should look like a bullet list).
-   * Only indent and marker color are set, reusing --space-6 (already the
-   * app's own reading-token, `.editor-surface__content`'s own
-   * margin-block-start above) rather than a new magic indent value.
-   */
+  /* Lists keep their native markers: a bullet list should look like one. */
   .editor-surface__content ul,
   .editor-surface__content ol {
-    padding-inline-start: var(--space-6);
+    padding-inline-start: calc(var(--gap) * 3);
     color: var(--color-text);
   }
 
   .editor-surface__content li + li {
-    margin-block-start: var(--space-2);
+    margin-block-start: var(--gap);
   }
 
-  /* A quoted aside, not a warning or a callout — a quiet left rule in the
-   * same neutral border token panels/dividers already use, never a color
-   * that would make it read as a status message. */
+  /* A quiet left rule, never a colour that reads as a status message. */
   .editor-surface__content blockquote {
-    padding-inline-start: var(--space-4);
-    border-inline-start: var(--border-width) solid var(--color-border);
-    color: var(--color-text-secondary);
+    padding-inline-start: var(--gutter);
+    border-inline-start: var(--border-width) solid var(--color-line);
+    color: var(--color-text-muted);
   }
 
-  /*
-   * Inline `code`/`pre` already pick up the app-wide monospace rule for
-   * free (typography.css's `code, kbd, samp, pre` block, `@layer base`) —
-   * this only adds what that rule does not: a block a code sample can sit
-   * inside, using the SAME recessed surface Toast.tsx and the folders
-   * panel already use for "a distinct, sunken surface," and the same
-   * button radius token, rather than new values.
-   */
+  .editor-surface__content code,
+  .editor-surface__content kbd,
+  .editor-surface__content samp,
   .editor-surface__content pre {
-    padding: var(--space-3);
-    background-color: var(--color-surface-recessed);
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 0.9em;
+  }
+
+  .editor-surface__content pre {
+    padding: var(--card-pad);
     border-radius: var(--radius-sm);
+    background-color: var(--color-hover);
     overflow-x: auto;
   }
 
@@ -179,78 +103,40 @@
   }
 
   .editor-surface__content a {
-    color: var(--color-accent);
+    color: var(--color-brand);
   }
 
-  /*
-   * `---` on its own line becomes a real <hr> (StarterKit's HorizontalRule).
-   * Nothing anywhere else in the app styles <hr> — reset.css only zeroes
-   * margins on headings/p/figure/blockquote/dl/dd, not this — so left alone
-   * it would render as the browser's default two-tone inset groove line,
-   * which is exactly the "box" §30 says a note should never show. A single
-   * flat rule in the same border token blockquote already uses above,
-   * instead.
-   */
+  /* `---` on its own line becomes a flat rule, not the browser's inset groove. */
   .editor-surface__content hr {
-    border: none;
     block-size: var(--border-width);
-    background-color: var(--color-border);
-    margin-block: var(--space-2);
+    margin-block: var(--gap);
+    border: none;
+    background-color: var(--color-line);
   }
 
-  .editor-surface__heading::placeholder,
   .editor-surface__content::placeholder {
-    /* Secondary, not disabled — a placeholder is text the user reads. */
-    color: var(--color-text-secondary);
+    color: var(--color-text-muted);
   }
 
   /*
-   * The focus ring is suppressed HERE and only here.
-   *
-   * 2A deliberately kept browser outlines and 2B replaced them with a designed
-   * ring, and this is the one justified exception: a 2px lavender box around
-   * the entire writing area, permanently, while someone writes for an hour is
-   * exactly the "interface competing with the content" §27 rules out.
-   *
-   * The trade is real — a keyboard user loses the indicator on these two
-   * fields. It is acceptable only because focus here is unambiguous: the
-   * caret is visible and blinking, which is a stronger focus signal than a
-   * ring. Nowhere else in the app gets this treatment.
+   * The focus ring is off here and only here. A ring around the whole writing
+   * area competes with the text; the blinking caret is the focus signal.
    */
-  .editor-surface__heading:focus-visible,
   .editor-surface__content:focus-visible {
     outline: none;
   }
 }
 
-/*
- * The note's creation date, centred above the text like Apple Notes.
- *
- * Sticky, like the toolbar's search/notification row above it: `top: 0`
- * pins it to the top of `.note-detail__scroll` (NoteDetail.css) — the
- * ancestor that actually scrolls — instead of letting it travel up under
- * the toolbar with the rest of the note. `--z-sticky` and an opaque
- * background (AppLayout.css's toolbar/nav use the same token) keep the
- * scrolling body from showing through it once it's pinned.
- *
- * No margin here on purpose — a negative margin used to cancel
- * `.note-detail__scroll`'s own padding, but a negative margin on a
- * `position: sticky` element makes the browser's stuck/unstuck threshold
- * unreliable (it was the reason this wasn't actually sticking). Instead
- * `.note-detail__scroll` now carries no top padding at all, so this sits
- * flush at the real top of the scroll container with no fighting over
- * the offset, and `padding-block` here is the only spacing above/below
- * the date text.
- */
+/* The note's creation date, centred above the text and pinned while the note scrolls. */
 .note-date {
   position: sticky;
   inset-block-start: var(--bar-height);
   z-index: var(--z-sticky);
   margin: 0;
-  padding-block: var(--space-2);
+  padding-block: var(--gap);
   background-color: var(--color-surface);
-  text-align: center;
+  color: var(--color-text-muted);
   font-size: var(--text-xs);
-  color: var(--color-text-secondary);
+  text-align: center;
   user-select: none;
 }

@@ -5,7 +5,6 @@ import { AppErrorBoundary } from '@/app/AppErrorBoundary';
 import { AuthProvider } from '@/app/providers/AuthProvider';
 import { QueryProvider } from '@/app/providers/QueryProvider';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
-import { ToastProvider as LegacyToastProvider } from '@/app/providers/ToastProvider';
 import { router } from '@/app/router';
 import { PinGate } from '@/app/security/PinGate';
 import { OfflineFirstOpen } from '@/app/startup/OfflineFirstOpen';
@@ -68,11 +67,9 @@ function AppStage() {
       {outcome === 'offline' ? <OfflineFirstOpen onRetry={retryAndWelcome} /> : null}
       {outcome === 'app' ? (
         <QueryProvider>
-          <LegacyToastProvider>
-            <PinGate>
-              <RouterProvider router={router} />
-            </PinGate>
-          </LegacyToastProvider>
+          <PinGate>
+            <RouterProvider router={router} />
+          </PinGate>
         </QueryProvider>
       ) : null}
       {splashGone ? null : <StartupSplash ref={splashRef} />}

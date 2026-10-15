@@ -5,7 +5,7 @@ import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
-import { ToastProvider } from '@/app/providers/ToastProvider';
+import { ToastProvider } from '@/design-system/ui';
 import { outboxRepository } from '@/features/notes/local/noteRepository';
 import { NoteDetailPage } from '@/pages/NoteDetail/NoteDetail';
 import { makeNote } from '~/fixtures/notes';

@@ -33,6 +33,6 @@
   .pf-v6-svg {
     inline-size: 17px;
     block-size: 17px;
-    color: var(--color-icon);
+    color: var(--color-text-muted);
   }
 }

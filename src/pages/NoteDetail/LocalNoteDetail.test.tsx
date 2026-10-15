@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
-import { ToastProvider } from '@/app/providers/ToastProvider';
+import { ToastProvider } from '@/design-system/ui';
 import { LocalNoteDetailPage } from '@/pages/NoteDetail/LocalNoteDetail';
 import { expectNoAxeViolations } from '~/a11y';
 import { makeRow } from '~/fixtures/notes';

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
-import { Button } from '@/design-system/components/Button/Button';
+import { Button } from '@/design-system/ui';
 import { forceReduced, reduced } from '@/design-system/motion/motion';
 import {
   bannerIn,
