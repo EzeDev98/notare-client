@@ -11,7 +11,6 @@ export interface SharedRow {
   /** What this person may do. Never 'owner': an owner's note is in `notes`. */
   role: 'editor' | 'viewer';
 
-  ownerId: number;
   ownerName: string | null;
 
   content: string;

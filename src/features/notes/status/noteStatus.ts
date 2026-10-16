@@ -1,13 +1,21 @@
 import { SAVING_LOCAL_MS, SYNCED_AFTER_MS } from '@/core/config/timings';
+import type { CollabStatus } from '@/features/collab/CollabProvider';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 
 /**
  * The one answer to "is my note safe?" (step 8h, A-06).
  *
- * Exactly these seven. The words for them are in noteStatusContent.ts.
+ * Exactly these eight. The words for them are in noteStatusContent.ts.
  */
 export type NoteStatus =
-  'saving-local' | 'saved-local' | 'synced' | 'offline' | 'sync-paused' | 'not-saved' | 'view-only';
+  | 'saving-local'
+  | 'saved-local'
+  | 'merging'
+  | 'synced'
+  | 'offline'
+  | 'sync-paused'
+  | 'not-saved'
+  | 'view-only';
 
 export interface NoteStatusInput {
   row: Pick<NoteRow, 'role' | 'dirty' | 'syncState' | 'serverId' | 'localUpdatedAt'>;
@@ -21,6 +29,8 @@ export interface NoteStatusInput {
   storageFull: boolean;
   /** The session expired: nothing can sync until the person signs in again (step 14a). */
   signedOut?: boolean | undefined;
+  /** The live channel's status for this note (step 16c). Leave out for a note the server does not know yet. */
+  collabStatus?: CollabStatus | undefined;
 }
 
 /**
@@ -37,6 +47,7 @@ export function deriveNoteStatus({
   syncFailing,
   storageFull,
   signedOut = false,
+  collabStatus,
 }: NoteStatusInput): NoteStatus {
   if (row.role === 'viewer') return 'view-only';
   if (storageFull) return 'not-saved';
@@ -45,6 +56,14 @@ export function deriveNoteStatus({
   if (row.dirty === 1 && age < SAVING_LOCAL_MS) return 'saving-local';
 
   if (signedOut) return 'saved-local';
+
+  // The live channel, when the note has one (step 16c): it knows more than the sync engine does.
+  if (collabStatus !== undefined) {
+    if (!online) return 'offline';
+    if (collabStatus === 'connecting') return 'merging';
+    if (collabStatus === 'retrying') return 'sync-paused';
+    if (collabStatus === 'synced') return 'synced';
+  }
 
   const clean = row.dirty === 0 && row.serverId !== null && row.syncState === 'synced';
   if (clean) return age < SYNCED_AFTER_MS ? 'saved-local' : 'synced';

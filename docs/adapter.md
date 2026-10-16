@@ -27,7 +27,7 @@ in `eslint.config.js`). Tests are exempt.
 | 5 | Pin and archive. | Online only (POST to set, DELETE to clear). They are not in the sync queue (ADR-0006). | step 20 |
 | 6 | Recently deleted keeps notes 30 days. | Nothing on the server purges trashed notes. `TRASH_DAYS` is not enforced server-side. | 17e |
 | 7 | A clip belongs to a note. | A clip can only attach to a note that already has a server id. Uploads use XHR for progress. Downloads fetch the whole file as a blob (no ranged streaming until the service worker, step 11). | step 20 |
-| 8 | Notes shared with you. | A separate `/shared-notes` collection. Online only, outside sync. Updates are a full PUT, not a patch. `totalElements` overcounts (trashed notes are counted). | step 20 |
+| 8 | Notes shared with you. | A separate `/shared-notes` collection. Online only, outside sync. Only the list and leave remain; a shared note opens at `ROUTES.note(id)` like any other. `totalElements` overcounts (trashed notes are counted). | step 20 |
 | 9 | Search. | The query parameter is `query`, not `q`, and is required. Pages are zero-based. | none |
 | 10 | Errors. | Nothing is caught here. Every failure reaches the caller as an `ApiError`. | none |
 

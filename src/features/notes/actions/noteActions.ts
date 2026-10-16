@@ -101,9 +101,34 @@ export async function copyNote(ownerId: number, itemId: string): Promise<boolean
 }
 
 /**
- * Step 17 adds the server call. The menu item is hidden until then
- * (FEATURES.leaveNote), so nothing reaches this today.
+ * Leave a note shared with you: the server removes your access first, then it goes from this
+ * device. If the server says no, nothing changes here. Takes a Shared with me row id or the id of
+ * a note row you do not own. The menu item stays hidden until step 17f builds the endpoint
+ * (FEATURES.leaveNote).
  */
-export function leaveNote(itemId: string): Promise<void> {
-  return Promise.reject(new Error(`Leaving a note arrives with step 17 (${itemId}).`));
+export async function leaveNote(itemId: string): Promise<void> {
+  const sharedId = sharedNoteIdOf(itemId);
+  if (sharedId !== null) {
+    await gateway.leaveNote(sharedId);
+    await sharedRepository.remove(sharedId);
+    return;
+  }
+  const row = await noteRepository.getByLocalId(itemId);
+  if (!row || row.serverId === null) return;
+  await gateway.leaveNote(row.serverId);
+  await noteRepository.hardDelete(itemId);
+}
+
+/**
+ * The owner removed you: forget the note on this device, with no server call. Never touches a note
+ * you own.
+ */
+export async function dropSharedNote(itemId: string): Promise<void> {
+  const sharedId = sharedNoteIdOf(itemId);
+  if (sharedId !== null) {
+    await sharedRepository.remove(sharedId);
+    return;
+  }
+  const row = await noteRepository.getByLocalId(itemId);
+  if (row && row.role !== 'owner') await noteRepository.hardDelete(itemId);
 }

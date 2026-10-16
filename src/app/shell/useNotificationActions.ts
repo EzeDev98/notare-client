@@ -67,7 +67,7 @@ export function useNotificationActions(onClose: () => void) {
           await notificationService.markRead(n.id);
           void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
           onClose();
-          void navigate(ROUTES.legacy.sharedNote(n.targetId));
+          void navigate(ROUTES.note(n.targetId));
           return;
         }
         const clip = await clipRepository.findByServerId(n.targetId);

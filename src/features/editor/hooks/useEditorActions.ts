@@ -4,11 +4,14 @@ import type { Doc } from 'yjs';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { ROUTES } from '@/app/routes';
+import { FEATURES } from '@/core/config/features';
 import { useToast } from '@/design-system/ui';
+import { COLLAB_COPY } from '@/features/collab/collabContent';
 import { EDITOR_COPY } from '@/features/editor/editorContent';
 import { bodyToPlainText } from '@/features/editor/noteBody';
 import {
   copyNote,
+  leaveNote,
   moveToTrash,
   restoreNote,
   setArchived,
@@ -25,6 +28,8 @@ export interface EditorMoreActions {
   onMakeCopy: () => void;
   onArchive: () => void;
   onDelete: () => void;
+  /** Leave this note, for a note shared with you. Undefined hides the menu item (FEATURES.leaveNote). */
+  onLeave: (() => void) | undefined;
 }
 
 /**
@@ -32,7 +37,7 @@ export interface EditorMoreActions {
  * the actions are the list's own. Archive and Delete take you back to the list
  * with an Undo toast; Undo puts the note back and opens it again.
  */
-export function useEditorActions(row: NoteRow, doc: Doc): EditorMoreActions {
+export function useEditorActions(row: NoteRow, doc: Doc, closeLive: () => void): EditorMoreActions {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { state } = useAuth();
@@ -102,5 +107,22 @@ export function useEditorActions(row: NoteRow, doc: Doc): EditorMoreActions {
         });
       });
     },
+
+    onLeave:
+      FEATURES.leaveNote && row.role !== 'owner'
+        ? () => {
+            // The live channel closes first: the server ends it with "access removed" the moment the
+            // grant goes, and that must not read as the owner removing this person.
+            closeLive();
+            void leaveNote(localId)
+              .then(() => {
+                void navigate(ROUTES.notes());
+                toast(LIST_COPY.toasts.left);
+              })
+              .catch(() => {
+                toast(COLLAB_COPY.leaveFailed, { tone: 'error' });
+              });
+          }
+        : undefined,
   };
 }

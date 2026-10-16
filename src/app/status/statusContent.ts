@@ -25,6 +25,7 @@ export const STATUS_COPY = {
     action: 'Keep a copy',
     copied: 'Saved a copy in your notes.',
   },
+  accessRemoved: (owner: string): string => `${owner} removed you from this note. It is no longer in your list.`,
   accessChanged: {
     viewer: (owner: string): string => `${owner} changed your access to Viewer. Your last edit was saved.`,
     editor: (owner: string): string => `${owner} gave you edit access.`,

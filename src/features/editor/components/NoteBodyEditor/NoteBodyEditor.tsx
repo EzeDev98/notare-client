@@ -1,12 +1,16 @@
 import type { Editor } from '@tiptap/core';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import type { Awareness } from 'y-protocols/awareness';
 import type { Doc } from 'yjs';
 
 import '@/features/editor/components/EditorSurface/EditorSurface.css';
 import { NOTE_COUNTER_FROM, NOTE_MAX_CHARS } from '@/core/config/timings';
 import { noteIn } from '@/design-system/motion/patterns';
 import { LengthCounter, useToast } from '@/design-system/ui';
+import type { CurrentUser } from '@/features/auth/types';
+import { RemoteCarets } from '@/features/collab/RemoteCarets';
+import { usePublishPresence } from '@/features/collab/usePublishPresence';
 import { EDITOR_COPY } from '@/features/editor/editorContent';
 import { collaborativeExtensions } from '@/features/editor/editorExtensions';
 import { docToText } from '@/features/editor/plainTextBody';
@@ -27,6 +31,10 @@ interface NoteBodyEditorProps {
   contentAccessory?: ReactNode;
   /** Hands the editor to the host (the + menu needs it). Called with null on unmount. */
   onEditor?: ((editor: Editor | null) => void) | undefined;
+  /** Live presence for this note (step 16d). Without it the note has no carets. */
+  awareness?: Awareness | undefined;
+  /** Who we are, told to the others. */
+  user?: CurrentUser | null | undefined;
 }
 
 /**
@@ -44,6 +52,8 @@ export function NoteBodyEditor({
   canTranscribe = false,
   contentAccessory,
   onEditor,
+  awareness,
+  user = null,
 }: NoteBodyEditorProps) {
   const { toast } = useToast();
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -79,6 +89,8 @@ export function NoteBodyEditor({
     selector: ({ editor: current }) => docToText(current.getJSON()).length,
   });
 
+  usePublishPresence(awareness, editor, user, !readOnly);
+
   useLayoutEffect(() => {
     if (bodyRef.current) noteIn(bodyRef.current);
   }, []);
@@ -106,6 +118,7 @@ export function NoteBodyEditor({
         <VoiceClipContext.Provider value={voiceContext}>
           <EditorContent editor={editor} />
         </VoiceClipContext.Provider>
+        {awareness && !readOnly ? <RemoteCarets editor={editor} awareness={awareness} /> : null}
         {readOnly ? null : <NoteSelectionBar editor={editor} />}
         {readOnly ? null : <NoteAccessoryStrip editor={editor} />}
         {readOnly ? null : (

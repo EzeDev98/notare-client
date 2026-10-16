@@ -87,7 +87,7 @@ export function fromSharedRow(row: SharedRow): ListItem {
     voice: false,
     pending: false,
     failed: false,
-    path: ROUTES.legacy.sharedNote(row.noteId),
+    path: ROUTES.note(row.noteId),
     daysLeft: null,
     transcriptOnly: false,
     serverId: row.noteId,

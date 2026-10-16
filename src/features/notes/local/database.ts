@@ -5,6 +5,7 @@ import type { MetaRow } from '@/features/notes/local/metaRow';
 import type { NotificationRow } from '@/features/notes/local/notificationRow';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import type { OutboxRow } from '@/features/notes/local/outboxRow';
+import type { PendingUpdateRow } from '@/features/notes/local/pendingUpdateRow';
 import type { PersonRow } from '@/features/notes/local/personRow';
 import type { SharedRow } from '@/features/notes/local/sharedRow';
 import type { TranscriptRow } from '@/features/notes/local/transcriptRow';
@@ -41,6 +42,7 @@ export class NotareDatabase extends Dexie {
   shared!: EntityTable<SharedRow, 'noteId'>;
   people!: EntityTable<PersonRow, 'id'>;
   notifications!: EntityTable<NotificationRow, 'id'>;
+  pendingUpdates!: EntityTable<PendingUpdateRow, 'id'>;
 
   /**
    * `name` defaults to 'notare' for the real app. The parameter exists for
@@ -319,6 +321,13 @@ export class NotareDatabase extends Dexie {
             if (next !== undefined) row.localId = next;
           });
       });
+
+    /*
+     * VERSION 5 (16b). Adds `pendingUpdates`: the local Yjs updates of a note being edited live,
+     * kept until the server acknowledges them, so an app kill or a dropped connection loses
+     * nothing. `++id` is the order they were made in; `noteId` is the server id of the note.
+     */
+    this.version(5).stores({ pendingUpdates: '++id, noteId' });
   }
 }
 

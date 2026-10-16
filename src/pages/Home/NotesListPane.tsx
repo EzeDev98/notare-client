@@ -6,6 +6,7 @@ import { useDrawerCounts } from '@/app/shell/useDrawerCounts';
 import { useListView } from '@/app/shell/useNotesView';
 import { useSessionUser } from '@/app/shell/useSessionUser';
 import { SEARCH_DEBOUNCE_MS } from '@/core/config/timings';
+import { ShareModal } from '@/features/collab/ShareModal/ShareModal';
 import { useOffline } from '@/features/notes/hooks/useOffline';
 import { sectionsFor } from '@/features/notes/list/groupItems';
 import { LIST_COPY } from '@/features/notes/list/listContent';
@@ -55,7 +56,7 @@ function OwnerList({ ownerId }: { ownerId: number }) {
     () => sections.flatMap((section) => section.items.map((item) => item.id)),
     [sections],
   );
-  const { actions, leaving, cancelLeave, confirmLeave } = useListActions({
+  const { actions, leaving, cancelLeave, confirmLeave, sharing, closeShare } = useListActions({
     ownerId,
     view,
     openPath: pathname,
@@ -95,9 +96,13 @@ function OwnerList({ ownerId }: { ownerId: number }) {
           />
         ) : null}
         {rows.shown?.length === 0 ? <ListEmpty view={view} term={term} /> : null}
+        {sharing && sharing.item.serverId !== null ? (
+          <ShareModal noteId={sharing.item.serverId} open={sharing.open} onClose={closeShare} />
+        ) : null}
         {leaving ? (
           <LeaveNoteModal
-            item={leaving.item}
+            title={leaving.item.title}
+            ownerName={leaving.item.ownerName}
             open={leaving.open}
             onCancel={cancelLeave}
             onConfirm={confirmLeave}

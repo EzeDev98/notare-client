@@ -16,6 +16,11 @@ export const sharedRepository = {
     return db.shared.get(noteId);
   },
 
+  /** Forgets one shared note, for example after the person left it. */
+  async remove(noteId: number): Promise<void> {
+    await db.shared.delete(noteId);
+  },
+
   /** Replaces the whole list with what the server just said. */
   replaceAll(rows: SharedRow[]): Promise<void> {
     return db.transaction('rw', db.shared, async () => {

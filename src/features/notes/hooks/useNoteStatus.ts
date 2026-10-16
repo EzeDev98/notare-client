@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { SAVING_LOCAL_MS, SYNCED_AFTER_MS } from '@/core/config/timings';
+import type { CollabState } from '@/features/collab/CollabProvider';
 import { noteRepository } from '@/features/notes/local/noteRepository';
 import type { NoteRole } from '@/features/notes/local/noteRow';
 import { deriveNoteStatus, type NoteStatus } from '@/features/notes/status/noteStatus';
@@ -18,7 +19,11 @@ import { useSyncStatus } from '@/sync/useSyncStatus';
  * Returns null while the note is not on disk (a blank draft) or still loading,
  * which shows nothing.
  */
-export function useNoteStatus(noteId: string | undefined, role?: NoteRole | undefined): NoteStatus | null {
+export function useNoteStatus(
+  noteId: string | undefined,
+  role?: NoteRole | undefined,
+  collab?: CollabState | undefined,
+): NoteStatus | null {
   const row = useLiveQuery(async () => {
     if (noteId === undefined || noteId === '') return null;
     return (await noteRepository.getByLocalId(noteId)) ?? null;
@@ -55,11 +60,12 @@ export function useNoteStatus(noteId: string | undefined, role?: NoteRole | unde
   if (!row) return null;
 
   return deriveNoteStatus({
-    row: role === undefined ? row : { ...row, role },
+    row: { ...row, role: collab?.role === 'viewer' ? 'viewer' : (role ?? row.role) },
     now,
     online,
     syncFailing: isSyncPaused(sync),
     storageFull,
     signedOut: auth.status === 'session-expired',
+    collabStatus: collab?.status,
   });
 }

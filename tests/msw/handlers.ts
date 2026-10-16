@@ -117,22 +117,6 @@ export const handlers = [
 
   http.get(`${BASE}/shared-notes`, () => HttpResponse.json(makePage([makeSharedNoteSummary()]))),
 
-  // Returns the OWNER's NoteResponse shape — there is no
-  // SharedNoteDetailResponse yet (sharedNoteService.ts's doc comment).
-  http.get(`${BASE}/shared-notes/:noteId`, ({ params }) =>
-    HttpResponse.json(makeNote({ id: Number(params['noteId']), ownerId: 2 })),
-  ),
-
-  http.put(`${BASE}/shared-notes/:noteId`, async ({ params, request }) => {
-    const body = (await request.json()) as {
-      content: string | null;
-      version?: number;
-    };
-    return HttpResponse.json(
-      makeNote({ id: Number(params['noteId']), ownerId: 2, ...body, version: (body.version ?? 0) + 1 }),
-    );
-  }),
-
   // ---- user lookup --------------------------------------------------
 
   // Every requested id resolves — matches makeLookupUser's own default

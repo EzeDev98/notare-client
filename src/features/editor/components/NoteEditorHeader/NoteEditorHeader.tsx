@@ -1,16 +1,22 @@
 import { ArrowLeft, Ellipsis, Plus } from 'lucide-react';
-import type { MouseEvent } from 'react';
+import { useState, type MouseEvent } from 'react';
 import { useNavigate } from 'react-router';
 
 import { ROUTES } from '@/app/routes';
 import { AvatarStack, Button, ContextMenu, IconButton, InsertMenu } from '@/design-system/ui';
+import type { CollabState } from '@/features/collab/CollabProvider';
+import { PresenceAvatars } from '@/features/collab/PresenceAvatars';
+import { ShareModal } from '@/features/collab/ShareModal/ShareModal';
+import type { PresentPerson } from '@/features/collab/usePresencePeople';
 import { SaveIndicator } from '@/features/editor/components/SaveIndicator/SaveIndicator';
 import type { EditorMoreActions } from '@/features/editor/hooks/useEditorActions';
 import { discardDraft } from '@/features/notes/createNote';
 import { clipRepository } from '@/features/notes/local/clipRepository';
 import { isEmptyNote } from '@/features/notes/local/isEmptyNote';
+import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import { canEdit, canShare } from '@/features/notes/permissions';
+import { LeaveNoteModal } from '@/pages/Home/LeaveNoteModal';
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
 
 import './NoteEditorHeader.css';
@@ -23,6 +29,10 @@ interface NoteEditorHeaderProps {
   onInsertChecklist?: (() => void) | undefined;
   /** The more menu (step 12e). The button is drawn only when given. */
   more?: EditorMoreActions | undefined;
+  /** The live channel's state, for the status word (step 16c). */
+  collab?: CollabState | undefined;
+  /** The other people in the note right now (step 16e). */
+  presence?: readonly PresentPerson[] | undefined;
 }
 
 /** Keeps the caret (and the phone keyboard) in the note when a header button is pressed. */
@@ -39,12 +49,16 @@ export function NoteEditorHeader({
   onInsertVoice,
   onInsertChecklist,
   more,
+  collab,
+  presence = [],
 }: NoteEditorHeaderProps) {
   const navigate = useNavigate();
+  const [shareOpen, setShareOpen] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
   const clipCount = useLiveQuery(async () => clipRepository.countForNote(row.localId), [row.localId]) ?? 0;
   const empty = isEmptyNote({ content: row.content, clipCount });
 
-  // Collaborators of your own notes arrive with presence (step 16).
+  // Until someone is present, a shared note shows its owner.
   const people =
     row.role !== 'owner' && row.ownerName ? [{ name: row.ownerName, tint: 1 as const }] : [];
 
@@ -70,22 +84,37 @@ export function NoteEditorHeader({
 
       <span className="note-header__spacer" />
 
-      <SaveIndicator noteId={row.localId} role={row.role} />
+      <SaveIndicator noteId={row.localId} role={row.role} collab={collab} />
 
-      {people.length > 0 ? <AvatarStack people={people} /> : null}
+      {presence.length > 0 ? (
+        <PresenceAvatars people={presence} />
+      ) : people.length > 0 ? (
+        <AvatarStack people={people} />
+      ) : null}
 
       {canShare(row.role) ? (
-        <Button
-          variant="secondary"
-          // Until the Share modal is rebuilt, Share opens the existing page, which needs the server id.
-          disabled={empty || row.serverId === null}
-          onMouseDown={keepEditorFocus}
-          onClick={() => {
-            if (row.serverId !== null) void navigate(ROUTES.legacy.noteShare(row.serverId));
-          }}
-        >
-          Share
-        </Button>
+        <>
+          <Button
+            variant="secondary"
+            // Sharing needs the note on the server, so Share waits for its server id.
+            disabled={empty || row.serverId === null}
+            onMouseDown={keepEditorFocus}
+            onClick={() => {
+              setShareOpen(true);
+            }}
+          >
+            Share
+          </Button>
+          {row.serverId !== null ? (
+            <ShareModal
+              noteId={row.serverId}
+              open={shareOpen}
+              onClose={() => {
+                setShareOpen(false);
+              }}
+            />
+          ) : null}
+        </>
       ) : null}
 
       {more ? (
@@ -99,11 +128,33 @@ export function NoteEditorHeader({
           onMakeCopy={more.onMakeCopy}
           onArchive={more.onArchive}
           onDelete={more.onDelete}
+          onLeave={
+            more.onLeave
+              ? () => {
+                  setLeaveOpen(true);
+                }
+              : undefined
+          }
         >
           {({ triggerProps }) => (
             <IconButton icon={Ellipsis} label="More" onMouseDown={keepEditorFocus} {...triggerProps} />
           )}
         </ContextMenu>
+      ) : null}
+
+      {more?.onLeave ? (
+        <LeaveNoteModal
+          title={deriveNoteLabel(row.content).label}
+          ownerName={row.ownerName ?? null}
+          open={leaveOpen}
+          onCancel={() => {
+            setLeaveOpen(false);
+          }}
+          onConfirm={() => {
+            setLeaveOpen(false);
+            more.onLeave?.();
+          }}
+        />
       ) : null}
     </div>
   );

@@ -13,8 +13,6 @@ export function useNotesView(): CurrentSection {
   const { pathname } = useLocation();
   const [params] = useSearchParams();
   if (pathname.startsWith(ROUTES.settings())) return 'settings';
-  // A shared note still opens on its old path until step 12 gives it /notes/:id.
-  if (pathname.startsWith(`${ROUTES.legacy.shared()}/`)) return 'shared';
   if (!pathname.startsWith(ROUTES.notes())) return null;
   const asked = params.get('view');
   return NOTES_VIEWS.find((view) => view === asked) ?? 'all';

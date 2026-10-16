@@ -33,12 +33,5 @@ export const legacyGateway: NoteGateway = {
   deleteClip: (clipId, options) => voiceService.deleteVoiceNote(clipId, options),
 
   listSharedNotes: (options) => sharedNoteService.listSharedNotes(options),
-  getSharedNote: (noteId, options) => sharedNoteService.getSharedNote(noteId, options),
-  updateSharedNote: (noteId, body, options) =>
-    sharedNoteService.updateSharedNote(noteId, body, options),
-  listSharedClips: (noteId, options) => sharedNoteService.listAttachedVoiceNotes(noteId, options),
-  uploadSharedClip: (noteId, file, options) =>
-    sharedNoteService.uploadVoiceNote(noteId, file, options),
-  downloadSharedClip: (noteId, clipId, options) =>
-    sharedNoteService.downloadAttachedVoiceNoteBlob(noteId, clipId, options),
+  leaveNote: (noteId, options) => sharedNoteService.leaveNote(noteId, options),
 };

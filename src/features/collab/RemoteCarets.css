@@ -1,0 +1,33 @@
+@layer components {
+  /* Its own layer over the writing area: it never takes a click, and nothing in the document changes. */
+  .remote-carets {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .remote-caret__selection {
+    position: absolute;
+    background: color-mix(in srgb, var(--caret-color) 25%, transparent);
+  }
+
+  .remote-caret__line {
+    position: absolute;
+    inline-size: var(--cursor-width);
+    background: var(--caret-color);
+  }
+
+  /* Cursor tints are mid-tones: the surface colour reads on them in both themes (O-02). */
+  .remote-caret__label {
+    position: absolute;
+    inset-block-end: 100%;
+    inset-inline-start: 0;
+    padding-inline: calc(var(--gap) / 2);
+    border-radius: var(--radius-sm);
+    background: var(--caret-color);
+    color: var(--color-surface);
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
+    white-space: nowrap;
+  }
+}

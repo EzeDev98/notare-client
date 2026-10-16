@@ -1,0 +1,11 @@
+@layer components {
+  /* The avatars are the button: no box of its own, the stack is what you see. */
+  .presence-avatars {
+    display: inline-flex;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius);
+    background: transparent;
+    cursor: pointer;
+  }
+}

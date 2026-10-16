@@ -44,6 +44,7 @@ export function useListActions({ ownerId, view, openPath, rows, order }: Options
   const navigate = useNavigate();
   const { remove, change } = rows;
   const [leaving, setLeaving] = useState<{ item: ListItem; open: boolean } | null>(null);
+  const [sharing, setSharing] = useState<{ item: ListItem; open: boolean } | null>(null);
 
   const actions = useMemo<ListActions>(() => {
     const closeIfOpen = (item: ListItem) => {
@@ -62,11 +63,8 @@ export function useListActions({ ownerId, view, openPath, rows, order }: Options
 
       share: (item) => {
         // A note that has not reached the server yet cannot be shared; it just opens.
-        void navigate(
-          item.serverId === null
-            ? ROUTES.inView(item.path, view)
-            : ROUTES.legacy.noteShare(item.serverId),
-        );
+        if (item.serverId === null) void navigate(ROUTES.inView(item.path, view));
+        else setSharing({ item, open: true });
       },
 
       copy: (item) => {
@@ -117,6 +115,10 @@ export function useListActions({ ownerId, view, openPath, rows, order }: Options
     };
   }, [change, remove, navigate, openPath, order, ownerId, toast, view]);
 
+  const closeShare = () => {
+    setSharing((current) => (current ? { ...current, open: false } : current));
+  };
+
   const cancelLeave = () => {
     setLeaving((current) => (current ? { ...current, open: false } : current));
   };
@@ -132,5 +134,5 @@ export function useListActions({ ownerId, view, openPath, rows, order }: Options
     });
   };
 
-  return { actions, leaving, cancelLeave, confirmLeave };
+  return { actions, leaving, cancelLeave, confirmLeave, sharing, closeShare };
 }

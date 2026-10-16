@@ -6,11 +6,7 @@ import type {
   TrashedNoteResponse,
   UpdateNoteRequest,
 } from '@/features/notes/types';
-import type {
-  SharedNoteDetailResponse,
-  SharedNoteSummaryResponse,
-  UpdateSharedNoteRequest,
-} from '@/features/sharedNotes/types';
+import type { SharedNoteSummaryResponse } from '@/features/sharedNotes/types';
 import type { VoiceNoteResponse } from '@/features/voice/types';
 
 /**
@@ -65,12 +61,6 @@ export interface UploadClipOptions extends Cancellable {
   onProgress?: (fraction: number) => void;
 }
 
-export interface UploadSharedClipOptions extends Cancellable {
-  durationSeconds?: number;
-  /** 0 to 1. */
-  onProgress?: (fraction: number) => void;
-}
-
 export interface NoteGateway {
   // --- Your notes ----------------------------------------------------------
   listNotes(options?: ListOptions): Promise<PagedResponse<NoteSummaryResponse>>;
@@ -108,17 +98,6 @@ export interface NoteGateway {
 
   // --- Notes shared with you -----------------------------------------------
   listSharedNotes(options?: PageOptions): Promise<PagedResponse<SharedNoteSummaryResponse>>;
-  getSharedNote(noteId: number, options?: Cancellable): Promise<SharedNoteDetailResponse>;
-  updateSharedNote(
-    noteId: number,
-    body: UpdateSharedNoteRequest,
-    options?: Cancellable,
-  ): Promise<SharedNoteDetailResponse>;
-  listSharedClips(noteId: number, options?: Cancellable): Promise<VoiceNoteResponse[]>;
-  uploadSharedClip(
-    noteId: number,
-    file: Blob,
-    options?: UploadSharedClipOptions,
-  ): Promise<VoiceNoteResponse>;
-  downloadSharedClip(noteId: number, clipId: number, options?: Cancellable): Promise<Blob>;
+  /** Removes your own access to a note shared with you. */
+  leaveNote(noteId: number, options?: Cancellable): Promise<void>;
 }

@@ -12,6 +12,8 @@ import './SelectField.css';
 
 type SelectFieldProps = Omit<ComponentPropsWithRef<'select'>, 'id'> & {
   label: string;
+  /** Keeps the label for screen readers and draws no text. */
+  hideLabel?: boolean | undefined;
   hint?: string | undefined;
   error?: string | undefined;
   optional?: boolean | undefined;
@@ -27,6 +29,7 @@ type SelectFieldProps = Omit<ComponentPropsWithRef<'select'>, 'id'> & {
  */
 export function SelectField({
   label,
+  hideLabel,
   hint,
   error,
   optional,
@@ -126,7 +129,7 @@ export function SelectField({
   };
 
   return (
-    <FormField label={label} hint={hint} error={error} optional={optional} className={className}>
+    <FormField label={label} hideLabel={hideLabel} hint={hint} error={error} optional={optional} className={className}>
       {(a11y) => (
         <Control invalid={Boolean(error)} disabled={disabled} readOnly={submitting}>
           <select

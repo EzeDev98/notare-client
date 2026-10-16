@@ -1,7 +1,12 @@
 import type { Editor } from '@tiptap/core';
 import { useState, type ReactNode } from 'react';
 
+import { useSessionUser } from '@/app/shell/useSessionUser';
 import { StatusBanner } from '@/app/status/StatusBanner';
+import { useCollab } from '@/features/collab/useCollab';
+import { useMergeToast } from '@/features/collab/useMergeToast';
+import { usePresencePeople } from '@/features/collab/usePresencePeople';
+import { bodyToPlainText } from '@/features/editor/noteBody';
 import { NoteBodyEditor } from '@/features/editor/components/NoteBodyEditor/NoteBodyEditor';
 import { canEdit, canTranscribe } from '@/features/notes/permissions';
 import { NoteEditorHeader } from '@/features/editor/components/NoteEditorHeader/NoteEditorHeader';
@@ -11,6 +16,12 @@ import { insertChecklist } from '@/features/editor/editorCommands';
 import { useInsertVoice } from '@/features/editor/voiceClip/useInsertVoice';
 import { useEditorActions } from '@/features/editor/hooks/useEditorActions';
 import { useNoteBody } from '@/features/editor/hooks/useNoteBody';
+import {
+  pickAccess,
+  useAfterFlush,
+  useLeaveWhenRemoved,
+  useLiveAccess,
+} from '@/features/editor/hooks/useLiveAccess';
 import { useKeepCopy, useShareAccess } from '@/features/editor/hooks/useShareAccess';
 import { useTranscriptionRunner } from '@/features/voice/hooks/useTranscriptionRunner';
 import type { NoteRow } from '@/features/notes/local/noteRow';
@@ -54,8 +65,18 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
   const insertVoice = useInsertVoice();
   const { doc, bodyKey } = useNoteBody(row, editor.row, editor.setDraft);
   const [tiptap, setTiptap] = useState<Editor | null>(null);
-  const more = useEditorActions(editor.row, doc);
-  const access = useShareAccess(editor.row);
+  // Live editing: only for a note the server already knows (step 16c feeds its state to the status word).
+  const live = useCollab({ noteId: editor.row.serverId, doc, plainText: bodyToPlainText });
+  const collab = editor.row.serverId === null ? undefined : live.state;
+  const sessionUser = useSessionUser();
+  const presence = usePresencePeople(live.awareness);
+  useMergeToast(collab, presence);
+  const more = useEditorActions(editor.row, doc, live.release);
+  const polledAccess = useShareAccess(editor.row);
+  const liveAccess = useLiveAccess(editor.row, collab);
+  // A change turns the note read-only (or editable) only after the last edit is saved on this device.
+  const access = useAfterFlush(pickAccess(polledAccess, liveAccess.change), editor.flush);
+  useLeaveWhenRemoved(editor.row, liveAccess.removedBy, editor.flush);
   const keepCopy = useKeepCopy(editor.row);
   // A change to your access takes effect at once: the note turns read-only or editable to match.
   const viewRow = access ? { ...editor.row, role: access.role } : editor.row;
@@ -71,6 +92,8 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
       <NoteEditorHeader
         row={viewRow}
         more={more}
+        collab={collab}
+        presence={presence}
         onInsertChecklist={
           tiptap
             ? () => {
@@ -96,6 +119,8 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
         noteId={row.localId}
         doc={doc}
         onEditor={setTiptap}
+        awareness={live.awareness}
+        user={sessionUser}
         readOnly={!canEdit(viewRow.role)}
         canTranscribe={mayTranscribe}
         contentAccessory={contentAccessory}

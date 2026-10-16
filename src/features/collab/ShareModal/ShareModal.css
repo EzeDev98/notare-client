@@ -1,0 +1,14 @@
+@layer components {
+  .share {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gutter);
+  }
+
+  .share__none {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    color: var(--color-text-muted);
+  }
+}
