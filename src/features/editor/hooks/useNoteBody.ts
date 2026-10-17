@@ -3,6 +3,7 @@ import { XmlElement, type Doc } from 'yjs';
 
 import { BODY_FIELD } from '@/features/editor/editorExtensions';
 import {
+  SEED_CONVERTER_VERSION,
   bodyToPlainText,
   nextBodyState,
   openBody,
@@ -21,6 +22,11 @@ interface OpenNote extends OpenedBody {
   persisted: boolean;
   /** A blank draft has no text worth saving as a seed. */
   hasText: boolean;
+  /**
+   * Built from text the server has not confirmed (a synced note with unsynced edits).
+   * Shown, but not saved as a seed: it is rebuilt once the note has synced (step 18d).
+   */
+  provisional: boolean;
 }
 
 /** The clip ids in the body, in order. A change here is an edit even if the text is the same. */
@@ -43,6 +49,7 @@ function open(row: NoteRow, generation: number): OpenNote {
     generation,
     persisted: !body.seeded,
     hasText: row.content.trim() !== '',
+    provisional: body.seeded && row.version !== null && row.dirty === 1,
   };
 }
 
@@ -74,13 +81,17 @@ export function useNoteBody(
       setOpened({ ...opened, persisted: true });
     } else if (opened.persisted && !live.bodyState && live.dirty === 0) {
       setOpened(open(live, opened.generation + 1));
+    } else if (opened.provisional && !live.bodyState && live.dirty === 0) {
+      setOpened(open(live, opened.generation + 1));
     }
   }
 
-  const { doc, state, seeded, hasText, localId } = opened;
+  const { doc, state, seeded, hasText, provisional, localId } = opened;
 
   useEffect(() => {
-    if (seeded && hasText) void noteRepository.saveSeedBodyState(localId, state);
+    if (seeded && hasText && !provisional) {
+      void noteRepository.saveSeedBodyState(localId, state, SEED_CONVERTER_VERSION);
+    }
 
     let previous = state;
     let sinceCompaction = 0;
@@ -108,7 +119,7 @@ export function useNoteBody(
     return () => {
       doc.off('update', onUpdate);
     };
-  }, [doc, state, seeded, hasText, localId, setDraft]);
+  }, [doc, state, seeded, hasText, provisional, localId, setDraft]);
 
   return { doc, bodyKey: `${localId}:${opened.generation}` };
 }

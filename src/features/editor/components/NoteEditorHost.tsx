@@ -80,8 +80,9 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
   const keepCopy = useKeepCopy(editor.row);
   // A change to your access takes effect at once: the note turns read-only or editable to match.
   const viewRow = access ? { ...editor.row, role: access.role } : editor.row;
-  // Owners only until the server lets editors transcribe shared clips (step 17, B-11).
-  const mayTranscribe = canTranscribe(editor.row.role) && editor.row.role === 'owner';
+  // Owners and Editors may transcribe a clip; the server allows it since step 17d (B-11). A change of
+  // role applies at once, so a demoted Editor loses the button.
+  const mayTranscribe = canTranscribe(viewRow.role);
   useTranscriptionRunner(row.localId, mayTranscribe);
 
   useEditorShortcuts({ onSave: editor.flush });

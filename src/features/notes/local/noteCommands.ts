@@ -30,12 +30,12 @@ export const noteCommands = {
    * state or restamp localUpdatedAt (the note must not jump to the top of the
    * list). It never replaces a body that already exists.
    */
-  saveSeedBodyState(localId: string, bodyState: Uint8Array): Promise<void> {
+  saveSeedBodyState(localId: string, bodyState: Uint8Array, bodySeedVersion: number): Promise<void> {
     return db.transaction('rw', db.notes, async () => {
       const existing = await db.notes.get(localId);
       if (!existing || existing.bodyState) return;
 
-      await db.notes.put({ ...existing, bodyState });
+      await db.notes.put({ ...existing, bodyState, bodySeedVersion });
     });
   },
 

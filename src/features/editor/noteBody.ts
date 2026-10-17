@@ -21,6 +21,15 @@ import { docToText, textToDoc } from '@/features/editor/plainTextBody';
  */
 const SEED_CLIENT_ID = 1;
 
+/**
+ * Bump this only when the Markdown-to-document converter changes. It is stored on a note when
+ * it is seeded, and a note that already has a body is never converted again (step 18d).
+ */
+export const SEED_CONVERTER_VERSION = 1;
+
+/** The origin of the one transaction that builds a seed. */
+export const SEED_ORIGIN = `seed:v${SEED_CONVERTER_VERSION}`;
+
 /** Fold the saved updates into one clean state after this many writes. */
 export const COMPACT_EVERY_UPDATES = 100;
 
@@ -41,7 +50,9 @@ export interface OpenedBody {
 export function seedBodyState(content: string): Uint8Array {
   const doc = new Y.Doc();
   doc.clientID = SEED_CLIENT_ID;
-  prosemirrorJSONToYXmlFragment(schema, textToDoc(content), doc.getXmlFragment(BODY_FIELD));
+  doc.transact(() => {
+    prosemirrorJSONToYXmlFragment(schema, textToDoc(content), doc.getXmlFragment(BODY_FIELD));
+  }, SEED_ORIGIN);
   const state = Y.encodeStateAsUpdate(doc);
   doc.destroy();
   return state;

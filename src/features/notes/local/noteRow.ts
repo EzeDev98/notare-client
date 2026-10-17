@@ -139,4 +139,7 @@ export interface NoteRow {
 
   /** The editing document's saved state (a Yjs update). Not used until step 18. */
   bodyState?: Uint8Array | null;
+
+  /** The converter version that built `bodyState` from old text (step 18d). Absent if the body was typed. */
+  bodySeedVersion?: number;
 }
