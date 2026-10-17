@@ -1,9 +1,10 @@
-import { ArrowLeft, Ellipsis, Plus } from 'lucide-react';
+import { ArrowLeft, Ellipsis, Plus, Share } from 'lucide-react';
 import { useState, type MouseEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router';
 
 import { ROUTES } from '@/app/routes';
-import { AvatarStack, Button, ContextMenu, IconButton, InsertMenu } from '@/design-system/ui';
+import { AvatarStack, ContextMenu, IconButton, InsertMenu } from '@/design-system/ui';
 import type { CollabState } from '@/features/collab/CollabProvider';
 import { PresenceAvatars } from '@/features/collab/PresenceAvatars';
 import { ShareModal } from '@/features/collab/ShareModal/ShareModal';
@@ -17,6 +18,7 @@ import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import { canEdit, canShare } from '@/features/notes/permissions';
 import { LeaveNoteModal } from '@/pages/Home/LeaveNoteModal';
+import { useBarSlot, useTwoPane } from '@/shared/hooks/useBarSlot';
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
 
 import './NoteEditorHeader.css';
@@ -53,9 +55,14 @@ export function NoteEditorHeader({
   presence = [],
 }: NoteEditorHeaderProps) {
   const navigate = useNavigate();
+  // On a wide screen the controls live in the shell bar, on the same line as the menu and bell.
+  const barSlot = useBarSlot();
+  const twoPane = useTwoPane();
+  const inBar = twoPane && barSlot !== null;
   const [shareOpen, setShareOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
-  const clipCount = useLiveQuery(async () => clipRepository.countForNote(row.localId), [row.localId]) ?? 0;
+  const clipCount =
+    useLiveQuery(async () => clipRepository.countForNote(row.localId), [row.localId]) ?? 0;
   const empty = isEmptyNote({ content: row.content, clipCount });
 
   // Until someone is present, a shared note shows its owner.
@@ -68,16 +75,23 @@ export function NoteEditorHeader({
     void navigate(ROUTES.notes());
   };
 
-  const showInsert = canEdit(row.role) && (onInsertVoice !== undefined || onInsertChecklist !== undefined);
+  const showInsert =
+    canEdit(row.role) && (onInsertVoice !== undefined || onInsertChecklist !== undefined);
 
-  return (
-    <div className="note-header">
+  const header = (
+    <div className={inBar ? 'note-header note-header--in-bar' : 'note-header'}>
       <IconButton className="note-header__back" icon={ArrowLeft} label="Back" onClick={goBack} />
 
       {showInsert ? (
         <InsertMenu onVoice={onInsertVoice} onChecklist={onInsertChecklist}>
           {({ triggerProps }) => (
-            <IconButton icon={Plus} label="Insert" onMouseDown={keepEditorFocus} {...triggerProps} />
+            <IconButton
+              className="note-header__insert"
+              icon={Plus}
+              label="Insert"
+              onMouseDown={keepEditorFocus}
+              {...triggerProps}
+            />
           )}
         </InsertMenu>
       ) : null}
@@ -94,17 +108,17 @@ export function NoteEditorHeader({
 
       {canShare(row.role) ? (
         <>
-          <Button
-            variant="secondary"
+          <IconButton
+            icon={Share}
+            label="Share note"
+            title="Share note"
             // Sharing needs the note on the server, so Share waits for its server id.
             disabled={empty || row.serverId === null}
             onMouseDown={keepEditorFocus}
             onClick={() => {
               setShareOpen(true);
             }}
-          >
-            Share
-          </Button>
+          />
           {row.serverId !== null ? (
             <ShareModal
               noteId={row.serverId}
@@ -117,7 +131,7 @@ export function NoteEditorHeader({
         </>
       ) : null}
 
-      {more ? (
+      {more && !inBar ? (
         <ContextMenu
           role={row.role}
           where="editor"
@@ -137,7 +151,12 @@ export function NoteEditorHeader({
           }
         >
           {({ triggerProps }) => (
-            <IconButton icon={Ellipsis} label="More" onMouseDown={keepEditorFocus} {...triggerProps} />
+            <IconButton
+              icon={Ellipsis}
+              label="More"
+              onMouseDown={keepEditorFocus}
+              {...triggerProps}
+            />
           )}
         </ContextMenu>
       ) : null}
@@ -158,4 +177,6 @@ export function NoteEditorHeader({
       ) : null}
     </div>
   );
+
+  return inBar ? createPortal(header, barSlot) : header;
 }

@@ -12,14 +12,24 @@
     flex: none;
     align-items: center;
     gap: calc(var(--gap) / 2);
+    --bar-pad: calc(var(--gutter) - var(--gap) / 2);
+
+    position: relative;
     height: var(--bar-height);
-    padding-inline: calc(var(--gutter) - var(--gap) / 2);
+    padding-inline: var(--bar-pad);
   }
 
   .shell__actions {
     display: flex;
     gap: calc(var(--gap) / 2);
     margin-inline-start: auto;
+  }
+
+  /* Where the open note's controls go on a wide screen. Empty on a phone. */
+  .shell__bar-note {
+    display: flex;
+    align-items: center;
+    min-width: 0;
   }
 
   .shell__panes {
@@ -50,8 +60,46 @@
 
   /* Two panes (O-13): the list never moves, the note pane takes the rest. */
   @container (min-width: 800px) {
+    /* One line: menu | new note | the open note's controls | notifications. */
     .shell[data-screen] .shell__bar {
-      display: flex;
+      display: grid;
+      grid-template-columns: calc(var(--list-width) - var(--bar-pad)) minmax(0, 1fr) auto;
+      gap: 0;
+    }
+
+    .shell[data-screen] .shell__actions {
+      display: contents;
+    }
+
+    /* The pen shares the note's cell and sits just after the +, which is drawn by the note. */
+    .shell[data-screen] .shell__pen {
+      grid-area: 1 / 2;
+      justify-self: start;
+      margin-inline-start: var(--bar-pad);
+    }
+
+    .shell[data-screen] .shell__bar:has(.note-header__insert) .shell__pen {
+      margin-inline-start: calc(var(--bar-pad) + var(--icon-button-size) + var(--gap) / 2);
+    }
+
+    .shell[data-screen] .shell__bar-note {
+      grid-area: 1 / 2;
+      margin-inline-start: var(--bar-pad);
+    }
+
+    .shell[data-screen] .shell__bell {
+      grid-area: 1 / 3;
+      margin-inline-start: calc(var(--gap) / 2);
+    }
+
+    /* The list's own divider starts below the bar; this carries it up to the top of the window. */
+    .shell[data-screen] .shell__bar::before {
+      content: '';
+      position: absolute;
+      inset-block: 0;
+      inset-inline-start: calc(var(--list-width) - var(--border-width));
+      inline-size: var(--border-width);
+      background: var(--color-line);
     }
 
     .shell[data-screen] .shell__list {

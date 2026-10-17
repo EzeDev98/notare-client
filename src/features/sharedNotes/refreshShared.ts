@@ -1,4 +1,4 @@
-import { gateway } from '@/core/adapter';
+import { api } from '@/core/api';
 import type { SharedRow } from '@/features/notes/local/sharedRow';
 import { sharedRepository } from '@/features/notes/local/sharedRepository';
 
@@ -10,7 +10,7 @@ const PAGE_SIZE = 100;
  * nothing to look up. A shared note's body is fetched when it is opened.
  */
 export async function refreshShared(): Promise<void> {
-  const page = await gateway.listSharedNotes({ page: 0, size: PAGE_SIZE });
+  const page = await api.listSharedNotes({ page: 0, size: PAGE_SIZE });
   const rows: SharedRow[] = page.content.map((item) => ({
     noteId: item.noteId,
     role: item.role === 'EDITOR' ? 'editor' : 'viewer',

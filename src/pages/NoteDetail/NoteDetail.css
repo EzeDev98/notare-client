@@ -11,7 +11,28 @@
     flex: 1;
     min-block-size: 0;
     overflow-y: auto;
-    padding: 0 calc(var(--gap) * 4) calc(var(--gap) * 8);
+    display: flex;
+    flex-direction: column;
+    --note-pad: var(--gutter);
+
+    padding: 0 var(--note-pad) calc(var(--gap) * 8);
+  }
+
+  @container (max-width: 799px) {
+    .note-detail__scroll {
+      --note-pad: calc(var(--gutter) - var(--gap) / 2);
+    }
+  }
+
+  /* No reserved gap under the date: the note starts right below it unless a banner is showing. */
+  .note-detail__scroll .n-banner-slot:empty {
+    display: none;
+  }
+
+  .note-detail__editor-region {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
   }
 
   .note-detail__centre {

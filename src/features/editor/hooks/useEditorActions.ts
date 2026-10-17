@@ -18,6 +18,7 @@ import {
   setPinned,
 } from '@/features/notes/actions/noteActions';
 import { LIST_COPY } from '@/features/notes/list/listContent';
+import { routeAfterRemoving } from '@/features/notes/list/visibleOrder';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 
 export interface EditorMoreActions {
@@ -84,8 +85,9 @@ export function useEditorActions(row: NoteRow, doc: Doc, closeLive: () => void):
 
     onArchive: () => {
       const next = !archived;
+      const after = routeAfterRemoving(localId);
       void setArchived(localId, next).then(() => {
-        void navigate(ROUTES.notes());
+        void navigate(after ?? ROUTES.notes());
         toast(next ? LIST_COPY.toasts.archived : LIST_COPY.toasts.unarchived, {
           action: undo(() => {
             void setArchived(localId, !next).then(reopen);
@@ -95,8 +97,9 @@ export function useEditorActions(row: NoteRow, doc: Doc, closeLive: () => void):
     },
 
     onDelete: () => {
+      const after = routeAfterRemoving(localId);
       void moveToTrash(localId).then(() => {
-        void navigate(ROUTES.notes());
+        void navigate(after ?? ROUTES.notes());
         toast(LIST_COPY.toasts.deleted, {
           action: undo(() => {
             void restoreNote(localId).then(() => {

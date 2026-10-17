@@ -13,6 +13,7 @@ import {
   setPinned,
 } from '@/features/notes/actions/noteActions';
 import { LIST_COPY } from '@/features/notes/list/listContent';
+import { routeAfterRemoving } from '@/features/notes/list/visibleOrder';
 import type { ListItem } from '@/features/notes/list/listItem';
 
 import type { RowChanges } from './useRowChanges';
@@ -47,8 +48,8 @@ export function useListActions({ ownerId, view, openPath, rows, order }: Options
   const [sharing, setSharing] = useState<{ item: ListItem; open: boolean } | null>(null);
 
   const actions = useMemo<ListActions>(() => {
-    const closeIfOpen = (item: ListItem) => {
-      if (openPath === item.path) void navigate(ROUTES.notes(view));
+    const closeIfOpen = (item: ListItem, after: string | null) => {
+      if (openPath === item.path) void navigate(after ?? ROUTES.notes(view));
     };
     const undo = (onAction: () => void) => ({ label: LIST_COPY.toasts.undo, onAction });
 
@@ -75,9 +76,10 @@ export function useListActions({ ownerId, view, openPath, rows, order }: Options
 
       archive: (item) => {
         const archived = !item.archived;
+        const after = routeAfterRemoving(item.id);
         void remove(item.id, order, async () => {
           await setArchived(item.id, archived);
-          closeIfOpen(item);
+          closeIfOpen(item, after);
           toast(archived ? LIST_COPY.toasts.archived : LIST_COPY.toasts.unarchived, {
             action: undo(() => {
               void setArchived(item.id, !archived);
@@ -87,9 +89,10 @@ export function useListActions({ ownerId, view, openPath, rows, order }: Options
       },
 
       trash: (item) => {
+        const after = routeAfterRemoving(item.id);
         void remove(item.id, order, async () => {
           await moveToTrash(item.id);
-          closeIfOpen(item);
+          closeIfOpen(item, after);
           toast(LIST_COPY.toasts.deleted, {
             action: undo(() => {
               void restoreNote(item.id).then(() => {

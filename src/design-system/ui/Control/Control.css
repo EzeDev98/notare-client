@@ -56,6 +56,16 @@
     box-shadow: none;
   }
 
+  /* Browsers paint an autofilled field with their own blue, and only inside the input's own box.
+     Keep the control's surface instead. */
+  .ui-control__input:-webkit-autofill,
+  .ui-control__input:-webkit-autofill:hover,
+  .ui-control__input:-webkit-autofill:focus {
+    box-shadow: 0 0 0 100vmax var(--color-surface) inset;
+    -webkit-text-fill-color: var(--color-text);
+    caret-color: var(--color-text);
+  }
+
   .ui-control--readonly .ui-control__input {
     cursor: default;
   }

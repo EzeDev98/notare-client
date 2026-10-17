@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-import { gateway } from '@/core/adapter';
+import { api } from '@/core/api';
 import { mayDownloadClips } from '@/features/notes/local/clipDownloadPolicy';
 import { clipRepository } from '@/features/notes/local/clipRepository';
 
@@ -67,7 +67,7 @@ async function blobFor(clipId: string): Promise<{ blob: Blob; seconds: number }>
 
   if (!(await mayDownloadClips())) throw new Error('Voice clips download on Wi-Fi only');
 
-  const blob = await gateway.downloadClip(clip.serverId);
+  const blob = await api.downloadClip(clip.serverId);
   try {
     await clipRepository.put({ ...clip, audio: blob });
   } catch {

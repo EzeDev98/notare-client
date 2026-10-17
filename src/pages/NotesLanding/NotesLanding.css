@@ -6,5 +6,7 @@
     align-items: center;
     justify-content: center;
     min-block-size: 100%;
+    /* Sits a little above the middle of the pane, not dead centre. */
+    padding-block-end: 20vh;
   }
 }

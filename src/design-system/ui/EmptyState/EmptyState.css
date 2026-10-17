@@ -24,6 +24,7 @@
 
   .ui-empty__description {
     margin: 0;
+    white-space: pre-line;
     font-size: var(--text-sm);
     line-height: var(--leading-sm);
     color: var(--color-text-muted);

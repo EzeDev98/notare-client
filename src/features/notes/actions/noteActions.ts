@@ -1,4 +1,4 @@
-import { gateway } from '@/core/adapter';
+import { api } from '@/core/api';
 import { createNoteWithContent, duplicateNote } from '@/features/notes/createNote';
 import { LIST_COPY } from '@/features/notes/list/listContent';
 import { sharedNoteIdOf } from '@/features/notes/list/listItem';
@@ -42,12 +42,12 @@ async function tellServer(
 
 export async function setPinned(localId: string, pinned: boolean): Promise<void> {
   await noteRepository.applyLocalEdit(localId, { pinned: flag(pinned) });
-  await tellServer(localId, (serverId) => gateway.setPinned(serverId, pinned));
+  await tellServer(localId, (serverId) => api.setPinned(serverId, pinned));
 }
 
 export async function setArchived(localId: string, archived: boolean): Promise<void> {
   await noteRepository.applyLocalEdit(localId, { archived: flag(archived) });
-  await tellServer(localId, (serverId) => gateway.setArchived(serverId, archived));
+  await tellServer(localId, (serverId) => api.setArchived(serverId, archived));
 }
 
 /** Delete: the note moves to Recently deleted. A delete made offline is queued (8B). */
@@ -57,7 +57,7 @@ export async function moveToTrash(localId: string): Promise<void> {
   const sent = await tellServer(
     localId,
     async (serverId) => {
-      await gateway.deleteNote(serverId);
+      await api.deleteNote(serverId);
       return undefined;
     },
     async (error, serverId) => {
@@ -72,7 +72,7 @@ export async function moveToTrash(localId: string): Promise<void> {
 export async function restoreNote(localId: string): Promise<void> {
   await noteRepository.setDeleted(localId, false);
   await outboxRepository.cancelPendingDelete(localId);
-  await tellServer(localId, (serverId) => gateway.restoreNote(serverId));
+  await tellServer(localId, (serverId) => api.restoreNote(serverId));
 }
 
 /** The copy says so on its first line: "Trip budget" becomes "Trip budget copy". */
@@ -109,13 +109,13 @@ export async function copyNote(ownerId: number, itemId: string): Promise<boolean
 export async function leaveNote(itemId: string): Promise<void> {
   const sharedId = sharedNoteIdOf(itemId);
   if (sharedId !== null) {
-    await gateway.leaveNote(sharedId);
+    await api.leaveNote(sharedId);
     await sharedRepository.remove(sharedId);
     return;
   }
   const row = await noteRepository.getByLocalId(itemId);
   if (!row || row.serverId === null) return;
-  await gateway.leaveNote(row.serverId);
+  await api.leaveNote(row.serverId);
   await noteRepository.hardDelete(itemId);
 }
 

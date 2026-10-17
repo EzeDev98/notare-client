@@ -111,9 +111,9 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
         }
       />
 
-      <StatusBanner access={access} onKeepCopy={keepCopy} />
-
       <NoteDateHeading key={editor.row.localId} row={editor.row} />
+
+      <StatusBanner access={access} onKeepCopy={keepCopy} />
 
       <NoteBodyEditor
         key={bodyKey}

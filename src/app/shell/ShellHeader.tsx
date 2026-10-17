@@ -5,11 +5,19 @@ import { IconButton } from '@/design-system/ui/IconButton/IconButton';
 
 import { SHELL_COPY } from './shellContent';
 
-/** The 56px bar across both panes: the menu button on the left, the actions passed in on the right. */
-export function ShellHeader({ onMenu, children }: { onMenu: () => void; children?: ReactNode }) {
+interface ShellHeaderProps {
+  onMenu: () => void;
+  /** Receives the middle slot, where an open note puts its own controls on a wide screen. */
+  slotRef?: ((element: HTMLElement | null) => void) | undefined;
+  children?: ReactNode;
+}
+
+/** The 56px bar across both panes: the menu button, a slot for the open note's controls, and the actions. */
+export function ShellHeader({ onMenu, slotRef, children }: ShellHeaderProps) {
   return (
     <header className="shell__bar">
       <IconButton icon={Menu} label={SHELL_COPY.openMenu} onClick={onMenu} />
+      <div ref={slotRef} className="shell__bar-note" />
       <div className="shell__actions">{children}</div>
     </header>
   );

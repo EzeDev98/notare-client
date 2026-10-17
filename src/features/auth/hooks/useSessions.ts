@@ -43,7 +43,7 @@ export function useSessions() {
         // An aborted request is expected — the component unmounted or a reload
         // superseded it. Surfacing it as an error would be the bug.
         if (isAborted(cause)) return;
-        setError('Could not load your sessions.');
+        setError('Could not load your devices.');
       });
 
     return () => {

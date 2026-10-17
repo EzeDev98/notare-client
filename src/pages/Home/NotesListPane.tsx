@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 import { ROUTES } from '@/app/routes';
@@ -11,6 +11,7 @@ import { useOffline } from '@/features/notes/hooks/useOffline';
 import { sectionsFor } from '@/features/notes/list/groupItems';
 import { LIST_COPY } from '@/features/notes/list/listContent';
 import { useNoteList } from '@/features/notes/list/useNoteList';
+import { publishVisibleOrder } from '@/features/notes/list/visibleOrder';
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 import { useNow } from '@/shared/hooks/useNow';
 
@@ -56,6 +57,30 @@ function OwnerList({ ownerId }: { ownerId: number }) {
     () => sections.flatMap((section) => section.items.map((item) => item.id)),
     [sections],
   );
+  useEffect(() => {
+    publishVisibleOrder(
+      view,
+      sections.flatMap((section) =>
+        section.items.map((item) => ({ id: item.id, path: item.path })),
+      ),
+    );
+  }, [sections, view]);
+  useEffect(() => {
+    publishVisibleOrder(
+      view,
+      sections.flatMap((section) =>
+        section.items.map((item) => ({ id: item.id, path: item.path })),
+      ),
+    );
+  }, [sections, view]);
+  useEffect(() => {
+    publishVisibleOrder(
+      view,
+      sections.flatMap((section) =>
+        section.items.map((item) => ({ id: item.id, path: item.path })),
+      ),
+    );
+  }, [sections, view]);
   const { actions, leaving, cancelLeave, confirmLeave, sharing, closeShare } = useListActions({
     ownerId,
     view,
@@ -70,7 +95,10 @@ function OwnerList({ ownerId }: { ownerId: number }) {
   return (
     <div ref={scroll} className="home__scroll">
       <div ref={inner} className="home__inner">
-        <ListHeader title={LIST_COPY.titles[view]} count={searching ? counts[view] : rows.shown?.length} />
+        <ListHeader
+          title={LIST_COPY.titles[view]}
+          count={searching ? counts[view] : rows.shown?.length}
+        />
         <ListBanners view={view} />
         {view === 'shared' ? <PeopleSection /> : null}
         {view === 'deleted' ? null : (

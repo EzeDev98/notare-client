@@ -6,7 +6,8 @@ import { Icon } from '../Icon/Icon';
 import './EmptyState.css';
 
 interface EmptyStateProps {
-  icon: LucideIcon;
+  /** Left out for a text-only empty state. */
+  icon?: LucideIcon | undefined;
   title: string;
   description?: string | undefined;
   /** Optional button, for example "New note". */
@@ -17,7 +18,7 @@ interface EmptyStateProps {
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
     <div className="ui-empty">
-      <Icon icon={icon} className="ui-empty__icon" />
+      {icon ? <Icon icon={icon} className="ui-empty__icon" /> : null}
       <p className="ui-empty__title">{title}</p>
       {description ? <p className="ui-empty__description">{description}</p> : null}
       {action ? <div className="ui-empty__action">{action}</div> : null}

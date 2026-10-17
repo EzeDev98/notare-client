@@ -313,7 +313,7 @@ export default tseslint.config(
             ...PATTERNFLY_PATTERNS,
             {
               group: ['**/api/noteService', '**/api/voiceService', '**/api/sharedNoteService'],
-              message: 'Talk to the note server through `gateway` from @/core/adapter (step 7f).',
+              message: 'Talk to the note server through `api` from @/core/api.',
             },
           ],
         },
@@ -321,9 +321,9 @@ export default tseslint.config(
     },
   },
 
-  // The adapter is the one place that may import those services. Tests may too.
+  // The api module is the one place that may import those services. Tests may too.
   {
-    files: ['src/core/adapter/**/*.ts', '**/*.test.{ts,tsx}'],
+    files: ['src/core/api/**/*.ts', '**/*.test.{ts,tsx}'],
     ignores: ['src/design-system/ui/**'],
     rules: {
       '@typescript-eslint/no-restricted-imports': ['error', { patterns: PATTERNFLY_PATTERNS }],

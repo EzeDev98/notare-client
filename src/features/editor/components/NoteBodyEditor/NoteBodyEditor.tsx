@@ -113,7 +113,16 @@ export function NoteBodyEditor({
   }, [editor, noteId, readOnly]);
 
   return (
-    <div className="editor-surface">
+    <div
+      className="editor-surface"
+      onMouseDown={(event) => {
+        // Only the empty space around the text; clicks on the text itself are ProseMirror's.
+        if (readOnly) return;
+        if (event.target !== event.currentTarget && event.target !== bodyRef.current) return;
+        event.preventDefault();
+        editor.commands.focus('end');
+      }}
+    >
       <div ref={bodyRef} className="editor-surface__body">
         <VoiceClipContext.Provider value={voiceContext}>
           <EditorContent editor={editor} />

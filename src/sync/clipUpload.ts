@@ -1,4 +1,4 @@
-import { gateway } from '@/core/adapter';
+import { api } from '@/core/api';
 import { clipRepository } from '@/features/notes/local/clipRepository';
 import { noteQueries } from '@/features/notes/local/noteQueries';
 import { isOffline } from '@/lib/http/errors';
@@ -35,7 +35,7 @@ async function run(): Promise<void> {
 
     await clipRepository.setUploadState(clip.id, 'uploading');
     try {
-      const created = await gateway.uploadClip(clip.audio, {
+      const created = await api.uploadClip(clip.audio, {
         noteId: note.serverId,
         ...(clip.durationSeconds !== null ? { durationSeconds: clip.durationSeconds } : {}),
       });

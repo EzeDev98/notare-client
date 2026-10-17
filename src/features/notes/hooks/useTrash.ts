@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { useToast } from '@/design-system/ui';
-import { gateway } from '@/core/adapter';
+import { api } from '@/core/api';
 import { toView, type NoteView } from '@/features/notes/local/noteMappers';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
 import { isAborted } from '@/lib/http/errors';
@@ -126,7 +126,7 @@ export function useTrash(): TrashStateValue {
     const controller = new AbortController();
     setRefreshing(true);
 
-    gateway
+    api
       .listTrash({ page: 0, size: PAGE_SIZE, signal: controller.signal })
       .then(async (page) => {
         await noteRepository.upsertTrashedNotes(page.content, ownerId);
@@ -134,7 +134,7 @@ export function useTrash(): TrashStateValue {
       })
       .catch((error: unknown) => {
         if (isAborted(error)) return;
-        setRefreshError('Could not reach Notare. Showing what is in your trash on this device.');
+        setRefreshError('Could not reach Notare. Showing what is in Recently deleted on this device.');
       })
       .finally(() => {
         setRefreshing(false);
@@ -177,7 +177,7 @@ export function useTrash(): TrashStateValue {
       if (written.serverId === null) return;
 
       try {
-        const updated = await gateway.restoreNote(written.serverId);
+        const updated = await api.restoreNote(written.serverId);
         await noteRepository.applyServerAck(
           note.localId,
           { version: updated.version, updatedAt: updated.updatedAt },
@@ -225,7 +225,7 @@ export function useTrash(): TrashStateValue {
       }
 
       try {
-        await gateway.purgeNote(row.serverId);
+        await api.purgeNote(row.serverId);
       } catch {
         toast.show({ message: 'Could not delete that note. You need a connection for this.' });
         return;
@@ -266,7 +266,7 @@ export function useTrash(): TrashStateValue {
           if (!row) return;
 
           if (row.serverId !== null) {
-            await gateway.purgeNote(row.serverId);
+            await api.purgeNote(row.serverId);
           }
 
           // hardDelete, not setDeleted — same reasoning as deleteForever's

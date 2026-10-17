@@ -41,7 +41,7 @@ export const LIST_COPY = {
   empty: {
     all: {
       title: 'No notes yet',
-      description: 'Start writing, or record a voice clip. Notes are saved on this device first.',
+      description: 'Start writing, or record a voice clip. Notes\nare saved on this device first.',
     },
     shared: {
       title: 'Nothing shared with you yet',

@@ -20,6 +20,7 @@ export function HeaderActions() {
   return (
     <>
       <IconButton
+        className="shell__bell"
         icon={Bell}
         label={SHELL_COPY.notifications}
         badge={unread > 0 ? unread : undefined}
@@ -27,7 +28,12 @@ export function HeaderActions() {
           setOpen(true);
         }}
       />
-      <IconButton icon={Pen} label={SHELL_COPY.newNote} onClick={startNote} />
+      <IconButton
+        className="shell__pen"
+        icon={Pen}
+        label={SHELL_COPY.newNote}
+        onClick={startNote}
+      />
       <NotificationsModal
         open={open}
         onClose={() => {

@@ -1,8 +1,15 @@
 @layer components {
   /* The note reads like a clean document: no borders, no boxes, no field chrome. */
+  .editor-surface {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+
   .editor-surface__body {
     /* The selection bar floats inside this box. */
     position: relative;
+    flex: 1;
     min-block-size: 60vh;
   }
 
@@ -23,14 +30,13 @@
 
   .editor-surface__content {
     inline-size: 100%;
-    margin-block-start: calc(var(--gap) * 3);
     padding: 0;
     border: none;
     background: transparent;
     color: var(--color-text);
     font-family: inherit;
-    font-size: var(--text-md);
-    line-height: 1.7;
+    font-size: var(--text-xs);
+    line-height: 1.45;
 
     /* The blinking caret is the writing indicator. */
     caret-color: var(--color-brand);
@@ -43,6 +49,11 @@
   /* Space appears only between sibling blocks, never above the first or below the last. */
   .editor-surface__content > * + * {
     margin-block-start: var(--gutter);
+  }
+
+  /* Consecutive lines sit tight, like Apple Notes: Enter starts the next line, not a new section. */
+  .editor-surface__content > p + p {
+    margin-block-start: 0;
   }
 
   /* In-note headings follow the note's own voice, not the page-title style. */
@@ -124,6 +135,8 @@
    */
   .editor-surface__content:focus-visible {
     outline: none;
+    border-color: transparent;
+    box-shadow: none;
   }
 }
 
@@ -133,10 +146,17 @@
   inset-block-start: var(--bar-height);
   z-index: var(--z-sticky);
   margin: 0;
-  padding-block: var(--gap);
-  background-color: var(--color-surface);
+  padding-block: 0 var(--gap);
+  background-color: var(--color-bg);
   color: var(--color-text-muted);
   font-size: var(--text-xs);
   text-align: center;
   user-select: none;
+}
+
+/* Two panes: the note has no bar of its own, so the date pins to the very top. */
+@container (min-width: 800px) {
+  .note-date {
+    inset-block-start: 0;
+  }
 }
