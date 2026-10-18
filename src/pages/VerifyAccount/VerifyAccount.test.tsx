@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
+import { ROUTES } from '@/app/routes';
+import { ToastProvider } from '@/design-system/ui';
 import { VerifyAccountPage } from '@/pages/VerifyAccount/VerifyAccount';
 import { expectNoAxeViolations } from '~/a11y';
 
@@ -10,11 +12,15 @@ function renderVerify(state?: unknown) {
   const router = createMemoryRouter(
     [
       { path: '/verify', element: <VerifyAccountPage /> },
-      { path: '/login', element: <h1>Sign in</h1> },
+      { path: ROUTES.signIn(), element: <h1>Sign in</h1> },
     ],
     { initialEntries: [{ pathname: '/verify', state }] },
   );
-  return render(<RouterProvider router={router} />);
+  return render(
+    <ToastProvider>
+      <RouterProvider router={router} />
+    </ToastProvider>,
+  );
 }
 
 describe('check your email', () => {
@@ -26,7 +32,8 @@ describe('check your email', () => {
 
   it('tells the user which address the link was sent to', async () => {
     renderVerify({ identifier: 'new@example.com' });
-    expect(await screen.findByText('new@example.com')).toBeInTheDocument();
+    // The screen masks the address: n**@example.com.
+    expect(await screen.findByText(/n\*\*@example\.com/)).toBeInTheDocument();
   });
 
   it('does not show the address when given a Notarian ID', async () => {
@@ -59,9 +66,9 @@ describe('check your email', () => {
     const user = userEvent.setup();
     renderVerify({ identifier: 'new@example.com' });
 
-    await user.click(await screen.findByRole('button', { name: /send the email again/i }));
+    await user.click(await screen.findByRole('button', { name: /^resend email$/i }));
 
     // The server always answers 200, so the client owns the visible cooldown.
-    expect(await screen.findByRole('button', { name: /resend in \d+s/i })).toBeDisabled();
+    expect(await screen.findByRole('button', { name: /resend email in \d+s/i })).toBeDisabled();
   });
 });

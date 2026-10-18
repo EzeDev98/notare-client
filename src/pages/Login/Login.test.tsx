@@ -5,9 +5,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
 import { AuthProvider } from '@/app/providers/AuthProvider';
+import { ROUTES } from '@/app/routes';
 import { RequireAuth } from '@/app/RequireAuth';
 import { LoginPage } from '@/pages/Login/Login';
-import { ERRORS } from '@/features/auth/authContent';
+import { ERRORS, LOGIN_FIELD_ERRORS } from '@/features/auth/authContent';
 import { clearSession, resetTokenStoreForTests } from '@/features/auth/tokenStore';
 import { resetRefreshCoordinatorForTests } from '@/features/auth/refreshCoordinator';
 import { expectNoAxeViolations } from '~/a11y';
@@ -16,10 +17,10 @@ import { server } from '~/msw/server';
 
 const BASE = 'http://localhost:2001/api/v1';
 
-function renderApp(initialPath = '/login') {
+function renderApp(initialPath = ROUTES.signIn()) {
   const router = createMemoryRouter(
     [
-      { path: '/login', element: <LoginPage /> },
+      { path: ROUTES.signIn(), element: <LoginPage /> },
       // 4F: an unverified account is routed here rather than shown a message.
       { path: '/verify', element: <h1>Verify your account</h1> },
       {
@@ -59,7 +60,7 @@ describe('the login form', () => {
 
     // Nothing yet — telling someone their input is wrong at the second
     // character is hostile.
-    expect(screen.queryByText(/enter your username/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(LOGIN_FIELD_ERRORS.identifierRequired)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 

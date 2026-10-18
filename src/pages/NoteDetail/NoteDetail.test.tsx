@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
@@ -74,18 +74,16 @@ describe('the note detail view', () => {
     renderDetail();
 
     /*
-     * Since the TipTap rewrite the field is a contenteditable div, not a
-     * textarea — it has no `.value`, and a `<br>` element contributes
-     * NOTHING to `.textContent` (verified directly), so a plain string
-     * comparison can't tell "one\ntwo\nthree" apart from "onetwothree".
-     * What actually matters — and what a collapsed run-on paragraph would
-     * fail — is that three SEPARATE lines exist in the DOM. EditorSurface.tsx
-     * configures `breaks: true` specifically so a bare `\n` (every note ever
-     * written in the old textarea has no other kind) becomes a real <br>
-     * rather than collapsing to a space; this asserts that mapping held.
+     * The field is a contenteditable div, not a textarea, so it has no `.value`.
+     * The editor maps each line of the stored text to its own block (textToDoc),
+     * so what matters is that three SEPARATE paragraphs exist in the DOM; a
+     * collapsed run-on line would fail this. Waited for because the document is
+     * filled in after the field first appears.
      */
     const content = await screen.findByLabelText('Note content');
-    expect(content.querySelectorAll('br')).toHaveLength(2);
+    await waitFor(() => {
+      expect(content.querySelectorAll('p')).toHaveLength(3);
+    });
     expect(content).toHaveTextContent('one');
     expect(content).toHaveTextContent('two');
     expect(content).toHaveTextContent('three');

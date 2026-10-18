@@ -11,20 +11,17 @@ import { SignedIn, resetDatabase } from '~/harness';
 const AUTHENTICATED_PATHS: Array<{ path: string; expectedTitle: string }> = [
   { path: '/notes', expectedTitle: 'Notes · Notare' },
   { path: '/notes/new', expectedTitle: 'New note · Notare' },
+  // Old URLs that redirect into the list (ROUTE_REDIRECTS), kept for one release.
   { path: '/archived', expectedTitle: 'Archived · Notare' },
-  { path: '/trash', expectedTitle: 'Trash · Notare' },
-  { path: '/search', expectedTitle: 'Search · Notare' },
-  // '/shared/:noteId', '/notes/:noteId/share' and '/voice/:voiceNoteId' are
-  // deliberately absent from this list, same as '/notes/:noteId' already
-  // was — all are dynamic routes that need a real id and seeded (or
-  // mocked) data to resolve to anything but a not-found state; this list
-  // only covers the static paths.
+  { path: '/search', expectedTitle: 'Notes · Notare' },
   { path: '/shared', expectedTitle: 'Shared with me · Notare' },
-  { path: '/collaborations', expectedTitle: 'Collaborations · Notare' },
-  { path: '/collaborations/invite', expectedTitle: 'Find people · Notare' },
-  { path: '/notifications', expectedTitle: 'Notifications · Notare' },
-  { path: '/voice', expectedTitle: 'Voice notes · Notare' },
-  { path: '/account/sessions', expectedTitle: 'Sessions · Notare' },
+  { path: '/collaborations', expectedTitle: 'Shared with me · Notare' },
+  { path: '/notifications', expectedTitle: 'Notes · Notare' },
+  { path: '/account/sessions', expectedTitle: 'Devices · Notare' },
+  // Dynamic routes ('/notes/:noteId', '/notes/:noteId/share') are deliberately absent:
+  // they need a real id and seeded data to resolve to anything but a not-found state.
+  // '/trash', '/collaborations/invite' and '/voice' have no route any more, so they are
+  // not listed as pages that resolve.
 ];
 
 function renderAt(path: string) {

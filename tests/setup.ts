@@ -199,3 +199,18 @@ beforeAll(() => {
     Element.prototype.getAnimations = (): Animation[] => [];
   }
 });
+
+/*
+ * jsdom has no ResizeObserver. RemoteCarets and useKeepScroll construct one on
+ * mount; there is no layout here for it to observe, so a stub that never
+ * fires is the honest equivalent.
+ */
+beforeAll(() => {
+  if (typeof globalThis.ResizeObserver !== 'function') {
+    globalThis.ResizeObserver = class ResizeObserver {
+      observe(): void {}
+      unobserve(): void {}
+      disconnect(): void {}
+    };
+  }
+});

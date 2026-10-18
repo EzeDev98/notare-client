@@ -1,12 +1,18 @@
 import { Pen } from 'lucide-react';
+import { Navigate } from 'react-router';
 
+import { useListView } from '@/app/shell/useNotesView';
 import { useSessionUser } from '@/app/shell/useSessionUser';
 import { useStartNote } from '@/app/shell/useStartNote';
 import { Button, EmptyState } from '@/design-system/ui';
 import { LIST_COPY } from '@/features/notes/list/listContent';
 import { useNoteList } from '@/features/notes/list/useNoteList';
+import { useTwoPane } from '@/shared/hooks/useBarSlot';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 
+import { ArchivedLanding } from './ArchivedLanding';
+import { DeletedLanding } from './DeletedLanding';
+import { SharedLanding } from './SharedLanding';
 import './NotesLanding.css';
 
 /**
@@ -17,6 +23,7 @@ import './NotesLanding.css';
 function OwnerLanding({ ownerId }: { ownerId: number }) {
   const startNote = useStartNote();
   const items = useNoteList('all', ownerId, '');
+  const twoPane = useTwoPane();
 
   // Dexie has not answered yet: show nothing rather than the wrong state.
   if (items === undefined) return null;
@@ -38,6 +45,10 @@ function OwnerLanding({ ownerId }: { ownerId: number }) {
     );
   }
 
+  // On two panes there is always a note to show: open the first one in the list.
+  const first = items[0];
+  if (twoPane && first) return <Navigate to={first.path} replace />;
+
   return (
     <EmptyState
       icon={Pen}
@@ -49,8 +60,14 @@ function OwnerLanding({ ownerId }: { ownerId: number }) {
 }
 
 export function NotesLandingPage() {
-  useDocumentTitle(LIST_COPY.titles.all);
+  const view = useListView();
+  useDocumentTitle(LIST_COPY.titles[view]);
   const user = useSessionUser();
+
+  if (user && view === 'shared')
+    return <SharedLanding ownerId={user.id} username={user.username} />;
+  if (user && view === 'archived') return <ArchivedLanding ownerId={user.id} />;
+  if (user && view === 'deleted') return <DeletedLanding ownerId={user.id} />;
 
   return <div className="notes-landing">{user ? <OwnerLanding ownerId={user.id} /> : null}</div>;
 }

@@ -13,6 +13,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
  */
 vi.mock('@/sync/push', () => ({ pushOutbox: vi.fn(() => Promise.resolve()) }));
 vi.mock('@/sync/pull', () => ({ pullChanges: vi.fn(() => Promise.resolve()) }));
+// The engine also awaits these. They touch real IndexedDB, which fake timers starve,
+// and they are not what this file tests.
+vi.mock('@/sync/clipUpload', () => ({ uploadPendingClips: vi.fn(() => Promise.resolve()) }));
+vi.mock('@/sync/releaseLegacyConflicts', () => ({
+  releaseLegacyConflicts: vi.fn(() => Promise.resolve()),
+}));
+vi.mock('@/features/notes/local/housekeeping', () => ({
+  purgeExpiredTrash: vi.fn(() => Promise.resolve()),
+}));
 
 import { pullChanges } from '@/sync/pull';
 import { pushOutbox } from '@/sync/push';
@@ -109,20 +118,15 @@ describe('start', () => {
     expect(mockPush).toHaveBeenCalledTimes(2); // exactly one run for both edits
   });
 
-  it('polls every 60s while visible, and stops polling once hidden', async () => {
+  it('does not poll: with nothing happening, no run starts on a timer alone', async () => {
     vi.useFakeTimers();
     stop = start(1);
     await vi.advanceTimersByTimeAsync(0);
     expect(mockPush).toHaveBeenCalledTimes(1);
 
-    await vi.advanceTimersByTimeAsync(60_000);
-    expect(mockPush).toHaveBeenCalledTimes(2);
-
-    setVisibility('hidden');
-    await vi.advanceTimersByTimeAsync(60_000);
-    // No new run — the interval was cleared, not merely paused, exactly the
-    // anti-pattern the architecture doc calls out by name.
-    expect(mockPush).toHaveBeenCalledTimes(2);
+    // Sync is event-driven (start, online, visible, local change). Minutes pass, nothing runs.
+    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    expect(mockPush).toHaveBeenCalledTimes(1);
   });
 
   it('short-circuits to offline without even trying when navigator.onLine is false', async () => {

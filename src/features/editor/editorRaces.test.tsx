@@ -6,8 +6,10 @@ import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
 import { ToastProvider } from '@/design-system/ui';
+import { outboxRepository } from '@/features/notes/local/noteRepository';
 import { NoteDetailPage } from '@/pages/NoteDetail/NoteDetail';
 import { makeNote } from '~/fixtures/notes';
+import { pushOutbox } from '@/sync/push';
 import { SignedIn } from '~/harness';
 import { server } from '~/msw/server';
 
@@ -40,62 +42,80 @@ function renderEditor(path = '/notes/1') {
   );
 }
 
+const serverNote = http.get(`${BASE}/notes/:noteId`, () =>
+  HttpResponse.json(makeNote({ id: 1, content: '', version: 0 })),
+);
+
+/** Answers POST /sync/batch the way the server does for an applied UPDATE. */
+function batchHandler(onOperation: (content: string | undefined) => Promise<void> | void) {
+  return http.post(`${BASE}/sync/batch`, async ({ request }) => {
+    const body = (await request.json()) as {
+      operations: { operationId: string; content?: string }[];
+    };
+    const operation = body.operations[0];
+    await onOperation(operation?.content);
+    return HttpResponse.json({
+      results: [
+        {
+          operationId: operation?.operationId,
+          status: 'APPLIED',
+          note: makeNote({ id: 1, content: operation?.content ?? '', version: 1 }),
+        },
+      ],
+      appliedCount: 1,
+      conflictCount: 0,
+      serverTime: '2026-08-13T09:00:00.000',
+    });
+  });
+}
+
+/** Types into the editor and waits until the edit is queued for sync. */
+async function typeAndQueue(text: string): Promise<void> {
+  const user = userEvent.setup();
+  renderEditor();
+
+  const content = await screen.findByLabelText('Note content');
+  // paste(), not type(): one atomic insert keeps jsdom in step with ProseMirror.
+  await user.click(content);
+  await user.paste(text);
+  await user.keyboard('{Control>}s{/Control}');
+
+  await waitFor(
+    async () => {
+      await expect(outboxRepository.list()).resolves.toHaveLength(1);
+    },
+    { timeout: 4_000 },
+  );
+}
+
 describe('one request at a time', () => {
-  it('never has two saves outstanding, however fast the user types', async () => {
+  it('never has two pushes outstanding, however many triggers ask at once', async () => {
     let outstanding = 0;
     let maxOutstanding = 0;
-    let saves = 0;
+    let batches = 0;
 
     server.use(
-      http.get(`${BASE}/notes/:noteId`, () =>
-        HttpResponse.json(makeNote({ id: 1, content: '', version: 0 })),
-      ),
-      http.patch(`${BASE}/notes/:noteId`, async ({ request }) => {
+      serverNote,
+      batchHandler(async () => {
         outstanding += 1;
         maxOutstanding = Math.max(maxOutstanding, outstanding);
-        saves += 1;
-
-        const body = (await request.json()) as { content?: string; version: number };
+        batches += 1;
         // A slow server, so overlapping requests would be easy if they existed.
         await new Promise((resolve) => setTimeout(resolve, 120));
         outstanding -= 1;
-
-        return HttpResponse.json(
-          makeNote({ id: 1, content: body.content ?? '', version: body.version + 1 }),
-        );
       }),
     );
 
-    const user = userEvent.setup();
-    renderEditor();
-
-    const content = await screen.findByLabelText('Note content');
-    // paste(), not type() — see conflict.test.tsx's typeAndConflict for why:
-    // user.type() drives the real ProseMirror editor one keystroke at a
-    // time, and jsdom's synthetic events don't stay in step with its
-    // per-keystroke transaction/DOM-observation cycle the way a real
-    // browser's native typing does. A single paste is one atomic insert.
-    await user.click(content);
-    await user.paste('the quick brown fox');
-    await user.keyboard('{Control>}s{/Control}');
-
-    await waitFor(
-      () => {
-        expect(saves).toBeGreaterThan(0);
-      },
-      { timeout: 4_000 },
-    );
-
-    await new Promise((resolve) => setTimeout(resolve, 2_000));
+    await typeAndQueue('the quick brown fox');
 
     /*
-     * ONE AT A TIME IS THE ORDERING GUARANTEE.
-     *
-     * With a single request outstanding there is no "response 2 arrives before
-     * response 1" — request 2 does not exist until request 1 has returned. The
-     * sequencing everyone reaches for is unnecessary if you simply never
-     * create the race.
+     * ONE AT A TIME IS THE ORDERING GUARANTEE. Edits are saved locally and the sync
+     * engine sends them; a push that is asked for while one is running joins it, so
+     * there is no "response 2 arrives before response 1".
      */
+    await Promise.all([pushOutbox(), pushOutbox(), pushOutbox()]);
+
+    expect(batches).toBe(1);
     expect(maxOutstanding).toBe(1);
   }, 15_000);
 
@@ -103,39 +123,17 @@ describe('one request at a time', () => {
     let lastSaved = '';
 
     server.use(
-      http.get(`${BASE}/notes/:noteId`, () =>
-        HttpResponse.json(makeNote({ id: 1, content: '', version: 0 })),
-      ),
-      http.patch(`${BASE}/notes/:noteId`, async ({ request }) => {
-        const body = (await request.json()) as { content?: string; version: number };
-        await new Promise((resolve) => setTimeout(resolve, 80));
-        if (body.content !== undefined) lastSaved = body.content;
-        return HttpResponse.json(
-          makeNote({ id: 1, content: body.content ?? '', version: body.version + 1 }),
-        );
+      serverNote,
+      batchHandler((content) => {
+        if (content !== undefined) lastSaved = content;
       }),
     );
 
-    const user = userEvent.setup();
-    renderEditor();
+    await typeAndQueue('hello world');
+    await pushOutbox();
 
-    const content = await screen.findByLabelText('Note content');
-    // Same reasoning as above — paste(), not type().
-    await user.click(content);
-    await user.paste('hello world');
-    await user.keyboard('{Control>}s{/Control}');
-
-    /*
-     * The FOLLOW-UP doing its job. The first request carried the text as it
-     * was when it started; without a follow-up the server stays behind
-     * forever while the indicator honestly reports unsaved changes.
-     */
-    await waitFor(
-      () => {
-        expect(lastSaved).toBe('hello world');
-      },
-      { timeout: 6_000 },
-    );
+    expect(lastSaved).toBe('hello world');
+    await expect(outboxRepository.count()).resolves.toBe(0);
   }, 15_000);
 });
 

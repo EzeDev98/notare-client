@@ -55,39 +55,13 @@ describe('creating a note', () => {
     expect(creates).toBe(0);
   });
 
-  it('creates exactly one note, then patches it with everything typed since', async () => {
+  it('keeps everything typed in one queued CREATE rather than queuing a second note', async () => {
     /*
-     * THE INTRICATE PATH — every mechanism in Step 6 participates:
-     *
-     *   POST in flight, no id yet   -> more edits arrive
-     *   single-flight guard         -> no second POST (which would be a
-     *                                  SECOND NOTE holding half the words)
-     *   supersededByEdits           -> success does not report "Saved"
-     *   version adoption            -> the follow-up PATCH has a version
-     *   follow-up                   -> the rest reaches the server
+     * Creation is local-first: the note exists on this device at once and a single CREATE
+     * waits in the outbox. Later edits fold into that same row (the same coalescing the
+     * offline UPDATE test covers), so the sync engine sends ONE note, not two, each
+     * holding half of what the user wrote.
      */
-    let creates = 0;
-    let lastPatched: string | null = null;
-
-    server.use(
-      http.post(`${BASE}/notes`, async ({ request }) => {
-        creates += 1;
-        const body = (await request.json()) as { content?: string };
-        // Slow, so edits definitely arrive while it is outstanding.
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        return HttpResponse.json(makeNote({ id: 42, content: body.content ?? '', version: 0 }), {
-          status: 201,
-        });
-      }),
-      http.patch(`${BASE}/notes/:noteId`, async ({ request }) => {
-        const body = (await request.json()) as { content?: string; version: number };
-        if (body.content !== undefined) lastPatched = body.content;
-        return HttpResponse.json(
-          makeNote({ id: 42, content: body.content ?? '', version: body.version + 1 }),
-        );
-      }),
-    );
-
     const user = userEvent.setup();
     renderNew();
 
@@ -97,37 +71,29 @@ describe('creating a note', () => {
     await user.keyboard('{Control>}s{/Control}');
 
     await waitFor(
-      () => {
-        expect(creates).toBe(1);
+      async () => {
+        const outbox = await outboxRepository.list();
+        expect(outbox).toHaveLength(1);
+        expect(outbox[0]).toMatchObject({ type: 'CREATE', noteId: null });
+        expect(outbox[0]?.content).toContain('first');
       },
       { timeout: 4_000 },
     );
+    const [queued] = await outboxRepository.list();
 
-    // More text while the POST is in flight and after it returns.
     await user.paste(' and more');
+    await user.keyboard('{Control>}s{/Control}');
 
-    // Ctrl+S is ignored while the POST is still outstanding (one save at a
-    // time), so press it until the flush is accepted and the PATCH lands.
-    //
-    // 12s, not 6s: a real ProseMirror editor does real work on every
-    // keystroke/paste (transaction dispatch, DOM reconciliation, Markdown
-    // serialization on `onUpdate`) that the old <textarea>'s plain
-    // `onChange` never did — measurably slower under a loaded CPU, and this
-    // test already stacks a 300ms mock network delay under a repeating
-    // waitFor. The assertion itself is unchanged; this is headroom for real
-    // work, not a masked failure.
     await waitFor(
       async () => {
-        await user.keyboard('{Control>}s{/Control}');
-        expect(lastPatched).toContain('and more');
+        const outbox = await outboxRepository.list();
+        expect(outbox).toHaveLength(1);
+        expect(outbox[0]?.id).toBe(queued?.id);
+        expect(outbox[0]?.content).toContain('and more');
       },
-      { timeout: 20_000 },
+      { timeout: 4_000 },
     );
-
-    // ONE note, not two. A second POST would leave the user with two notes,
-    // each holding half of what they wrote.
-    expect(creates).toBe(1);
-  }, 30_000);
+  }, 15_000);
 
   it('queues a CREATE when the connection is genuinely gone (8B)', async () => {
     server.use(http.post(`${BASE}/notes`, () => HttpResponse.error()));
