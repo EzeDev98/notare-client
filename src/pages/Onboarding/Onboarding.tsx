@@ -56,7 +56,7 @@ export function OnboardingPage({ onContinueInBrowser }: { onContinueInBrowser: (
     el.getAnimations().forEach((a) => {
       a.cancel();
     });
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    el.scrollTo({ top: 0, behavior: 'instant' });
     focusHeading(el);
     void done(screenIn(el, direction.current)).then(() => {
       moving.current = false;
@@ -67,7 +67,7 @@ export function OnboardingPage({ onContinueInBrowser }: { onContinueInBrowser: (
   const goBack = back ? () => void go(back, -1) : undefined;
 
   return (
-    <main ref={stage} className="route-stage">
+    <main ref={stage} className="route-stage ob-stage">
       {step === 'intro' ? <IntroScreen onStart={() => void go('install', 1)} /> : null}
       {step === 'install' ? (
         <InstallScreen

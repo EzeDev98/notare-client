@@ -1,4 +1,11 @@
 @layer pages {
+  /* html and body never scroll, so the onboarding stage is its own full-height scroll area. */
+  .ob-stage {
+    block-size: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
   .ob-body {
     display: flex;
     flex-direction: column;
