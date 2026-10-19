@@ -19,29 +19,3 @@ export function applyLink(editor: Editor, input: string): void {
   if (href === '') chain.unsetLink().run();
   else chain.setLink({ href }).run();
 }
-
-/**
- * The + menu's Checklist. A blank line (other than the first, which is the
- * title) becomes a checklist item. Otherwise a new checklist item is added after
- * the current block and the caret goes into it.
- */
-export function insertChecklist(editor: Editor): void {
-  const { $from } = editor.state.selection;
-  const blankTopLevelParagraph =
-    $from.depth === 1 && $from.parent.type.name === 'paragraph' && $from.parent.content.size === 0;
-  const isFirstBlock = $from.index(0) === 0;
-
-  if (blankTopLevelParagraph && !isFirstBlock) {
-    editor.chain().focus().toggleTaskList().run();
-    return;
-  }
-
-  editor
-    .chain()
-    .focus()
-    .insertContentAt($from.after(1), {
-      type: 'taskList',
-      content: [{ type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph' }] }],
-    })
-    .run();
-}

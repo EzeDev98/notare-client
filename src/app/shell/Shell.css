@@ -78,10 +78,6 @@
       margin-inline-start: var(--bar-pad);
     }
 
-    .shell[data-screen] .shell__bar:has(.note-header__insert) .shell__pen {
-      margin-inline-start: calc(var(--bar-pad) + var(--icon-button-size) + var(--gap) / 2);
-    }
-
     .shell[data-screen] .shell__bar-note {
       grid-area: 1 / 2;
       margin-inline-start: var(--bar-pad);

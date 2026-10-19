@@ -1,12 +1,8 @@
-import { Plus } from 'lucide-react';
 import { useId, useState } from 'react';
 
 import {
   AccessoryStrip,
   Button,
-  IconButton,
-  InsertMenu,
-  LengthCounter,
   StatusSlot,
   TranscriptPanel,
   VoiceBlock,
@@ -34,7 +30,7 @@ const VOICE_STATES: readonly { state: VoiceState; label: string }[] = [
 
 const STATUSES = ['Saved', 'Saving', 'Offline', ''] as const;
 
-/** Row 12: VoiceBlock, TranscriptPanel, StatusSlot, LengthCounter, AccessoryStrip, InsertMenu. */
+/** Row 12: VoiceBlock, TranscriptPanel, StatusSlot, AccessoryStrip. */
 export function Row12() {
   const panelId = useId();
   const [shown, setShown] = useState(true);
@@ -95,26 +91,12 @@ export function Row12() {
         </div>
       </Both>
 
-      <Both title="LengthCounter: hidden, near the limit, at the limit, over">
-        <div className="gallery-stack">
-          <LengthCounter count={12000} />
-          <LengthCounter count={19000} />
-          <LengthCounter count={19420} />
-          <LengthCounter count={20000} />
-          <LengthCounter count={20350} />
-        </div>
-      </Both>
-
       <Both title="AccessoryStrip">
         <div className="gallery-stack">
           <AccessoryStrip canUndo={false} canRedo={false} />
           <AccessoryStrip canUndo canRedo={false} />
           <AccessoryStrip canUndo canRedo />
         </div>
-      </Both>
-
-      <Both title="InsertMenu (Voice clip, Checklist)">
-        <InsertMenu>{({ triggerProps }) => <IconButton icon={Plus} label="Insert" {...triggerProps} />}</InsertMenu>
       </Both>
     </>
   );

@@ -1,8 +1,11 @@
 import type { Editor } from '@tiptap/core';
+import { Mic } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 import { useSessionUser } from '@/app/shell/useSessionUser';
 import { StatusBanner } from '@/app/status/StatusBanner';
+import { FloatingAction } from '@/design-system/ui';
 import { useCollab } from '@/features/collab/useCollab';
 import { useMergeToast } from '@/features/collab/useMergeToast';
 import { usePresencePeople } from '@/features/collab/usePresencePeople';
@@ -12,7 +15,6 @@ import { canEdit, canTranscribe } from '@/features/notes/permissions';
 import { NoteEditorHeader } from '@/features/editor/components/NoteEditorHeader/NoteEditorHeader';
 import { useEditorShortcuts } from '@/features/editor/hooks/useEditorShortcuts';
 import { useNoteEditor } from '@/features/editor/hooks/useNoteEditor';
-import { insertChecklist } from '@/features/editor/editorCommands';
 import { useInsertVoice } from '@/features/editor/voiceClip/useInsertVoice';
 import { useEditorActions } from '@/features/editor/hooks/useEditorActions';
 import { useNoteBody } from '@/features/editor/hooks/useNoteBody';
@@ -90,26 +92,7 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
   // SaveIndicator shows the note's one status word (step 8h).
   return (
     <>
-      <NoteEditorHeader
-        row={viewRow}
-        more={more}
-        collab={collab}
-        presence={presence}
-        onInsertChecklist={
-          tiptap
-            ? () => {
-                insertChecklist(tiptap);
-              }
-            : undefined
-        }
-        onInsertVoice={
-          tiptap
-            ? () => {
-                insertVoice(tiptap);
-              }
-            : undefined
-        }
-      />
+      <NoteEditorHeader row={viewRow} more={more} collab={collab} presence={presence} />
 
       <NoteDateHeading key={editor.row.localId} row={editor.row} />
 
@@ -126,6 +109,23 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
         canTranscribe={mayTranscribe}
         contentAccessory={contentAccessory}
       />
+
+      {tiptap && canEdit(viewRow.role)
+        ? createPortal(
+            <FloatingAction
+              icon={Mic}
+              label="Voice clip"
+              // Keeps the caret in the note, so the clip lands where the user was typing.
+              onMouseDown={(event) => {
+                event.preventDefault();
+              }}
+              onClick={() => {
+                insertVoice(tiptap);
+              }}
+            />,
+            document.body,
+          )
+        : null}
     </>
   );
 }

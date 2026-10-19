@@ -101,9 +101,6 @@ export const CLIP_MAX_SECONDS = 600;
 /** Largest voice clip, in bytes (20 MB). */
 export const CLIP_MAX_BYTES = 20 * 1024 * 1024;
 
-/** Most characters in one note. */
-export const NOTE_MAX_CHARS = 20_000;
-
 // --- Note status (features/notes/status) ------------------------------------
 
 /** "Saving on this device" shows for this long after a change. */
@@ -111,9 +108,6 @@ export const SAVING_LOCAL_MS = 700;
 
 /** "Synced" can appear this long after a change, once the server has it. */
 export const SYNCED_AFTER_MS = 1_700;
-
-/** The length counter appears from this many characters. */
-export const NOTE_COUNTER_FROM = 19_000;
 
 // --- Settings (pages/Settings) -----------------------------------------------
 

@@ -22,12 +22,6 @@
     pointer-events: none;
   }
 
-  /* The counter's height is reserved, so it appearing moves nothing. */
-  .editor-surface__counter {
-    min-block-size: var(--leading-xs);
-    padding-block-start: var(--gap);
-  }
-
   .editor-surface__content {
     inline-size: 100%;
     padding: 0;

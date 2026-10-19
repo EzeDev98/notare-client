@@ -1,4 +1,4 @@
-import { Copy, Ellipsis, ListChecks, Mic, Pin, Plus, Trash2 } from 'lucide-react';
+import { Copy, Ellipsis, Mic, Pin, Plus, Trash2 } from 'lucide-react';
 
 import { IconButton, Menu, SelectField, useToast } from '@/design-system/ui';
 
@@ -21,7 +21,6 @@ export function Row10() {
             label="Insert"
             items={[
               { label: 'Voice clip', icon: Mic, onSelect: chose('Voice clip') },
-              { label: 'Checklist', icon: ListChecks, onSelect: chose('Checklist') },
             ]}
           >
             {({ triggerProps }) => <IconButton icon={Plus} label="Insert" {...triggerProps} />}

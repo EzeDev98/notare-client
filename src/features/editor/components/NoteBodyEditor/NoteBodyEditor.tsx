@@ -1,19 +1,15 @@
 import type { Editor } from '@tiptap/core';
-import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
+import { EditorContent, useEditor } from '@tiptap/react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Awareness } from 'y-protocols/awareness';
 import type { Doc } from 'yjs';
 
 import '@/features/editor/components/EditorSurface/EditorSurface.css';
-import { NOTE_COUNTER_FROM, NOTE_MAX_CHARS } from '@/core/config/timings';
 import { noteIn } from '@/design-system/motion/patterns';
-import { LengthCounter, useToast } from '@/design-system/ui';
 import type { CurrentUser } from '@/features/auth/types';
 import { RemoteCarets } from '@/features/collab/RemoteCarets';
 import { usePublishPresence } from '@/features/collab/usePublishPresence';
-import { EDITOR_COPY } from '@/features/editor/editorContent';
 import { collaborativeExtensions } from '@/features/editor/editorExtensions';
-import { docToText } from '@/features/editor/plainTextBody';
 import { VoiceClipContext } from '@/features/editor/voiceClip/VoiceClipContext';
 import { takeBodyFocus } from '@/features/notes/bodyFocus';
 
@@ -55,19 +51,13 @@ export function NoteBodyEditor({
   awareness,
   user = null,
 }: NoteBodyEditorProps) {
-  const { toast } = useToast();
   const bodyRef = useRef<HTMLDivElement>(null);
   const voiceContext = useMemo(
     () => ({ noteId, canEdit: !readOnly, canTranscribe }),
     [noteId, readOnly, canTranscribe],
   );
 
-  const [extensions] = useState(() =>
-    collaborativeExtensions(doc, (kind) => {
-      // Typing at the limit is shown by the counter. A paste needs its own message.
-      if (kind === 'paste') toast(EDITOR_COPY.pasteBlocked, { tone: 'error' });
-    }),
-  );
+  const [extensions] = useState(() => collaborativeExtensions(doc));
 
   const editor = useEditor({
     extensions,
@@ -81,12 +71,6 @@ export function NoteBodyEditor({
         'aria-label': 'Note content',
       },
     },
-  });
-
-  // The same length the server counts (the derived `content`).
-  const count = useEditorState({
-    editor,
-    selector: ({ editor: current }) => docToText(current.getJSON()).length,
   });
 
   usePublishPresence(awareness, editor, user, !readOnly);
@@ -130,11 +114,6 @@ export function NoteBodyEditor({
         {awareness && !readOnly ? <RemoteCarets editor={editor} awareness={awareness} /> : null}
         {readOnly ? null : <NoteSelectionBar editor={editor} />}
         {readOnly ? null : <NoteAccessoryStrip editor={editor} />}
-        {readOnly ? null : (
-          <div className="editor-surface__counter">
-            <LengthCounter count={count} limit={NOTE_MAX_CHARS} from={NOTE_COUNTER_FROM} />
-          </div>
-        )}
         {contentAccessory}
       </div>
     </div>

@@ -1,10 +1,10 @@
-import { ArrowLeft, Ellipsis, Plus, Share } from 'lucide-react';
+import { ArrowLeft, Ellipsis, Share } from 'lucide-react';
 import { useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router';
 
 import { ROUTES } from '@/app/routes';
-import { AvatarStack, ContextMenu, IconButton, InsertMenu } from '@/design-system/ui';
+import { AvatarStack, ContextMenu, IconButton } from '@/design-system/ui';
 import type { CollabState } from '@/features/collab/CollabProvider';
 import { PresenceAvatars } from '@/features/collab/PresenceAvatars';
 import { ShareModal } from '@/features/collab/ShareModal/ShareModal';
@@ -16,7 +16,7 @@ import { clipRepository } from '@/features/notes/local/clipRepository';
 import { isEmptyNote } from '@/features/notes/local/isEmptyNote';
 import { deriveNoteLabel } from '@/features/notes/local/noteLabel';
 import type { NoteRow } from '@/features/notes/local/noteRow';
-import { canEdit, canShare } from '@/features/notes/permissions';
+import { canShare } from '@/features/notes/permissions';
 import { LeaveNoteModal } from '@/pages/Home/LeaveNoteModal';
 import { useBarSlot, useTwoPane } from '@/shared/hooks/useBarSlot';
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
@@ -26,9 +26,6 @@ import './NoteEditorHeader.css';
 interface NoteEditorHeaderProps {
   /** The note on screen (live). */
   row: NoteRow;
-  /** The + menu (step 12e). The + button is drawn only when one of these is given. */
-  onInsertVoice?: (() => void) | undefined;
-  onInsertChecklist?: (() => void) | undefined;
   /** The more menu (step 12e). The button is drawn only when given. */
   more?: EditorMoreActions | undefined;
   /** The live channel's state, for the status word (step 16c). */
@@ -44,12 +41,10 @@ function keepEditorFocus(event: MouseEvent): void {
 
 /**
  * The editor header, 56px (master 6.4, step 12d). Left to right: Back (phone
- * only), + insert, spacer, status, avatars, Share, more.
+ * only), spacer, status, avatars, Share, more.
  */
 export function NoteEditorHeader({
   row,
-  onInsertVoice,
-  onInsertChecklist,
   more,
   collab,
   presence = [],
@@ -75,26 +70,9 @@ export function NoteEditorHeader({
     void navigate(ROUTES.notes());
   };
 
-  const showInsert =
-    canEdit(row.role) && (onInsertVoice !== undefined || onInsertChecklist !== undefined);
-
   const header = (
     <div className={inBar ? 'note-header note-header--in-bar' : 'note-header'}>
       <IconButton className="note-header__back" icon={ArrowLeft} label="Back" onClick={goBack} />
-
-      {showInsert ? (
-        <InsertMenu onVoice={onInsertVoice} onChecklist={onInsertChecklist}>
-          {({ triggerProps }) => (
-            <IconButton
-              className="note-header__insert"
-              icon={Plus}
-              label="Insert"
-              onMouseDown={keepEditorFocus}
-              {...triggerProps}
-            />
-          )}
-        </InsertMenu>
-      ) : null}
 
       <span className="note-header__spacer" />
 

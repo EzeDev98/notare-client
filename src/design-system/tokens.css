@@ -128,6 +128,8 @@
     --tile-size: 40px;
     --tile-emoji: 20px;
     --hero-size: 72px;
+    --fab-size: 56px;
+    --fab-icon-size: 24px;
   }
 
   /* Settings, Appearance: force a theme. No attribute means follow the system. */

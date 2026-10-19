@@ -109,7 +109,7 @@ export function bodyToPlainText(source: Y.Doc | Uint8Array): string {
 
 /* ---------- Markdown export (never used for storage) ---------- */
 
-const LIST_TYPES = new Set(['bulletList', 'orderedList', 'taskList']);
+const LIST_TYPES = new Set(['bulletList', 'orderedList']);
 
 function escapeInline(text: string): string {
   return text.replace(/([\\`*_[\]])/g, '\\$1');
@@ -135,7 +135,6 @@ function markdownList(list: JSONContent, indent: string, out: string[]): void {
   (list.content ?? []).forEach((item, index) => {
     let marker = '- ';
     if (list.type === 'orderedList') marker = `${start + index}. `;
-    if (list.type === 'taskList') marker = item.attrs?.['checked'] ? '- [x] ' : '- [ ] ';
 
     let first = true;
     for (const child of item.content ?? []) {
