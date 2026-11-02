@@ -81,7 +81,7 @@ export function NotificationsModal({ open, onClose }: NotificationsModalProps) {
           {rows.map((n) => {
             const profile = n.actorId === null ? undefined : profiles.get(n.actorId);
             const name = profile ? formatUserName(profile) : undefined;
-            const composed = composeNotification(n, name, roleOf[n.targetId]);
+            const composed = composeNotification(n, name, (n.targetId === null ? undefined : roleOf[n.targetId]));
             const busy = act.busyId === n.id;
             return (
               <div role="listitem" key={n.id}>

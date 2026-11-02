@@ -21,7 +21,8 @@ export function composeNotification(
   role?: 'viewer' | 'editor',
 ): ComposedNotification {
   const name = actor ?? C.someone;
-  const title = n.targetLabel.trim() === '' ? C.untitled : n.targetLabel.trim();
+  const label = n.targetLabel?.trim() ?? '';
+  const title = label === '' ? C.untitled : label;
   const when = formatServerDateTimeRelative(n.createdAt);
   const meta = (label: string): string => `${label} · ${when}`;
 

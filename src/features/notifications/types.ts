@@ -48,9 +48,9 @@ export interface NotificationResponse {
   id: number;
   type: NotificationType;
   actorId: number | null;
-  targetType: string;
-  targetId: number;
-  targetLabel: string;
+  targetType: string | null;
+  targetId: number | null;
+  targetLabel: string | null;
   readAt: ServerDateTime | null;
   createdAt: ServerDateTime;
 }

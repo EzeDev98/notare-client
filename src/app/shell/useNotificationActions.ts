@@ -18,6 +18,11 @@ import {
 import type { NotificationResponse } from '@/features/notifications/types';
 import { transcriptionService } from '@/features/voice/api/transcriptionService';
 
+function targetIdOf(n: NotificationResponse): number {
+  if (n.targetId === null) throw new Error('Notification has no target');
+  return n.targetId;
+}
+
 /** What each button in the notifications modal does. `busyId` is the row working right now. */
 export function useNotificationActions(onClose: () => void) {
   const navigate = useNavigate();
@@ -48,7 +53,7 @@ export function useNotificationActions(onClose: () => void) {
 
     accept: (n: NotificationResponse, name: string) =>
       work(n, async () => {
-        await collaborationService.acceptCollaboration(n.targetId);
+        await collaborationService.acceptCollaboration(targetIdOf(n));
         await finish(n);
         toast(C.toasts.connected(name), { tone: 'success' });
         void refreshPeople().catch(() => undefined);
@@ -56,7 +61,7 @@ export function useNotificationActions(onClose: () => void) {
 
     decline: (n: NotificationResponse) =>
       work(n, async () => {
-        await collaborationService.rejectCollaboration(n.targetId);
+        await collaborationService.rejectCollaboration(targetIdOf(n));
         await finish(n);
         toast(C.toasts.declined);
       }),
@@ -67,10 +72,10 @@ export function useNotificationActions(onClose: () => void) {
           await notificationService.markRead(n.id);
           void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
           onClose();
-          void navigate(ROUTES.note(n.targetId));
+          void navigate(ROUTES.note(targetIdOf(n)));
           return;
         }
-        const clip = await clipRepository.findByServerId(n.targetId);
+        const clip = await clipRepository.findByServerId(targetIdOf(n));
         const note = clip ? await noteRepository.getByLocalId(clip.noteId) : undefined;
         if (!note) {
           toast(C.toasts.gone);
@@ -84,7 +89,7 @@ export function useNotificationActions(onClose: () => void) {
 
     retry: (n: NotificationResponse) =>
       work(n, async () => {
-        await transcriptionService.submitTranscription(n.targetId);
+        await transcriptionService.submitTranscription(targetIdOf(n));
         await finish(n);
         toast(C.toasts.transcribing);
       }),
