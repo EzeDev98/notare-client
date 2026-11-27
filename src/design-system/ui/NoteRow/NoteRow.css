@@ -63,8 +63,8 @@
 
   .n-row__preview {
     overflow: hidden;
-    font-size: var(--text-sm);
-    line-height: var(--leading-sm);
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--color-text-muted);

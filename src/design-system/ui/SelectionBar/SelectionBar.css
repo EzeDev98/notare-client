@@ -18,6 +18,11 @@
     width: calc(var(--menu-width) * 1.2);
   }
 
+  /* Apply sits beside the link field, so it takes the field's height. */
+  .n-selbar .ui-control + .ui-button {
+    height: var(--input-height);
+  }
+
   .n-sel {
     background: var(--color-focus-tint);
     border-radius: var(--radius-sm);

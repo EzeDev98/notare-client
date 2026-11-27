@@ -7,7 +7,7 @@ import { ROUTES } from '@/app/routes';
  * the screen slides out the way it came. Opened directly (no history to go back
  * to), it replaces itself with the hub.
  */
-export function useBackToHub(fallback: string = ROUTES.settings()): () => void {
+export function useBackToHub(fallback: string = ROUTES.notes()): () => void {
   const navigate = useNavigate();
   return () => {
     const index = (window.history.state as { idx?: number } | null)?.idx ?? 0;

@@ -1,15 +1,11 @@
 import type { Editor } from '@tiptap/core';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { Awareness } from 'y-protocols/awareness';
 import type { Doc } from 'yjs';
 
 import '@/features/editor/components/EditorSurface/EditorSurface.css';
 import { noteIn } from '@/design-system/motion/patterns';
-import type { CurrentUser } from '@/features/auth/types';
-import { RemoteCarets } from '@/features/collab/RemoteCarets';
-import { usePublishPresence } from '@/features/collab/usePublishPresence';
-import { collaborativeExtensions } from '@/features/editor/editorExtensions';
+import { noteBodyExtensions } from '@/features/editor/editorExtensions';
 import { VoiceClipContext } from '@/features/editor/voiceClip/VoiceClipContext';
 import { takeBodyFocus } from '@/features/notes/bodyFocus';
 
@@ -20,17 +16,10 @@ interface NoteBodyEditorProps {
   noteId: string;
   /** The note's body. The document is the only copy of the draft. */
   doc: Doc;
-  readOnly?: boolean;
-  /** Whether the Transcribe button shows on voice blocks. */
-  canTranscribe?: boolean;
   /** Rendered inside the writing area, after the text. */
   contentAccessory?: ReactNode;
   /** Hands the editor to the host (the + menu needs it). Called with null on unmount. */
   onEditor?: ((editor: Editor | null) => void) | undefined;
-  /** Live presence for this note (step 16d). Without it the note has no carets. */
-  awareness?: Awareness | undefined;
-  /** Who we are, told to the others. */
-  user?: CurrentUser | null | undefined;
 }
 
 /**
@@ -41,27 +30,14 @@ interface NoteBodyEditorProps {
  * fades in over the same reserved height, so nothing jumps. Same classes as
  * EditorSurface, so the styling is defined once.
  */
-export function NoteBodyEditor({
-  noteId,
-  doc,
-  readOnly = false,
-  canTranscribe = false,
-  contentAccessory,
-  onEditor,
-  awareness,
-  user = null,
-}: NoteBodyEditorProps) {
+export function NoteBodyEditor({ noteId, doc, contentAccessory, onEditor }: NoteBodyEditorProps) {
   const bodyRef = useRef<HTMLDivElement>(null);
-  const voiceContext = useMemo(
-    () => ({ noteId, canEdit: !readOnly, canTranscribe }),
-    [noteId, readOnly, canTranscribe],
-  );
+  const voiceContext = useMemo(() => ({ noteId }), [noteId]);
 
-  const [extensions] = useState(() => collaborativeExtensions(doc));
+  const [extensions] = useState(() => noteBodyExtensions(doc));
 
   const editor = useEditor({
     extensions,
-    editable: !readOnly,
     // TipTap's injected stylesheet would sit outside the app's @layer system.
     injectCSS: false,
     autofocus: false,
@@ -73,15 +49,9 @@ export function NoteBodyEditor({
     },
   });
 
-  usePublishPresence(awareness, editor, user, !readOnly);
-
   useLayoutEffect(() => {
     if (bodyRef.current) noteIn(bodyRef.current);
   }, []);
-
-  useEffect(() => {
-    editor.setEditable(!readOnly);
-  }, [editor, readOnly]);
 
   useEffect(() => {
     onEditor?.(editor);
@@ -92,16 +62,14 @@ export function NoteBodyEditor({
 
   // D-13: never focus on open. Only right after the user pressed New note.
   useEffect(() => {
-    if (readOnly) return;
     if (takeBodyFocus(noteId)) editor.commands.focus('end');
-  }, [editor, noteId, readOnly]);
+  }, [editor, noteId]);
 
   return (
     <div
       className="editor-surface"
       onMouseDown={(event) => {
         // Only the empty space around the text; clicks on the text itself are ProseMirror's.
-        if (readOnly) return;
         if (event.target !== event.currentTarget && event.target !== bodyRef.current) return;
         event.preventDefault();
         editor.commands.focus('end');
@@ -111,9 +79,8 @@ export function NoteBodyEditor({
         <VoiceClipContext.Provider value={voiceContext}>
           <EditorContent editor={editor} />
         </VoiceClipContext.Provider>
-        {awareness && !readOnly ? <RemoteCarets editor={editor} awareness={awareness} /> : null}
-        {readOnly ? null : <NoteSelectionBar editor={editor} />}
-        {readOnly ? null : <NoteAccessoryStrip editor={editor} />}
+        <NoteSelectionBar editor={editor} />
+        <NoteAccessoryStrip editor={editor} />
         {contentAccessory}
       </div>
     </div>

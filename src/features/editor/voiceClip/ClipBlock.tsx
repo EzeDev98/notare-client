@@ -5,6 +5,7 @@ import { TranscriptPanel, useToast } from '@/design-system/ui';
 import { VoiceBlock, type VoiceBlockProps } from '@/design-system/ui/VoiceBlock/VoiceBlock';
 import { clipRepository } from '@/features/notes/local/clipRepository';
 import { useClipTranscript } from '@/features/voice/hooks/useClipTranscript';
+import { deleteClip } from '@/features/voice/deleteClip';
 import { formatClock, pauseClip, playClip, useClipPlayback } from '@/features/voice/player';
 import { requestTranscription } from '@/features/voice/transcribe';
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
@@ -21,12 +22,10 @@ interface ClipBlockProps {
   /** Where this block sits in the body, so Insert can go right after it. */
   getPos: () => number | undefined;
   nodeSize: number;
-  canEdit: boolean;
-  canTranscribe: boolean;
 }
 
 /** A saved clip: playing, sync state and transcription. */
-export function ClipBlock({ clipId, editor, getPos, nodeSize, canEdit, canTranscribe }: ClipBlockProps) {
+export function ClipBlock({ clipId, editor, getPos, nodeSize }: ClipBlockProps) {
   const playback = useClipPlayback(clipId);
   const transcript = useClipTranscript(clipId);
   const online = useOnlineStatus();
@@ -42,6 +41,23 @@ export function ClipBlock({ clipId, editor, getPos, nodeSize, canEdit, canTransc
   const total = playback.duration > 0 ? playback.duration : (clip?.durationSeconds ?? 0);
   const ask = (): void => {
     void requestTranscription(clipId);
+  };
+
+  // Takes the block out of the body, then the clip off this device and the server.
+  // Kept out of Undo: the audio is gone, so Undo could only bring back a dead block.
+  const remove = (): void => {
+    const pos = getPos();
+    if (pos === undefined) return;
+    if (playback.playing) pauseClip();
+    editor
+      .chain()
+      .command(({ tr }) => {
+        tr.delete(pos, pos + nodeSize);
+        tr.setMeta('addToHistory', false);
+        return true;
+      })
+      .run();
+    void deleteClip(clipId);
   };
 
   const props: VoiceBlockProps = {
@@ -60,6 +76,7 @@ export function ClipBlock({ clipId, editor, getPos, nodeSize, canEdit, canTransc
     onRetry: () => {
       void clipRepository.retry(clipId);
     },
+    onDelete: remove,
   };
 
   const status = transcript?.status ?? 'none';
@@ -80,7 +97,7 @@ export function ClipBlock({ clipId, editor, getPos, nodeSize, canEdit, canTransc
     props.onRetry = ask;
   } else if (status === 'done') {
     props.state = 'transcribed';
-  } else if (clip && canTranscribe) {
+  } else if (clip) {
     props.state = 'transcribe';
   }
 
@@ -116,7 +133,6 @@ export function ClipBlock({ clipId, editor, getPos, nodeSize, canEdit, canTransc
           id={panelId}
           text={text}
           shown={shown}
-          viewer={!canEdit}
           onCopy={copy}
           onInsert={insert}
         />

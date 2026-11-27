@@ -57,7 +57,7 @@ describe('the first character', () => {
     draft.content = 'hello';
     const row = await persistDraftIfContent(draft);
 
-    expect(row).toMatchObject({ content: 'hello', dirty: 1, syncState: 'pending', role: 'owner' });
+    expect(row).toMatchObject({ content: 'hello', dirty: 1, syncState: 'pending' });
     expect(await counts()).toEqual({ notes: 1, outbox: 1, clips: 0 });
     const queued = await outboxRepository.list();
     expect(queued[0]).toMatchObject({ type: 'CREATE', localId: draft.id, content: 'hello' });
@@ -100,25 +100,7 @@ describe('the first character', () => {
   });
 });
 
-describe('delete and undo', () => {
-  it('Undo cancels a queued DELETE, so the server is never told', async () => {
-    const row = await createNoteWithContent(1, 'keep');
-    if (!row) throw new Error('row missing');
-    await db.notes.update(row.localId, { serverId: 42, syncState: 'synced', dirty: 0 });
-    await outboxRepository.clearForNote(row.localId);
-
-    await noteCommands.setDeleted(row.localId, true);
-    await outboxRepository.enqueueDelete({ localId: row.localId, noteId: 42 });
-    expect(await outboxRepository.count()).toBe(1);
-
-    await noteCommands.setDeleted(row.localId, false);
-    await outboxRepository.cancelPendingDelete(row.localId);
-
-    expect(await outboxRepository.count()).toBe(0);
-    const restored = await db.notes.get(row.localId);
-    expect(restored).toMatchObject({ deleted: 0, deletedAt: null, purgeAt: null });
-  });
-
+describe('delete', () => {
   it('deleting a note the server never saw drops its CREATE', async () => {
     const row = await createNoteWithContent(1, 'never sent');
     if (!row) throw new Error('row missing');
@@ -127,9 +109,8 @@ describe('delete and undo', () => {
     await outboxRepository.discardPendingCreate(row.localId);
 
     expect(await outboxRepository.count()).toBe(0);
-    const trashed = await db.notes.get(row.localId);
-    expect(trashed?.deleted).toBe(1);
-    expect(trashed?.purgeAt).not.toBeNull();
+    const deleted = await db.notes.get(row.localId);
+    expect(deleted?.deleted).toBe(1);
   });
 });
 

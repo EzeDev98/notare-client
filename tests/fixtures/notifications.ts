@@ -8,9 +8,9 @@ export function makeNotification(
   const id = overrides.id ?? nextNotificationId++;
   return {
     id,
-    type: 'NOTE_SHARED',
-    actorId: 9,
-    targetType: 'NOTE',
+    type: 'TRANSCRIPTION_COMPLETED',
+    actorId: null,
+    targetType: 'VOICE_NOTE',
     targetId: 5,
     targetLabel: 'Q3 Plan',
     readAt: null,

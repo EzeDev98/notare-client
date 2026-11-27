@@ -171,16 +171,7 @@ describe('password reset', () => {
   });
 });
 
-describe('sessions', () => {
-  it('lists sessions and marks the current one', async () => {
-    const sessions = await authService.listSessions();
-
-    expect(sessions[0]?.current).toBe(true);
-    // Instant, not LocalDateTime — these are the only timestamps in the API
-    // that carry a zone, and new Date() is correct on them.
-    expect(sessions[0]?.createdAt).toMatch(/Z$/);
-  });
-
+describe('logout', () => {
   it('logs out with no body, since the session comes from the token', async () => {
     await authService.logout();
 

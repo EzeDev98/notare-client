@@ -16,22 +16,14 @@ beforeEach(async () => {
 });
 
 describe('listing', () => {
-  it('separates active, archived and trashed', async () => {
+  it('lists my notes and hides deleted ones', async () => {
     await db.notes.bulkPut([
       { ...createLocalNote(1, { content: 'active' }) },
-      { ...createLocalNote(1, { content: 'archived' }), archived: 1 },
-      { ...createLocalNote(1, { content: 'trashed' }), deleted: 1 },
-      // Archived AND trashed: the flags are orthogonal, so this belongs in the
-      // bin and must not be hidden by the archived filter.
-      { ...createLocalNote(1, { content: 'both' }), archived: 1, deleted: 1 },
+      { ...createLocalNote(1, { content: 'deleted' }), deleted: 1 },
       { ...createLocalNote(2, { content: 'someone else' }) },
     ]);
 
     await expect(noteRepository.listActive(1).then(contents)).resolves.toEqual(['active']);
-    await expect(noteRepository.listArchived(1).then(contents)).resolves.toEqual(['archived']);
-    await expect(noteRepository.listTrashed(1).then(contents)).resolves.toEqual(
-      expect.arrayContaining(['trashed', 'both']),
-    );
   });
 
   it('puts pinned notes first, then the most recently touched', async () => {
@@ -81,16 +73,6 @@ describe('searching', () => {
 
     await expect(noteRepository.search('meeting', 1).then(contents)).resolves.toEqual([
       'mine, meeting',
-    ]);
-  });
-
-  it('includes archived notes — archiving from search must not hide the result', async () => {
-    await db.notes.bulkPut([
-      { ...createLocalNote(1, { content: 'archived meeting' }), archived: 1 },
-    ]);
-
-    await expect(noteRepository.search('meeting', 1).then(contents)).resolves.toEqual([
-      'archived meeting',
     ]);
   });
 
@@ -191,38 +173,6 @@ describe('applying server state', () => {
 
     expect((await noteRepository.getByServerId(30))?.ownerId).toBe(7);
     expect(await noteRepository.listActive(7)).toHaveLength(1);
-  });
-
-  it('marks a trash page as deleted and keeps it out of the notes list', async () => {
-    await noteRepository.upsertTrashedNotes(
-      [{ note: makeNoteSummary({ id: 31 }), deletedAt: '2026-08-05T14:00:00.000' }],
-      7,
-    );
-
-    const stored = await noteRepository.getByServerId(31);
-    expect(stored?.deleted).toBe(1);
-    expect(stored?.deletedAt).toBe('2026-08-05T14:00:00.000');
-
-    // One table, two queries. The trash is a filter, not a second store.
-    expect(await noteRepository.listActive(7)).toHaveLength(0);
-    expect(await noteRepository.listTrashed(7)).toHaveLength(1);
-  });
-
-  it('does not re-trash a note the user has just restored', async () => {
-    /*
-     * The restore wrote locally and left the row dirty. A trash page fetched
-     * before that write must not land on top of it and put the note back in
-     * the bin in front of the user.
-     */
-    const local = fromNoteResponse(makeNote({ id: 32 }));
-    await db.notes.put({ ...local, ownerId: 7, deleted: 0, dirty: 1 });
-
-    await noteRepository.upsertTrashedNotes(
-      [{ note: makeNoteSummary({ id: 32 }), deletedAt: '2026-08-05T14:00:00.000' }],
-      7,
-    );
-
-    expect((await noteRepository.getByServerId(32))?.deleted).toBe(0);
   });
 });
 
@@ -357,24 +307,6 @@ describe('the outbox (8B)', () => {
       await outboxRepository.discardPendingCreate('local-5');
 
       await expect(outboxRepository.listForNote('local-5')).resolves.toHaveLength(1);
-    });
-  });
-
-  describe('cancelPendingDelete', () => {
-    it('drops a queued DELETE — a restore before the push must undo it', async () => {
-      await outboxRepository.enqueueDelete({ localId: 'local-6', noteId: 1 });
-
-      await outboxRepository.cancelPendingDelete('local-6');
-
-      await expect(outboxRepository.listForNote('local-6')).resolves.toEqual([]);
-    });
-
-    it('leaves a queued CREATE or UPDATE alone — neither is a DELETE', async () => {
-      await outboxRepository.enqueueCreate(note);
-
-      await outboxRepository.cancelPendingDelete(note.localId);
-
-      await expect(outboxRepository.listForNote(note.localId)).resolves.toHaveLength(1);
     });
   });
 

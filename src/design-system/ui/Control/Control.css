@@ -48,8 +48,8 @@
     background: transparent;
     color: var(--color-text);
     box-shadow: none;
-    font-size: var(--text-md);
-    line-height: var(--leading-md);
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
   }
 
   .ui-control__input:focus-visible {

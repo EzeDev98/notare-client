@@ -1,4 +1,3 @@
-import { ROUTES, type NotesView } from '@/app/routes';
 import { isTwoPane } from '@/shared/hooks/useBarSlot';
 
 interface Entry {
@@ -7,10 +6,10 @@ interface Entry {
 }
 
 /** The notes on screen in the list, top to bottom, published by the list pane. */
-let shown: { view: NotesView; entries: readonly Entry[] } = { view: 'all', entries: [] };
+let shown: readonly Entry[] = [];
 
-export function publishVisibleOrder(view: NotesView, entries: readonly Entry[]): void {
-  shown = { view, entries };
+export function publishVisibleOrder(entries: readonly Entry[]): void {
+  shown = entries;
 }
 
 /**
@@ -20,8 +19,8 @@ export function publishVisibleOrder(view: NotesView, entries: readonly Entry[]):
  */
 export function routeAfterRemoving(id: string): string | null {
   if (!isTwoPane()) return null;
-  const at = shown.entries.findIndex((entry) => entry.id === id);
+  const at = shown.findIndex((entry) => entry.id === id);
   if (at === -1) return null;
-  const next = shown.entries[at + 1] ?? shown.entries[at - 1];
-  return next ? ROUTES.inView(next.path, shown.view) : null;
+  const next = shown[at + 1] ?? shown[at - 1];
+  return next ? next.path : null;
 }

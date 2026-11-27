@@ -15,8 +15,6 @@ interface NoteListRowsProps {
   offline: boolean;
   /** The path of the note that is open, for the selected row. */
   openPath: string;
-  /** False in Recently deleted. */
-  withMenu: boolean;
   actions: ListActions;
   onOpen: (item: ListItem) => void;
 }
@@ -27,19 +25,16 @@ export function NoteListRows({
   now,
   offline,
   openPath,
-  withMenu,
   actions,
   onOpen,
 }: NoteListRowsProps) {
   return (
     <div className="n-list" role="listbox" aria-label={LIST_COPY.listName} onKeyDown={moveRowFocus}>
       {sections.map(({ group, items }) => (
-        <Fragment key={group ?? 'all'}>
-          {group ? (
-            <div className="n-group-label" role="presentation">
-              {LIST_COPY.groups[group]}
-            </div>
-          ) : null}
+        <Fragment key={group}>
+          <div className="n-group-label" role="presentation">
+            {LIST_COPY.groups[group]}
+          </div>
           {items.map((item) => (
             <ListRow
               key={item.id}
@@ -47,7 +42,6 @@ export function NoteListRows({
               date={rowDate(item, now)}
               selected={openPath === item.path}
               notSynced={item.failed || (item.pending && offline)}
-              withMenu={withMenu}
               actions={actions}
               onOpen={() => {
                 onOpen(item);

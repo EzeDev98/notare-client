@@ -6,7 +6,6 @@ import { AuthProvider } from '@/app/providers/AuthProvider';
 import { QueryProvider } from '@/app/providers/QueryProvider';
 import { ThemeProvider } from '@/app/providers/ThemeProvider';
 import { router } from '@/app/router';
-import { PinGate } from '@/app/security/PinGate';
 import { OfflineFirstOpen } from '@/app/startup/OfflineFirstOpen';
 import { StartupSplash } from '@/app/startup/StartupSplash';
 import { STARTUP_COPY } from '@/app/startup/startupContent';
@@ -67,9 +66,7 @@ function AppStage() {
       {outcome === 'offline' ? <OfflineFirstOpen onRetry={retryAndWelcome} /> : null}
       {outcome === 'app' ? (
         <QueryProvider>
-          <PinGate>
-            <RouterProvider router={router} />
-          </PinGate>
+          <RouterProvider router={router} />
         </QueryProvider>
       ) : null}
       {splashGone ? null : <StartupSplash ref={splashRef} />}

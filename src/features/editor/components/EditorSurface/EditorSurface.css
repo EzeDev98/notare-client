@@ -148,6 +148,17 @@
   user-select: none;
 }
 
+/* The AI's title for the note, centred under the date. Not part of the note's text. */
+.note-title {
+  margin: 0;
+  padding-block: 0 var(--gutter);
+  color: var(--color-text);
+  font-size: var(--text-md);
+  font-weight: var(--font-weight);
+  line-height: 1.35;
+  text-align: center;
+}
+
 /* Two panes: the note has no bar of its own, so the date pins to the very top. */
 @container (min-width: 800px) {
   .note-date {

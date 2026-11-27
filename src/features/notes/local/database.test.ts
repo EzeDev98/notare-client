@@ -55,16 +55,15 @@ describe('the notes table', () => {
 
   it('queries the main list through the compound index', async () => {
     await db.notes.bulkPut([
-      { ...createLocalNote(1, { content: 'visible' }), deleted: 0, archived: 0 },
-      { ...createLocalNote(1, { content: 'archived' }), deleted: 0, archived: 1 },
-      { ...createLocalNote(1, { content: 'trashed' }), deleted: 1, archived: 0 },
-      { ...createLocalNote(2, { content: 'someone else' }), deleted: 0, archived: 0 },
+      { ...createLocalNote(1, { content: 'visible' }), deleted: 0 },
+      { ...createLocalNote(1, { content: 'trashed' }), deleted: 1 },
+      { ...createLocalNote(2, { content: 'someone else' }), deleted: 0 },
     ]);
 
-    const mine = await db.notes.where('[ownerId+deleted+archived]').equals([1, 0, 0]).toArray();
+    const mine = await db.notes.where('[ownerId+deleted]').equals([1, 0]).toArray();
 
     /*
-     * One row: mine, not deleted, not archived.
+     * One row: mine, not deleted.
      *
      * This expected [] until the flags became 0 | 1 — IndexedDB cannot index
      * booleans, so the compound query matched nothing at all. No error, an

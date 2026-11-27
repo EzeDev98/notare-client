@@ -1,20 +1,17 @@
 import { sessionUserOf } from '@/features/auth/sessionUser';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import type { Doc } from 'yjs';
 
 import { useAuth } from '@/app/providers/auth-context';
 import { ROUTES } from '@/app/routes';
-import { FEATURES } from '@/core/config/features';
 import { useToast } from '@/design-system/ui';
-import { COLLAB_COPY } from '@/features/collab/collabContent';
 import { EDITOR_COPY } from '@/features/editor/editorContent';
 import { bodyToPlainText } from '@/features/editor/noteBody';
 import {
   copyNote,
-  leaveNote,
-  moveToTrash,
-  restoreNote,
-  setArchived,
+  deleteNote,
+  restoreOriginal,
   setPinned,
 } from '@/features/notes/actions/noteActions';
 import { LIST_COPY } from '@/features/notes/list/listContent';
@@ -23,39 +20,33 @@ import type { NoteRow } from '@/features/notes/local/noteRow';
 
 export interface EditorMoreActions {
   pinned: boolean;
-  archived: boolean;
   onPin: () => void;
   onCopyText: () => void;
   onMakeCopy: () => void;
-  onArchive: () => void;
+  /** Present only while the note is exactly as AI tidy left it and has no unsent edits. */
+  onRestoreOriginal: (() => void) | undefined;
   onDelete: () => void;
-  /** Leave this note, for a note shared with you. Undefined hides the menu item (FEATURES.leaveNote). */
-  onLeave: (() => void) | undefined;
+  /** The confirmation Delete opens. */
+  deleteModal: { open: boolean; onClose: () => void; onDelete: () => Promise<boolean> };
 }
 
 /**
  * What the editor's more menu does (master 6.3 and 6.4, step 12e). The words and
- * the actions are the list's own. Archive and Delete take you back to the list
- * with an Undo toast; Undo puts the note back and opens it again.
+ * the actions are the list's own. Delete asks first.
  */
-export function useEditorActions(row: NoteRow, doc: Doc, closeLive: () => void): EditorMoreActions {
+export function useEditorActions(row: NoteRow, doc: Doc): EditorMoreActions {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { state } = useAuth();
   const userId = sessionUserOf(state)?.id ?? null;
+  const [confirming, setConfirming] = useState(false);
 
   const { localId } = row;
   const pinned = row.pinned === 1;
-  const archived = row.archived === 1;
-
-  const reopen = (): void => {
-    void navigate(ROUTES.legacy.noteOf(row));
-  };
-  const undo = (onAction: () => void) => ({ label: LIST_COPY.toasts.undo, onAction });
+  const restorable = row.restorable === true && row.dirty === 0;
 
   return {
     pinned,
-    archived,
 
     onPin: () => {
       const next = !pinned;
@@ -83,49 +74,30 @@ export function useEditorActions(row: NoteRow, doc: Doc, closeLive: () => void):
       });
     },
 
-    onArchive: () => {
-      const next = !archived;
-      const after = routeAfterRemoving(localId);
-      void setArchived(localId, next).then(() => {
-        void navigate(after ?? ROUTES.notes());
-        toast(next ? LIST_COPY.toasts.archived : LIST_COPY.toasts.unarchived, {
-          action: undo(() => {
-            void setArchived(localId, !next).then(reopen);
-          }),
-        });
-      });
-    },
+    onRestoreOriginal: restorable
+      ? () => {
+          void restoreOriginal(localId).then((restored) => {
+            if (!restored) toast(EDITOR_COPY.restoreFailed, { tone: 'error' });
+          });
+        }
+      : undefined,
 
     onDelete: () => {
-      const after = routeAfterRemoving(localId);
-      void moveToTrash(localId).then(() => {
-        void navigate(after ?? ROUTES.notes());
-        toast(LIST_COPY.toasts.deleted, {
-          action: undo(() => {
-            void restoreNote(localId).then(() => {
-              reopen();
-              toast(LIST_COPY.toasts.restored);
-            });
-          }),
-        });
-      });
+      setConfirming(true);
     },
 
-    onLeave:
-      FEATURES.leaveNote && row.role !== 'owner'
-        ? () => {
-            // The live channel closes first: the server ends it with "access removed" the moment the
-            // grant goes, and that must not read as the owner removing this person.
-            closeLive();
-            void leaveNote(localId)
-              .then(() => {
-                void navigate(ROUTES.notes());
-                toast(LIST_COPY.toasts.left);
-              })
-              .catch(() => {
-                toast(COLLAB_COPY.leaveFailed, { tone: 'error' });
-              });
-          }
-        : undefined,
+    deleteModal: {
+      open: confirming,
+      onClose: () => {
+        setConfirming(false);
+      },
+      onDelete: async () => {
+        const after = routeAfterRemoving(localId);
+        if (!(await deleteNote(localId))) return false;
+        void navigate(after ?? ROUTES.notes());
+        toast(LIST_COPY.toasts.deleted);
+        return true;
+      },
+    },
   };
 }

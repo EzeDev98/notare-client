@@ -139,13 +139,13 @@ export const outboxRepository = {
    * Queues a DELETE, discarding whatever was queued before.
    *
    * ONLY for a note the server already knows about (`noteId` is required and
-   * non-null) — a note trashed before ever syncing has nothing to delete on
+   * non-null) — a note deleted before ever syncing has nothing to delete on
    * the server; see `discardPendingCreate` for that case instead, which
    * `useDeleteNote` calls on its own early-return branch.
    *
    * A previously queued UPDATE is dropped rather than kept: the note's final
    * state is "deleted," and content it once had does not matter for a
-   * soft-delete. A previously queued CREATE should not be possible here —
+   * delete. A previously queued CREATE should not be possible here —
    * that would mean `noteId` was already known before the note existed on
    * the server — but is handled the same defensive way as the other two
    * methods, for the same reason.
@@ -173,7 +173,7 @@ export const outboxRepository = {
   },
 
   /**
-   * Drops a queued CREATE for a note trashed before it ever reached the
+   * Drops a queued CREATE for a note deleted before it ever reached the
    * server. Called from `useDeleteNote`'s early return for `serverId ===
    * null` — nothing this note ever queues can be told to a server that has
    * never heard of it, including a CREATE queued by an earlier failed save.
@@ -181,19 +181,6 @@ export const outboxRepository = {
   async discardPendingCreate(localId: string): Promise<void> {
     const existing = await db.outbox.where('localId').equals(localId).first();
     if (existing?.type === 'CREATE') {
-      await db.outbox.delete(existing.id);
-    }
-  },
-
-  /**
-   * Cancels a queued DELETE. Called from `restore` (both the trash screen's
-   * and the delete toast's Undo) — a note restored before its DELETE ever
-   * reached the server must not have that DELETE applied later regardless;
-   * the user's restore already reversed the intent it represented.
-   */
-  async cancelPendingDelete(localId: string): Promise<void> {
-    const existing = await db.outbox.where('localId').equals(localId).first();
-    if (existing?.type === 'DELETE') {
       await db.outbox.delete(existing.id);
     }
   },

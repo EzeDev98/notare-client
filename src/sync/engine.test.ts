@@ -19,9 +19,6 @@ vi.mock('@/sync/clipUpload', () => ({ uploadPendingClips: vi.fn(() => Promise.re
 vi.mock('@/sync/releaseLegacyConflicts', () => ({
   releaseLegacyConflicts: vi.fn(() => Promise.resolve()),
 }));
-vi.mock('@/features/notes/local/housekeeping', () => ({
-  purgeExpiredTrash: vi.fn(() => Promise.resolve()),
-}));
 
 import { pullChanges } from '@/sync/pull';
 import { pushOutbox } from '@/sync/push';

@@ -10,7 +10,7 @@ import { isQuotaError, setStorageFull, useStorageFull } from '@/features/notes/s
  * The editor's link to local storage (steps 6, 8, 12c).
  *
  * The Y.Doc (useNoteBody.ts) is the only copy of the draft. This hook holds no
- * copy of the text: it gives the host the note's live row (role, ids, dates)
+ * copy of the text: it gives the host the note's live row (ids, dates)
  * and writes each change to IndexedDB and the outbox.
  *
  * LOCAL WRITES ARE NOT DEBOUNCED. A change costs an IndexedDB put and never

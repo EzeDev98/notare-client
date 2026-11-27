@@ -12,9 +12,6 @@
  * routeConfig.tsx. Builders produce real URLs; patterns never leave the router.
  */
 
-export const NOTES_VIEWS = ['all', 'shared', 'archived', 'deleted'] as const;
-export type NotesView = (typeof NOTES_VIEWS)[number];
-
 const enc = encodeURIComponent;
 
 export const ROUTE_PATTERNS = {
@@ -26,14 +23,9 @@ export const ROUTE_PATTERNS = {
   onboarding: '/install',
   notes: '/notes',
   note: '/notes/:noteId',
-  settings: '/settings',
-  settingsAccount: '/settings/account',
   settingsAppearance: '/settings/appearance',
   settingsSync: '/settings/sync',
-  settingsDevices: '/settings/devices',
-  settingsSecurity: '/settings/security',
-  settingsPassword: '/settings/password',
-  settingsDeleted: '/settings/deleted',
+  settingsGeneral: '/settings/general',
   settingsAbout: '/settings/about',
   settingsTerms: '/settings/terms',
   settingsPrivacy: '/settings/privacy',
@@ -47,14 +39,9 @@ export const ROUTE_PATTERNS = {
   legacy: {
     noteNew: '/notes/new',
     noteLocal: '/notes/local/:localId',
-    noteShare: '/notes/:noteId/share',
     archived: '/archived',
     search: '/search',
-    shared: '/shared',
-    collaborations: '/collaborations',
-    collaborationsInvite: '/collaborations/invite',
     notifications: '/notifications',
-    accountSessions: '/account/sessions',
   },
 } as const;
 
@@ -66,22 +53,14 @@ export const ROUTES = {
   resetPassword: () => '/reset',
   onboarding: () => '/install',
 
-  /** The list. "all" has no query string so the bare /notes stays the home URL. */
-  notes: (view: NotesView = 'all') => (view === 'all' ? '/notes' : `/notes?view=${view}`),
+  /** The list. */
+  notes: () => '/notes',
   /** One note, one route. `id` is the note's id as the caller holds it. */
   note: (id: string | number) => `/notes/${enc(String(id))}`,
 
-  /** A note's path that keeps the list on the view it was opened from. */
-  inView: (path: string, view: NotesView) => (view === 'all' ? path : `${path}?view=${view}`),
-
-  settings: () => '/settings',
-  settingsAccount: () => '/settings/account',
   settingsAppearance: () => '/settings/appearance',
   settingsSync: () => '/settings/sync',
-  settingsDevices: () => '/settings/devices',
-  settingsSecurity: () => '/settings/security',
-  settingsPassword: () => '/settings/password',
-  settingsDeleted: () => '/settings/deleted',
+  settingsGeneral: () => '/settings/general',
   settingsAbout: () => '/settings/about',
   settingsTerms: () => '/settings/terms',
   settingsPrivacy: () => '/settings/privacy',
@@ -89,7 +68,6 @@ export const ROUTES = {
   legacy: {
     noteNew: () => '/notes/new',
     noteLocal: (localId: string | number) => `/notes/local/${enc(String(localId))}`,
-    noteShare: (id: string | number) => `/notes/${enc(String(id))}/share`,
     /** A note by local id until it has a server id, then by server id. */
     noteOf: (n: { serverId: string | number | null; localId: string | number }) =>
       n.serverId === null
@@ -97,10 +75,6 @@ export const ROUTES = {
         : `/notes/${enc(String(n.serverId))}`,
     archived: () => '/archived',
     search: (q?: string) => (q ? `/search?q=${enc(q)}` : '/search'),
-    shared: () => '/shared',
-    collaborations: () => '/collaborations',
-    collaborationsInvite: () => '/collaborations/invite',
     notifications: () => '/notifications',
-    accountSessions: () => '/account/sessions',
   },
 } as const;

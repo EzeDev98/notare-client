@@ -60,10 +60,9 @@ export function Row12() {
         </div>
       </Both>
 
-      <Both title="TranscriptPanel: owner, viewer, hidden">
+      <Both title="TranscriptPanel: shown, hidden">
         <div className="gallery-stack">
           <TranscriptPanel text="Pick up the keys from the office, then call the landlord about the water meter." />
-          <TranscriptPanel viewer text="A viewer can read and copy, but not insert." />
           <Button
             onClick={() => {
               setShown((value) => !value);

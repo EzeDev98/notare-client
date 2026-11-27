@@ -65,25 +65,4 @@ export const authHandlers = [
   http.post(`${BASE}/logout/logout`, () =>
     HttpResponse.json({ statusCode: 200, message: 'Logged out.' }),
   ),
-
-  http.post(`${BASE}/logout/logout-all`, () =>
-    HttpResponse.json({ statusCode: 200, message: 'Logged out everywhere.' }),
-  ),
-
-  // Instant, not LocalDateTime — these genuinely carry a Z.
-  http.get(`${BASE}/session/sessions`, () =>
-    HttpResponse.json([
-      {
-        sessionId: 'sess-1',
-        userAgent: 'Chrome on macOS',
-        ipAddress: '127.0.0.1',
-        createdAt: '2026-08-01T09:00:00Z',
-        lastUsedAt: '2026-08-08T10:00:00Z',
-        expiresAt: '2026-08-31T09:00:00Z',
-        current: true,
-      },
-    ]),
-  ),
-
-  http.delete(`${BASE}/session/sessions/:sessionId`, () => new HttpResponse(null, { status: 204 })),
 ];

@@ -3,7 +3,6 @@ import type {
   CreateNoteRequest,
   NoteResponse,
   NoteSummaryResponse,
-  TrashedNoteResponse,
   UpdateNoteRequest,
 } from '@/features/notes/types';
 import { httpClient } from '@/lib/http/client';
@@ -38,11 +37,6 @@ interface ListOptions extends Cancellable {
   /** Zero-based. */
   page?: number;
   size?: number;
-  /**
-   * false (the default) excludes archived notes; true returns ONLY archived.
-   * There is no "both" — B5 made these two screens deliberately.
-   */
-  archived?: boolean;
   /** Spring sort expressions. Defaults server-side to pinned,updatedAt DESC. */
   sort?: string[];
 }
@@ -53,12 +47,12 @@ interface SearchOptions extends Cancellable {
 }
 
 export const noteService = {
-  /** The owner's notes. Archived excluded unless asked for. */
-  listNotes({ page, size, archived, sort, signal }: ListOptions = {}): Promise<
+  /** The owner's notes. */
+  listNotes({ page, size, sort, signal }: ListOptions = {}): Promise<
     PagedResponse<NoteSummaryResponse>
   > {
     return httpClient.get<PagedResponse<NoteSummaryResponse>>(NOTES, {
-      query: { page, size, archived, sort },
+      query: { page, size, sort },
       ...(signal ? { signal } : {}),
     });
   },
@@ -79,21 +73,6 @@ export const noteService = {
   ): Promise<PagedResponse<NoteSummaryResponse>> {
     return httpClient.get<PagedResponse<NoteSummaryResponse>>(`${NOTES}/search`, {
       query: { query, page, size },
-      ...(signal ? { signal } : {}),
-    });
-  },
-
-  /**
-   * Soft-deleted notes (B4).
-   *
-   * `deletedAt` supports "trashed 3 days ago" and NOT a countdown — nothing on
-   * the server purges trashed notes.
-   */
-  listTrash({ page, size, signal }: SearchOptions = {}): Promise<
-    PagedResponse<TrashedNoteResponse>
-  > {
-    return httpClient.get<PagedResponse<TrashedNoteResponse>>(`${NOTES}/trash`, {
-      query: { page, size },
       ...(signal ? { signal } : {}),
     });
   },
@@ -152,38 +131,24 @@ export const noteService = {
     });
   },
 
-  /** To the trash. Recoverable; grants survive so a restore brings them back. */
-  softDeleteNote(noteId: number, { signal }: Cancellable = {}): Promise<void> {
+  /**
+   * Deletes for good. Irreversible. 204, no body — which is why parseResponse
+   * handles an empty body rather than calling .json() and choking on nothing (3B).
+   */
+  deleteNote(noteId: number, { signal }: Cancellable = {}): Promise<void> {
     return httpClient.delete<void>(`${NOTES}/${String(noteId)}`, {
       ...(signal ? { signal } : {}),
     });
   },
 
-  restoreNote(noteId: number, { signal }: Cancellable = {}): Promise<NoteResponse> {
-    return httpClient.post<NoteResponse>(`${NOTES}/${String(noteId)}/restore`, {
-      ...(signal ? { signal } : {}),
-    });
-  },
-
-  /**
-   * Irreversible. 204, no body — which is why parseResponse handles an empty
-   * body rather than calling .json() and choking on nothing (3B).
-   */
-  permanentlyDeleteNote(noteId: number, { signal }: Cancellable = {}): Promise<void> {
-    return httpClient.delete<void>(`${NOTES}/${String(noteId)}/permanent`, {
-      ...(signal ? { signal } : {}),
-    });
-  },
-
   /*
-   * Pin and archive: POST to set, DELETE to clear (B5).
+   * Pin: POST to set, DELETE to clear (B5).
    *
    * Action sub-paths rather than fields on PATCH, because PATCH is auto-save —
    * an organisation flag in that body would let a stale editor silently un-pin
    * a note on its next keystroke save.
    *
-   * All four return the full note so the caller can adopt the new version.
-   * Owner-only: there is deliberately no shared-notes counterpart.
+   * Both return the full note so the caller can adopt the new version.
    *
    * NOT AVAILABLE OFFLINE. The sync protocol carries content and version
    * only, so a pin made offline cannot be queued. Step 8 disables
@@ -197,15 +162,14 @@ export const noteService = {
       : httpClient.delete<NoteResponse>(path, config);
   },
 
-  setArchived(
-    noteId: number,
-    archived: boolean,
-    { signal }: Cancellable = {},
-  ): Promise<NoteResponse> {
-    const path = `${NOTES}/${String(noteId)}/archive`;
-    const config = { ...(signal ? { signal } : {}) };
-    return archived
-      ? httpClient.post<NoteResponse>(path, config)
-      : httpClient.delete<NoteResponse>(path, config);
+  /**
+   * "Restore original": the server puts back the text from before AI tidy, as
+   * a normal edit, and returns the note. 409 once the note was edited since.
+   * Online only: the text from before the tidy is kept on the server.
+   */
+  restoreOriginal(noteId: number, { signal }: Cancellable = {}): Promise<NoteResponse> {
+    return httpClient.post<NoteResponse>(`${NOTES}/${String(noteId)}/restore-original`, {
+      ...(signal ? { signal } : {}),
+    });
   },
 };

@@ -15,23 +15,6 @@ export const SYNC_AFTER_CHANGE_MS = 2_000;
 /** Waits between retries after a failed sync. The last value repeats. */
 export const SYNC_BACKOFF_MS: readonly number[] = [5_000, 15_000, 30_000, 60_000];
 
-// --- Live editing (src/features/collab) ------------------------------------
-
-/** An editor sends a SNAPSHOT after more than this many updates since the last one. */
-export const COLLAB_SNAPSHOT_EVERY_UPDATES = 50;
-
-/** The socket closes this long after the note is left, so acknowledgements still arrive. */
-export const COLLAB_CLOSE_DELAY_MS = 5_000;
-
-/** Presence changes are batched into one frame per this long (the server allows 60 frames a second). */
-export const COLLAB_AWARENESS_THROTTLE_MS = 100;
-
-/** A remote caret's name fades out after this long without movement. */
-export const COLLAB_CARET_LABEL_MS = 2_000;
-
-/** After reconnecting, the merge toast waits this long so the people in the note can be named. */
-export const MERGE_TOAST_DELAY_MS = 1_000;
-
 // --- Server wake-up (src/lib/keepAlive.ts) ---------------------------------
 
 /** Gap between keep-alive pings. Sent only while the tab is visible and online (D-14). */
@@ -92,9 +75,6 @@ export const QUERY_STALE_MS = 30_000;
 
 // --- Limits (used by the screens built in steps 9 to 13) -------------------
 
-/** Days a deleted note stays in Recently deleted. */
-export const TRASH_DAYS = 30;
-
 /** Longest voice clip, in seconds (10 minutes). */
 export const CLIP_MAX_SECONDS = 600;
 
@@ -122,15 +102,6 @@ export const LAST_SYNCED_REFRESH_MS = 30_000;
 
 /** If an update reload has not happened this long after Reload, the screen is given back. */
 export const UPDATE_RELOAD_GIVE_UP_MS = 5_000;
-
-/** Coming back from the background after at least this long shows the PIN lock screen again. */
-export const PIN_LOCK_DELAY_MS = 30_000;
-
-/** Digits in the PIN. */
-export const PIN_LENGTH = 4;
-
-/** Wrong PINs allowed before the lock asks the person to sign in again. */
-export const PIN_MAX_TRIES = 5;
 
 // --- Old screens: removed when the screen that uses them is rebuilt --------
 

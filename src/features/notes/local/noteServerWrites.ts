@@ -3,21 +3,16 @@ import {
   flag,
   fromNoteResponse,
   fromNoteSummary,
-  fromTrashedNote,
   isSameRow,
   syncStateFor,
 } from '@/features/notes/local/noteMappers';
-import type {
-  NoteResponse,
-  NoteSummaryResponse,
-  TrashedNoteResponse,
-} from '@/features/notes/types';
+import type { NoteResponse, NoteSummaryResponse } from '@/features/notes/types';
 import type { ServerDateTime } from '@/lib/http/types';
 import { notifyLocalMutation } from '@/sync/mutationSignal';
 
 /**
  * Writes that come from the server (step 8c): acknowledgements of what we
- * pushed, and notes, summaries and trash pages we pulled.
+ * pushed, and notes and summaries we pulled.
  *
  * A dirty row (unsent local edits) is never overwritten by a server copy.
  */
@@ -60,6 +55,8 @@ export const noteServerWrites = {
         updatedAt: ack.updatedAt,
         dirty: clean ? 0 : 1,
         syncState: syncStateFor(serverId, clean),
+        // The server took a change from us, so the note is no longer as AI tidy left it.
+        restorable: false,
         /*
          * localUpdatedAt is NOT restamped HERE. An acknowledgement is not a
          * local change — the server agreeing with us is not the user doing
@@ -107,34 +104,6 @@ export const noteServerWrites = {
 
     // Outside the transaction, same reason as outboxRepository.enqueueCreate.
     if (requeued) notifyLocalMutation();
-  },
-
-  /**
-   * Records that the server accepted a queued DELETE (8C).
-   *
-   * Separate from applyServerAck rather than a shared method with a DELETE
-   * branch: a DELETE's APPLIED result carries no `note` (there is nothing
-   * left on the server to describe), so there is no version or updatedAt to
-   * adopt — only the same staleness guard, for the same reason. If the row
-   * changed since the request went out (the note was restored while the
-   * DELETE was in flight, racing past `cancelPendingDelete`), the row is left
-   * exactly as dirty as it already was rather than being marked synced for a
-   * delete that no longer reflects local reality.
-   */
-  applyDeleteAck(localId: string, expectedLocalUpdatedAt: number): Promise<void> {
-    return db.transaction('rw', db.notes, db.outbox, async () => {
-      const existing = await db.notes.get(localId);
-      if (existing) {
-        const unchanged = existing.localUpdatedAt === expectedLocalUpdatedAt;
-        await db.notes.put({
-          ...existing,
-          dirty: unchanged ? 0 : existing.dirty,
-          syncState: unchanged ? syncStateFor(existing.serverId, true) : existing.syncState,
-        });
-      }
-
-      await db.outbox.where('localId').equals(localId).delete();
-    });
   },
 
   /**
@@ -207,7 +176,6 @@ export const noteServerWrites = {
       const noChange =
         existing.content === (note.content ?? '') &&
         existing.pinned === flag(note.pinned) &&
-        existing.archived === flag(note.archived) &&
         existing.version === note.version &&
         existing.createdAt === note.createdAt &&
         existing.updatedAt === note.updatedAt &&
@@ -239,42 +207,6 @@ export const noteServerWrites = {
         if (existing?.dirty === 1) continue;
 
         const next = fromNoteSummary(summary, ownerId, existing);
-        if (existing && isSameRow(existing, next)) continue;
-
-        await db.notes.put(next);
-      }
-    });
-  },
-
-  /**
-   * Applies a page of the server's trash.
-   *
-   * Same shape as upsertSummaries and deliberately a SEPARATE method rather
-   * than a flag on it: the two write opposite values for `deleted`, and a
-   * boolean parameter at the call site would read as configuration when it is
-   * actually the difference between "this note is in your notes" and "this note
-   * is in your bin".
-   *
-   * Dirty rows are skipped for a sharper reason than in the notes list. A row
-   * is dirty here mainly because the user just RESTORED it and the server has
-   * not been told yet; letting a trash page that was fetched before that write
-   * land on top would put the note straight back in the bin in front of them.
-   *
-   * WHAT THIS DOES NOT DO: remove local rows the server no longer lists as
-   * trashed. A note restored or permanently deleted on another device stays in
-   * this device's bin until something tells us otherwise. Reconciling absence
-   * needs tombstones and a cursor, which is Step 8's pull — inventing a weaker
-   * version here (delete anything not in the page) would wrongly evict every
-   * note beyond the first page.
-   */
-  upsertTrashedNotes(trashed: TrashedNoteResponse[], ownerId: number | null): Promise<void> {
-    return db.transaction('rw', db.notes, async () => {
-      for (const entry of trashed) {
-        const existing = await db.notes.where('serverId').equals(entry.note.id).first();
-
-        if (existing?.dirty === 1) continue;
-
-        const next = fromTrashedNote(entry, ownerId, existing);
         if (existing && isSameRow(existing, next)) continue;
 
         await db.notes.put(next);

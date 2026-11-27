@@ -13,10 +13,9 @@ export function VoiceClipView({ node, editor, getPos, deleteNode, updateAttribut
 
   // A recording block left in the body by a closed tab has nothing behind it.
   const orphan = clipId === null || (isRecordingId(clipId) && !isLiveRecording(clipId));
-  const canEdit = context?.canEdit ?? false;
   useEffect(() => {
-    if (orphan && canEdit) deleteNode();
-  }, [orphan, canEdit, deleteNode]);
+    if (orphan && context !== null) deleteNode();
+  }, [orphan, context, deleteNode]);
 
   return (
     <NodeViewWrapper className="voice-clip" contentEditable={false}>
@@ -35,8 +34,6 @@ export function VoiceClipView({ node, editor, getPos, deleteNode, updateAttribut
           editor={editor}
           getPos={getPos}
           nodeSize={node.nodeSize}
-          canEdit={context.canEdit}
-          canTranscribe={context.canTranscribe}
         />
       )}
     </NodeViewWrapper>

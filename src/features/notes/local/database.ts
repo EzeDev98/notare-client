@@ -5,9 +5,6 @@ import type { MetaRow } from '@/features/notes/local/metaRow';
 import type { NotificationRow } from '@/features/notes/local/notificationRow';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 import type { OutboxRow } from '@/features/notes/local/outboxRow';
-import type { PendingUpdateRow } from '@/features/notes/local/pendingUpdateRow';
-import type { PersonRow } from '@/features/notes/local/personRow';
-import type { SharedRow } from '@/features/notes/local/sharedRow';
 import type { TranscriptRow } from '@/features/notes/local/transcriptRow';
 import { planIdentityMerge } from '@/features/notes/local/unifyIdentity';
 
@@ -39,10 +36,7 @@ export class NotareDatabase extends Dexie {
   outbox!: EntityTable<OutboxRow, 'id'>;
   clips!: EntityTable<ClipRow, 'id'>;
   transcripts!: EntityTable<TranscriptRow, 'clipId'>;
-  shared!: EntityTable<SharedRow, 'noteId'>;
-  people!: EntityTable<PersonRow, 'id'>;
   notifications!: EntityTable<NotificationRow, 'id'>;
-  pendingUpdates!: EntityTable<PendingUpdateRow, 'id'>;
 
   /**
    * `name` defaults to 'notare' for the real app. The parameter exists for
@@ -256,14 +250,15 @@ export class NotareDatabase extends Dexie {
 
     /*
      * VERSION 4 (8b). Adds the tables the overhaul needs and gives every
-     * existing note a `role` and one identity.
+     * existing note one identity. (`shared` and `people` are dropped again in
+     * version 6.)
      *
      * New tables: clips (voice clips as children of a note), transcripts (one
      * per clip), shared (a read-only copy of "Shared with me"), people, and
      * notifications. They start empty. Nothing is read from them until the
      * steps that fill them.
      *
-     * `notes` gets no new index: purgeAt, role, ownerName and bodyState are
+     * `notes` gets no new index: purgeAt and bodyState are
      * stored on the row and never queried by index. Every index from versions
      * 1 to 3 stays, because Dexie keeps the schema of a table a later version
      * does not mention.
@@ -271,18 +266,13 @@ export class NotareDatabase extends Dexie {
      * THE UPGRADE NEVER DELETES OR CHANGES UNSENT DATA. A Dexie upgrade cannot
      * call the network, so rows that are still dirty stay dirty and the sync
      * engine sends them afterwards, as it always has. `dirty`, `syncState`,
-     * `content` and the whole outbox are left as they are. The only things
-     * written are:
-     *
-     *   1. role = 'owner' on every existing note (a row from before version 4
-     *      is always the signed-in person's own note).
-     *   2. localId = clientId, where they differ (see planIdentityMerge for
-     *      when a row is left alone). The note's identity is its clientId.
-     *      A Dexie primary key cannot be edited in place, so each such row is
-     *      removed and added again with the same fields and the new key, in
-     *      this same transaction, and its outbox rows follow it. If anything
-     *      throws, the whole upgrade rolls back and the database stays at
-     *      version 3.
+     * `content` and the whole outbox are left as they are. The only thing
+     * written is localId = clientId, where they differ (see planIdentityMerge
+     * for when a row is left alone). The note's identity is its clientId. A Dexie
+     * primary key cannot be edited in place, so each such row is removed and
+     * added again with the same fields and the new key, in this same
+     * transaction, and its outbox rows follow it. If anything throws, the
+     * whole upgrade rolls back and the database stays at version 3.
      */
     this.version(4)
       .stores({
@@ -294,10 +284,6 @@ export class NotareDatabase extends Dexie {
       })
       .upgrade(async (tx) => {
         const notes = tx.table<NoteRow, string>('notes');
-
-        await notes.toCollection().modify((note) => {
-          note.role = 'owner';
-        });
 
         const plan = planIdentityMerge(await notes.toArray());
         if (plan.size === 0) return;
@@ -328,6 +314,39 @@ export class NotareDatabase extends Dexie {
      * nothing. `++id` is the order they were made in; `noteId` is the server id of the note.
      */
     this.version(5).stores({ pendingUpdates: '++id, noteId' });
+
+    /*
+     * VERSION 6. Collaboration and sharing are gone: drops `shared`, `people`
+     * and `pendingUpdates`, and the fields only those features wrote on a note.
+     */
+    this.version(6)
+      .stores({ shared: null, people: null, pendingUpdates: null })
+      .upgrade(async (tx) => {
+        await tx
+          .table('notes')
+          .toCollection()
+          .modify((note: Record<string, unknown>) => {
+            delete note.role;
+            delete note.ownerName;
+          });
+      });
+
+    /*
+     * VERSION 7. Archive is gone: the notes index loses `archived`, and so
+     * does every row. A note that was archived is back in the main list.
+     */
+    this.version(7)
+      .stores({
+        notes: 'localId, &serverId, clientId, [ownerId+deleted], dirty, syncState, localUpdatedAt, updatedAt',
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table('notes')
+          .toCollection()
+          .modify((note: Record<string, unknown>) => {
+            delete note.archived;
+          });
+      });
   }
 }
 

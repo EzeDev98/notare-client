@@ -1,7 +1,6 @@
-import { CloudOff, Mic, Pin, Users } from 'lucide-react';
+import { CloudOff, Mic, Pin } from 'lucide-react';
 import type { HTMLAttributes, KeyboardEvent, MouseEvent, ReactNode } from 'react';
 
-import { Button } from '../Button/Button';
 import { Icon } from '../Icon/Icon';
 
 import './NoteRow.css';
@@ -14,13 +13,10 @@ interface NoteRowProps {
   date: string;
   selected?: boolean | undefined;
   pinned?: boolean | undefined;
-  shared?: boolean | undefined;
   voice?: boolean | undefined;
   notSynced?: boolean | undefined;
   /** The search matched the transcript, not the text: the preview says so. */
   matchedInTranscript?: boolean | undefined;
-  /** Recently deleted: shows the days left and a Restore button instead of the date and glyphs. */
-  deleted?: { daysLeft: number; onRestore: () => void } | undefined;
   onOpen?: (() => void) | undefined;
   /** A ContextMenu trigger, drawn at the end of the row. */
   menu?: ReactNode;
@@ -35,11 +31,9 @@ export function NoteRow({
   date,
   selected = false,
   pinned,
-  shared,
   voice,
   notSynced,
   matchedInTranscript,
-  deleted,
   onOpen,
   menu,
   rootProps,
@@ -64,26 +58,14 @@ export function NoteRow({
         <span className="n-row__title">{title || 'Untitled'}</span>
         <span className="n-row__preview">{matchedInTranscript ? 'Matched in transcript' : preview || 'No more text'}</span>
       </div>
-      {deleted ? (
-        <>
-          <div className="n-row__meta">
-            <span>{`${String(deleted.daysLeft)} ${deleted.daysLeft === 1 ? 'day' : 'days'} left`}</span>
-          </div>
-          <Button variant="secondary" onClick={deleted.onRestore}>
-            Restore
-          </Button>
-        </>
-      ) : (
-        <div className="n-row__meta">
-          <span>{date}</span>
-          <span className="n-row__glyphs">
-            {notSynced ? <Icon icon={CloudOff} label="Not synced" /> : null}
-            {pinned ? <Icon icon={Pin} label="Pinned" /> : null}
-            {voice ? <Icon icon={Mic} label="Has a voice clip" /> : null}
-            {shared ? <Icon icon={Users} label="Shared" /> : null}
-          </span>
-        </div>
-      )}
+      <div className="n-row__meta">
+        <span>{date}</span>
+        <span className="n-row__glyphs">
+          {notSynced ? <Icon icon={CloudOff} label="Not synced" /> : null}
+          {pinned ? <Icon icon={Pin} label="Pinned" /> : null}
+          {voice ? <Icon icon={Mic} label="Has a voice clip" /> : null}
+        </span>
+      </div>
       {menu}
     </div>
   );

@@ -1,10 +1,5 @@
-import { canArchive, canPin } from '@/features/notes/permissions';
 import type { NoteRow } from '@/features/notes/local/noteRow';
-import type {
-  NoteResponse,
-  NoteSummaryResponse,
-  TrashedNoteResponse,
-} from '@/features/notes/types';
+import type { NoteResponse, NoteSummaryResponse } from '@/features/notes/types';
 
 /**
  * The single translation point between wire types and row types.
@@ -39,25 +34,12 @@ export function newLocalId(): string {
  * The version 4 fields a row keeps when the server's copy is applied over it.
  * Without this, refreshing a note from the server would drop them.
  */
-function keepLocalFields(
-  existing: NoteRow | undefined,
-  incomingContent?: string,
-): Pick<NoteRow, 'role'> & Partial<Pick<NoteRow, 'purgeAt' | 'ownerName' | 'bodyState'>> {
-  const purgeAt = existing?.purgeAt;
-  const ownerName = existing?.ownerName;
-  // The server's text replaced ours (another device edited the note), so the
-  // saved body no longer matches it. Drop it; the editor builds a new one from
-  // the text the next time the note opens (step 12b).
-  const bodyState =
-    incomingContent !== undefined && existing !== undefined && existing.content !== incomingContent
-      ? null
-      : existing?.bodyState;
-  return {
-    role: existing?.role ?? 'owner',
-    ...(purgeAt === undefined ? {} : { purgeAt }),
-    ...(ownerName === undefined ? {} : { ownerName }),
-    ...(bodyState === undefined ? {} : { bodyState }),
-  };
+function keepLocalFields(existing: NoteRow | undefined): Partial<Pick<NoteRow, 'bodyState'>> {
+  // Kept even when the server's text replaced ours (another device, or AI
+  // tidy): the body holds the voice clips and links that the text cannot.
+  // openBody carries the new text into it the next time the note opens.
+  const bodyState = existing?.bodyState;
+  return bodyState === undefined ? {} : { bodyState };
 }
 
 /**
@@ -90,7 +72,6 @@ export function createLocalNote(
     clientId: localId,
     content: fields.content ?? '',
     pinned: 0,
-    archived: 0,
     deleted: 0,
     version: null,
     createdAt: null,
@@ -101,7 +82,6 @@ export function createLocalNote(
     dirty: 1,
     syncState: 'pending',
     localUpdatedAt: Date.now(),
-    role: 'owner',
   };
 }
 
@@ -134,7 +114,6 @@ export function fromNoteResponse(note: NoteResponse, existing?: NoteRow): NoteRo
     clientId: existing?.clientId ?? localId,
     content: note.content ?? '',
     pinned: flag(note.pinned),
-    archived: flag(note.archived),
     // NoteResponse carries no trashed state at all (it has no `deleted`
     // field) — this device's own local trash flag is the only record of
     // it. Hardcoding 0 here silently un-trashed any note that came back
@@ -150,10 +129,12 @@ export function fromNoteResponse(note: NoteResponse, existing?: NoteRow): NoteRo
     deletedAt: existing?.deletedAt ?? null,
     ownerId: note.ownerId,
     lastModifiedBy: note.lastModifiedBy,
+    restorable: note.restorable === true,
+    aiTitle: note.aiTitle ?? null,
     dirty: 0,
     syncState: 'synced',
     localUpdatedAt: existing?.localUpdatedAt ?? Date.now(),
-    ...keepLocalFields(existing, note.content ?? ''),
+    ...keepLocalFields(existing),
     // Preserve the existing local ordering when a note is merely read/refreshed.
     // Opening a note is not a local mutation and must not move it to the top.
     // A genuinely new note still receives Date.now().
@@ -178,7 +159,6 @@ export function fromNoteSummary(
     clientId: existing?.clientId ?? localId,
     content: existing?.content ?? '',
     pinned: flag(summary.pinned),
-    archived: flag(summary.archived),
     deleted: 0,
     version: summary.version,
     createdAt: existing?.createdAt ?? null,
@@ -189,7 +169,7 @@ export function fromNoteSummary(
      * has no ownerId field, and the previous `existing?.ownerId ?? null` was a
      * defect (7E): on a device with an empty database every row inserted by a
      * list refresh got ownerId null, and listActive(ownerId) — which queries the
-     * [ownerId+deleted+archived] index — could never match it. A successful
+     * [ownerId+deleted] index — could never match it. A successful
      * fetch, rows in Dexie, and a permanently empty screen.
      *
      * The caller does know: it asked the server for THIS user's notes, so the
@@ -198,6 +178,10 @@ export function fromNoteSummary(
      */
     ownerId: existing?.ownerId ?? ownerId,
     lastModifiedBy: existing?.lastModifiedBy ?? null,
+    // A summary does not say; kept only while the version it was true for still stands.
+    restorable: existing?.restorable === true && existing.version === summary.version,
+    // A summary carries no title; keep the one this device has.
+    aiTitle: existing?.aiTitle ?? null,
     dirty: existing?.dirty ?? 0,
     syncState: existing?.syncState ?? 'synced',
     // A refresh/open is not a local edit. Preserve the existing ordering
@@ -205,30 +189,6 @@ export function fromNoteSummary(
     // Only a genuinely new local row gets a fresh timestamp here.
     localUpdatedAt: existing?.localUpdatedAt ?? Date.now(),
     ...keepLocalFields(existing),
-  };
-}
-
-/**
- * A trashed note from GET /notes/trash.
- *
- * Built ON TOP of fromNoteSummary rather than beside it, because a trashed note
- * IS a summary — plus two facts the summary cannot carry. Duplicating the
- * fifteen fields would mean the next change to a note's local shape has two
- * places to remember and one of them will be missed.
- *
- * `deleted: 1` is the point: the same row the notes list uses, flagged, so the
- * trash is a QUERY over one table rather than a second table that has to be
- * kept consistent with the first. Restoring is one flag write.
- */
-export function fromTrashedNote(
-  trashed: TrashedNoteResponse,
-  ownerId: number | null,
-  existing?: NoteRow,
-): NoteRow {
-  return {
-    ...fromNoteSummary(trashed.note, ownerId, existing),
-    deleted: 1,
-    deletedAt: trashed.deletedAt,
   };
 }
 
@@ -244,18 +204,9 @@ export interface NoteView {
   serverId: number | null;
   content: string;
   pinned: boolean;
-  archived: boolean;
   version: number | null;
   updatedAt: string | null;
-  /**
-   * When the SERVER recorded the trashing, or null.
-   *
-   * Null does not mean "not trashed" — `archived`/`deleted` say that. It means
-   * the server has not told us when, which is the normal state for a note
-   * trashed on this device while offline. The trash screen renders a timestamp
-   * only when there is one rather than inventing a local approximation, because
-   * a local clock and the server's are not the same clock.
-   */
+  /** When the note was deleted on this device, waiting for the server to be told. */
   deletedAt: string | null;
   /** True when there are local edits the server has not accepted. */
   unsaved: boolean;
@@ -293,9 +244,7 @@ export function toView(row: NoteRow): NoteView {
      * have to know that, and `pinned === 1` in JSX would be the encoding
      * leaking into the view.
      */
-    // Pin and archive are the owner's private view state: never applied to a shared note (8k).
-    pinned: row.pinned === 1 && canPin(row.role),
-    archived: row.archived === 1 && canArchive(row.role),
+    pinned: row.pinned === 1,
     version: row.version,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,

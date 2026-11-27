@@ -6,7 +6,6 @@ import {
   Pen,
   Plus,
   Share,
-  Users,
   WifiOff,
 } from 'lucide-react';
 
@@ -35,11 +34,6 @@ export const INTRO = {
       icon: WifiOff,
       title: 'Works without a connection',
       text: 'Every note is saved on this device first, and syncs when you are back online.',
-    },
-    {
-      icon: Users,
-      title: 'Write together',
-      text: 'Share a note with people you are connected with, as a Viewer or an Editor, and see their cursor live.',
     },
   ],
 } as const;

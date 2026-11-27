@@ -3,10 +3,8 @@ import type {
   AutoSaveNoteRequest,
   NoteResponse,
   NoteSummaryResponse,
-  TrashedNoteResponse,
   UpdateNoteRequest,
 } from '@/features/notes/types';
-import type { SharedNoteSummaryResponse } from '@/features/sharedNotes/types';
 import type { VoiceNoteResponse } from '@/features/voice/types';
 
 /**
@@ -32,8 +30,6 @@ export interface ListOptions extends Cancellable {
   /** Zero-based. */
   page?: number;
   size?: number;
-  /** false (the default) leaves archived notes out; true returns ONLY archived. */
-  archived?: boolean;
   /** Spring sort expressions. */
   sort?: string[];
 }
@@ -65,7 +61,6 @@ export interface NoteGateway {
   // --- Your notes ----------------------------------------------------------
   listNotes(options?: ListOptions): Promise<PagedResponse<NoteSummaryResponse>>;
   searchNotes(query: string, options?: PageOptions): Promise<PagedResponse<NoteSummaryResponse>>;
-  listTrash(options?: PageOptions): Promise<PagedResponse<TrashedNoteResponse>>;
   getNote(noteId: number, options?: Cancellable): Promise<NoteResponse>;
   createNote(body: CreateNoteInput, options?: Cancellable): Promise<NoteResponse>;
   /** Full replacement. null clears the field. */
@@ -76,13 +71,9 @@ export interface NoteGateway {
     patch: AutoSaveNoteRequest,
     options?: Cancellable,
   ): Promise<NoteResponse>;
-  /** Moves the note to Recently deleted. Recoverable. */
-  deleteNote(noteId: number, options?: Cancellable): Promise<void>;
-  restoreNote(noteId: number, options?: Cancellable): Promise<NoteResponse>;
   /** Deletes for good. Irreversible. */
-  purgeNote(noteId: number, options?: Cancellable): Promise<void>;
+  deleteNote(noteId: number, options?: Cancellable): Promise<void>;
   setPinned(noteId: number, pinned: boolean, options?: Cancellable): Promise<NoteResponse>;
-  setArchived(noteId: number, archived: boolean, options?: Cancellable): Promise<NoteResponse>;
 
   // --- Your clips ----------------------------------------------------------
   uploadClip(file: Blob, options?: UploadClipOptions): Promise<VoiceNoteResponse>;
@@ -95,9 +86,4 @@ export interface NoteGateway {
   listClipsByNote(noteId: number, options?: Cancellable): Promise<VoiceNoteResponse[]>;
   downloadClip(clipId: number, options?: Cancellable): Promise<Blob>;
   deleteClip(clipId: number, options?: Cancellable): Promise<void>;
-
-  // --- Notes shared with you -----------------------------------------------
-  listSharedNotes(options?: PageOptions): Promise<PagedResponse<SharedNoteSummaryResponse>>;
-  /** Removes your own access to a note shared with you. */
-  leaveNote(noteId: number, options?: Cancellable): Promise<void>;
 }

@@ -5,7 +5,7 @@ import { SYNC_NOW_MIN_BUSY_MS, STORAGE_NEAR_FULL_PERCENT } from '@/core/config/t
 import {
   Button,
   Card,
-  Checkbox,
+  ConfirmModal,
   DetailRow,
   InfoBanner,
   PageHeader,
@@ -15,16 +15,19 @@ import {
 } from '@/design-system/ui';
 import type { CurrentUser } from '@/features/auth/types';
 import { formatBytes } from '@/lib/formatBytes';
-import { getWifiOnly, setWifiOnly } from '@/features/notes/local/clipDownloadPolicy';
+import { isOffline } from '@/lib/http/errors';
+import { META_KEYS } from '@/features/notes/local/metaRow';
+import { metaRepository } from '@/features/notes/local/metaRepository';
 import { clipRepository } from '@/features/notes/local/clipRepository';
 import { useOffline } from '@/features/notes/hooks/useOffline';
 import { setStorageFull, useStorageFull } from '@/features/notes/status/storageFull';
+import { applyUpdate, checkForUpdates, onUpdateAvailable } from '@/pwa/registerServiceWorker';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
+import { useNow } from '@/shared/hooks/useNow';
 import { requestSync } from '@/sync/engine';
 import { getSyncStatus } from '@/sync/syncStatus';
 
-import { ConfirmModal } from './ConfirmModal';
-import { ResetDeviceModal } from './ResetDeviceModal';
+import { ago } from './ago';
 import './Settings.css';
 import { SETTINGS_COPY } from './settingsContent';
 import { SettingsSection } from './SettingsSection';
@@ -52,21 +55,43 @@ function SyncAndStorage({ user }: { user: CurrentUser }) {
   const nearlyFull = storageFull || (use?.percent ?? 0) >= STORAGE_NEAR_FULL_PERCENT;
 
   const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
   const [freeOpen, setFreeOpen] = useState(false);
-  const [resetOpen, setResetOpen] = useState(false);
-  const [wifiOnly, setWifi] = useState(false);
+  const now = useNow();
+  const [checking, setChecking] = useState(false);
+  const [updateReady, setUpdateReady] = useState(false);
+  const [checkedAt, setCheckedAt] = useState<number | null>(null);
+
+  useEffect(() => onUpdateAvailable(setUpdateReady), []);
 
   useEffect(() => {
-    void getWifiOnly().then(setWifi);
+    void metaRepository.get<number>(META_KEYS.updateCheckedAt).then((value) => {
+      if (typeof value === 'number') setCheckedAt(value);
+    });
   }, []);
 
   const syncNow = async (): Promise<void> => {
     setSyncing(true);
+    setSyncResult(null);
     await Promise.all([requestSync('manual').catch(() => undefined), wait(SYNC_NOW_MIN_BUSY_MS)]);
     setSyncing(false);
     const { status } = getSyncStatus();
-    if (status === 'offline' || status === 'error') toast(COPY.cannotReach, { tone: 'error' });
-    else toast(COPY.synced, { tone: 'success' });
+    setSyncResult(status === 'offline' || status === 'error' ? COPY.cannotReach : COPY.synced);
+  };
+
+  const checkUpdates = async (): Promise<void> => {
+    setChecking(true);
+    try {
+      const result = await checkForUpdates();
+      const stamp = Date.now();
+      setCheckedAt(stamp);
+      await metaRepository.set(META_KEYS.updateCheckedAt, stamp);
+      if (result === 'latest') toast(COPY.update.latest, { tone: 'success' });
+    } catch (reason) {
+      toast(isOffline(reason) ? COPY.cannotReach : SETTINGS_COPY.confirm.failed, { tone: 'error' });
+    } finally {
+      setChecking(false);
+    }
   };
 
   const freeUp = async (): Promise<string | undefined> => {
@@ -102,11 +127,11 @@ function SyncAndStorage({ user }: { user: CurrentUser }) {
           </div>
         ) : null}
 
-        <SettingsSection heading={COPY.syncHeading}>
+        <SettingsSection centered heading={COPY.syncHeading}>
           <Card>
             <DetailRow label={COPY.status}>{word}</DetailRow>
             <DetailRow label={COPY.lastSynced}>{lastSynced}</DetailRow>
-            <DetailRow label={COPY.notesOnDevice}>{String(counts.all + counts.archived)}</DetailRow>
+            <DetailRow label={COPY.notesOnDevice}>{String(counts.all)}</DetailRow>
           </Card>
           <div className="set__gap">
             <Button
@@ -119,9 +144,14 @@ function SyncAndStorage({ user }: { user: CurrentUser }) {
               {COPY.syncNow}
             </Button>
           </div>
+          {syncResult ? (
+            <p className="set__note" role="status">
+              {syncResult}
+            </p>
+          ) : null}
         </SettingsSection>
 
-        <SettingsSection heading={COPY.storageHeading}>
+        <SettingsSection centered heading={COPY.storageHeading}>
           <Card>
             {use ? (
               <div className="set__bar">
@@ -144,28 +174,34 @@ function SyncAndStorage({ user }: { user: CurrentUser }) {
           </div>
         </SettingsSection>
 
-        <div>
-          <Checkbox
-            label={COPY.wifi.label}
-            hint={COPY.wifi.hint}
-            checked={wifiOnly}
-            onChange={(event) => {
-              setWifi(event.target.checked);
-              void setWifiOnly(event.target.checked);
-            }}
-          />
-        </div>
-
-        <SettingsSection heading={COPY.reset.heading}>
-          <p className="set__note">{COPY.reset.note}</p>
+        <SettingsSection centered heading={COPY.update.heading}>
+          {updateReady ? (
+            <InfoBanner
+              title={COPY.update.title}
+              action={
+                <Button variant="secondary" onClick={applyUpdate}>
+                  {COPY.update.reload}
+                </Button>
+              }
+            >
+              {COPY.update.body}
+            </InfoBanner>
+          ) : null}
+          <Card>
+            <DetailRow label={COPY.update.version}>{__APP_VERSION__}</DetailRow>
+            <DetailRow label={COPY.update.lastChecked}>
+              {checkedAt === null ? COPY.update.never : ago(checkedAt, now)}
+            </DetailRow>
+          </Card>
           <div className="set__gap">
             <Button
-              variant="danger"
+              variant="secondary"
+              busy={checking}
               onClick={() => {
-                setResetOpen(true);
+                void checkUpdates();
               }}
             >
-              {COPY.reset.button}
+              {COPY.update.check}
             </Button>
           </div>
         </SettingsSection>
@@ -181,18 +217,11 @@ function SyncAndStorage({ user }: { user: CurrentUser }) {
         }}
         onConfirm={freeUp}
       />
-      <ResetDeviceModal
-        open={resetOpen}
-        ownerId={user.id}
-        onClose={() => {
-          setResetOpen(false);
-        }}
-      />
     </ScreenContainer>
   );
 }
 
-/** Settings > Sync and storage (master 6.6, 6.6.1): sync status, space on this device, reset. */
+/** Settings > Sync and storage (master 6.6, 6.6.1): sync status, storage and app version. */
 export function SettingsSyncPage() {
   const user = useSessionUser();
   return user ? <SyncAndStorage user={user} /> : null;

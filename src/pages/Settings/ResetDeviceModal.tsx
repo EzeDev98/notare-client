@@ -6,7 +6,7 @@ import { useDeviceReset } from '@/features/auth/hooks/useDeviceReset';
 
 import { SETTINGS_COPY } from './settingsContent';
 
-const COPY = SETTINGS_COPY.syncStorage.reset;
+const COPY = SETTINGS_COPY.general.reset;
 
 type Check = { phase: 'checking' } | { phase: 'synced' } | { phase: 'waiting'; count: number };
 

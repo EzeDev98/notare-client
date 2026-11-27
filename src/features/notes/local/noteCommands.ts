@@ -1,7 +1,6 @@
 import { db } from '@/features/notes/local/database';
 import { flag } from '@/features/notes/local/noteMappers';
 import type { NoteRow } from '@/features/notes/local/noteRow';
-import { purgeAtFor } from '@/features/notes/local/trashRules';
 import { toServerDateTime } from '@/lib/time';
 
 /**
@@ -41,7 +40,7 @@ export const noteCommands = {
 
   applyLocalEdit(
     localId: string,
-    changes: Partial<Pick<NoteRow, 'content' | 'pinned' | 'archived' | 'bodyState'>>,
+    changes: Partial<Pick<NoteRow, 'content' | 'pinned' | 'bodyState'>>,
   ): Promise<void> {
     return db.transaction('rw', db.notes, async () => {
       const existing = await db.notes.get(localId);
@@ -58,10 +57,8 @@ export const noteCommands = {
   },
 
   /**
-   * Soft delete: the row stays, so a restore is local and instant.
-   *
-   * Deleting stamps deletedAt and a purge date (deletedAt + TRASH_DAYS, until
-   * the server sends its own). Restoring clears both (step 8i, M-7, M-15).
+   * Hides a note while its delete waits for the server. Once the server has
+   * the delete, hardDelete removes the row for good.
    */
   setDeleted(localId: string, deleted: boolean): Promise<void> {
     return db.transaction('rw', db.notes, async () => {
@@ -73,7 +70,6 @@ export const noteCommands = {
         ...existing,
         deleted: flag(deleted),
         deletedAt: deleted ? toServerDateTime(new Date(now)) : null,
-        purgeAt: deleted ? purgeAtFor(now) : null,
         dirty: 1,
         syncState: 'pending',
         localUpdatedAt: now,
@@ -97,14 +93,12 @@ export const noteCommands = {
   async clear(): Promise<void> {
     await db.transaction(
       'rw',
-      [db.notes, db.clips, db.transcripts, db.shared, db.people, db.notifications],
+      [db.notes, db.clips, db.transcripts, db.notifications],
       async () => {
         await Promise.all([
           db.notes.clear(),
           db.clips.clear(),
           db.transcripts.clear(),
-          db.shared.clear(),
-          db.people.clear(),
           db.notifications.clear(),
         ]);
       },

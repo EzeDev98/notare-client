@@ -7,9 +7,6 @@ export const SETTINGS_COPY = {
     account: 'Account',
     appearance: 'Appearance',
     sync: 'Sync and storage',
-    devices: 'Devices',
-    security: 'Security',
-    deleted: 'Recently deleted',
     about: 'About and legal',
   },
   account: {
@@ -32,6 +29,7 @@ export const SETTINGS_COPY = {
   sync: {
     online: 'Synced',
     offline: 'Offline',
+    paused: 'Sync paused',
     waiting: (count: number) => `${count} waiting`,
   },
   syncStorage: {
@@ -57,6 +55,24 @@ export const SETTINGS_COPY = {
       confirm: 'Remove clips',
       done: (size: string) => `Freed ${size}.`,
     },
+    update: {
+      heading: 'App version',
+      version: 'Version',
+      lastChecked: 'Last checked',
+      never: 'Not yet',
+      check: 'Check for updates',
+      latest: 'You are on the latest version.',
+      title: 'Update available',
+      body: 'A new version of Notare is ready. Reload to use it.',
+      reload: 'Reload',
+    },
+  },
+  general: {
+    title: 'Settings',
+    aiTidy: {
+      label: 'Tidy my notes with AI',
+      hint: 'After you leave a note for a while, Notare fixes its spelling and punctuation and may add a title. To suggest a title, the note\u2019s text is sent to our AI provider. Restore original in a note\u2019s menu undoes it.',
+    },
     wifi: {
       label: 'Download voice clips on Wi-Fi only',
       hint: 'Voice clips download when you are on Wi-Fi, to save your mobile data. Some browsers cannot tell which connection you are on, so they download anyway.',
@@ -80,69 +96,10 @@ export const SETTINGS_COPY = {
     hours: (count: number) => `${count} h ago`,
     days: (count: number) => `${count} ${count === 1 ? 'day' : 'days'} ago`,
   },
-  devices: {
-    title: 'Devices',
-    activeNow: 'Active now',
-    limit: 'Up to 5 devices can be signed in at once.',
-    everywhere: 'Sign out everywhere',
-    retry: 'Retry',
-    signedOut: (name: string) => `Signed out of ${name}`,
-    signedOutOthers: (count: number) =>
-      `Signed out of ${count} other ${count === 1 ? 'device' : 'devices'}`,
-    confirm: {
-      title: 'Sign out other devices?',
-      body: 'Notes that have not synced on those devices stay there until you sign in again.',
-      confirm: 'Sign out others',
-    },
-    names: {
-      iphone: 'iPhone',
-      ipad: 'iPad',
-      android: 'Android',
-      chromebook: 'Chromebook',
-      windows: 'Windows PC',
-      mac: 'Mac',
-      linux: 'Linux',
-      unknown: 'Unknown device',
-    },
-    browsers: { edge: 'Edge', opera: 'Opera', firefox: 'Firefox', chrome: 'Chrome', safari: 'Safari' },
-  },
-  deleted: {
-    title: 'Recently deleted',
-    note: 'Notes stay here for 30 days, then they are removed for good.',
-    daysLeft: (count: number) => `${count} ${count === 1 ? 'day' : 'days'} left`,
-    menu: 'Note actions',
-    moreFor: (title: string) => `More actions for ${title}`,
-    restore: 'Restore',
-    deleteForever: 'Delete forever',
-    deleteAll: 'Delete all',
-    empty: { title: 'Nothing here', body: 'Notes you delete show up here for 30 days.' },
-    one: {
-      title: 'Delete this note forever?',
-      body: (title: string) =>
-        `"${title}" and its voice clips are removed from every device. This cannot be undone.`,
-      confirm: 'Delete forever',
-    },
-    all: {
-      title: (count: number) => `Delete ${count} ${count === 1 ? 'note' : 'notes'} forever?`,
-      body: 'They and their voice clips are removed from every device. This cannot be undone.',
-      confirm: 'Delete all',
-    },
-  },
   about: {
     title: 'About and legal',
     tagline: 'Write, speak and share your notes. They stay with you, even offline.',
-    version: 'Version',
-    lastChecked: 'Last checked',
-    never: 'Not yet',
-    check: 'Check for updates',
-    latest: 'You are on the latest version.',
     legal: 'Legal',
-    update: {
-      title: 'Update available',
-      body: 'A new version of Notare is ready. Reload to use it.',
-      reload: 'Reload',
-    },
   },
   confirm: { cancel: 'Cancel', failed: 'Something went wrong. Try again.' },
-  pin: { on: 'PIN on', off: 'PIN off' },
 } as const;

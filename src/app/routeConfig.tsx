@@ -76,16 +76,6 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     load: () => import('@/pages/NoteDetail/NoteDetail').then((m) => m.NoteDetailPage),
   },
   {
-    path: P.settings,
-    guards: APP,
-    load: () => import('@/pages/Settings/SettingsHub').then((m) => m.SettingsHubPage),
-  },
-  {
-    path: P.settingsAccount,
-    guards: APP,
-    load: () => import('@/pages/Settings/SettingsAccount').then((m) => m.SettingsAccountPage),
-  },
-  {
     path: P.settingsAppearance,
     guards: APP,
     load: () => import('@/pages/Settings/SettingsAppearance').then((m) => m.SettingsAppearancePage),
@@ -96,19 +86,9 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     load: () => import('@/pages/Settings/SettingsSync').then((m) => m.SettingsSyncPage),
   },
   {
-    path: P.settingsDevices,
+    path: P.settingsGeneral,
     guards: APP,
-    load: () => import('@/pages/Settings/SettingsDevices').then((m) => m.SettingsDevicesPage),
-  },
-  {
-    path: P.settingsSecurity,
-    guards: APP,
-    load: () => import('@/pages/Settings/SettingsSecurity').then((m) => m.SettingsSecurityPage),
-  },
-  {
-    path: P.settingsDeleted,
-    guards: APP,
-    load: () => import('@/pages/Settings/SettingsDeleted').then((m) => m.SettingsDeletedPage),
+    load: () => import('@/pages/Settings/SettingsGeneral').then((m) => m.SettingsGeneralPage),
   },
   {
     path: P.settingsAbout,
@@ -143,10 +123,7 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
 export const ROUTE_REDIRECTS: Array<{ from: string; to: string }> = [
   { from: P.oldSignIn, to: P.signIn },
   { from: P.oldResetPassword, to: P.resetPassword },
-  { from: P.legacy.archived, to: ROUTES.notes('archived') },
+  { from: P.legacy.archived, to: ROUTES.notes() },
   { from: P.legacy.search, to: ROUTES.notes() },
-  { from: P.legacy.shared, to: ROUTES.notes('shared') },
-  { from: P.legacy.collaborations, to: ROUTES.notes('shared') },
   { from: P.legacy.notifications, to: ROUTES.notes() },
-  { from: P.legacy.accountSessions, to: ROUTES.settingsDevices() },
 ];

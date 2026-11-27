@@ -1,9 +1,8 @@
-import { useToast } from '@/design-system/ui';
+import { ConfirmModal, useToast } from '@/design-system/ui';
 import { clipRepository } from '@/features/notes/local/clipRepository';
 import { setStorageFull } from '@/features/notes/status/storageFull';
 import { formatBytes } from '@/lib/formatBytes';
 
-import { ConfirmModal } from './ConfirmModal';
 import { SETTINGS_COPY } from './settingsContent';
 
 const COPY = SETTINGS_COPY.syncStorage;

@@ -20,7 +20,6 @@ export function makeNote(overrides: Partial<NoteResponse> = {}): NoteResponse {
     id,
     content: 'Body text.',
     pinned: false,
-    archived: false,
     version: 0,
     // No timezone, exactly as the server sends it.
     createdAt: '2026-08-01T09:00:00.000',
@@ -49,7 +48,6 @@ export function makeRow(overrides: Partial<NoteRow> = {}): NoteRow {
     clientId: localId,
     content: 'Body text.',
     pinned: 0,
-    archived: 0,
     deleted: 0,
     version: 0,
     createdAt: '2026-08-01T09:00:00.000',
@@ -59,7 +57,6 @@ export function makeRow(overrides: Partial<NoteRow> = {}): NoteRow {
     lastModifiedBy: 1,
     dirty: 0,
     syncState: 'synced',
-    role: 'owner',
     localUpdatedAt: 1_754_038_800_000,
     ...overrides,
   };
@@ -72,7 +69,6 @@ export function makeNoteSummary(overrides: Partial<NoteSummaryResponse> = {}): N
     id,
     contentPreview: 'Body text.',
     pinned: false,
-    archived: false,
     version: 0,
     updatedAt: '2026-08-01T09:00:00.000',
     ...overrides,

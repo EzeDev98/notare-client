@@ -1,11 +1,9 @@
 import { api } from '@/core/api';
-import { createNoteWithContent, duplicateNote } from '@/features/notes/createNote';
+import { duplicateNote } from '@/features/notes/createNote';
 import { LIST_COPY } from '@/features/notes/list/listContent';
-import { sharedNoteIdOf } from '@/features/notes/list/listItem';
 import { flag } from '@/features/notes/local/noteMappers';
 import { noteRepository, outboxRepository } from '@/features/notes/local/noteRepository';
-import { sharedRepository } from '@/features/notes/local/sharedRepository';
-import { isOffline } from '@/lib/http/errors';
+import { isNotFound, isOffline } from '@/lib/http/errors';
 import type { ServerDateTime } from '@/lib/http/types';
 
 /**
@@ -45,34 +43,38 @@ export async function setPinned(localId: string, pinned: boolean): Promise<void>
   await tellServer(localId, (serverId) => api.setPinned(serverId, pinned));
 }
 
-export async function setArchived(localId: string, archived: boolean): Promise<void> {
-  await noteRepository.applyLocalEdit(localId, { archived: flag(archived) });
-  await tellServer(localId, (serverId) => api.setArchived(serverId, archived));
-}
+/**
+ * Deletes a note for good. The row is hidden at once; a delete made offline is
+ * queued and the row is removed when the server takes it (8B). False when the
+ * server refused, and the note is back in the list.
+ */
+export async function deleteNote(localId: string): Promise<boolean> {
+  const row = await noteRepository.getByLocalId(localId);
+  if (!row) return true;
 
-/** Delete: the note moves to Recently deleted. A delete made offline is queued (8B). */
-export async function moveToTrash(localId: string): Promise<void> {
+  // Never created on the server: nothing to tell it, drop any queued create.
+  if (row.serverId === null) {
+    await outboxRepository.discardPendingCreate(localId);
+    await noteRepository.hardDelete(localId);
+    return true;
+  }
+
   await noteRepository.setDeleted(localId, true);
-
-  const sent = await tellServer(
-    localId,
-    async (serverId) => {
-      await api.deleteNote(serverId);
-      return undefined;
-    },
-    async (error, serverId) => {
-      if (isOffline(error)) await outboxRepository.enqueueDelete({ localId, noteId: serverId });
-    },
-  );
-  // Never created on the server: drop a queued create, there is nothing left to create.
-  if (!sent) await outboxRepository.discardPendingCreate(localId);
-}
-
-/** Restore also cancels a queued delete, or a later push would trash the note again. */
-export async function restoreNote(localId: string): Promise<void> {
-  await noteRepository.setDeleted(localId, false);
-  await outboxRepository.cancelPendingDelete(localId);
-  await tellServer(localId, (serverId) => api.restoreNote(serverId));
+  try {
+    await api.deleteNote(row.serverId);
+  } catch (error) {
+    if (isOffline(error)) {
+      await outboxRepository.enqueueDelete({ localId, noteId: row.serverId });
+      return true;
+    }
+    if (!isNotFound(error)) {
+      await noteRepository.setDeleted(localId, false);
+      return false;
+    }
+  }
+  await outboxRepository.clearForNote(localId);
+  await noteRepository.hardDelete(localId);
+  return true;
 }
 
 /** The copy says so on its first line: "Trip budget" becomes "Trip budget copy". */
@@ -84,51 +86,28 @@ function copyText(content: string): string {
 }
 
 /**
- * Make a copy: a new note of your own. A note from your own list also copies
- * its voice clips that are still on this device. False if there was nothing to copy.
+ * Make a copy: a new note of your own, with its voice clips that are still on
+ * this device. False if there was nothing to copy.
  */
 export async function copyNote(ownerId: number, itemId: string): Promise<boolean> {
-  const sharedId = sharedNoteIdOf(itemId);
-  if (sharedId !== null) {
-    const shared = await sharedRepository.get(sharedId);
-    if (!shared) return false;
-    return (await createNoteWithContent(ownerId, copyText(shared.content))) !== null;
-  }
-
   const source = await noteRepository.getByLocalId(itemId);
   if (!source) return false;
   return (await duplicateNote(ownerId, itemId, copyText(source.content))) !== null;
 }
 
 /**
- * Leave a note shared with you: the server removes your access first, then it goes from this
- * device. If the server says no, nothing changes here. Takes a Shared with me row id or the id of
- * a note row you do not own. The menu item stays hidden until step 17f builds the endpoint
- * (FEATURES.leaveNote).
+ * "Restore original": asks the server for the text from before AI tidy and
+ * applies the note it returns. False when it could not (offline, or the note
+ * changed since), and nothing local is touched.
  */
-export async function leaveNote(itemId: string): Promise<void> {
-  const sharedId = sharedNoteIdOf(itemId);
-  if (sharedId !== null) {
-    await api.leaveNote(sharedId);
-    await sharedRepository.remove(sharedId);
-    return;
-  }
-  const row = await noteRepository.getByLocalId(itemId);
-  if (!row || row.serverId === null) return;
-  await api.leaveNote(row.serverId);
-  await noteRepository.hardDelete(itemId);
-}
+export async function restoreOriginal(localId: string): Promise<boolean> {
+  const row = await noteRepository.getByLocalId(localId);
+  if (!row || row.serverId === null || row.dirty === 1 || row.restorable !== true) return false;
 
-/**
- * The owner removed you: forget the note on this device, with no server call. Never touches a note
- * you own.
- */
-export async function dropSharedNote(itemId: string): Promise<void> {
-  const sharedId = sharedNoteIdOf(itemId);
-  if (sharedId !== null) {
-    await sharedRepository.remove(sharedId);
-    return;
+  try {
+    const note = await api.restoreOriginal(row.serverId);
+    return (await noteRepository.upsertFromServer(note)) !== 'skipped';
+  } catch {
+    return false;
   }
-  const row = await noteRepository.getByLocalId(itemId);
-  if (row && row.role !== 'owner') await noteRepository.hardDelete(itemId);
 }

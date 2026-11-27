@@ -27,6 +27,8 @@ interface OpenNote extends OpenedBody {
    * Shown, but not saved as a seed: it is rebuilt once the note has synced (step 18d).
    */
   provisional: boolean;
+  /** The row's text when the body was opened, so a later server change is seen once. */
+  sourceContent: string;
 }
 
 /** The clip ids in the body, in order. A change here is an edit even if the text is the same. */
@@ -50,7 +52,22 @@ function open(row: NoteRow, generation: number): OpenNote {
     persisted: !body.seeded,
     hasText: row.content.trim() !== '',
     provisional: body.seeded && row.version !== null && row.dirty === 1,
+    sourceContent: row.content,
   };
+}
+
+/**
+ * Another device changed the open note's text: show it now, as before.
+ * AI tidy (no last editor) never changes a note under the user's hands: its
+ * text is shown the next time the note opens, and an edit before then wins.
+ */
+function replacedByAnotherDevice(opened: OpenNote, live: NoteRow): boolean {
+  return (
+    live.dirty === 0 &&
+    live.lastModifiedBy !== null &&
+    live.content !== opened.sourceContent &&
+    live.content !== bodyToPlainText(opened.doc)
+  );
 }
 
 /**
@@ -60,8 +77,9 @@ function open(row: NoteRow, generation: number): OpenNote {
  *   once from its old text and the result is saved (not marked as an edit).
  * - Every document change appends to `bodyState` and writes the derived
  *   `content` in the same Dexie write, through `setDraft`.
- * - If the server's text replaced ours (the saved body was dropped), the body
- *   is rebuilt from that text.
+ * - If the server's text replaced ours, it is carried into the body when the
+ *   note opens (openBody). An open note takes it at once only when another
+ *   device made it; AI tidy's text waits until the note is next opened.
  *
  * `row` is the note being opened. `live` is the row the editor host follows.
  */
@@ -82,6 +100,8 @@ export function useNoteBody(
     } else if (opened.persisted && !live.bodyState && live.dirty === 0) {
       setOpened(open(live, opened.generation + 1));
     } else if (opened.provisional && !live.bodyState && live.dirty === 0) {
+      setOpened(open(live, opened.generation + 1));
+    } else if (replacedByAnotherDevice(opened, live)) {
       setOpened(open(live, opened.generation + 1));
     }
   }

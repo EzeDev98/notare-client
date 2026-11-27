@@ -35,7 +35,8 @@ export function NoteDetailPage() {
   // 1C/4G: no title field — the note domain has none. label is null only
   // while the note hasn't loaded yet; deriveNoteLabel always returns
   // something once ready, so there is no more separate "Untitled" case.
-  const label = state.status === 'ready' ? deriveNoteLabel(state.row.content).label : null;
+  const label =
+    state.status === 'ready' ? deriveNoteLabel(state.row.content, state.row.aiTitle).label : null;
   useDocumentTitle(label ?? 'Note');
 
   return (

@@ -1,4 +1,4 @@
-import { Pause, Play, Square, X } from 'lucide-react';
+import { Check, Pause, Play, Trash2, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { Button } from '../Button/Button';
@@ -40,7 +40,10 @@ export interface VoiceBlockProps {
   onTranscribe?: (() => void) | undefined;
   onToggleTranscript?: (() => void) | undefined;
   onTryAgain?: (() => void) | undefined;
+  /** Discards a recording, or removes a block that could not record. */
   onRemove?: (() => void) | undefined;
+  /** Deletes a saved clip from the note. Shown on every saved-clip state when given. */
+  onDelete?: (() => void) | undefined;
 }
 
 export interface VoiceView {
@@ -67,6 +70,9 @@ export function voiceView(p: VoiceBlockProps): VoiceView {
     </Button>
   );
   const remove = <IconButton icon={X} label="Remove voice clip" onClick={p.onRemove} />;
+  const del = p.onDelete ? (
+    <IconButton icon={Trash2} label="Delete voice clip" onClick={p.onDelete} />
+  ) : null;
   const say = (text: string, error = false) => (
     <Track>
       <Word error={error}>{text}</Word>
@@ -75,18 +81,21 @@ export function voiceView(p: VoiceBlockProps): VoiceView {
 
   switch (p.state) {
     case 'idle':
-      return VIEW(<>{play}{bar}{time}</>);
+      return VIEW(<>{play}{bar}{time}{del}</>);
     case 'playing':
-      return VIEW(<><IconButton icon={Pause} label="Pause voice clip" onClick={p.onPause} />{bar}{time}</>);
+      return VIEW(
+        <><IconButton icon={Pause} label="Pause voice clip" onClick={p.onPause} />{bar}{time}{del}</>,
+      );
     case 'recording':
       return VIEW(
         <>
-          <IconButton icon={Square} label="Stop recording" onClick={p.onStop} />
+          <IconButton icon={Check} label="Finish recording" onClick={p.onStop} />
           <span className="n-voice__dot" aria-hidden="true" />
           <Track>
             <span className="n-voice__time">Recording</span>
           </Track>
           {time}
+          <IconButton icon={X} label="Discard recording" onClick={p.onRemove} />
         </>,
         null,
         true,
@@ -94,19 +103,19 @@ export function voiceView(p: VoiceBlockProps): VoiceView {
     case 'saving':
       return VIEW(<><MicTile />{say('Saving on this device')}{spinner}</>);
     case 'waiting':
-      return VIEW(<>{play}{bar}<Word>Not synced</Word>{time}</>);
+      return VIEW(<>{play}{bar}<Word>Not synced</Word>{time}{del}</>);
     case 'upload-failed':
-      return VIEW(<>{play}{say('Could not upload', true)}{ghost('Retry', p.onRetry)}</>);
+      return VIEW(<>{play}{say('Could not upload', true)}{ghost('Retry', p.onRetry)}{del}</>);
     case 'transcribe':
-      return VIEW(<>{play}{bar}{time}{ghost('Transcribe', p.onTranscribe)}</>);
+      return VIEW(<>{play}{bar}{time}{ghost('Transcribe', p.onTranscribe)}{del}</>);
     case 'transcribe-waiting':
       return VIEW(
-        <>{play}{say('Waiting for connection')}{time}</>,
+        <>{play}{say('Waiting for connection')}{time}{del}</>,
         'Transcription starts when you are back online. The clip is safe on this device.',
       );
     case 'transcribing':
       return VIEW(
-        <>{play}{say('Transcribing')}{spinner}{time}</>,
+        <>{play}{say('Transcribing')}{spinner}{time}{del}</>,
         'This can take a minute. You can keep writing.',
       );
     case 'transcribed':
@@ -123,10 +132,13 @@ export function voiceView(p: VoiceBlockProps): VoiceView {
           >
             {p.transcriptShown ? 'Hide transcript' : 'Show transcript'}
           </Button>
+          {del}
         </>,
       );
     case 'transcribe-failed':
-      return VIEW(<>{play}{say('Could not transcribe this clip. Try again.', true)}{ghost('Retry', p.onRetry)}</>);
+      return VIEW(
+        <>{play}{say('Could not transcribe this clip. Try again.', true)}{ghost('Retry', p.onRetry)}{del}</>,
+      );
     case 'permission-waiting':
       return VIEW(
         <><MicTile />{say('Waiting for permission')}</>,

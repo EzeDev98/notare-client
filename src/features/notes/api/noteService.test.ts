@@ -45,16 +45,11 @@ afterEach(() => {
 });
 
 describe('reads', () => {
-  it('lists notes, excluding archived by default', async () => {
+  it('lists notes', async () => {
     const page = await noteService.listNotes({ page: 0, size: 20 });
 
     expect(page.content).toHaveLength(2);
     expect(page.page).toBe(0); // zero-based, per Spring's Pageable
-  });
-
-  it('sends the archived filter when asked for the archive', async () => {
-    await noteService.listNotes({ archived: true });
-    expect(lastRequest?.url).toContain('archived=true');
   });
 
   it('searches with `query`, not `q`', async () => {
@@ -78,17 +73,9 @@ describe('reads', () => {
     expect(lastRequest?.url).toContain('query=100%25');
   });
 
-  it('reads the trash, including when each note was trashed', async () => {
-    const page = await noteService.listTrash();
-
-    expect(page.content[0]?.note.id).toBe(9);
-    expect(page.content[0]?.deletedAt).toBe('2026-08-05T14:00:00.000');
-  });
-
   it('does not let the :noteId handler swallow a literal sub-path', async () => {
     // Registration order in handlers.ts. Without literals first, this returns
     // a note with id NaN and no error at all.
-    await expect(noteService.listTrash()).resolves.toBeDefined();
     await expect(noteService.searchNotes('x')).resolves.toBeDefined();
   });
 });
@@ -131,10 +118,10 @@ describe('writes', () => {
     expect(body).toEqual({ content: null });
   });
 
-  it('resolves with nothing for a 204 permanent delete', async () => {
+  it('resolves with nothing for a 204 delete', async () => {
     // The empty-body case. `await response.json()` throws a SyntaxError here,
     // which is how a successful delete gets reported as a parse failure.
-    await expect(noteService.permanentlyDeleteNote(1)).resolves.toBeUndefined();
+    await expect(noteService.deleteNote(1)).resolves.toBeUndefined();
   });
 
   it('pins with POST and unpins with DELETE', async () => {

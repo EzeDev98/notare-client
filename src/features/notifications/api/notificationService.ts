@@ -7,9 +7,8 @@ import { httpClient } from '@/lib/http/client';
 import type { PagedResponse } from '@/lib/http/types';
 
 /**
- * `/notifications` — NOTARE-SERVER.md §10/§13. Online-only, same as
- * collaborations and sharing: notifications are server-truth with no local
- * copy to reconcile (NOTARE-CLIENT-ARCHITECTURE.md §3.4).
+ * `/notifications` — NOTARE-SERVER.md §10/§13. Online-only: notifications
+ * are server-truth with no local copy to reconcile (NOTARE-CLIENT-ARCHITECTURE.md §3.4).
  *
  * NO `create`. "No POST /notifications exists and none ever should" (§10:
  * "An endpoint letting one user create a notification for another is a

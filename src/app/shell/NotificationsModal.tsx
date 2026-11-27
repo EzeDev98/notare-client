@@ -9,12 +9,9 @@ import {
   Overlay,
   Spinner,
 } from '@/design-system/ui';
-import { sharedRepository } from '@/features/notes/local/sharedRepository';
 import { composeNotification } from '@/features/notifications/composeNotification';
 import { useNotifications } from '@/features/notifications/hooks/useNotifications';
 import { NOTIFICATION_COPY as C } from '@/features/notifications/notificationContent';
-import { formatUserName, useUserLookup } from '@/features/userLookup/hooks/useUserLookup';
-import { useStableLiveQuery } from '@/shared/hooks/useStableLiveQuery';
 
 import { useNotificationActions } from './useNotificationActions';
 
@@ -23,24 +20,11 @@ interface NotificationsModalProps {
   onClose: () => void;
 }
 
-/** The bell's modal: invites and shared-note updates, with their buttons (master 6.9). */
+/** The bell's modal: transcript updates, with their buttons (master 6.9). */
 export function NotificationsModal({ open, onClose }: NotificationsModalProps) {
   const query = useNotifications(false, 0, open);
   const rows = useMemo(() => query.data?.content ?? [], [query.data]);
   const act = useNotificationActions(onClose);
-
-  const actorIds = useMemo(
-    () => rows.map((n) => n.actorId).filter((id): id is number => id !== null),
-    [rows],
-  );
-  const { profiles } = useUserLookup(actorIds);
-
-  const shared = useStableLiveQuery(() => sharedRepository.list(), [], []);
-  const roleOf = useMemo(() => {
-    const roles: Record<number, 'viewer' | 'editor'> = {};
-    for (const row of shared) roles[row.noteId] = row.role;
-    return roles;
-  }, [shared]);
 
   const anyUnread = rows.some((n) => n.readAt === null);
 
@@ -79,9 +63,7 @@ export function NotificationsModal({ open, onClose }: NotificationsModalProps) {
       ) : (
         <div role="list">
           {rows.map((n) => {
-            const profile = n.actorId === null ? undefined : profiles.get(n.actorId);
-            const name = profile ? formatUserName(profile) : undefined;
-            const composed = composeNotification(n, name, (n.targetId === null ? undefined : roleOf[n.targetId]));
+            const composed = composeNotification(n);
             const busy = act.busyId === n.id;
             return (
               <div role="listitem" key={n.id}>
@@ -93,28 +75,7 @@ export function NotificationsModal({ open, onClose }: NotificationsModalProps) {
                     act.dismiss(n);
                   }}
                   actions={
-                    composed.action === 'invite' ? (
-                      <>
-                        <Button
-                          variant="secondary"
-                          disabled={busy}
-                          onClick={() => {
-                            void act.decline(n);
-                          }}
-                        >
-                          {C.buttons.decline}
-                        </Button>
-                        <Button
-                          variant="primary"
-                          busy={busy}
-                          onClick={() => {
-                            void act.accept(n, name ?? C.someone);
-                          }}
-                        >
-                          {C.buttons.accept}
-                        </Button>
-                      </>
-                    ) : composed.action === 'open' ? (
+                    composed.action === 'open' ? (
                       <Button
                         variant="secondary"
                         busy={busy}

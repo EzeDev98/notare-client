@@ -47,7 +47,6 @@ export function Row10() {
             <option value="created">Date created</option>
             <option value="title">Title</option>
             <option value="size">Length</option>
-            <option value="shared">Shared first</option>
             <option value="pinned">Pinned first</option>
           </SelectField>
         </div>

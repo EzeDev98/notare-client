@@ -15,7 +15,11 @@ export function SettingsAppearancePage() {
   const { preference, setPreference } = useTheme();
 
   return (
-    <ScreenContainer placement="top" bar={<PageHeader title={COPY.title} onBack={back} />}>
+    <ScreenContainer
+      placement="top"
+      className="set-screen--left"
+      bar={<PageHeader title={COPY.title} onBack={back} />}
+    >
       <div role="radiogroup" aria-label={COPY.title} className="set__stack set__stack--tight">
         {COPY.options.map((option) => (
           <Radio

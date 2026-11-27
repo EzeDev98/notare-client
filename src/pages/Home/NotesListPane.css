@@ -33,35 +33,6 @@
     color: var(--color-text-muted);
   }
 
-  .home__sub {
-    font-size: var(--text-sm);
-    line-height: var(--leading-sm);
-    color: var(--color-text-muted);
-  }
-
-  .home__people {
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap);
-  }
-
-  .home__people .n-person {
-    padding-inline: var(--gutter);
-  }
-
-  .home__people .home__none {
-    padding: var(--gap) var(--gutter);
-    font-size: var(--text-sm);
-    line-height: var(--leading-sm);
-    color: var(--color-text-muted);
-  }
-
-  .n-find {
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap);
-  }
-
   /* In the 320px list pane the content fills it. */
   @container (min-width: 800px) {
     .home__inner {

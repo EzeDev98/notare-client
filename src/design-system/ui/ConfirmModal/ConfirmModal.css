@@ -1,0 +1,13 @@
+@layer components {
+  .ui-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap);
+  }
+
+  .ui-confirm__body {
+    font-size: var(--text-sm);
+    line-height: var(--leading-sm);
+    color: var(--color-text);
+  }
+}

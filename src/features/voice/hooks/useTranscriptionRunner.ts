@@ -12,7 +12,7 @@ import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
  * is online and the clip has reached the server, and follows them to the end.
  * Shows "Transcript ready" when one finishes.
  */
-export function useTranscriptionRunner(noteId: string, enabled: boolean): void {
+export function useTranscriptionRunner(noteId: string): void {
   const online = useOnlineStatus();
   const { toast } = useToast();
 
@@ -30,11 +30,11 @@ export function useTranscriptionRunner(noteId: string, enabled: boolean): void {
   }, [noteId]);
 
   useEffect(() => {
-    if (!enabled || !online || !pending) return;
+    if (!online || !pending) return;
     for (const item of pending) {
       void driveTranscription(item.clipId, item.serverId).then((status) => {
         if (status === 'done') toast('Transcript ready');
       });
     }
-  }, [enabled, online, pending, toast]);
+  }, [online, pending, toast]);
 }

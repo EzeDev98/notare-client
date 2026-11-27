@@ -25,9 +25,9 @@ export function Row4() {
       </Both>
       <Both title="Radio (arrow keys move inside the group)">
         <div className="gallery-stack">
-          <Radio name="gallery-role" label="Viewer" hint="Can read the note." defaultChecked />
-          <Radio name="gallery-role" label="Editor" hint="Can change the note." />
-          <Radio name="gallery-role" label="Disabled" disabled />
+          <Radio name="gallery-theme" label="Light" hint="Always light." defaultChecked />
+          <Radio name="gallery-theme" label="Dark" hint="Always dark." />
+          <Radio name="gallery-theme" label="Disabled" disabled />
         </div>
       </Both>
       <Both title="OtpField: 6 boxes (type, paste 123456, Backspace, arrows)">
@@ -36,9 +36,6 @@ export function Row4() {
           <OtpDemo label="Verification code" initial="123456" error="That code is not right." />
           <OtpDemo label="Verification code" initial="123" disabled />
         </div>
-      </Both>
-      <Both title="OtpField: masked 4-box PIN">
-        <OtpDemo label="PIN" length={4} masked initial="12" />
       </Both>
     </>
   );

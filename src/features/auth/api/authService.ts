@@ -8,7 +8,6 @@ import type {
   RegistrationResponse,
   ResendActivationRequest,
   ResetPasswordRequest,
-  SessionResponse,
   TokenResponse,
   VerifyResetOtpRequest,
   VerifyResetOtpResponse,
@@ -30,7 +29,6 @@ import type { MessageResponse } from '@/lib/http/types';
 const PATHS = {
   login: '/login/login',
   logout: '/logout/logout',
-  logoutAll: '/logout/logout-all',
   refresh: '/auth/refresh',
   register: '/user/register',
   me: '/user/me',
@@ -38,7 +36,6 @@ const PATHS = {
   forgotPassword: '/password/forgot-password',
   verifyResetOtp: '/password/verify-reset-otp',
   resetPassword: '/password/reset-password',
-  sessions: '/session/sessions',
 } as const;
 
 interface Cancellable {
@@ -144,20 +141,5 @@ export const authService = {
   /** No body — the session comes from the token's `sid` claim. */
   logout({ signal }: Cancellable = {}): Promise<LogoutResponse> {
     return httpClient.post<LogoutResponse>(PATHS.logout, { ...(signal ? { signal } : {}) });
-  },
-
-  /** Every session, everywhere. What a user reaches for after losing a device. */
-  logoutAll({ signal }: Cancellable = {}): Promise<LogoutResponse> {
-    return httpClient.post<LogoutResponse>(PATHS.logoutAll, { ...(signal ? { signal } : {}) });
-  },
-
-  listSessions({ signal }: Cancellable = {}): Promise<SessionResponse[]> {
-    return httpClient.get<SessionResponse[]>(PATHS.sessions, { ...(signal ? { signal } : {}) });
-  },
-
-  revokeSession(sessionId: string, { signal }: Cancellable = {}): Promise<void> {
-    return httpClient.delete<void>(`${PATHS.sessions}/${sessionId}`, {
-      ...(signal ? { signal } : {}),
-    });
   },
 };

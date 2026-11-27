@@ -74,7 +74,7 @@ export function Row7() {
           </>
         }
       >
-        <p className="gallery-text">It moves to Recently deleted for 30 days.</p>
+        <p className="gallery-text">It is removed for good. This cannot be undone.</p>
       </Overlay>
 
       <Overlay
@@ -178,7 +178,7 @@ export function Row7() {
       >
         <div className="gallery-stack gallery-pad">
           <Button variant="ghost">All notes</Button>
-          <Button variant="ghost">Shared with me</Button>
+          <Button variant="ghost">Archived</Button>
           <Button variant="ghost">Settings</Button>
         </div>
       </Overlay>

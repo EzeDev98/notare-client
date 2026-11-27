@@ -4,16 +4,11 @@ import { ContextMenu, IconButton, NoteRow, SelectionBar, useToast } from '@/desi
 
 import { Both } from './Both';
 
-type Role = 'owner' | 'editor' | 'viewer';
 type Where = 'list' | 'editor';
 
-const COMBOS: readonly { role: Role; where: Where; label: string }[] = [
-  { role: 'owner', where: 'list', label: 'Owner, note list' },
-  { role: 'owner', where: 'editor', label: 'Owner, editor screen' },
-  { role: 'editor', where: 'list', label: 'Editor, note list' },
-  { role: 'editor', where: 'editor', label: 'Editor, editor screen' },
-  { role: 'viewer', where: 'list', label: 'Viewer, note list' },
-  { role: 'viewer', where: 'editor', label: 'Viewer, editor screen' },
+const COMBOS: readonly { where: Where; label: string }[] = [
+  { where: 'list', label: 'Note list' },
+  { where: 'editor', label: 'Editor screen' },
 ];
 
 /** Row 11: NoteRow, ContextMenu, SelectionBar. */
@@ -33,12 +28,10 @@ export function Row11() {
           <NoteRow title="Groceries for the weekend" preview="Rice, beans, tomatoes and plantain" date="10:42" pinned onOpen={say('Open')} />
           <p className="n-group-label">Earlier</p>
           <NoteRow title="Meeting notes" preview="Agenda for Monday's planning call" date="Yesterday" selected onOpen={say('Open')} />
-          <NoteRow title="Shared project plan" preview="Milestones and owners" date="Oct 3" shared />
           <NoteRow title="Voice memo" preview="Transcription is ready" date="Oct 2" voice />
           <NoteRow title="Offline draft" preview="Waiting to sync" date="Oct 1" notSynced />
           <NoteRow title="Trip ideas" preview="Matched in transcript: lagos to abuja" date="Sep 28" matchedInTranscript voice />
           <NoteRow title="" date="Sep 20" />
-          <NoteRow title="Old receipts" preview="Deleted note" date="" deleted={{ daysLeft: 12, onRestore: say('Restored') }} />
         </div>
       </Both>
 
@@ -49,7 +42,7 @@ export function Row11() {
             preview="Rice, beans, tomatoes and plantain"
             date="10:42"
             menu={
-              <ContextMenu role="owner" where="list" onPin={say('Pin')} onShare={say('Share')} onMakeCopy={say('Make a copy')} onArchive={say('Archive')} onDelete={say('Delete')}>
+              <ContextMenu where="list" onPin={say('Pin')} onMakeCopy={say('Make a copy')} onDelete={say('Delete')}>
                 {({ triggerProps }) => <IconButton icon={MoreHorizontal} label="Note actions" {...triggerProps} />}
               </ContextMenu>
             }
@@ -57,20 +50,16 @@ export function Row11() {
         </div>
       </Both>
 
-      <Both title="ContextMenu: every role on both screens (open each one)">
+      <Both title="ContextMenu: on both screens (open each one)">
         <div className="gallery-stack">
-          {COMBOS.map(({ role, where, label }) => (
+          {COMBOS.map(({ where, label }) => (
             <div className="gallery-row" key={label}>
               <ContextMenu
-                role={role}
                 where={where}
                 onPin={say('Pin')}
-                onShare={say('Share')}
                 onCopyText={say('Copy as text')}
                 onMakeCopy={say('Make a copy')}
-                onArchive={say('Archive')}
                 onDelete={say('Delete')}
-                onLeave={say('Leave this note')}
               >
                 {({ triggerProps }) => <IconButton icon={MoreHorizontal} label={label} {...triggerProps} />}
               </ContextMenu>
@@ -78,10 +67,10 @@ export function Row11() {
             </div>
           ))}
           <div className="gallery-row">
-            <ContextMenu role="owner" where="list" pinned archived onPin={say('Unpin')} onArchive={say('Unarchive')}>
-              {({ triggerProps }) => <IconButton icon={MoreHorizontal} label="Pinned and archived" {...triggerProps} />}
+            <ContextMenu where="list" pinned onPin={say('Unpin')}>
+              {({ triggerProps }) => <IconButton icon={MoreHorizontal} label="Pinned" {...triggerProps} />}
             </ContextMenu>
-            <span className="gallery-muted">Owner, pinned and archived (Unpin, Unarchive)</span>
+            <span className="gallery-muted">Pinned (Unpin)</span>
           </div>
         </div>
       </Both>

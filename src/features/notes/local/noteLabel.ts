@@ -73,8 +73,25 @@ function stripMarkdownLine(line: string): string {
   return text;
 }
 
-export function deriveNoteLabel(content: string): NoteLabel {
+/**
+ * With an AI title (AI tidy, inferred from the whole note), that title is the
+ * label and the preview is the note's own text from its first line. Without
+ * one, the first non-blank line stands in until the note has a title.
+ */
+export function deriveNoteLabel(content: string, aiTitle?: string | null): NoteLabel {
   const trimmed = content.trim();
+  const title = aiTitle?.trim() ?? '';
+
+  if (title !== '') {
+    const remainder = trimmed
+      .split('\n')
+      .map((line) => stripMarkdownLine(line).trim())
+      .filter((line) => line !== '')
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return { label: title, remainder };
+  }
 
   if (trimmed === '') {
     return { label: EMPTY_NOTE_LABEL, remainder: '' };

@@ -5,8 +5,7 @@ export const GROUP_ORDER = ['pinned', 'today', 'yesterday', 'week', 'earlier'] a
 export type NoteGroup = (typeof GROUP_ORDER)[number];
 
 export interface Section {
-  /** Null for a list with no group labels (Recently deleted). */
-  group: NoteGroup | null;
+  group: NoteGroup;
   items: ListItem[];
 }
 
@@ -45,10 +44,9 @@ export function rowDate(item: Pick<ListItem, 'pinned' | 'at'>, now: number): str
   }
 }
 
-/** Newest first. Grouped, or one flat section when the view has no group labels. */
-export function sectionsFor(items: readonly ListItem[], now: number, grouped: boolean): Section[] {
+/** Newest first, grouped. */
+export function sectionsFor(items: readonly ListItem[], now: number): Section[] {
   const recent = [...items].sort((a, b) => b.at - a.at || a.id.localeCompare(b.id));
-  if (!grouped) return recent.length > 0 ? [{ group: null, items: recent }] : [];
   return GROUP_ORDER.map((group) => ({
     group,
     items: recent.filter((item) => groupOf(item, now) === group),

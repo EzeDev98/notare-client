@@ -12,15 +12,12 @@ const AUTHENTICATED_PATHS: Array<{ path: string; expectedTitle: string }> = [
   { path: '/notes', expectedTitle: 'Notes · Notare' },
   { path: '/notes/new', expectedTitle: 'New note · Notare' },
   // Old URLs that redirect into the list (ROUTE_REDIRECTS), kept for one release.
-  { path: '/archived', expectedTitle: 'Archived · Notare' },
+  { path: '/archived', expectedTitle: 'Notes · Notare' },
   { path: '/search', expectedTitle: 'Notes · Notare' },
-  { path: '/shared', expectedTitle: 'Shared with me · Notare' },
-  { path: '/collaborations', expectedTitle: 'Shared with me · Notare' },
   { path: '/notifications', expectedTitle: 'Notes · Notare' },
-  { path: '/account/sessions', expectedTitle: 'Devices · Notare' },
-  // Dynamic routes ('/notes/:noteId', '/notes/:noteId/share') are deliberately absent:
+  // Dynamic routes ('/notes/:noteId') are deliberately absent:
   // they need a real id and seeded data to resolve to anything but a not-found state.
-  // '/trash', '/collaborations/invite' and '/voice' have no route any more, so they are
+  // '/trash' and '/voice' have no route any more, so they are
   // not listed as pages that resolve.
 ];
 

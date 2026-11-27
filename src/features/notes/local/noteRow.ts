@@ -20,9 +20,6 @@ import type { ServerDateTime } from '@/lib/http/types';
  * The mapping between the two lives in one file (mappers.ts), so the
  * translation is thought about once rather than everywhere.
  */
-/** What this person may do with a note (master 6.3.1). Shared notes live in `shared`. */
-export type NoteRole = 'owner' | 'editor' | 'viewer';
-
 export interface NoteRow {
   /**
    * PRIMARY KEY. A UUID we generate, stable from the moment the note exists
@@ -60,15 +57,14 @@ export interface NoteRow {
    *
    * A boolean here is not a type error and not a runtime error. The value
    * stores fine; it simply never appears in an index, so
-   * where('[ownerId+deleted+archived]').equals([1, false, false]) matches
+   * where('[ownerId+deleted]').equals([1, false]) matches
    * NOTHING. No exception, an empty list, and a notes screen that is
    * permanently blank while the data sits in the database.
    *
-   * `dirty` was already 0 | 1 for this reason. These three are in the
+   * `dirty` was already 0 | 1 for this reason. `deleted` is in the
    * compound index and need it just as much.
    */
   pinned: 0 | 1;
-  archived: 0 | 1;
   deleted: 0 | 1;
 
   /**
@@ -123,23 +119,19 @@ export interface NoteRow {
   localUpdatedAt: number;
 
   /*
-   * Added in database version 4. Not indexed. Rows written before version 4
-   * get `role` from the upgrade; the others are absent until a step fills
-   * them, so they are optional. `role` is required (step 8k).
+   * Added in database version 4. Not indexed, and absent until a step fills
+   * them, so they are optional.
    */
-
-  /** What this person may do (features/notes/permissions.ts). */
-  role: NoteRole;
-
-  /** When the note will be removed for good, epoch ms. Set when it is deleted (8i). */
-  purgeAt?: number | null;
-
-  /** The owner's display name, for notes someone else owns. */
-  ownerName?: string | null;
 
   /** The editing document's saved state (a Yjs update). Not used until step 18. */
   bodyState?: Uint8Array | null;
 
   /** The converter version that built `bodyState` from old text (step 18d). Absent if the body was typed. */
   bodySeedVersion?: number;
+
+  /** The server's word that "Restore original" can undo AI tidy on this note. Not indexed. */
+  restorable?: boolean;
+
+  /** The note's title, inferred by AI tidy from the whole note. Not indexed. Null until it has one. */
+  aiTitle?: string | null;
 }

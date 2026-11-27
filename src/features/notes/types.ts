@@ -9,7 +9,6 @@ export interface NoteResponse {
   id: number;
   content: string | null;
   pinned: boolean;
-  archived: boolean;
 
   /** A change counter kept by the server. Informational only; never sent back. */
   version: number;
@@ -18,6 +17,10 @@ export interface NoteResponse {
   updatedAt: ServerDateTime;
   ownerId: number;
   lastModifiedBy: number | null;
+  /** True while the note is exactly as AI tidy left it, so "Restore original" can undo the tidy. */
+  restorable?: boolean;
+  /** The note's title, inferred by AI tidy from the whole note. Never part of `content`. */
+  aiTitle?: string | null;
 }
 
 /** A note as it appears in a list — no full content. */
@@ -25,21 +28,8 @@ export interface NoteSummaryResponse {
   id: number;
   contentPreview: string | null;
   pinned: boolean;
-  archived: boolean;
   version: number;
   updatedAt: ServerDateTime;
-}
-
-/** A trashed note: the ordinary summary plus when it was trashed (B4). */
-export interface TrashedNoteResponse {
-  note: NoteSummaryResponse;
-
-  /**
-   * NOT the basis for a countdown. Nothing on the server purges trashed notes
-   * — SyncRetentionJob touches the sync tables only — so a UI promising
-   * "deleted in 30 days" would be lying.
-   */
-  deletedAt: ServerDateTime | null;
 }
 
 export interface CreateNoteRequest {

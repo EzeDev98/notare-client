@@ -4,8 +4,6 @@ import { useNavigate } from 'react-router';
 
 import { ROUTES } from '@/app/routes';
 import { useToast } from '@/design-system/ui';
-import { collaborationService } from '@/features/collaboration/api/collaborationService';
-import { refreshPeople } from '@/features/collaboration/refreshPeople';
 import { clipRepository } from '@/features/notes/local/clipRepository';
 import { noteRepository } from '@/features/notes/local/noteRepository';
 import { notificationService } from '@/features/notifications/api/notificationService';
@@ -51,30 +49,8 @@ export function useNotificationActions(onClose: () => void) {
   return {
     busyId,
 
-    accept: (n: NotificationResponse, name: string) =>
-      work(n, async () => {
-        await collaborationService.acceptCollaboration(targetIdOf(n));
-        await finish(n);
-        toast(C.toasts.connected(name), { tone: 'success' });
-        void refreshPeople().catch(() => undefined);
-      }),
-
-    decline: (n: NotificationResponse) =>
-      work(n, async () => {
-        await collaborationService.rejectCollaboration(targetIdOf(n));
-        await finish(n);
-        toast(C.toasts.declined);
-      }),
-
     open: (n: NotificationResponse) =>
       work(n, async () => {
-        if (n.type === 'NOTE_SHARED' || n.type === 'NOTE_SHARE_PERMISSION_CHANGED') {
-          await notificationService.markRead(n.id);
-          void queryClient.invalidateQueries({ queryKey: notificationKeys.all });
-          onClose();
-          void navigate(ROUTES.note(targetIdOf(n)));
-          return;
-        }
         const clip = await clipRepository.findByServerId(targetIdOf(n));
         const note = clip ? await noteRepository.getByLocalId(clip.noteId) : undefined;
         if (!note) {

@@ -14,8 +14,6 @@ interface ListRowProps {
   date: string;
   selected: boolean;
   notSynced: boolean;
-  /** False in Recently deleted, where a row has Restore instead of a menu. */
-  withMenu: boolean;
   actions: ListActions;
   onOpen: () => void;
 }
@@ -24,7 +22,7 @@ interface ListRowProps {
  * One row with its menu. The menu opens three ways: the visible more button,
  * right-click (a two-finger trackpad click too) and press-and-hold.
  */
-export function ListRow({ item, date, selected, notSynced, withMenu, actions, onOpen }: ListRowProps) {
+export function ListRow({ item, date, selected, notSynced, actions, onOpen }: ListRowProps) {
   const [point, setPoint] = useState<PopoverPoint | null>(null);
   const press = useLongPressContextMenu((x, y) => {
     setPoint({ x, y });
@@ -37,59 +35,31 @@ export function ListRow({ item, date, selected, notSynced, withMenu, actions, on
       date={date}
       selected={selected}
       pinned={item.pinned}
-      shared={item.shared}
       voice={item.voice}
       notSynced={notSynced}
       matchedInTranscript={item.transcriptOnly}
-      onOpen={withMenu ? onOpen : undefined}
-      deleted={
-        !withMenu && item.daysLeft !== null
-          ? {
-              daysLeft: Math.max(1, item.daysLeft),
-              onRestore: () => {
-                actions.restore(item);
-              },
-            }
-          : undefined
-      }
-      rootProps={withMenu ? press : undefined}
+      onOpen={onOpen}
+      rootProps={press}
       menu={
-        withMenu ? (
-          <ContextMenu
-            role={item.role}
-            where="list"
-            pinned={item.pinned}
-            archived={item.archived}
-            onPin={() => {
-              actions.pin(item);
-            }}
-            onShare={() => {
-              actions.share(item);
-            }}
-            onMakeCopy={() => {
-              actions.copy(item);
-            }}
-            onArchive={() => {
-              actions.archive(item);
-            }}
-            onDelete={() => {
-              actions.trash(item);
-            }}
-            onLeave={
-              actions.leave
-                ? () => {
-                    actions.leave?.(item);
-                  }
-                : undefined
-            }
-            point={point}
-            onPointClose={() => {
-              setPoint(null);
-            }}
-          >
-            {({ triggerProps }) => <IconButton icon={MoreHorizontal} label={LIST_COPY.rowMenu} {...triggerProps} />}
-          </ContextMenu>
-        ) : undefined
+        <ContextMenu
+          where="list"
+          pinned={item.pinned}
+          onPin={() => {
+            actions.pin(item);
+          }}
+          onMakeCopy={() => {
+            actions.copy(item);
+          }}
+          onDelete={() => {
+            actions.delete(item);
+          }}
+          point={point}
+          onPointClose={() => {
+            setPoint(null);
+          }}
+        >
+          {({ triggerProps }) => <IconButton icon={MoreHorizontal} label={LIST_COPY.rowMenu} {...triggerProps} />}
+        </ContextMenu>
       }
     />
   );

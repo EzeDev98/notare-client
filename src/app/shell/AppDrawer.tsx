@@ -1,16 +1,13 @@
+import { Contrast, Info, LogOut, RefreshCw, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router';
 
 import { useAuth } from '@/app/providers/auth-context';
-import { useTheme } from '@/app/providers/theme-context';
 import { ROUTES } from '@/app/routes';
 import { DrawerContent, Overlay, type Tint } from '@/design-system/ui';
 import { displayName } from '@/features/auth/displayName';
 import type { CurrentUser } from '@/features/auth/types';
 
-import { DRAWER_VIEWS, SHELL_COPY } from './shellContent';
-import { useDrawerCounts } from './useDrawerCounts';
-import { useDrawerSync } from './useDrawerSync';
-import { useNotesView } from './useNotesView';
+import { SHELL_COPY } from './shellContent';
 import { useSessionUser } from './useSessionUser';
 
 interface AppDrawerProps {
@@ -23,11 +20,7 @@ const tintFor = (userId: number): Tint => ((Math.abs(userId) % 6) + 1) as Tint;
 
 function SignedInDrawer({ user, open, onClose }: AppDrawerProps & { user: CurrentUser }) {
   const { logout } = useAuth();
-  const { resolved } = useTheme();
   const navigate = useNavigate();
-  const current = useNotesView();
-  const counts = useDrawerCounts(user.id);
-  const sync = useDrawerSync(counts.waiting);
 
   const go = (to: string) => () => {
     onClose();
@@ -35,27 +28,26 @@ function SignedInDrawer({ user, open, onClose }: AppDrawerProps & { user: Curren
   };
 
   const items = [
-    ...DRAWER_VIEWS.map(({ view, label }) => ({
-      label,
-      count: counts[view],
-      current: current === view,
-      onSelect: go(ROUTES.notes(view)),
-    })),
-    { label: SHELL_COPY.settings, current: current === 'settings', onSelect: go(ROUTES.settings()) },
+    { label: SHELL_COPY.appearance, icon: Contrast, onSelect: go(ROUTES.settingsAppearance()) },
+    { label: SHELL_COPY.sync, icon: RefreshCw, onSelect: go(ROUTES.settingsSync()) },
+    { label: SHELL_COPY.settings, icon: Settings, onSelect: go(ROUTES.settingsGeneral()) },
+    { label: SHELL_COPY.about, icon: Info, onSelect: go(ROUTES.settingsAbout()) },
   ];
 
   return (
     <Overlay open={open} onClose={onClose} variant="drawer" title={SHELL_COPY.drawerName}>
       <DrawerContent
-        logoScheme={resolved}
         name={displayName(user)}
         email={user.email}
         tint={tintFor(user.id)}
         items={items}
-        sync={sync}
-        onSignOut={() => {
-          onClose();
-          void logout();
+        signOut={{
+          label: SHELL_COPY.signOut,
+          icon: LogOut,
+          onSelect: () => {
+            onClose();
+            void logout();
+          },
         }}
       />
     </Overlay>

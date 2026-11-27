@@ -1,4 +1,3 @@
-import { purgeExpiredTrash } from '@/features/notes/local/housekeeping';
 import { uploadPendingClips } from '@/sync/clipUpload';
 import { releaseLegacyConflicts } from '@/sync/releaseLegacyConflicts';
 import { pullChanges } from '@/sync/pull';
@@ -202,8 +201,6 @@ export function start(ownerId: number | null): () => void {
 
   void requestSync('start');
   void releaseLegacyConflicts().catch(() => undefined);
-  // Once per start: remove deleted notes whose purge date has passed (step 8i).
-  void purgeExpiredTrash().catch(() => undefined);
 
   return function stop(): void {
     window.removeEventListener('online', handleOnline);

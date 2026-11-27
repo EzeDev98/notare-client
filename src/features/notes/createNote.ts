@@ -81,8 +81,8 @@ export function discardDraft(id: string): void {
 }
 
 /**
- * Writes the draft the first time it has content: the row (dirty, pending,
- * role owner) and ONE CREATE in the outbox. Returns the row, or null when the
+ * Writes the draft the first time it has content: the row (dirty, pending)
+ * and ONE CREATE in the outbox. Returns the row, or null when the
  * draft is still blank (or was already written).
  */
 export function persistDraftIfContent(draft: Draft): Promise<NoteRow | null> {

@@ -51,7 +51,7 @@ export function Row5() {
       <Both title="Tag and Badge">
         <div className="gallery-row">
           <Tag>Pinned</Tag>
-          <Tag tone="brand">Shared</Tag>
+          <Tag tone="brand">Synced</Tag>
           <Badge>1</Badge>
           <Badge>12</Badge>
           <Badge>120</Badge>

@@ -33,7 +33,8 @@ export function LocalNoteDetailPage() {
 
   // 1C/4G: no title field — the note domain has none. Same pattern as
   // NoteDetailPage's document title.
-  const label = state.status === 'ready' ? deriveNoteLabel(state.row.content).label : null;
+  const label =
+    state.status === 'ready' ? deriveNoteLabel(state.row.content, state.row.aiTitle).label : null;
   useDocumentTitle(label ?? 'Note');
 
   return (

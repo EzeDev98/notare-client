@@ -56,16 +56,6 @@ export interface AuthTokens {
  * Wire types — mirroring the server's DTOs exactly
  * ======================================================================== */
 
-/**
- * Session timestamps, which are Java Instant and DO carry a Z.
- *
- * A separate alias from ServerDateTime on purpose: everything else in this API
- * is LocalDateTime with no zone at all. new Date() is correct on this one and
- * silently wrong by the local offset on the other, and the type name is the
- * only thing standing between a reader and that mistake.
- */
-export type ServerInstant = string;
-
 export interface LoginRequest {
   /** Either. The server resolves both against username and email. */
   usernameOrEmail: string;
@@ -131,18 +121,6 @@ export interface ResetPasswordRequest {
   /** confirmNewPassword, NOT confirmPassword — the reset DTO differs from
    *  registration's. Verified against the server source. */
   confirmNewPassword: string;
-}
-
-export interface SessionResponse {
-  sessionId: string;
-  userAgent: string | null;
-  ipAddress: string | null;
-  createdAt: ServerInstant;
-  lastUsedAt: ServerInstant;
-  expiresAt: ServerInstant;
-  /** True for the session making the request — so the UI can label it and
-   *  warn before revoking it. */
-  current: boolean;
 }
 
 export interface LogoutResponse {

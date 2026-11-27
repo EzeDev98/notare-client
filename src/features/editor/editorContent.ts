@@ -1,6 +1,7 @@
 /** Words in the note editor (master 6.4). */
 export const EDITOR_COPY = {
   copiedAsText: 'Copied as text',
+  restoreFailed: 'Could not restore the original. Check your connection and try again.',
   placeholder: 'Start writing',
   mic: {
     helpTitle: 'Allow the microphone',

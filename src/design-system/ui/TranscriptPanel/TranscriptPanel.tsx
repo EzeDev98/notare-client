@@ -8,14 +8,12 @@ interface TranscriptPanelProps {
   text: string;
   /** False hides the panel but keeps it in the page. Default true. */
   shown?: boolean | undefined;
-  /** A viewer can read and copy, not insert. */
-  viewer?: boolean | undefined;
   onCopy?: (() => void) | undefined;
   onInsert?: (() => void) | undefined;
 }
 
 /** The transcript of a voice clip with Copy and Insert into note. */
-export function TranscriptPanel({ id, text, shown = true, viewer = false, onCopy, onInsert }: TranscriptPanelProps) {
+export function TranscriptPanel({ id, text, shown = true, onCopy, onInsert }: TranscriptPanelProps) {
   return (
     <div className="n-transcript" id={id} hidden={!shown}>
       <p className="n-transcript__label">Transcript</p>
@@ -24,11 +22,9 @@ export function TranscriptPanel({ id, text, shown = true, viewer = false, onCopy
         <Button variant="ghost" onClick={onCopy}>
           Copy
         </Button>
-        {viewer ? null : (
-          <Button variant="secondary" onClick={onInsert}>
-            Insert into note
-          </Button>
-        )}
+        <Button variant="secondary" onClick={onInsert}>
+          Insert into note
+        </Button>
       </div>
     </div>
   );

@@ -21,7 +21,7 @@ const NEVER_UPWARD = 'Imports must point down the layer stack. See docs/architec
 // Route strings (7a, S-12). Only src/app/routes.ts may spell a screen path.
 // \x2f is a slash: ESLint selectors cannot hold a literal slash inside a regex.
 const ROUTE_RE =
-  '^\\x2f(notes|settings|sign-in|register|verify|reset|install|welcome|login|reset-password|archived|trash|search|shared|shared-voice|voice|collaborations|notifications|account)(\\x2f|\\?|$)';
+  '^\\x2f(notes|settings|sign-in|register|verify|reset|install|welcome|login|reset-password|archived|trash|search|voice|notifications|account)(\\x2f|\\?|$)';
 const ROUTE_STRING = {
   selector: `Literal[value=/${ROUTE_RE}/], TemplateElement[value.raw=/${ROUTE_RE}/]`,
   message: 'No path strings outside src/app/routes.ts. Use ROUTES from @/app/routes.',
@@ -312,7 +312,7 @@ export default tseslint.config(
           patterns: [
             ...PATTERNFLY_PATTERNS,
             {
-              group: ['**/api/noteService', '**/api/voiceService', '**/api/sharedNoteService'],
+              group: ['**/api/noteService', '**/api/voiceService'],
               message: 'Talk to the note server through `api` from @/core/api.',
             },
           ],

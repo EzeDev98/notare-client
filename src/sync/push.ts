@@ -133,7 +133,8 @@ async function run(): Promise<void> {
       switch (result.status) {
         case 'APPLIED': {
           if (row.type === 'DELETE') {
-            await noteRepository.applyDeleteAck(row.localId, expectedLocalUpdatedAt);
+            await outboxRepository.clearForNote(row.localId);
+            await noteRepository.hardDelete(row.localId);
           } else if (result.note) {
             await noteRepository.applyServerAck(
               row.localId,

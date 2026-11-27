@@ -53,7 +53,7 @@ describe('pushOutbox — APPLIED', () => {
     await expect(outboxRepository.count()).resolves.toBe(0);
   });
 
-  it('applies a DELETE with no note payload, without touching a version', async () => {
+  it('removes the note for good once the server applies its DELETE', async () => {
     const row = makeRow({ serverId: 9, localId: 'local-2', deleted: 1, dirty: 1 });
     await noteRepository.put(row);
     await outboxRepository.enqueueDelete({ localId: row.localId, noteId: 9 });
@@ -72,9 +72,7 @@ describe('pushOutbox — APPLIED', () => {
 
     await pushOutbox();
 
-    const updated = await noteRepository.getByLocalId('local-2');
-    expect(updated?.dirty).toBe(0);
-    expect(updated?.syncState).toBe('synced');
+    await expect(noteRepository.getByLocalId('local-2')).resolves.toBeUndefined();
     await expect(outboxRepository.count()).resolves.toBe(0);
   });
 });

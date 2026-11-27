@@ -37,17 +37,17 @@ export function Row3() {
       </Both>
       <Both title="SelectField: placeholder, error, disabled">
         <div className="gallery-stack">
-          <SelectField label="Role" placeholder="Choose a role">
-            <option value="viewer">Viewer</option>
-            <option value="editor">Editor</option>
+          <SelectField label="Theme" placeholder="Choose a theme">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
           </SelectField>
-          <SelectField label="Role" placeholder="Choose a role" error="Choose a role.">
-            <option value="viewer">Viewer</option>
-            <option value="editor">Editor</option>
+          <SelectField label="Theme" placeholder="Choose a theme" error="Choose a theme.">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
           </SelectField>
-          <SelectField label="Role" defaultValue="editor" disabled>
-            <option value="viewer">Viewer</option>
-            <option value="editor">Editor</option>
+          <SelectField label="Theme" defaultValue="dark" disabled>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
           </SelectField>
         </div>
       </Both>

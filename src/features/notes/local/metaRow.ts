@@ -25,10 +25,6 @@ export const META_KEYS = {
   installChoice: 'install.choice',
   /** true when voice clips may download only on Wi-Fi (Settings > Sync and storage). */
   wifiOnlyClips: 'clips.wifiOnly',
-  /** The PIN lock: a salted hash, never the digits (Settings > Security). */
-  pinLock: 'security.pin',
-  /** Wrong PINs since the last right one. Kept on disk so closing the app does not reset it. */
-  pinFailures: 'security.pinFailures',
   /** When the person last pressed Check for updates, epoch ms (Settings > About). */
   updateCheckedAt: 'app.updateCheckedAt',
 } as const;

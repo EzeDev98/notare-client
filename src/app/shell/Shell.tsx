@@ -7,7 +7,6 @@ import { NotesListPane } from '@/pages/Home/NotesListPane';
 import { BarSlotProvider } from '@/shared/hooks/useBarSlot';
 
 import { AppDrawer } from './AppDrawer';
-import { BackOnlineToast } from './BackOnlineToast';
 import { HeaderActions } from './HeaderActions';
 import { SHELL_COPY } from './shellContent';
 import { ShellHeader } from './ShellHeader';
@@ -50,7 +49,6 @@ export function Shell() {
             <AnimatedRoutes fill />
           </main>
         </div>
-        <BackOnlineToast />
         <AppDrawer
           open={menuOpen}
           onClose={() => {

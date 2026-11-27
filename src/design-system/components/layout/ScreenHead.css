@@ -14,8 +14,8 @@
 
   .ui-screen-head__description {
     margin: 0;
-    font-size: var(--text-sm);
-    line-height: var(--leading-sm);
+    font-size: var(--text-xs);
+    line-height: var(--leading-xs);
     color: var(--color-text-muted);
   }
 }

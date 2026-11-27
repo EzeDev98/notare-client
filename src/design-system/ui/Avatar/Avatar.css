@@ -42,12 +42,4 @@
     background: var(--color-tile);
     color: var(--color-brand);
   }
-
-  .n-avatars {
-    display: inline-flex;
-  }
-
-  .n-avatars .n-avatar + .n-avatar {
-    margin-inline-start: calc(var(--gap) / -2);
-  }
 }

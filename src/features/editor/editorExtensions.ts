@@ -59,11 +59,11 @@ function baseExtensions(builtInUndo: boolean) {
   ];
 }
 
-/** Plain editor with its own undo. Used by the shared-note page until step 18. */
+/** Plain editor with its own undo. Gives noteBody.ts its schema. */
 export const editorExtensions = baseExtensions(true);
 
 /** The note editor: the body lives in a Y.Doc, undo comes from Yjs. */
-export function collaborativeExtensions(document: Doc) {
+export function noteBodyExtensions(document: Doc) {
   return [
     ...baseExtensions(false),
     VoiceClip,

@@ -20,7 +20,7 @@
     --p-text-light: #1c1a20;      --p-text-dark: #ece9f0;
     --p-muted-light: #6b6670;     --p-muted-dark: #a09ba8;
     --p-line-light: #e3dfd8;      --p-line-dark: #2e2a35;
-    --p-field-light: #8f8a94;     --p-field-dark: #7a7584;
+    --p-field-light: #cfcbd2;     --p-field-dark: #7a7584;
     --p-red-600: #b4372f;         --p-red-300: #f0928a;
 
     --p-focus-tint-light: rgba(107, 91, 181, 0.2);
@@ -66,13 +66,13 @@
 
     --text-xs: 12px;     --leading-xs: 16px;
     --text-sm: 14px;     --leading-sm: 20px;
-    --text-md: 16px;     --leading-md: 24px;
-    --text-lg: 20px;     --leading-lg: 28px;
+    --text-md: 14px;     --leading-md: 24px;
+    --text-lg: 16px;     --leading-lg: 24px;
     --text-total: 24px;  --leading-total: 32px; /* unused in Notare */
 
     --border-width: 0.5px;
-    --radius: 4px;
-    --radius-sm: 3px;
+    --radius: 2px;
+    --radius-sm: 2px;
 
     --focus-border: var(--color-brand);
     --focus-ring-color: var(--color-focus-tint);
@@ -89,7 +89,7 @@
     --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
     /* ---------- 3. Component ---------- */
-    --button-height: 32px;
+    --button-height: 28px;
     --button-height-block: 42px; /* full-width buttons */
     --button-pad-x: 12px;
     --input-height: 40px;

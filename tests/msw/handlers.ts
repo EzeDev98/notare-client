@@ -1,10 +1,6 @@
 import { http, HttpResponse } from 'msw';
 
 import { makeNote, makeNoteSummary, makePage } from '../fixtures/notes';
-import { makeSharedNoteSummary } from '../fixtures/sharedNotes';
-import { makeCollaboration, makeUserSummary } from '../fixtures/collaboration';
-import { makeShare } from '../fixtures/shares';
-import { makeLookupUser } from '../fixtures/userLookup';
 import { makeNotification } from '../fixtures/notifications';
 import { makeTranscription, makeVoiceNote } from '../fixtures/voice';
 
@@ -35,12 +31,6 @@ export const handlers = [
     }
     return HttpResponse.json(makePage([makeNoteSummary({ id: 1, contentPreview: term })]));
   }),
-
-  http.get(`${BASE}/notes/trash`, () =>
-    HttpResponse.json(
-      makePage([{ note: makeNoteSummary({ id: 9 }), deletedAt: '2026-08-05T14:00:00.000' }]),
-    ),
-  ),
 
   /*
    * useSync (AppLayout) mounts unconditionally and pulls on mount, in every
@@ -96,10 +86,6 @@ export const handlers = [
     );
   }),
 
-  http.post(`${BASE}/notes/:noteId/restore`, ({ params }) =>
-    HttpResponse.json(makeNote({ id: Number(params['noteId']) })),
-  ),
-
   http.post(`${BASE}/notes/:noteId/pin`, ({ params }) =>
     HttpResponse.json(makeNote({ id: Number(params['noteId']), pinned: true, version: 1 })),
   ),
@@ -109,98 +95,7 @@ export const handlers = [
   ),
 
   // 204, no body — the case `await response.json()` chokes on (3B).
-  http.delete(`${BASE}/notes/:noteId/permanent`, () => new HttpResponse(null, { status: 204 })),
-
   http.delete(`${BASE}/notes/:noteId`, () => new HttpResponse(null, { status: 204 })),
-
-  // ---- shared notes (recipient side) -------------------------------------
-
-  http.get(`${BASE}/shared-notes`, () => HttpResponse.json(makePage([makeSharedNoteSummary()]))),
-
-  // ---- user lookup --------------------------------------------------
-
-  // Every requested id resolves — matches makeLookupUser's own default
-  // ("Jane Doe" regardless of id), which several pre-existing tests
-  // already assumed before this handler existed to back that assumption.
-  // A test that needs a genuinely unresolvable id (the "Unknown user"
-  // fallback path) overrides this per-test via server.use() to return a
-  // filtered subset instead.
-  http.get(`${BASE}/user/lookup`, ({ request }) => {
-    const ids = new URL(request.url).searchParams.getAll('ids').map(Number);
-    return HttpResponse.json(ids.map((id) => makeLookupUser({ id })));
-  }),
-
-  // ---- user search ----------------------------------------------------
-
-  http.get(`${BASE}/user/search`, ({ request }) => {
-    const q = new URL(request.url).searchParams.get('q') ?? '';
-    // Blank query -> empty page, matching the real server (this is other
-    // people's data, not a browse-everyone endpoint).
-    return HttpResponse.json(makePage(q === '' ? [] : [makeUserSummary()]));
-  }),
-
-  // ---- collaborations ---------------------------------------------------
-
-  http.get(`${BASE}/collaborations/sent`, () => HttpResponse.json(makePage([makeCollaboration()]))),
-
-  http.get(`${BASE}/collaborations/received`, () =>
-    HttpResponse.json(makePage([makeCollaboration({ status: 'PENDING' })])),
-  ),
-
-  // ONLY collaboratorId — see collaboration/types.ts's corrected doc
-  // comment on CreateCollaborationRequest. A collaboration is not scoped
-  // to a note.
-  http.post(`${BASE}/collaborations`, async ({ request }) => {
-    const body = (await request.json()) as { collaboratorId: number };
-    return HttpResponse.json(
-      makeCollaboration({
-        collaboratorId: body.collaboratorId,
-        status: 'PENDING',
-      }),
-      { status: 201 },
-    );
-  }),
-
-  http.post(`${BASE}/collaborations/:id/accept`, ({ params }) =>
-    HttpResponse.json(makeCollaboration({ id: Number(params['id']), status: 'ACCEPTED' })),
-  ),
-
-  http.post(`${BASE}/collaborations/:id/reject`, ({ params }) =>
-    HttpResponse.json(makeCollaboration({ id: Number(params['id']), status: 'REJECTED' })),
-  ),
-
-  http.delete(`${BASE}/collaborations/:id`, () => new HttpResponse(null, { status: 204 })),
-
-  // ---- sharing (owner side) ----------------------------------------------
-
-  http.get(`${BASE}/notes/:noteId/shares`, ({ params }) =>
-    HttpResponse.json(makePage([makeShare({ noteId: Number(params['noteId']) })])),
-  ),
-
-  http.post(`${BASE}/notes/:noteId/shares`, async ({ params, request }) => {
-    const body = (await request.json()) as { sharedWithUserId: number; permission: 'READ' | 'WRITE' };
-    return HttpResponse.json(
-      makeShare({
-        noteId: Number(params['noteId']),
-        sharedWithUserId: body.sharedWithUserId,
-        permission: body.permission,
-      }),
-      { status: 201 },
-    );
-  }),
-
-  http.put(`${BASE}/notes/:noteId/shares/:userId`, async ({ params, request }) => {
-    const body = (await request.json()) as { permission: 'READ' | 'WRITE' };
-    return HttpResponse.json(
-      makeShare({
-        noteId: Number(params['noteId']),
-        sharedWithUserId: Number(params['userId']),
-        permission: body.permission,
-      }),
-    );
-  }),
-
-  http.delete(`${BASE}/notes/:noteId/shares/:userId`, () => new HttpResponse(null, { status: 204 })),
 
   // ---- notifications ------------------------------------------------------
 

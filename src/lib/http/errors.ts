@@ -67,14 +67,7 @@ export function isNotFound(error: unknown): boolean {
   return statusOf(error) === 404;
 }
 
-/**
- * 400 — the collaboration state machine's opposite-terminal-state case
- * (NOTARE-SERVER.md §8): e.g. accepting an invitation that was already
- * rejected. A same-status transition is an idempotent 200; only a
- * transition BETWEEN the two terminal states (ACCEPTED <-> REJECTED) is
- * rejected outright, and this is the helper that distinguishes it from
- * every other validation 400 in the app.
- */
+/** 400: the server refused the request as invalid. */
 export function isBadRequest(error: unknown): boolean {
   return statusOf(error) === 400;
 }
