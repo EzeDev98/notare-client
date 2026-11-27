@@ -1,11 +1,4 @@
-/**
- * Terms of use and Privacy for Notare (step 13h, O-18).
- *
- * DRAFT, adapted from the Ahorra text for BuildingWithEze (BWE). A lawyer must
- * review it before release (release checklist, step 20). Replace every
- * [bracketed item] first. Each `body` is a list of paragraphs; nothing else on
- * the legal screens changes when the words do.
- */
+/** The Terms of use and Privacy text. */
 export const LEGAL_DOCS = {
   terms: {
     title: 'Terms of use',

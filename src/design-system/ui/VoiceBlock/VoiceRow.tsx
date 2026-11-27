@@ -1,3 +1,4 @@
+/** Voice clip states and how each one is shown. */
 import { Check, Pause, Play, Trash2, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -26,12 +27,9 @@ export type VoiceState =
 
 export interface VoiceBlockProps {
   state: VoiceState;
-  /** Time text such as "0:42". */
   time?: string | undefined;
-  /** 0 to 100, used by the playing state. */
   progress?: number | undefined;
   transcriptShown?: boolean | undefined;
-  /** id of the transcript panel, so the toggle can point at it. */
   transcriptId?: string | undefined;
   onPlay?: (() => void) | undefined;
   onPause?: (() => void) | undefined;
@@ -40,9 +38,7 @@ export interface VoiceBlockProps {
   onTranscribe?: (() => void) | undefined;
   onToggleTranscript?: (() => void) | undefined;
   onTryAgain?: (() => void) | undefined;
-  /** Discards a recording, or removes a block that could not record. */
   onRemove?: (() => void) | undefined;
-  /** Deletes a saved clip from the note. Shown on every saved-clip state when given. */
   onDelete?: (() => void) | undefined;
 }
 
@@ -54,7 +50,6 @@ export interface VoiceView {
 
 const VIEW = (row: ReactNode, help: string | null = null, recording = false): VoiceView => ({ row, recording, help });
 
-/** Maps one voice state to its row, its help line and whether it is recording. */
 export function voiceView(p: VoiceBlockProps): VoiceView {
   const time = <span className="n-voice__time">{p.time ?? '0:42'}</span>;
   const play = <IconButton icon={Play} label="Play voice clip" onClick={p.onPlay} />;

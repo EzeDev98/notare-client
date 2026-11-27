@@ -1,3 +1,4 @@
+/* Styles for EmptyState. */
 @layer components {
   .ui-empty {
     display: flex;

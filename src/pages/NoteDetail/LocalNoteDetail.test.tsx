@@ -1,3 +1,4 @@
+/** Tests for LocalNoteDetail. */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
@@ -46,14 +47,10 @@ describe('the local note detail view', () => {
     );
 
     const { container } = renderLocal();
-    // No `.value`/display-value on a contenteditable div — wait on the
-    // rendered text instead, same wait-for-load purpose as before.
     await screen.findByText('Draft');
     await expectNoAxeViolations(container);
   });
 
-  // The whole point of this route: a note with no serverId yet must still
-  // open, reading Dexie directly rather than asking the server about it.
   it('loads a note by localId from Dexie, with no server request', async () => {
     let requested = false;
     server.use(
@@ -74,15 +71,10 @@ describe('the local note detail view', () => {
 
     renderLocal();
 
-    // No `.value`/display-value on a contenteditable div — read rendered text.
     expect(await screen.findByText('Written offline')).toBeInTheDocument();
     expect(requested).toBe(false);
   });
 
-  // useNote(serverId) would coerce a UUID through Number(...) and end up
-  // fetching /notes/NaN, or worse, some unrelated numeric-looking id. This
-  // route must never do that — it never turns localId into a serverId at
-  // all.
   it('does not treat the localId as a numeric serverId', async () => {
     let requestedPath: string | null = null;
     server.use(
@@ -114,8 +106,6 @@ describe('the local note detail view', () => {
 
     renderLocal();
 
-    // No `.value` on a contenteditable div — toHaveTextContent reads the
-    // rendered text instead.
     expect(await screen.findByLabelText('Note content')).toHaveTextContent('still unsynced');
   });
 

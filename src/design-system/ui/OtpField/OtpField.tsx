@@ -1,3 +1,4 @@
+/** A field for a one-time code. */
 import type { ChangeEvent, ClipboardEvent, FocusEvent, KeyboardEvent } from 'react';
 import { useRef } from 'react';
 import { flushSync } from 'react-dom';
@@ -11,12 +12,9 @@ interface OtpFieldProps {
   hint?: string;
   error?: string;
   optional?: boolean;
-  /** The digits typed so far, for example "123". */
   value: string;
   onChange: (value: string) => void;
-  /** Called once when all boxes are filled. */
   onComplete?: (value: string) => void;
-  /** 6 for a code, 4 (with `masked`) for the PIN. */
   length?: number;
   masked?: boolean;
   disabled?: boolean;
@@ -24,10 +22,6 @@ interface OtpFieldProps {
   className?: string;
 }
 
-/**
- * One box per digit. Supports typing, paste (also the browser's one-time-code
- * autofill into the first box), Backspace, and Left/Right arrows.
- */
 export function OtpField({
   label,
   hint,
@@ -49,7 +43,6 @@ export function OtpField({
   };
 
   const commit = (next: string) => {
-    // Rendered before the cursor moves, so the focus handler sees the digit just typed, not the old value.
     flushSync(() => {
       onChange(next);
     });

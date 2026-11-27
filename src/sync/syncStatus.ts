@@ -1,30 +1,15 @@
-/**
- * The sync engine's status, and nothing else — 8F's "sync status surface"
- * (architecture doc §3.8's `.status$`).
- *
- * Framework-free by the same rule as `push.ts`/`pull.ts`: this subsystem has
- * no knowledge of React. `useSyncStatus.ts` is the one file allowed to know
- * `useSyncExternalStore` exists; everything on this side of that line is a
- * plain subscribe/get/set triple any consumer — React or otherwise — could
- * use.
- */
-
+/** The sync engine's status. */
 export type SyncStatusValue = 'idle' | 'syncing' | 'offline' | 'error';
 
 export interface SyncStatus {
   status: SyncStatusValue;
-  /** Epoch ms of the last run that completed with no transport failure. */
   lastSyncedAt: number | null;
-  /** Set on 'error', cleared on the next clean run. */
   lastError: string | null;
-  /** Failed runs in a row while the browser said online. Back to 0 on a clean run (step 14b). */
   failures: number;
 }
 
-/** Failed runs in a row before the app says "Sync paused" (step 14b). */
 export const SYNC_PAUSED_AFTER_FAILURES = 2;
 
-/** Has the engine failed often enough to show "Sync paused"? */
 export function isSyncPaused(status: SyncStatus): boolean {
   return status.failures >= SYNC_PAUSED_AFTER_FAILURES;
 }
@@ -42,11 +27,6 @@ export function subscribeSyncStatus(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
-/**
- * `engine.ts`'s only way to change this. A partial patch, not a full
- * replacement — `run()` sets one or two fields at a time (e.g. `{ status:
- * 'syncing' }`) and has no reason to know or repeat the rest.
- */
 export function setSyncStatus(patch: Partial<SyncStatus>): void {
   current = { ...current, ...patch };
   listeners.forEach((listener) => {
@@ -54,7 +34,6 @@ export function setSyncStatus(patch: Partial<SyncStatus>): void {
   });
 }
 
-/** Test-only: back to the resting state, with no listeners left attached. */
 export function resetSyncStatusForTests(): void {
   current = { status: 'idle', lastSyncedAt: null, lastError: null, failures: 0 };
   listeners.clear();

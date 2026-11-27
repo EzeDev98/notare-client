@@ -1,3 +1,4 @@
+/* Styles for Badge. */
 @layer components {
   .ui-badge {
     display: inline-block;

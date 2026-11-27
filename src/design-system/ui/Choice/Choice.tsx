@@ -1,3 +1,4 @@
+/** Shared markup for Checkbox and Radio. */
 import { Check } from 'lucide-react';
 import { useId, type ComponentPropsWithRef, type ReactNode } from 'react';
 
@@ -10,7 +11,6 @@ export type ChoiceProps = Omit<ComponentPropsWithRef<'input'>, 'type' | 'childre
   hint?: string;
 };
 
-/** Shared markup for Checkbox and Radio. Not exported from the barrel. */
 export function Choice({
   kind,
   label,

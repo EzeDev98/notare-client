@@ -1,3 +1,4 @@
+/** Tests for errors. */
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -25,8 +26,6 @@ describe('ApiError', () => {
   it('is a real Error, so it carries a stack', () => {
     const error = new ApiError({ kind: 'network' });
 
-    // The reason for a class rather than a plain object: a thrown
-    // { kind: 'network' } works and reports nothing useful in production.
     expect(error).toBeInstanceOf(Error);
     expect(error.name).toBe('ApiError');
     expect(error.stack).toBeDefined();
@@ -35,7 +34,6 @@ describe('ApiError', () => {
   it('recognises its own instances and rejects everything else', () => {
     expect(isApiError(new ApiError({ kind: 'timeout' }))).toBe(true);
 
-    // JavaScript can throw anything, which is why catch gives you `unknown`.
     expect(isApiError(new Error('plain'))).toBe(false);
     expect(isApiError('a string')).toBe(false);
     expect(isApiError(undefined)).toBe(false);
@@ -59,7 +57,6 @@ describe('fieldErrors', () => {
   });
 
   it('drops non-string values instead of rendering them', () => {
-    // Otherwise a contract change puts "[object Object]" under an input.
     const error = problem(400, { errors: { username: 'Too short.', age: 42 } });
     expect(fieldErrors(error)).toEqual({ username: 'Too short.' });
   });
@@ -80,8 +77,6 @@ describe('classification helpers', () => {
   it('counts network and timeout as offline, so Step 8 can queue them', () => {
     expect(isOffline(new ApiError({ kind: 'network' }))).toBe(true);
 
-    // A timeout counts: we do not know whether the server received it, and
-    // the sync protocol's operationId makes replaying safe either way.
     expect(isOffline(new ApiError({ kind: 'timeout' }))).toBe(true);
     expect(isOffline(problem(500))).toBe(false);
   });
@@ -94,8 +89,6 @@ describe('classification helpers', () => {
     expect(isRetriable(problem(503))).toBe(true);
     expect(isRetriable(new ApiError({ kind: 'network' }))).toBe(true);
 
-    // Retrying a 400 forever is a classic client-side loop, and one the
-    // server cannot defend against.
     expect(isRetriable(problem(400))).toBe(false);
     expect(isRetriable(problem(409))).toBe(false);
   });

@@ -1,3 +1,4 @@
+/** The strip above the on-screen keyboard. */
 import { Mic, Redo2, Undo2 } from 'lucide-react';
 import type { Ref } from 'react';
 
@@ -10,14 +11,11 @@ interface AccessoryStripProps {
   canRedo: boolean;
   onUndo?: (() => void) | undefined;
   onRedo?: (() => void) | undefined;
-  /** Without a handler the Voice clip button is left out. */
   onVoice?: (() => void) | undefined;
-  /** Fixed over the keyboard, edge to edge. The caller places it (bottom, left, width) through `ref`. */
   docked?: boolean | undefined;
   ref?: Ref<HTMLDivElement> | undefined;
 }
 
-/** The phone strip above the keyboard: Undo, Redo, a spacer, Voice clip. */
 export function AccessoryStrip({
   canUndo,
   canRedo,

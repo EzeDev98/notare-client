@@ -1,3 +1,4 @@
+/** The note's header: back, status and the more menu. */
 import { ArrowLeft, Ellipsis } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
@@ -14,29 +15,20 @@ import { useBarSlot, useTwoPane } from '@/shared/hooks/useBarSlot';
 import './NoteEditorHeader.css';
 
 interface NoteEditorHeaderProps {
-  /** The note on screen (live). */
   row: NoteRow;
-  /** The more menu (step 12e). The button is drawn only when given. */
   more?: EditorMoreActions | undefined;
 }
 
-/** Keeps the caret (and the phone keyboard) in the note when a header button is pressed. */
 function keepEditorFocus(event: MouseEvent): void {
   event.preventDefault();
 }
 
-/**
- * The editor header, 56px (master 6.4, step 12d). Left to right: Back (phone
- * only), spacer, status, more.
- */
 export function NoteEditorHeader({ row, more }: NoteEditorHeaderProps) {
   const navigate = useNavigate();
-  // On a wide screen the controls live in the shell bar, on the same line as the menu and bell.
   const barSlot = useBarSlot();
   const twoPane = useTwoPane();
   const inBar = twoPane && barSlot !== null;
   const goBack = (): void => {
-    // A blank draft is forgotten: no row, no server record, no toast (step 8d).
     discardDraft(row.localId);
     void navigate(ROUTES.notes());
   };

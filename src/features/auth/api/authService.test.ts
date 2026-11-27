@@ -1,3 +1,4 @@
+/** Tests for authService. */
 import { http } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -16,8 +17,6 @@ beforeEach(() => {
   lastBody = undefined;
   server.events.on('request:start', ({ request }) => {
     lastRequest = request;
-    // Clone before the handler reads it — a request body is a single-use
-    // stream, and cloning after the read gives "TypeError: unusable".
     void request
       .clone()
       .text()
@@ -38,16 +37,12 @@ describe('login', () => {
   it('posts to the doubled path the server actually exposes', async () => {
     await authService.login({ usernameOrEmail: 'testuser', password: 'Passw0rd' });
 
-    // /login/login, not /login. Known bug 14.4 — cosmetic on the server,
-    // a 404 here if we "correct" it.
     expect(lastRequest?.url).toBe(`${BASE}/login/login`);
   });
 
   it('returns tokens with expiresIn in MILLISECONDS', async () => {
     const result = await authService.login({ usernameOrEmail: 'testuser', password: 'Passw0rd' });
 
-    // 900000 ms = 15 minutes. Read as seconds it is 15,000 minutes and the
-    // client never refreshes at all.
     expect(result.expiresIn).toBe(900_000);
     expect(result.refreshToken).toBe('refresh-1');
   });
@@ -67,11 +62,6 @@ describe('login', () => {
   });
 
   it('surfaces 403 for an unverified account, which is not a permission error', async () => {
-    /*
-     * DisabledException. The account exists and the password was right — it is
-     * simply unverified, so the UI routes to OTP entry rather than showing
-     * "you do not have permission", which would be actively misleading.
-     */
     server.use(
       http.post(`${BASE}/login/login`, () =>
         problemDetail(403, { title: 'Forbidden', detail: 'Please verify your email address.' }),
@@ -97,8 +87,6 @@ describe('registration', () => {
       confirmPassword: 'Passw0rd',
     });
 
-    // Before B6 this value had to be persisted or the account became
-    // unreachable. Verification now accepts an email, so it is informational.
     expect(result.notarianId).toBe('HIJKLMN');
   });
 
@@ -124,8 +112,6 @@ describe('registration', () => {
       })
       .catch((e: unknown) => e);
 
-    // Only possible because B2 added the handler. Before it, every validation
-    // failure was an indistinguishable 400 with no field detail at all.
     expect(fieldErrors(error)).toMatchObject({ username: expect.any(String) as string });
   });
 });
@@ -139,8 +125,6 @@ describe('activation resend', () => {
   });
 
   it('answers 200 for an unknown identifier', async () => {
-    // Non-committal by design, so it cannot be used to probe for registered
-    // addresses. The client therefore owns the visible countdown.
     await expect(
       authService.resendActivation({ notarianIdOrEmail: 'nobody@example.com' }),
     ).resolves.toMatchObject({ message: expect.any(String) as string });
@@ -164,8 +148,6 @@ describe('password reset', () => {
       confirmNewPassword: 'NewPassw0rd',
     });
 
-    // The reset DTO differs from registration's. Verified against the server
-    // source — guessing here produces a 400 with no field detail to explain it.
     expect(lastBody).toHaveProperty('confirmNewPassword');
     expect(lastBody).not.toHaveProperty('confirmPassword');
   });

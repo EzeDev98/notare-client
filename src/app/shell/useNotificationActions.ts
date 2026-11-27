@@ -1,3 +1,4 @@
+/** What each button in the notifications modal does. */
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -21,7 +22,6 @@ function targetIdOf(n: NotificationResponse): number {
   return n.targetId;
 }
 
-/** What each button in the notifications modal does. `busyId` is the row working right now. */
 export function useNotificationActions(onClose: () => void) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();

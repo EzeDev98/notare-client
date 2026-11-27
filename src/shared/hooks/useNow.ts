@@ -1,9 +1,6 @@
+/** The current time, refreshed when the tab comes back. */
 import { useEffect, useState } from 'react';
 
-/**
- * The current time as a render input. It refreshes when the tab regains focus
- * or becomes visible, which is when a day boundary could have been crossed.
- */
 export function useNow(): number {
   const [now, setNow] = useState(() => Date.now());
 

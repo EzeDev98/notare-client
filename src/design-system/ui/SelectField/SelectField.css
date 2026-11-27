@@ -1,3 +1,4 @@
+/* Styles for SelectField. */
 @layer components {
   .ui-control .ui-select__input {
     padding-inline-end: calc(var(--icon-size) + var(--gap));

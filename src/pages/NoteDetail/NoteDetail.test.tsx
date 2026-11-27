@@ -1,3 +1,4 @@
+/** Tests for NoteDetail. */
 import { render, screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -41,13 +42,11 @@ describe('parseNoteId', () => {
   });
 
   it('rejects junk that parseInt would silently truncate', () => {
-    // parseInt('12abc') returns 12 and requests a note nobody asked for.
     expect(parseNoteId('12abc')).toBeNull();
     expect(parseNoteId('abc')).toBeNull();
   });
 
   it('rejects the values that look plausible but are not ids', () => {
-    // Number('') is 0, which would otherwise pass as an id.
     expect(parseNoteId('')).toBeNull();
     expect(parseNoteId(undefined)).toBeNull();
     expect(parseNoteId('0')).toBeNull();
@@ -59,8 +58,6 @@ describe('parseNoteId', () => {
 describe('the note detail view', () => {
   it('has no automatically detectable accessibility violations', async () => {
     const { container } = renderDetail();
-    // Waits for the note to load before running axe; the exact content is
-    // covered elsewhere, this test only cares that the editor has rendered.
     await screen.findByLabelText('Note content');
     await expectNoAxeViolations(container);
   });
@@ -73,13 +70,6 @@ describe('the note detail view', () => {
     );
     renderDetail();
 
-    /*
-     * The field is a contenteditable div, not a textarea, so it has no `.value`.
-     * The editor maps each line of the stored text to its own block (textToDoc),
-     * so what matters is that three SEPARATE paragraphs exist in the DOM; a
-     * collapsed run-on line would fail this. Waited for because the document is
-     * filled in after the field first appears.
-     */
     const content = await screen.findByLabelText('Note content');
     await waitFor(() => {
       expect(content.querySelectorAll('p')).toHaveLength(3);
@@ -97,13 +87,6 @@ describe('the note detail view', () => {
     );
     const { container } = renderDetail();
 
-    // Markdown.configure's `html: false` (EditorSurface.tsx) is what makes
-    // this safe now — a literal `<script>` in the source is escaped text,
-    // never parsed as markup, verified directly: editor.getHTML() for this
-    // exact input is `<p>&lt;script&gt;...&lt;/script&gt;</p>`. No `.value`
-    // to compare against a plain string here, so this reads the rendered
-    // text instead — still proving the same thing: the tag survives as
-    // characters, not as an element.
     expect(await screen.findByLabelText('Note content')).toHaveTextContent(
       '<script>alert(1)</script>',
     );
@@ -122,7 +105,6 @@ describe('the note detail view', () => {
     renderDetail('/notes/abc');
 
     expect(await screen.findByRole('heading', { name: /note not found/i })).toBeInTheDocument();
-    // A local not-found, not a server error for /notes/NaN.
     expect(requested).toBe(false);
   });
 
@@ -134,11 +116,6 @@ describe('the note detail view', () => {
     );
     renderDetail('/notes/999');
 
-    /*
-     * The server conflates "no such note" with "not yours" so that a distinct
-     * 403 cannot confirm a note exists. The wording has to be true in both
-     * cases — "deleted" would be a confident guess, wrong half the time.
-     */
     expect(await screen.findByRole('heading', { name: /note not found/i })).toBeInTheDocument();
     expect(screen.getByText(/isn't available to you/i)).toBeInTheDocument();
   });
@@ -151,12 +128,6 @@ describe('the note detail view', () => {
     );
     renderDetail();
 
-    /*
-     * An empty note is now an empty writing surface with a placeholder, not a
-     * sentence telling the user there is nothing here. In a read view "This
-     * note is empty" was information; in an editor it would be a label on the
-     * blank page they are about to write on.
-     */
     const content = await screen.findByLabelText('Note content');
     expect(content).toHaveTextContent('');
     expect(content).not.toHaveAttribute('placeholder');

@@ -1,3 +1,4 @@
+/* Styles for StatusScreen. */
 @layer components {
   .status-screen {
     position: fixed;

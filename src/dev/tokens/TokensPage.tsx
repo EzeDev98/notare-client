@@ -1,3 +1,4 @@
+/** Dev-only page that shows every token and checks colour contrast. */
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
@@ -16,7 +17,6 @@ const COLOURS = [
   '--color-cursor-5', '--color-cursor-6',
 ];
 
-/** [label, text colour, background, minimum ratio]. 4.5 for text, 3 for a control border. */
 const PAIRS: ReadonlyArray<readonly [string, string, string, number]> = [
   ['Text on page', '--color-text', '--color-bg', 4.5],
   ['Text on surface', '--color-text', '--color-surface', 4.5],

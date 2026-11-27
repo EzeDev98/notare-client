@@ -1,3 +1,4 @@
+/** Settings: Appearance. */
 import { useTheme } from '@/app/providers/theme-context';
 import { PageHeader, Radio, ScreenContainer } from '@/design-system/ui';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
@@ -8,7 +9,6 @@ import { useBackToHub } from './useBackToHub';
 
 const COPY = SETTINGS_COPY.appearance;
 
-/** Settings > Appearance (master 6.6): System, Light or Dark. Applies at once. */
 export function SettingsAppearancePage() {
   useDocumentTitle(COPY.title);
   const back = useBackToHub();

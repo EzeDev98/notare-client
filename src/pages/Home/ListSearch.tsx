@@ -1,3 +1,4 @@
+/** The list's search field. */
 import { Search, X } from 'lucide-react';
 
 import { Icon, IconButton, TextField } from '@/design-system/ui';
@@ -8,7 +9,6 @@ interface ListSearchProps {
   onChange: (value: string) => void;
 }
 
-/** The 40px search field: icon on the left, an x to clear on the right. No spinner, no floating panel. */
 export function ListSearch({ value, onChange }: ListSearchProps) {
   return (
     <TextField

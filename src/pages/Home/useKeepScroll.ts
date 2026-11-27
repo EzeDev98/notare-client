@@ -1,10 +1,6 @@
+/** Keeps the list's scroll position while it is hidden. */
 import { useEffect, type RefObject } from 'react';
 
-/**
- * A pane that is hidden loses its scroll position. This remembers it while
- * the pane is on screen and puts it back when the pane is shown again, so
- * Back from a note returns to the same place in the list.
- */
 export function useKeepScroll(pane: RefObject<HTMLElement | null>): void {
   useEffect(() => {
     const element = pane.current;

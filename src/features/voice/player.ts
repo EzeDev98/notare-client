@@ -1,10 +1,10 @@
+/** Plays voice clips. */
 import { useSyncExternalStore } from 'react';
 
 import { api } from '@/core/api';
 import { mayDownloadClips } from '@/features/notes/local/clipDownloadPolicy';
 import { clipRepository } from '@/features/notes/local/clipRepository';
 
-/** "0:42". Whole seconds, minutes unpadded. */
 export function formatClock(seconds: number): string {
   const total = Math.max(0, Math.floor(Number.isFinite(seconds) ? seconds : 0));
   return `${String(Math.floor(total / 60))}:${String(total % 60).padStart(2, '0')}`;
@@ -14,19 +14,12 @@ export interface ClipPlayback {
   playing: boolean;
   loading: boolean;
   failed: boolean;
-  /** Seconds played so far. */
   position: number;
-  /** Seconds in total. The clip's own length until the browser knows better. */
   duration: number;
 }
 
 const IDLE: ClipPlayback = { playing: false, loading: false, failed: false, position: 0, duration: 0 };
 
-/*
- * The one audio player (step 12g). A single <audio> element lives here, so a
- * second clip starting always stops the first. Blocks read their own slice
- * through useClipPlayback.
- */
 let activeId: string | null = null;
 let current: ClipPlayback = IDLE;
 let audio: HTMLAudioElement | null = null;
@@ -57,7 +50,6 @@ function release(): void {
   publish(IDLE);
 }
 
-/** Local bytes first. Otherwise fetch them and keep them on the device. */
 async function blobFor(clipId: string): Promise<{ blob: Blob; seconds: number }> {
   const clip = await clipRepository.get(clipId);
   if (!clip) throw new Error('Clip not found');
@@ -70,9 +62,7 @@ async function blobFor(clipId: string): Promise<{ blob: Blob; seconds: number }>
   const blob = await api.downloadClip(clip.serverId);
   try {
     await clipRepository.put({ ...clip, audio: blob });
-  } catch {
-    // Not enough room to keep it. It still plays this time.
-  }
+  } catch {}
   return { blob, seconds };
 }
 
@@ -128,7 +118,6 @@ export function pauseClip(): void {
   audio?.pause();
 }
 
-/** Stops whatever is playing. Called when a note closes. */
 export function stopPlayback(): void {
   release();
 }
@@ -140,7 +129,6 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-/** This clip's playback. Every other clip reads as idle. */
 export function useClipPlayback(clipId: string): ClipPlayback {
   return useSyncExternalStore(subscribe, () => (activeId === clipId ? current : IDLE));
 }

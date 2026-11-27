@@ -1,3 +1,4 @@
+/** Tests for router. */
 import { render, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { createMemoryRouter, RouterProvider } from 'react-router';
@@ -11,14 +12,9 @@ import { SignedIn, resetDatabase } from '~/harness';
 const AUTHENTICATED_PATHS: Array<{ path: string; expectedTitle: string }> = [
   { path: '/notes', expectedTitle: 'Notes · Notare' },
   { path: '/notes/new', expectedTitle: 'New note · Notare' },
-  // Old URLs that redirect into the list (ROUTE_REDIRECTS), kept for one release.
   { path: '/archived', expectedTitle: 'Notes · Notare' },
   { path: '/search', expectedTitle: 'Notes · Notare' },
   { path: '/notifications', expectedTitle: 'Notes · Notare' },
-  // Dynamic routes ('/notes/:noteId') are deliberately absent:
-  // they need a real id and seeded data to resolve to anything but a not-found state.
-  // '/trash' and '/voice' have no route any more, so they are
-  // not listed as pages that resolve.
 ];
 
 function renderAt(path: string) {
@@ -55,9 +51,6 @@ describe('the real route tree', () => {
     await resetDatabase();
     renderAt('/notes/local/some-uuid');
 
-    // No row for 'some-uuid' — the local route's own not-found state sets
-    // this exact title. A 404 fallthrough would set 'Page not found · Notare'
-    // instead, which is the thing this test actually guards against.
     await waitFor(() => expect(document.title).toBe('Note · Notare'));
   });
 });

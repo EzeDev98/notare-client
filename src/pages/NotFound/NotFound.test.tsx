@@ -1,3 +1,4 @@
+/** Tests for NotFound. */
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect } from 'vitest';
@@ -7,14 +8,6 @@ import { ThemeProvider } from '@/app/providers/ThemeProvider';
 import { NotFoundPage } from '@/pages/NotFound/NotFound';
 
 describe('NotFoundPage', () => {
-  /*
-   * The screen reads the theme (for the logo) and navigates with useNavigate,
-   * so it needs ThemeProvider and a real router with a /notes route to land on.
-   *
-   * Queried by ROLE and by the text a user would read, not by class name or
-   * component internals, so this survives restyling and fails if the page
-   * stops telling the user what happened.
-   */
   it('tells the user the page was not found and offers a way back', async () => {
     const user = userEvent.setup();
     const router = createMemoryRouter(

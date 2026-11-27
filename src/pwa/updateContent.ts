@@ -1,4 +1,4 @@
-/** The update prompt's words (master 6.7). */
+/** Words for the update prompts. */
 export const UPDATE_COPY = {
   title: 'Update available',
   body: 'A new version of Notare is ready. Your note is saved.',

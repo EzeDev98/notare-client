@@ -1,3 +1,4 @@
+/** Root component: providers, start-up and the router. */
 import { useEffect, useRef, useState } from 'react';
 import { RouterProvider } from 'react-router';
 
@@ -16,18 +17,6 @@ import { ToastProvider, useToast } from '@/design-system/ui';
 import { UpdateRequiredModal } from '@/pwa/components/UpdateRequiredModal';
 import { useUpdatedToast } from '@/pwa/useUpdatedToast';
 
-/**
- * The single start-up hand-off (master 5.5). The splash (the same element as
- * the static one in index.html) stays on top until useStartup has decided and
- * moved the router, then fades out over the screen that is already there, so
- * there is no redirect to see and no second splash.
- *
- * Final answers only move forward: once the router is showing, nothing later
- * (auth changes, a display-mode blip) swaps the tree back, because that would
- * unmount everything and read as a reload.
- *
- * A child of AuthProvider because useStartup reads the session.
- */
 function AppStage() {
   const { outcome, retry, continueInBrowser } = useStartup();
   const { toast } = useToast();
@@ -74,11 +63,6 @@ function AppStage() {
   );
 }
 
-/**
- * The one toast host (step 7e). Mounted once, above the stage, so a toast works
- * on every screen, including the ones that show before the router does (the
- * offline first-open screen).
- */
 function AppBoot() {
   return (
     <ToastProvider>
@@ -87,16 +71,6 @@ function AppBoot() {
   );
 }
 
-/**
- * The composition root. Providers wrap RouterProvider and accumulate here as
- * later steps add them - auth, query client, sync.
- *
- * ThemeProvider is outermost: an error boundary rendering inside the router
- * should still be themed.
- *
- * UpdateRequiredModal sits outside AuthProvider: the server can say "too old"
- * whether or not anyone is signed in, and nothing should be usable behind it.
- */
 export function App() {
   return (
     <ThemeProvider>

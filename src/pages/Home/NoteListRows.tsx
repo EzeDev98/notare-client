@@ -1,3 +1,4 @@
+/** The list's rows, grouped by section. */
 import { Fragment } from 'react';
 
 import { rowDate, type Section } from '@/features/notes/list/groupItems';
@@ -11,15 +12,12 @@ import type { ListActions } from './useListActions';
 interface NoteListRowsProps {
   sections: readonly Section[];
   now: number;
-  /** The not-synced glyph shows for a pending note only while the device cannot reach the server. */
   offline: boolean;
-  /** The path of the note that is open, for the selected row. */
   openPath: string;
   actions: ListActions;
   onOpen: (item: ListItem) => void;
 }
 
-/** The grouped rows (master 6.3). One list, group labels between the rows. */
 export function NoteListRows({
   sections,
   now,

@@ -1,9 +1,9 @@
+/** Escape and focus handling for open overlays. */
 import { useEffect, useRef, type MouseEvent, type RefObject } from 'react';
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-// Open overlays, the top one last. Only the top one answers Escape and Tab.
 const stack: symbol[] = [];
 let scrollLocks = 0;
 
@@ -14,12 +14,6 @@ const unlockScroll = (): void => {
   if (--scrollLocks === 0) document.body.style.overflow = '';
 };
 
-/**
- * The one dialog behaviour. While `open`: focus moves into the overlay (an
- * element marked data-autofocus wins), Tab and Shift+Tab stay inside, Escape
- * closes the TOP overlay only, page scroll is locked, and on close focus
- * returns to whatever had it before. `onScrimClick` goes on the scrim.
- */
 export function useOverlayBehavior(
   open: boolean,
   { ref, onClose }: { ref: RefObject<HTMLElement | null>; onClose: () => void },

@@ -1,3 +1,4 @@
+/** A live database query that only re-renders when its result changes. */
 import { useLiveQuery } from 'dexie-react-hooks';
 import { useRef } from 'react';
 
@@ -18,16 +19,6 @@ function deepEqual(a: unknown, b: unknown): boolean {
   );
 }
 
-/**
- * Drop-in replacement for dexie-react-hooks' useLiveQuery.
- *
- * Any IndexedDB write fires every live query watching that table, and each
- * re-emission hands back brand-new objects even when the data is identical.
- * That re-renders (and can re-key or re-animate) whatever reads them, which
- * shows up as blinks and jumps after a sync or network response. This keeps
- * the PREVIOUS reference whenever the new result is deeply equal, so React
- * bails out and nothing repaints unless the data truly changed.
- */
 export function useStableLiveQuery<T>(
   querier: () => T | Promise<T>,
   deps?: unknown[],

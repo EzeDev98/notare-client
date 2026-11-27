@@ -1,3 +1,4 @@
+/** Runs the checks shown while the app installs. */
 import { useEffect, useState } from 'react';
 
 import { ms } from '@/design-system/motion/motion';
@@ -17,7 +18,6 @@ const START: Record<CheckKey, CheckState> = {
   offline: 'pending',
 };
 
-/** Vitest sets MODE to 'test'. The pause between ticks collapses there. */
 const IS_TEST = import.meta.env.MODE === 'test';
 
 const pause = (): Promise<void> =>
@@ -25,15 +25,6 @@ const pause = (): Promise<void> =>
     setTimeout(resolve, IS_TEST ? 0 : ms('--motion-reveal'));
   });
 
-/**
- * Runs the three install checks (10d), one after another, and reports each as
- * pending, passed or failed. A line never ticks before its answer is in, and
- * never ticks at all unless the answer was yes. Each line is shown for at least
- * one beat, so a fast answer does not flash by unread.
- *
- * `storageRefused`: storage is available but the browser would not promise to
- * keep it, which the screen explains in a note.
- */
 export function useInstallChecks(): {
   checks: Record<CheckKey, CheckState>;
   settled: boolean;

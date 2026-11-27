@@ -1,3 +1,4 @@
+/** Settings: Terms and Privacy. */
 import { ROUTES } from '@/app/routes';
 import { PageHeader, ScreenContainer } from '@/design-system/ui';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
@@ -6,7 +7,6 @@ import { LEGAL_DOCS, type LegalKey } from './legalContent';
 import './Settings.css';
 import { useBackToHub } from './useBackToHub';
 
-/** A legal text on its own inner screen, not a sheet (C-9). Back returns to About. */
 function LegalScreen({ doc }: { doc: LegalKey }) {
   const { title, body } = LEGAL_DOCS[doc];
   useDocumentTitle(title);
@@ -25,12 +25,10 @@ function LegalScreen({ doc }: { doc: LegalKey }) {
   );
 }
 
-/** Settings > About > Terms of use. */
 export function SettingsTermsPage() {
   return <LegalScreen doc="terms" />;
 }
 
-/** Settings > About > Privacy. */
 export function SettingsPrivacyPage() {
   return <LegalScreen doc="privacy" />;
 }

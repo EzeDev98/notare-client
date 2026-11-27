@@ -1,3 +1,4 @@
+/** Builders for voice clips and transcriptions used in tests. */
 import type { TranscriptionResponse, VoiceNoteResponse } from '@/features/voice/types';
 
 let nextVoiceNoteId = 1;

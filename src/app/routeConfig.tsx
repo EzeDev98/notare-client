@@ -1,22 +1,10 @@
+/** Every route with its guard flags. */
 import type { ComponentType } from 'react';
 
 import { LoginPage } from '@/pages/Login/Login';
 
 import { ROUTE_PATTERNS as P, ROUTES } from './routes';
 
-/**
- * One list of every route with its guard flags (S-12). router.tsx builds the
- * tree from this and decides which layout a route sits under; screens never
- * declare their own guards.
- *
- * requiresAuth        signed-out visitors are sent to sign in (RequireAuth).
- * publicOnly          signed-in visitors are sent into the app.
- * requiresOnboarding  a signed-in visitor who has not finished the install
- *                     steps is sent to /install.
- *
- * Only requiresAuth is enforced today. publicOnly and requiresOnboarding are
- * declared here now and enforced by the single start-up decision in 7c.
- */
 export interface RouteGuards {
   requiresAuth: boolean;
   publicOnly: boolean;
@@ -37,10 +25,6 @@ const SIGNED_OUT: RouteGuards = {
 const OPEN: RouteGuards = { requiresAuth: false, publicOnly: false, requiresOnboarding: false };
 const APP: RouteGuards = { requiresAuth: true, publicOnly: false, requiresOnboarding: true };
 
-/*
- * Routes with a screen today. Welcome, /install and /settings/* are added by
- * the steps that build those screens (8, 9, 15); each is one line here.
- */
 export const ROUTE_ENTRIES: RouteEntry[] = [
   {
     path: P.welcome,
@@ -58,7 +42,6 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     guards: SIGNED_OUT,
     load: () => import('@/pages/ResetPassword/ResetPassword').then((m) => m.ResetPasswordPage),
   },
-  // An emailed link can be opened while signed in, so verify is not publicOnly.
   {
     path: P.verify,
     guards: OPEN,
@@ -106,7 +89,6 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
     load: () => import('@/pages/Settings/SettingsLegal').then((m) => m.SettingsPrivacyPage),
   },
 
-  // Old screens. Each line goes when its screen is rebuilt.
   {
     path: P.legacy.noteNew,
     guards: APP,
@@ -119,7 +101,6 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
   },
 ];
 
-/** Old URLs kept for one release so bookmarks and emailed links still work. */
 export const ROUTE_REDIRECTS: Array<{ from: string; to: string }> = [
   { from: P.oldSignIn, to: P.signIn },
   { from: P.oldResetPassword, to: P.resetPassword },

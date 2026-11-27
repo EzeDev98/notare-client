@@ -1,3 +1,4 @@
+/** Opens a note's body document and keeps it in step with the device. */
 import { useEffect, useState } from 'react';
 import { XmlElement, type Doc } from 'yjs';
 
@@ -16,22 +17,13 @@ type SetDraft = (changes: { content: string; bodyState: Uint8Array }) => void;
 
 interface OpenNote extends OpenedBody {
   localId: string;
-  /** Goes up each time the body is rebuilt, so the editor mounts fresh. */
   generation: number;
-  /** True once the live row shows a saved bodyState. */
   persisted: boolean;
-  /** A blank draft has no text worth saving as a seed. */
   hasText: boolean;
-  /**
-   * Built from text the server has not confirmed (a synced note with unsynced edits).
-   * Shown, but not saved as a seed: it is rebuilt once the note has synced (step 18d).
-   */
   provisional: boolean;
-  /** The row's text when the body was opened, so a later server change is seen once. */
   sourceContent: string;
 }
 
-/** The clip ids in the body, in order. A change here is an edit even if the text is the same. */
 function clipSignature(doc: Doc): string {
   const ids: string[] = [];
   const walk = (node: unknown): void => {
@@ -56,11 +48,6 @@ function open(row: NoteRow, generation: number): OpenNote {
   };
 }
 
-/**
- * Another device changed the open note's text: show it now, as before.
- * AI tidy (no last editor) never changes a note under the user's hands: its
- * text is shown the next time the note opens, and an edit before then wins.
- */
 function replacedByAnotherDevice(opened: OpenNote, live: NoteRow): boolean {
   return (
     live.dirty === 0 &&
@@ -70,19 +57,6 @@ function replacedByAnotherDevice(opened: OpenNote, live: NoteRow): boolean {
   );
 }
 
-/**
- * Step 12b: the Y.Doc for the note on screen.
- *
- * - Opens from `bodyState`. A note with text but no `bodyState` is converted
- *   once from its old text and the result is saved (not marked as an edit).
- * - Every document change appends to `bodyState` and writes the derived
- *   `content` in the same Dexie write, through `setDraft`.
- * - If the server's text replaced ours, it is carried into the body when the
- *   note opens (openBody). An open note takes it at once only when another
- *   device made it; AI tidy's text waits until the note is next opened.
- *
- * `row` is the note being opened. `live` is the row the editor host follows.
- */
 export function useNoteBody(
   row: NoteRow,
   live: NoteRow,
@@ -90,8 +64,6 @@ export function useNoteBody(
 ): { doc: Doc; bodyKey: string } {
   const [opened, setOpened] = useState(() => open(row, 0));
 
-  // Adjusting state while rendering: the documented way to reset state when a
-  // prop changes. React re-renders at once with the new value.
   if (opened.localId !== row.localId) {
     setOpened(open(row, 0));
   } else if (live.localId === opened.localId) {
@@ -119,13 +91,10 @@ export function useNoteBody(
     let lastClips = clipSignature(doc);
 
     const onUpdate = (update: Uint8Array): void => {
-      // Always fold the update in, so a skipped write below loses nothing.
       const next = nextBodyState(doc, previous, update, sinceCompaction);
       previous = next.state;
       sinceCompaction = next.updatesSinceCompaction;
 
-      // Yjs also fires for editor start-up housekeeping. If the text did not
-      // change, this is not an edit: opening a note must not mark it dirty.
       const content = bodyToPlainText(doc);
       const clips = clipSignature(doc);
       if (content === lastContent && clips === lastClips) return;

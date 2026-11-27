@@ -1,3 +1,4 @@
+/** "Update required" when the server needs a newer app. */
 import { useState, useSyncExternalStore } from 'react';
 
 import { UPDATE_RELOAD_GIVE_UP_MS } from '@/core/config/timings';
@@ -7,13 +8,6 @@ import { applyUpdate, checkForUpdates } from '@/pwa/registerServiceWorker';
 import { UPDATE_COPY } from '@/pwa/updateContent';
 import { markUpdateReload } from '@/pwa/updateReload';
 
-/**
- * "Update required" (master 6.7): the server said this version is too old (HTTP 426).
- * It cannot be dismissed. Reload looks for a new version first, so it actually updates.
- * Nothing is lost: queued notes stay on the device.
- *
- * Mounted outside AuthProvider in App.tsx: the server can say it whether or not anyone is signed in.
- */
 export function UpdateRequiredModal() {
   const required = useSyncExternalStore(subscribeUpdateRequired, getUpdateRequired);
   const [busy, setBusy] = useState(false);
@@ -29,9 +23,7 @@ export function UpdateRequiredModal() {
         }, UPDATE_RELOAD_GIVE_UP_MS);
         return;
       }
-    } catch {
-      // The check could not run (offline). Reload anyway; the app shell comes from the cache.
-    }
+    } catch {}
     window.location.reload();
   };
 

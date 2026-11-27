@@ -1,3 +1,4 @@
+/* Styles for ScreenContainer. */
 @layer components {
   .ui-screen {
     display: flex;

@@ -1,14 +1,13 @@
+/** Grey placeholder rows while content loads. */
 import { VisuallyHidden } from '../VisuallyHidden/VisuallyHidden';
 
 import './Skeleton.css';
 
 interface SkeletonProps {
-  /** Number of grey rows. The last one is shorter. */
   rows?: number | undefined;
   label?: string | undefined;
 }
 
-/** Grey placeholder rows for a first load. */
 export function Skeleton({ rows = 3, label = 'Loading' }: SkeletonProps) {
   return (
     <div className="ui-skeleton" role="status">

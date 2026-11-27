@@ -1,3 +1,4 @@
+/** What the note's more menu does. */
 import { sessionUserOf } from '@/features/auth/sessionUser';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -23,17 +24,11 @@ export interface EditorMoreActions {
   onPin: () => void;
   onCopyText: () => void;
   onMakeCopy: () => void;
-  /** Present only while the note is exactly as AI tidy left it and has no unsent edits. */
   onRestoreOriginal: (() => void) | undefined;
   onDelete: () => void;
-  /** The confirmation Delete opens. */
   deleteModal: { open: boolean; onClose: () => void; onDelete: () => Promise<boolean> };
 }
 
-/**
- * What the editor's more menu does (master 6.3 and 6.4, step 12e). The words and
- * the actions are the list's own. Delete asks first.
- */
 export function useEditorActions(row: NoteRow, doc: Doc): EditorMoreActions {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -61,9 +56,7 @@ export function useEditorActions(row: NoteRow, doc: Doc): EditorMoreActions {
         try {
           await navigator.clipboard.writeText(text);
           toast(EDITOR_COPY.copiedAsText);
-        } catch {
-          // The browser refused (no permission or not a secure page). There is no copy for it in the master.
-        }
+        } catch {}
       })();
     },
 

@@ -1,3 +1,4 @@
+/** The gallery's scenario switches. */
 import { Checkbox, Radio } from '@/design-system/ui';
 
 export type Panels = 'both' | 'light' | 'dark';
@@ -9,7 +10,6 @@ interface GalleryControlsProps {
   onReduced: (reduced: boolean) => void;
 }
 
-/** Collapsed "Prototype controls" box: scenario switches that are not theme or device. */
 export function GalleryControls({ panels, onPanels, reduced, onReduced }: GalleryControlsProps) {
   return (
     <details className="gallery-controls">

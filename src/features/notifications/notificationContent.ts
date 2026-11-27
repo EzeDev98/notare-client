@@ -1,4 +1,4 @@
-/** Every word the notifications modal shows (master 6.9). */
+/** Words in the notifications modal. */
 export const NOTIFICATION_COPY = {
   title: 'Notifications',
   markAll: 'Mark all as read',

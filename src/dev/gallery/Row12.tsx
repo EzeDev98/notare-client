@@ -1,3 +1,4 @@
+/** Gallery row: VoiceBlock, TranscriptPanel, StatusSlot, AccessoryStrip. */
 import { useId, useState } from 'react';
 
 import {
@@ -30,7 +31,6 @@ const VOICE_STATES: readonly { state: VoiceState; label: string }[] = [
 
 const STATUSES = ['Saved', 'Saving', 'Offline', ''] as const;
 
-/** Row 12: VoiceBlock, TranscriptPanel, StatusSlot, AccessoryStrip. */
 export function Row12() {
   const panelId = useId();
   const [shown, setShown] = useState(true);

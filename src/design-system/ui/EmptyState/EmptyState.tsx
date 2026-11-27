@@ -1,3 +1,4 @@
+/** An empty state with an icon, heading and line. */
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -6,15 +7,12 @@ import { Icon } from '../Icon/Icon';
 import './EmptyState.css';
 
 interface EmptyStateProps {
-  /** Left out for a text-only empty state. */
   icon?: LucideIcon | undefined;
   title: string;
   description?: string | undefined;
-  /** Optional button, for example "New note". */
   action?: ReactNode;
 }
 
-/** Icon, title (16px), muted description (14px) and an optional button. */
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
     <div className="ui-empty">

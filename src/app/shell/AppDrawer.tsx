@@ -1,3 +1,4 @@
+/** The left drawer: the person, note counts and links to the other screens. */
 import { Contrast, Info, LogOut, RefreshCw, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router';
 
@@ -15,7 +16,6 @@ interface AppDrawerProps {
   onClose: () => void;
 }
 
-/** One of six avatar colours, the same for the same person every time. */
 const tintFor = (userId: number): Tint => ((Math.abs(userId) % 6) + 1) as Tint;
 
 function SignedInDrawer({ user, open, onClose }: AppDrawerProps & { user: CurrentUser }) {
@@ -54,7 +54,6 @@ function SignedInDrawer({ user, open, onClose }: AppDrawerProps & { user: Curren
   );
 }
 
-/** The 280px drawer (master 5.3), wired to the signed-in person and the local database. */
 export function AppDrawer({ open, onClose }: AppDrawerProps) {
   const user = useSessionUser();
   return user ? <SignedInDrawer user={user} open={open} onClose={onClose} /> : null;

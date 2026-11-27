@@ -1,3 +1,4 @@
+/** What the list row menu does. */
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -17,20 +18,16 @@ import type { RowChanges } from './useRowChanges';
 export interface ListActions {
   pin: (item: ListItem) => void;
   copy: (item: ListItem) => void;
-  /** Asks first; the note goes only once the modal is confirmed. */
   delete: (item: ListItem) => void;
 }
 
 interface Options {
   ownerId: number;
-  /** The path that is open, so a note that goes away takes its screen with it. */
   openPath: string;
   rows: Pick<RowChanges, 'remove' | 'change'>;
-  /** The ids on screen, top to bottom. */
   order: readonly string[];
 }
 
-/** What each menu item does, with its toast (master 6.3). Only Delete asks first. */
 export function useListActions({ ownerId, openPath, rows, order }: Options) {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -74,7 +71,6 @@ export function useListActions({ ownerId, openPath, rows, order }: Options) {
       const item = deleting;
       const after = routeAfterRemoving(item.id);
       try {
-        // A refused delete throws, so the row comes back.
         await remove(item.id, order, async () => {
           if (!(await deleteNote(item.id))) throw new Error('Note not deleted');
           closeIfOpen(item, after);

@@ -1,3 +1,4 @@
+/** Where "New note" goes, reusing a blank note if there is one. */
 import { ROUTES } from '@/app/routes';
 import { requestBodyFocus } from '@/features/notes/bodyFocus';
 import { findBlankDraft, startDraft } from '@/features/notes/createNote';
@@ -5,11 +6,6 @@ import { clipRepository } from '@/features/notes/local/clipRepository';
 import { isEmptyNote } from '@/features/notes/local/isEmptyNote';
 import { noteRepository } from '@/features/notes/local/noteRepository';
 
-/**
- * Where "New note" goes. One blank note at a time: an open blank draft is
- * reused, then a blank note already on the device, and only then a new draft.
- * A draft is memory only: nothing is stored until it has content (8d).
- */
 export async function newNotePath(ownerId: number): Promise<string> {
   const draft = findBlankDraft();
   if (draft) {

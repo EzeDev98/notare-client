@@ -1,3 +1,4 @@
+/** The notes for the list, optionally filtered by a search term. */
 import { clipRepository } from '@/features/notes/local/clipRepository';
 import { noteQueries } from '@/features/notes/local/noteQueries';
 import { transcriptRepository } from '@/features/notes/local/transcriptRepository';
@@ -7,7 +8,6 @@ import { fromNoteRow, type ListItem } from './listItem';
 
 const has = (text: string, needle: string): boolean => text.toLowerCase().includes(needle);
 
-/** The notes, optionally narrowed by a search term that matches the text or a transcript. */
 async function read(ownerId: number, term: string): Promise<ListItem[]> {
   const needle = term.trim().toLowerCase();
 
@@ -26,11 +26,6 @@ async function read(ownerId: number, term: string): Promise<ListItem[]> {
   return items;
 }
 
-/**
- * The rows, read from Dexie only (M-5), narrowed by `term` when
- * there is one. Undefined until Dexie first answers, which is not the same as
- * empty. A refresh that changes nothing hands back the same array.
- */
 export function useNoteList(ownerId: number, term: string): ListItem[] | undefined {
   return useStableLiveQuery(() => read(ownerId, term), [ownerId, term]);
 }

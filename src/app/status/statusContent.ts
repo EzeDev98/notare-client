@@ -1,4 +1,4 @@
-/** All words for the status banner and its sign-in modal (master 6.7, step 14). */
+/** Words for the status banner and the sign-in-again modal. */
 export const STATUS_COPY = {
   sessionExpired: {
     title: 'Your session expired',

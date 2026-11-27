@@ -1,19 +1,8 @@
 <!doctype html>
+<!-- App shell page: sets the theme before first paint and shows the start-up splash. -->
 <html lang="en">
   <head>
     <script>
-      /*
-       * Runs BEFORE first paint. Deliberately blocking and deliberately inline —
-       * that is the whole point.
-       *
-       * Without it: browser paints (light) -> downloads JS -> runs React -> sets
-       * the theme. On a slow connection that is half a second of white in a dark
-       * room. No amount of React fixes it, because React runs after paint by
-       * construction.
-       *
-       * DUPLICATES the key and attribute from src/lib/theme/theme.ts. It cannot
-       * import them — modules load after paint. Change one, change both.
-       */
       (function () {
         try {
           var stored = localStorage.getItem('notare.theme');
@@ -30,32 +19,10 @@
         }
       })();
     </script>
-    <!--
-      viewport-fit=cover is what makes env(safe-area-inset-*) return real values.
-      Without it those functions silently return 0 and the bottom nav sits under
-      the iPhone home indicator with its lowest pixels untappable.
-
-      interactive-widget=resizes-content asks the browser to shrink the viewport
-      when the on-screen keyboard opens, rather than scrolling the page under it —
-      which keeps 100dvh honest while typing.
-
-      NO maximum-scale or user-scalable=no. Both disable pinch-zoom and are a
-      direct accessibility failure for anyone who needs to magnify.
-    -->
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
     />
-    <!--
-      Step 11 (11A), final asset. The actual product logo (a supplied
-      image, not generated here) — padded to a 168x168 square with its
-      own sampled background cream, then resized down for each of these.
-      favicon-32/16 are genuine downscales of a small source (168px), not
-      upscales, so they stay reasonably crisp; icon-512 is an UPSCALE from
-      that same 168px source and is correspondingly softer than a true
-      512px master would be — worth revisiting if a higher-resolution
-      export of the logo ever exists.
-    -->
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -64,18 +31,9 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Notare</title>
     <style>
-      /* The one declaration of the CSS layer order, weakest to strongest. It lives here, not in a
-         stylesheet, because the production minifier drops a bare @layer statement and the order
-         then depends on which layer appears first in the bundle. */
       @layer patternfly, reset, tokens, base, components, pages, utilities;
     </style>
     <style>
-      /*
-       * EXCEPTION (7c): the static splash cannot use design tokens, because they load
-       * after it paints. The raw values must match tokens.css (--p-bg-light, --p-bg-dark,
-       * --logo-size-lg). The logo files are used as supplied (H-4). Keep this under 30 lines.
-       * StartupSplash.tsx renders the same element with the same classes.
-       */
       html {
         background: #faf8f4;
       }
@@ -105,7 +63,6 @@
   </head>
   <body>
     <div id="root">
-      <!-- Static splash (7c). Shown until the app takes over; see StartupSplash.tsx. -->
       <div class="startup-splash" role="status" aria-label="Loading Notare">
         <div class="startup-splash__logo"></div>
       </div>

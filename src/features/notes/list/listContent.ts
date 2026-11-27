@@ -1,6 +1,5 @@
-/** Words on the notes list (master 6.3). */
+/** Words on the notes list. */
 export const LIST_COPY = {
-  /** Dates in the rows are written the way the prototype writes them. */
   locale: 'en-GB',
   listName: 'Notes',
   title: 'Notes',

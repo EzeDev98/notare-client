@@ -1,3 +1,4 @@
+/** The banner under the header for offline, paused sync, full storage and similar states. */
 import { useState, useSyncExternalStore } from 'react';
 
 import { useAuth } from '@/app/providers/auth-context';
@@ -22,11 +23,6 @@ interface Condition {
   onAction?: () => void;
 }
 
-/**
- * Most important first (14k). Every condition that is true is collected, and only
- * the first of these is shown, so two banners never show at once. A condition that is
- * not listed here sorts last.
- */
 const PRIORITY: readonly string[] = ['session-expired', 'device-full', 'update-available'];
 
 const rank = (key: string): number => {
@@ -34,17 +30,6 @@ const rank = (key: string): number => {
   return at === -1 ? PRIORITY.length : at;
 };
 
-/**
- * The one banner for every persistent condition (O-11, step 14). It sits in a
- * reserved slot under the header, so a banner appearing or going moves nothing,
- * and it shows only the most important condition.
- *
- * Add a condition by pushing it below and giving its key a place in PRIORITY.
- * Most important first: update required (its own blocking modal, so no banner),
- * session expired, device full, update available.
- * Offline is the list pane's banner (master 6.3), not this slot's. Sync results
- * are never shown here: they live on Settings > Sync and storage only.
- */
 export function StatusBanner() {
   const { state } = useAuth();
   const [signInOpen, setSignInOpen] = useState(false);
@@ -55,7 +40,6 @@ export function StatusBanner() {
 
   const conditions: Condition[] = [];
 
-  // Device full (14c): nothing can be saved at all.
   if (storageFull) {
     conditions.push({
       key: 'device-full',
@@ -77,7 +61,6 @@ export function StatusBanner() {
     });
   }
 
-  // Update available (14e): last, because it never blocks anything.
   if (update.available) {
     conditions.push({
       key: 'update-available',
@@ -91,7 +74,6 @@ export function StatusBanner() {
     });
   }
 
-  // The one that matters most wins. A required update has its own modal, so no banner then.
   const shown = updateRequired ? undefined : [...conditions].sort((a, b) => rank(a.key) - rank(b.key))[0];
 
   return (

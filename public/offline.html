@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- Page shown when the app is opened offline and the requested page is not cached. -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -8,13 +9,6 @@
     />
     <title>You're offline · Notare</title>
     <script>
-      /*
-       * Same inline, blocking, pre-paint theme script as index.html —
-       * duplicated on purpose, for the same reason index.html's own copy
-       * gives: this file is precached and served standalone by the
-       * service worker's navigation fallback, so it never goes through
-       * main.tsx and cannot import the shared theme module.
-       */
       (function () {
         try {
           var stored = localStorage.getItem('notare.theme');

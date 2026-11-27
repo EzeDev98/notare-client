@@ -1,12 +1,8 @@
+/** Back on an inner Settings screen. */
 import { useNavigate } from 'react-router';
 
 import { ROUTES } from '@/app/routes';
 
-/**
- * Back on an inner Settings screen. Inside the app it steps back in history, so
- * the screen slides out the way it came. Opened directly (no history to go back
- * to), it replaces itself with the hub.
- */
 export function useBackToHub(fallback: string = ROUTES.notes()): () => void {
   const navigate = useNavigate();
   return () => {

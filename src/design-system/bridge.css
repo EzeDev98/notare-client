@@ -1,17 +1,6 @@
-/*
- * PatternFly 6 bridge. Maps PatternFly's global tokens onto Notare's tokens so
- * every PatternFly component follows the design. Token mapping only: no
- * component styling and no !important (master 4.5).
- *
- * Both PatternFly layers are mapped. The base tokens (--100, --200 ...) feed
- * the light theme. The semantic tokens (--default, --regular ...) are what
- * PatternFly's dark theme redefines, so they are mapped too; until the
- * pf-v6-theme-dark class is dropped (step 6) they are what keeps a PatternFly
- * component on Notare's colours in dark mode.
- */
+/* Maps PatternFly's tokens onto Notare's tokens. */
 @layer tokens {
   :root {
-    /* Text */
     --pf-t--global--text--color--100: var(--color-text);
     --pf-t--global--text--color--200: var(--color-text-muted);
     --pf-t--global--text--color--300: var(--color-on-brand);
@@ -26,7 +15,6 @@
     --pf-t--global--text--color--on-brand--hover: var(--color-on-brand);
     --pf-t--global--text--color--on-brand--clicked: var(--color-on-brand);
 
-    /* Backgrounds: 100 is the surface, 200 is the page */
     --pf-t--global--background--color--100: var(--color-surface);
     --pf-t--global--background--color--200: var(--color-bg);
     --pf-t--global--background--color--600: var(--color-hover);
@@ -35,7 +23,6 @@
     --pf-t--global--background--color--floating--default: var(--color-surface);
     --pf-t--global--background--color--control--default: var(--color-surface);
 
-    /* Borders */
     --pf-t--global--border--color--50: var(--color-line);
     --pf-t--global--border--color--300: var(--color-field-line);
     --pf-t--global--border--color--default: var(--color-line);
@@ -54,7 +41,6 @@
     --pf-t--global--border--radius--medium: var(--radius);
     --pf-t--global--border--radius--large: var(--radius);
 
-    /* Brand: one colour, no hover shade */
     --pf-t--global--color--brand--100: var(--color-brand);
     --pf-t--global--color--brand--200: var(--color-brand);
     --pf-t--global--color--brand--300: var(--color-brand);
@@ -62,8 +48,6 @@
     --pf-t--global--color--brand--hover: var(--color-brand);
     --pf-t--global--color--brand--clicked: var(--color-brand);
 
-    /* Status: error is the real red; there is no green or amber, so success,
-       warning and information all use the brand colour (paired with an icon). */
     --pf-t--global--color--status--danger--100: var(--color-error);
     --pf-t--global--color--status--danger--200: var(--color-error);
     --pf-t--global--color--status--danger--default: var(--color-error);
@@ -77,7 +61,6 @@
     --pf-t--global--color--status--info--200: var(--color-brand);
     --pf-t--global--color--status--info--default: var(--color-brand);
 
-    /* Icons */
     --pf-t--global--icon--color--100: var(--color-text);
     --pf-t--global--icon--color--200: var(--color-text-muted);
     --pf-t--global--icon--color--300: var(--color-on-brand);
@@ -85,7 +68,6 @@
     --pf-t--global--icon--color--subtle: var(--color-text-muted);
     --pf-t--global--icon--color--disabled: var(--color-text-muted);
 
-    /* Font: one family, one weight */
     --pf-t--global--font--family--100: var(--font-family);
     --pf-t--global--font--family--200: var(--font-family);
     --pf-t--global--font--family--body: var(--font-family);
@@ -101,7 +83,6 @@
     --pf-t--global--font--weight--heading--legacy: var(--font-weight);
     --pf-t--global--font--weight--heading--bold--legacy: var(--font-weight);
 
-    /* Font sizes: nothing larger than text-lg */
     --pf-t--global--font--size--100: var(--text-xs);
     --pf-t--global--font--size--200: var(--text-sm);
     --pf-t--global--font--size--300: var(--text-md);
@@ -111,13 +92,11 @@
     --pf-t--global--font--size--700: var(--text-lg);
     --pf-t--global--font--size--800: var(--text-lg);
 
-    /* Focus ring */
     --pf-t--global--focus-ring--color--100: var(--focus-ring-color);
     --pf-t--global--focus-ring--color--default: var(--focus-ring-color);
     --pf-t--global--focus-ring--width--offset: var(--focus-ring-size);
     --pf-t--global--focus-ring--width--inset: var(--focus-ring-size);
 
-    /* No underline in any link or help-text style */
     --pf-t--global--text-decoration--line--200: none;
   }
 }

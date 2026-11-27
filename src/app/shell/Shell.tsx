@@ -1,3 +1,4 @@
+/** The shell for every signed-in screen: header, list pane, note pane and overlays. */
 import { useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 
@@ -15,12 +16,6 @@ import { useStartSync } from './useStartSync';
 
 import './Shell.css';
 
-/**
- * The one shell for every signed-in screen (master 5.1): header, list pane,
- * note pane and overlays. It holds no business logic. Both panes stay mounted;
- * CSS decides from the container width whether one or both are shown, so
- * resizing across 800px never remounts the editor.
- */
 export function Shell() {
   useStartSync();
   const [menuOpen, setMenuOpen] = useState(false);

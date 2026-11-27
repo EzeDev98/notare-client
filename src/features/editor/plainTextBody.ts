@@ -1,12 +1,5 @@
+/** Converts between plain text and editor blocks. */
 import type { JSONContent } from '@tiptap/core';
-
-/**
- * INTERIM (step 12a). Content is still a plain string on the note row until
- * 12b stores the body as a Yjs document. This turns that string into editor
- * blocks and back, with one line per block and list markers kept:
- *   "- text"  bullet,  "1. text"  numbered.
- * Text is never passed to the editor as HTML or Markdown.
- */
 
 type ListKind = 'bullet' | 'ordered';
 

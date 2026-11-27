@@ -1,3 +1,4 @@
+/* Styles for DetailRow. */
 @layer components {
   .ui-detail-row {
     display: flex;

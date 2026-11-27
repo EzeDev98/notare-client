@@ -1,3 +1,4 @@
+/** A modal that asks to confirm an action. */
 import { useState } from 'react';
 
 import { Button } from '../Button/Button';
@@ -16,11 +17,9 @@ interface ConfirmModalProps {
   confirmLabel: string;
   danger?: boolean;
   onClose: () => void;
-  /** Resolves with an error to show inside the modal, or with nothing to close it. */
   onConfirm: () => Promise<string | undefined>;
 }
 
-/** One confirmation: the text, Cancel, and the action. Busy while it runs; an error stays inside. */
 export function ConfirmModal({
   open,
   title,

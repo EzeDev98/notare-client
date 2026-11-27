@@ -1,5 +1,4 @@
-/* One family, one weight, no underline, no outline. Values come from tokens.css only.
-   Reduced motion is NOT handled here; it lives in the motion module (U-15). */
+/* Base element styles. */
 @layer base {
   body {
     min-height: 100dvh;
@@ -12,7 +11,6 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Browsers and PatternFly default these to bold. */
   h1, h2, h3, h4, h5, h6, strong, b, th {
     font-weight: var(--font-weight);
   }
@@ -28,7 +26,6 @@
     font-weight: var(--font-weight);
   }
 
-  /* Inputs are 16px so iOS Safari does not zoom on focus. */
   input, select, textarea {
     font-family: inherit;
     font-weight: var(--font-weight);
@@ -41,7 +38,6 @@
     opacity: 1;
   }
 
-  /* No outline anywhere. Keyboard focus is a brand border plus a soft ring instead. */
   *, *::before, *::after {
     outline: none;
   }
@@ -51,7 +47,6 @@
     box-shadow: 0 0 0 var(--focus-ring-size) var(--focus-ring-color);
   }
 
-  /* Headings focused by code (route changes) show no ring. */
   [tabindex='-1']:focus-visible {
     box-shadow: none;
   }
@@ -60,12 +55,10 @@
     display: none;
   }
 
-  /* The page behind everything (overscroll, rubber-band) follows the theme. */
   :root {
     background: var(--color-bg);
   }
 
-  /* A screen change slides 16px sideways; clipping sideways overflow stops the scroll indicators flashing. */
   html, body {
     overflow-x: clip;
   }

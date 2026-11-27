@@ -1,3 +1,4 @@
+/** Uploads voice clips waiting on the device. */
 import { api } from '@/core/api';
 import { clipRepository } from '@/features/notes/local/clipRepository';
 import { noteQueries } from '@/features/notes/local/noteQueries';
@@ -6,18 +7,6 @@ import { markTransportFailure } from '@/sync/transportFailure';
 
 let running: Promise<void> | null = null;
 
-/**
- * The clip upload queue (step 8j): the same idea as the note outbox.
- *
- * A clip is 'local' until the server has it. Until step 17 the server's clip
- * endpoint needs a note id, so a clip waits until its note has a serverId. It
- * stays safe on the device the whole time. A note in the bin does not upload.
- *
- * An offline failure puts the clip back in the queue. Any other failure marks
- * it 'failed'; it is not retried on its own, only by "Try again".
- *
- * Called by the sync engine between push and pull, inside its cross-tab lock.
- */
 export function uploadPendingClips(): Promise<void> {
   running ??= run().finally(() => {
     running = null;
@@ -26,7 +15,6 @@ export function uploadPendingClips(): Promise<void> {
 }
 
 async function run(): Promise<void> {
-  // Anything left 'uploading' by a tab that was killed is not uploading now.
   await clipRepository.resetStuckUploads();
 
   for (const clip of await clipRepository.listToUpload()) {

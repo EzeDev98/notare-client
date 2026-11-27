@@ -1,3 +1,4 @@
+/** Password reset screen. */
 import { useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -7,7 +8,6 @@ import {
   FormScreen,
   InfoBanner,
   OtpField,
-  PasswordField,
   Steps,
   TextField,
   useToast,
@@ -30,18 +30,13 @@ import {
 import { useCountdown } from '@/shared/hooks/useCountdown';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 
+import { NewPasswordFields } from './NewPasswordFields';
+
 type Step = 'request' | 'verify' | 'complete';
 
 const TOTAL_STEPS = 3;
 const STEP_NUMBER: Record<Step, number> = { request: 1, verify: 2, complete: 3 };
 
-/**
- * The whole reset flow on ONE route, with the step in component state.
- *
- * The resetToken from the code step has to reach the password step and cannot be
- * retyped, so it must not travel in router state or a URL. One route restarts the
- * flow honestly on reload instead of landing on an address that looks resumable.
- */
 export function ResetPasswordPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -74,10 +69,8 @@ export function ResetPasswordPage() {
         ? reset.verifyAction.submitting
         : reset.completeAction.submitting;
 
-  // A resend that fails (offline) still reads from the request action, so it shows on the code step too.
   const formError = step === 'complete' ? reset.completeAction.formError : reset.requestAction.formError;
 
-  // exactOptionalPropertyTypes: the field wants no `error` key at all when there is none.
   const errorProp = (message: string | undefined | null): { error?: string } =>
     message ? { error: message } : {};
 
@@ -86,7 +79,6 @@ export function ResetPasswordPage() {
       void navigate(ROUTES.signIn());
       return;
     }
-    // From the code step the email may be wrong; from the password step the code is spent.
     reset.setResetToken(null);
     setErrors({});
     setStep('request');
@@ -103,7 +95,6 @@ export function ResetPasswordPage() {
     const result = await reset.requestAction.run(email.trim());
     if (result === null) return;
 
-    // Advances whether or not the address is registered: the server answers the same either way.
     cooldown.start(RESEND_COOLDOWN_SECONDS);
     setCode('');
     setStep('verify');
@@ -137,7 +128,6 @@ export function ResetPasswordPage() {
     }
 
     if (reset.resetToken === null) {
-      // Only reachable if state was lost: start again rather than fail at the server.
       setStep('request');
       return;
     }
@@ -227,35 +217,20 @@ export function ResetPasswordPage() {
       ) : null}
 
       {step === 'complete' ? (
-        <>
-          <PasswordField
-            ref={passwordRef}
-            label={RESET_NEW_PASSWORD.labels.password}
-            hint={RESET_NEW_PASSWORD.hint}
-            autoComplete="new-password"
-            submitting={busy}
-            value={password}
-            {...errorProp(errors['password'])}
-            onChange={(event) => {
-              setPassword(event.target.value);
-              setErrors({});
-              reset.completeAction.reset();
-            }}
-          />
-          <PasswordField
-            ref={confirmationRef}
-            label={RESET_NEW_PASSWORD.labels.confirmPassword}
-            autoComplete="new-password"
-            submitting={busy}
-            value={confirmation}
-            {...errorProp(errors['confirmation'])}
-            onChange={(event) => {
-              setConfirmation(event.target.value);
-              setErrors({});
-              reset.completeAction.reset();
-            }}
-          />
-        </>
+        <NewPasswordFields
+          passwordRef={passwordRef}
+          confirmationRef={confirmationRef}
+          password={password}
+          confirmation={confirmation}
+          errors={errors}
+          submitting={busy}
+          onChange={(field, value) => {
+            if (field === 'password') setPassword(value);
+            else setConfirmation(value);
+            setErrors({});
+            reset.completeAction.reset();
+          }}
+        />
       ) : null}
     </FormScreen>
   );

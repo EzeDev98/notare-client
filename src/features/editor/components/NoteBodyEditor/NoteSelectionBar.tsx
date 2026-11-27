@@ -1,3 +1,4 @@
+/** The bar over selected text: add a link or make a list. */
 import type { Editor } from '@tiptap/core';
 import { useEditorState } from '@tiptap/react';
 import { useLayoutEffect, useState } from 'react';
@@ -9,13 +10,7 @@ import { applyLink, toggleBulletList } from '@/features/editor/editorCommands';
 
 const EDGE = 8;
 
-/**
- * Step 12e: the floating bar over selected text. Link (opens "Paste a link" and
- * Apply in the same bar) and List. Bold and Italic are not offered (O-03). It is
- * positioned over the text and never moves the layout.
- */
 export function NoteSelectionBar({ editor }: { editor: Editor }) {
-  // The selection the link field was opened for. If the selection changes, the field closes.
   const [linkFor, setLinkFor] = useState<string | null>(null);
   const [url, setUrl] = useState('');
 
@@ -34,7 +29,6 @@ export function NoteSelectionBar({ editor }: { editor: Editor }) {
 
   const key = `${String(selection.from)}-${String(selection.to)}`;
   const linkOpen = linkFor === key;
-  // While the link field has focus the text has lost it, but the bar must stay.
   const visible = selection.editable && !selection.empty && (selection.focused || linkOpen);
   const { mounted, ref: barRef } = usePresence<HTMLDivElement>(visible, { enter: barIn, exit: barOut });
 
@@ -52,7 +46,6 @@ export function NoteSelectionBar({ editor }: { editor: Editor }) {
       EDGE,
       Math.min(centre - box.left - bar.offsetWidth / 2, box.width - bar.offsetWidth - EDGE),
     );
-    // Above the selection, or below it when there is no room above.
     const above = Math.min(start.top, end.top) - box.top - bar.offsetHeight - EDGE;
     const top = above < EDGE ? Math.max(start.bottom, end.bottom) - box.top + EDGE : above;
 

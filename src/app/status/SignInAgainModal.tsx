@@ -1,3 +1,4 @@
+/** Asks for the password again when the session has expired, without leaving the screen. */
 import { useState } from 'react';
 
 import { useAuth } from '@/app/providers/auth-context';
@@ -14,10 +15,6 @@ interface SignInAgainModalProps {
   onClose: () => void;
 }
 
-/**
- * "Sign in again" (step 14a): the username is fixed, only the password is asked
- * for, and the screen behind never unmounts, so nothing the person was writing is lost.
- */
 export function SignInAgainModal({ open, onClose }: SignInAgainModalProps) {
   const { state, reauthenticate } = useAuth();
   const { toast } = useToast();

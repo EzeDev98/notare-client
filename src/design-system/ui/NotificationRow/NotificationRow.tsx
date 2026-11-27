@@ -1,3 +1,4 @@
+/** One notification in the notifications modal. */
 import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -7,16 +8,12 @@ import './NotificationRow.css';
 
 interface NotificationRowProps {
   text: string;
-  /** For example "2 min ago" or "Weekend plan · Yesterday". */
   meta?: string | undefined;
-  /** Unread rows show a brand dot. Default true. */
   unread?: boolean | undefined;
   onDismiss?: (() => void) | undefined;
-  /** Buttons such as Accept and Decline, drawn on their own line, right-aligned. */
   actions?: ReactNode;
 }
 
-/** One notification: dot, text, time, a dismiss button, and optional actions. */
 export function NotificationRow({ text, meta, unread = true, onDismiss, actions }: NotificationRowProps) {
   return (
     <div className="n-notice">

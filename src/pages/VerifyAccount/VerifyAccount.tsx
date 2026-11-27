@@ -1,3 +1,4 @@
+/** Check-your-email screen after registering. */
 import { Mail } from 'lucide-react';
 import { useRef, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router';
@@ -16,7 +17,6 @@ import { useCountdown } from '@/shared/hooks/useCountdown';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
 
-/** Router state is a convenience only: the screen must work without it (e.g. after a reload). */
 function readState(state: unknown): { identifier: string; justSent: boolean } {
   if (typeof state !== 'object' || state === null) return { identifier: '', justSent: false };
   const value = state as { identifier?: unknown; justSent?: unknown };
@@ -26,10 +26,6 @@ function readState(state: unknown): { identifier: string; justSent: boolean } {
   };
 }
 
-/**
- * Check your email. Verification itself happens through the emailed link, so there is
- * nothing to type here; this screen only offers Go to sign in and Resend.
- */
 export function VerifyAccountPage() {
   useDocumentTitle(CHECK_EMAIL.title);
 
@@ -47,7 +43,6 @@ export function VerifyAccountPage() {
   const [resending, setResending] = useState(false);
   const identifierRef = useRef<HTMLInputElement>(null);
 
-  // "Lost" variant: we do not know who to resend to, so we ask.
   const lost = initialIdentifier === '';
   const showsAddress = initialIdentifier.includes('@');
 
@@ -66,7 +61,6 @@ export function VerifyAccountPage() {
     }
 
     setResending(true);
-    // The server answers 200 whether or not the account exists, so a failure is not reportable.
     await verification.resend(value);
     setResending(false);
     cooldown.start(RESEND_COOLDOWN_SECONDS);
@@ -74,7 +68,6 @@ export function VerifyAccountPage() {
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
-    // Enter in the lost-identifier field resends instead of reloading the page.
     event.preventDefault();
     void handleResend();
   }

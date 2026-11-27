@@ -1,3 +1,4 @@
+/** A modal, bottom sheet or drawer. */
 import { X } from 'lucide-react';
 import { useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
@@ -16,13 +17,9 @@ type Variant = 'modal' | 'sheet' | 'drawer';
 interface OverlayProps {
   open: boolean;
   onClose: () => void;
-  /** modal: centred, 400px. sheet: from the bottom, for short actions only. drawer: from the left, 280px. */
   variant?: Variant | undefined;
-  /** Spoken name. Shown as the heading for modal and sheet; a drawer has no heading. */
   title: string;
-  /** False removes the Close button and makes Escape and a click outside do nothing. */
   dismissible?: boolean | undefined;
-  /** Buttons, right-aligned along the bottom. */
   footer?: ReactNode;
   children: ReactNode;
 }
@@ -31,11 +28,6 @@ const PANEL_IN = { modal: modalIn, sheet: sheetIn, drawer: drawerIn } as const;
 const FADE_IN = { duration: '--motion-base', easing: '--ease-standard' } as const;
 const NOOP = (): void => undefined;
 
-/**
- * One dialog for modal, sheet and drawer. Focus moves in and returns, Tab stays
- * inside, Escape closes the top overlay only, and the page does not scroll behind it.
- * Mark the field to focus first with data-autofocus.
- */
 export function Overlay({
   open,
   onClose,

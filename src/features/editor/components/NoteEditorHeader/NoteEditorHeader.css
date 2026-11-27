@@ -1,9 +1,5 @@
+/* Styles for NoteEditorHeader. */
 @layer components {
-  /*
-   * Step 12d. 56px bar that stays at the top while the note scrolls. The scroll
-   * area pads its sides (pages/NoteDetail), so the bar pulls out to the edges
-   * with a negative margin. Remove that margin when the page is rebuilt.
-   */
   .note-header {
     position: sticky;
     inset-block-start: 0;
@@ -22,7 +18,6 @@
     flex: 1;
   }
 
-  /* In the shell bar: no bar of its own, it fills the slot. */
   .note-header--in-bar {
     position: static;
     z-index: auto;
@@ -34,7 +29,6 @@
     background: none;
   }
 
-  /* Two panes (O-13): the list is already beside the note, so Back goes. */
   @container (min-width: 800px) {
     .note-header__back {
       display: none;

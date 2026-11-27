@@ -1,12 +1,11 @@
+/* Styles for NotesLanding. */
 @layer pages {
-  /* The note pane before a note is chosen: the empty state is centred in the pane. */
   .notes-landing {
     display: flex;
     flex: 1;
     align-items: center;
     justify-content: center;
     min-block-size: 100%;
-    /* Sits a little above the middle of the pane, not dead centre. */
     padding-block-end: 20vh;
   }
 }

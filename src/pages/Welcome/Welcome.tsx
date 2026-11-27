@@ -1,3 +1,4 @@
+/** First screen when signed out: create an account or sign in. */
 import { Navigate } from 'react-router';
 
 import { useAuth } from '@/app/providers/auth-context';
@@ -12,20 +13,17 @@ import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 
 import './Welcome.css';
 
-/** First screen for someone who is signed out: Create account or Sign in. */
 export function WelcomePage() {
   useDocumentTitle(WELCOME.title);
 
   const { state: authState } = useAuth();
   const { resolved } = useTheme();
 
-  // A live session has no business here; same rule as the Sign in page.
   if (authState.status === 'authenticated' || authState.status === 'refreshing') {
     return <Navigate to={ROUTES.notes()} replace />;
   }
 
   return (
-    // The empty bar keeps the group at the same height as the form screens.
     <ScreenContainer bar={<span aria-hidden="true" />}>
       <div className="welcome__body">
         <Logo scheme={resolved} size="lg" />

@@ -1,15 +1,9 @@
+/** Note-server gateway for the current server API. */
 import { noteService } from '@/features/notes/api/noteService';
 import { voiceService } from '@/features/voice/api/voiceService';
 
 import type { NoteGateway } from './NoteGateway';
 
-/**
- * The gateway for the server as it is today. Each method forwards to the
- * existing service, whose HTTP code is unchanged. What it fakes or papers over
- * is listed in docs/adapter.md; step 20 deletes this file and that list.
- *
- * The two service modules may only be imported here (ESLint enforces it).
- */
 export const legacyGateway: NoteGateway = {
   listNotes: (options) => noteService.listNotes(options),
   searchNotes: (query, options) => noteService.searchNotes(query, options),

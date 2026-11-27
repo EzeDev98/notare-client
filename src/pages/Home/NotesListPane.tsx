@@ -1,3 +1,4 @@
+/** The list pane: title, count, search and rows. */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
@@ -101,7 +102,6 @@ function OwnerList({ ownerId }: { ownerId: number }) {
   );
 }
 
-/** The list pane: title and count, search, then the rows. */
 export function NotesListPane() {
   const user = useSessionUser();
   return user ? <OwnerList ownerId={user.id} /> : null;

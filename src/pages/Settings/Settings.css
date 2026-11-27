@@ -1,3 +1,4 @@
+/* Styles shared by the Settings screens. */
 @layer pages {
   .ui-screen.set-screen--left {
     justify-content: flex-start;
@@ -15,49 +16,6 @@
     margin: 0;
     padding: 0;
     list-style: none;
-  }
-
-  .set__row {
-    display: flex;
-    align-items: center;
-    gap: var(--gap);
-    width: 100%;
-    height: var(--input-height);
-    padding: 0 var(--gap);
-    border: var(--border-width) solid transparent;
-    border-radius: var(--radius);
-    background: none;
-    font-size: var(--text-sm);
-    text-align: start;
-    cursor: pointer;
-    transition:
-      background-color var(--motion-fast) var(--ease-standard),
-      border-color var(--motion-fast) var(--ease-standard),
-      box-shadow var(--motion-fast) var(--ease-standard);
-  }
-
-  .set__row > span:first-child {
-    flex: 1;
-  }
-
-  @media (hover: hover) {
-    .set__row:hover {
-      background: var(--color-hover);
-    }
-  }
-
-  .set__row:focus-visible {
-    border-color: var(--focus-border);
-    box-shadow: 0 0 0 var(--focus-ring-size) var(--focus-ring-color);
-  }
-
-  .set__value {
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-  }
-
-  .set__chev {
-    color: var(--color-text-muted);
   }
 
   .set__stack {

@@ -1,7 +1,4 @@
-/**
- * Set once the server says this version of the app is too old (HTTP 426). A plain
- * store, so lib/ needs no React; the app reads it with useSyncExternalStore.
- */
+/** Records that the server needs a newer app version. */
 let required = false;
 const listeners = new Set<() => void>();
 

@@ -1,3 +1,4 @@
+/** Removes synced voice clips from the device to free up space. */
 import { ConfirmModal, useToast } from '@/design-system/ui';
 import { clipRepository } from '@/features/notes/local/clipRepository';
 import { setStorageFull } from '@/features/notes/status/storageFull';
@@ -7,11 +8,6 @@ import { SETTINGS_COPY } from './settingsContent';
 
 const COPY = SETTINGS_COPY.syncStorage;
 
-/**
- * The Free up space dialog: removes voice clips that are already synced from
- * this device. Used by the "This device is full" banner (step 14c). The same
- * steps run on Settings > Sync and storage.
- */
 export function FreeUpSpaceModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { toast } = useToast();
 

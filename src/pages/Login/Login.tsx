@@ -1,3 +1,4 @@
+/** Sign-in screen. */
 import { useRef, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router';
 
@@ -21,10 +22,8 @@ import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 
 import './Login.css';
 
-/** What is shown above the Sign in button. */
 type Problem = { kind: 'message'; text: string } | { kind: 'unverified' };
 
-/** True when we arrived here straight after verifying an account. */
 function readVerified(state: unknown): boolean {
   if (typeof state !== 'object' || state === null) return false;
   return (state as { verified?: unknown }).verified === true;
@@ -46,12 +45,10 @@ export function LoginPage() {
   const identifierRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
-  // Already signed in: a conclusion about the current state, so a redirect, not an effect.
   if (authState.status === 'authenticated' || authState.status === 'refreshing') {
     return <Navigate to={ROUTES.notes()} replace />;
   }
 
-  // exactOptionalPropertyTypes: the field wants no `error` key at all when there is none.
   const fieldError = (name: string): { error?: string } => {
     const message = errors[name];
     return message ? { error: message } : {};
@@ -70,7 +67,6 @@ export function LoginPage() {
     event.preventDefault();
     if (submitting) return;
 
-    // Validated on submit, never while typing.
     const nextErrors: Record<string, string> = {};
     if (usernameOrEmail.trim() === '') {
       nextErrors['usernameOrEmail'] = LOGIN_FIELD_ERRORS.identifierRequired;
@@ -82,7 +78,6 @@ export function LoginPage() {
     setErrors(nextErrors);
     setProblem(null);
     if (Object.keys(nextErrors).length > 0) {
-      // Focus goes to the first invalid field.
       (nextErrors['usernameOrEmail'] ? identifierRef : passwordRef).current?.focus();
       return;
     }
@@ -93,12 +88,10 @@ export function LoginPage() {
       void navigate(ROUTES.notes(), { replace: true });
     } catch (error) {
       if (isUnauthorized(error)) {
-        // One message for both fields: the server does not say which was wrong, and must not.
         setProblem({ kind: 'message', text: ERRORS.wrongCredentials });
         setPassword('');
         passwordRef.current?.focus();
       } else if (isForbidden(error)) {
-        // Unverified: the account exists and the password was right.
         setProblem({ kind: 'unverified' });
       } else if (statusOf(error) === 423) {
         setProblem({ kind: 'message', text: ERRORS.accountUnavailable });

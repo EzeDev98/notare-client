@@ -1,3 +1,4 @@
+/** Sends an open note's queued transcriptions and follows them to the end. */
 import { useEffect } from 'react';
 
 import { useToast } from '@/design-system/ui';
@@ -7,11 +8,6 @@ import { driveTranscription } from '@/features/voice/transcribe';
 import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLiveQuery';
 import { useOnlineStatus } from '@/shared/hooks/useOnlineStatus';
 
-/**
- * While a note is open, sends its queued transcriptions as soon as the device
- * is online and the clip has reached the server, and follows them to the end.
- * Shows "Transcript ready" when one finishes.
- */
 export function useTranscriptionRunner(noteId: string): void {
   const online = useOnlineStatus();
   const { toast } = useToast();

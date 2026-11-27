@@ -1,4 +1,4 @@
-/** Words on the two full-screen error states (master 6.7.1). */
+/** Words on the "Page not found" and "Something went wrong" screens. */
 export const STATUS_COPY = {
   notFoundTitle: 'Page not found',
   notFoundText: 'That page does not exist or was moved.',

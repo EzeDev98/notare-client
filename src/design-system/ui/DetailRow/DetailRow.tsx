@@ -1,8 +1,8 @@
+/** A label on the left and its value on the right. */
 import type { ReactNode } from 'react';
 
 import './DetailRow.css';
 
-/** A muted label on the left and its value on the right. Put several inside a Card. */
 export function DetailRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="ui-detail-row">

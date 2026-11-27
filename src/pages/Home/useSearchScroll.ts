@@ -1,10 +1,6 @@
+/** Restores the list's scroll position after a search. */
 import { useCallback, useLayoutEffect, useRef, type RefObject } from 'react';
 
-/**
- * Clearing a search puts the list back where it was. `remember` is called as
- * the first character is typed; when the search ends, the saved position is
- * restored once the full list is back on screen.
- */
 export function useSearchScroll(
   pane: RefObject<HTMLElement | null>,
   searching: boolean,

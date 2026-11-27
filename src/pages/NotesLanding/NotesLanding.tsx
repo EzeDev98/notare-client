@@ -1,3 +1,4 @@
+/** The note pane when no note is open. */
 import { Pen } from 'lucide-react';
 import { Navigate } from 'react-router';
 
@@ -11,17 +12,11 @@ import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 
 import './NotesLanding.css';
 
-/**
- * The note pane: what shows when no note is open (`/notes`). Only seen on two panes (O-13); on a phone
- * this pane is hidden and the list shows. With no notes at all it carries the
- * icon, the text and the New note button; the list beside it says only "No notes yet".
- */
 function OwnerLanding({ ownerId }: { ownerId: number }) {
   const startNote = useStartNote();
   const items = useNoteList(ownerId, '');
   const twoPane = useTwoPane();
 
-  // Dexie has not answered yet: show nothing rather than the wrong state.
   if (items === undefined) return null;
 
   const newNote = (
@@ -41,7 +36,6 @@ function OwnerLanding({ ownerId }: { ownerId: number }) {
     );
   }
 
-  // On two panes there is always a note to show: open the first one in the list.
   const first = items[0];
   if (twoPane && first) return <Navigate to={first.path} replace />;
 

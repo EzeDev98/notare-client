@@ -1,3 +1,4 @@
+/** Shows one note for editing: date, AI title and body. */
 import type { Editor } from '@tiptap/core';
 import { Mic } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
@@ -18,18 +19,10 @@ import type { NoteRow } from '@/features/notes/local/noteRow';
 import { parseServerDateTime } from '@/lib/time';
 
 interface NoteEditorHostProps {
-  /** The local row. Exists before any server has seen this note. */
   row: NoteRow;
-  /** Optional content rendered inside the writing surface around the body. */
   contentAccessory?: ReactNode;
 }
 
-/**
- * "21 September 2026, 9:38 pm" — shown once at the top of every note, like
- * Apple Notes. Frozen on first render for a given note (parent passes
- * key=localId): a new note has no server timestamp yet, and swapping to the
- * server's zoneless one after the first sync would change the text mid-typing.
- */
 function NoteDateHeading({ row }: { row: NoteRow }) {
   const [text] = useState(() => {
     const date =
@@ -60,7 +53,6 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
 
   useEditorShortcuts({ onSave: editor.flush });
 
-  // SaveIndicator shows the note's one status word (step 8h).
   return (
     <>
       <NoteEditorHeader row={editor.row} more={more} />
@@ -68,7 +60,6 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
 
       <NoteDateHeading key={editor.row.localId} row={editor.row} />
 
-      {/* The AI's title, inferred from the whole note. Read-only: not part of the text. */}
       {editor.row.aiTitle ? <h1 className="note-title">{editor.row.aiTitle}</h1> : null}
 
       <StatusBanner />
@@ -86,7 +77,6 @@ export function NoteEditorHost({ row, contentAccessory }: NoteEditorHostProps) {
             <FloatingAction
               icon={Mic}
               label="Voice clip"
-              // Keeps the caret in the note, so the clip lands where the user was typing.
               onMouseDown={(event) => {
                 event.preventDefault();
               }}

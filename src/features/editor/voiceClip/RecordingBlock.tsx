@@ -1,3 +1,4 @@
+/** A voice clip being recorded inside a note. */
 import { useEffect, useRef, useState } from 'react';
 
 import { CLIP_MAX_SECONDS } from '@/core/config/timings';
@@ -14,15 +15,10 @@ import { endRecording } from './recordingIds';
 interface RecordingBlockProps {
   recordingId: string;
   noteId: string;
-  /** The clip is safely stored; the block becomes a normal clip. */
   onSaved: (clipId: string) => void;
   onRemove: () => void;
 }
 
-/**
- * The block while a clip is being made: asking for the microphone, recording,
- * then saving on this device. Starts recording as soon as it appears.
- */
 export function RecordingBlock({ recordingId, noteId, onSaved, onRemove }: RecordingBlockProps) {
   const recorder = useMediaRecorderState();
   const { toast } = useToast();
@@ -40,7 +36,6 @@ export function RecordingBlock({ recordingId, noteId, onSaved, onRemove }: Recor
     void start();
   }, [start]);
 
-  // Leaving the note must not leave the microphone open.
   useEffect(() => stop, [stop]);
 
   useEffect(() => {
@@ -75,7 +70,6 @@ export function RecordingBlock({ recordingId, noteId, onSaved, onRemove }: Recor
     })();
   }, [status, noteId, recordingId, onSaved, onRemove, toast]);
 
-  // Try again and it is still blocked: explain where to allow it (14f).
   useEffect(() => {
     if (status.state === 'permission-denied' && retriedRef.current) setHelpOpen(true);
   }, [status.state]);

@@ -1,3 +1,4 @@
+/** Onboarding: steps to install by hand where the browser has no install dialog. */
 import { Card, IconTile } from '@/design-system/ui';
 import { MANUAL } from '@/features/onboarding/onboardingContent';
 import { isIOS } from '@/pwa/installSupport';
@@ -6,11 +7,6 @@ import { TransferHero } from './OnboardingHero';
 import { OnboardingScreen } from './OnboardingScreen';
 import { RiseList } from './RiseList';
 
-/**
- * Screen 5. Steps for a browser that has no install dialog: Safari on iPhone
- * and iPad, and any browser without the install event. Everything that is not
- * an Apple device gets the Android steps (the browser menu).
- */
 export function ManualScreen({ onBack }: { onBack: () => void }) {
   const steps = isIOS() ? MANUAL.ios : MANUAL.android;
 

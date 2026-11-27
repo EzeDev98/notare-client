@@ -1,3 +1,4 @@
+/** Gallery row: PageHeader, ScreenContainer, FormScreen. */
 import { useState } from 'react';
 
 import { useTheme } from '@/app/providers/theme-context';
@@ -17,7 +18,6 @@ import { Both } from './Both';
 
 type Demo = 'none' | 'form' | 'center' | 'top';
 
-/** Gallery: row 9, PageHeader, ScreenContainer, FormScreen. */
 export function Row9() {
   const { resolved } = useTheme();
   const [demo, setDemo] = useState<Demo>('none');

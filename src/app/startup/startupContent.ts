@@ -1,4 +1,4 @@
-/** Every word on the start-up screens, in one place (master 6.7). */
+/** Words on the start-up screens. */
 export const STARTUP_COPY = {
   offlineTitle: 'You are offline',
   offlineText:

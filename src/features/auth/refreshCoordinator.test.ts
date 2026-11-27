@@ -1,3 +1,4 @@
+/** Tests for refreshCoordinator. */
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -30,8 +31,6 @@ beforeEach(async () => {
       refreshCalls += 1;
       const body = (await request.json()) as { refreshToken: string };
 
-      // Mirrors reuse detection: anything but the current token is rejected,
-      // and on the real server the session record is deleted outright.
       if (body.refreshToken !== 'refresh-current') {
         return HttpResponse.json(
           { title: 'Unauthorized', status: 401, detail: 'Invalid refresh token.' },
@@ -65,8 +64,6 @@ describe('ensureFreshAccessToken', () => {
 
     await expect(ensureFreshAccessToken()).resolves.toBe(true);
 
-    // The re-read inside the lock: acquiring it is not the same as needing to
-    // act, and refreshing unnecessarily burns a token for nothing.
     expect(refreshCalls).toBe(0);
   });
 
@@ -76,23 +73,12 @@ describe('ensureFreshAccessToken', () => {
     await expect(ensureFreshAccessToken()).resolves.toBe(true);
 
     expect(getAccessToken()).toBe('access-new');
-    // The old token is dead the moment the server responded; if this were not
-    // stored, the next reload would present it and the session would be
-    // deleted as a reuse attempt.
     await expect(getStoredRefreshToken()).resolves.toBe('refresh-new');
   });
 
   it('makes exactly ONE refresh call for concurrent callers', async () => {
     await setStoredRefreshToken('refresh-current');
 
-    /*
-     * THE TEST THIS WHOLE SUBSECTION EXISTS FOR.
-     *
-     * Five simultaneous callers. Without single-flight, the first rotates and
-     * the other four present a token the server has already invalidated —
-     * which it treats as reuse and answers by DELETING THE SESSION. Not a 401
-     * to retry: a hard logout on every device.
-     */
     const results = await Promise.all([
       ensureFreshAccessToken(),
       ensureFreshAccessToken(),
@@ -110,8 +96,6 @@ describe('ensureFreshAccessToken', () => {
 
     await expect(ensureFreshAccessToken()).rejects.toThrow();
 
-    // Terminal: the server record is gone, so keeping a dead token around
-    // would only produce a second failure later, further from the cause.
     expect(getAccessToken()).toBeNull();
     await expect(getStoredRefreshToken()).resolves.toBeNull();
   });

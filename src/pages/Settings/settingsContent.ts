@@ -1,6 +1,6 @@
+/** Words on the Settings screens. */
 import type { ThemePreference } from '@/lib/theme/theme';
 
-/** All words on the Settings screens (master 6.6). */
 export const SETTINGS_COPY = {
   title: 'Settings',
   rows: {

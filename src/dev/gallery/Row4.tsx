@@ -1,3 +1,4 @@
+/** Gallery row: checkbox, radio and code fields. */
 import { useState } from 'react';
 
 import { Checkbox, OtpField, Radio } from '@/design-system/ui';
@@ -9,7 +10,6 @@ function OtpDemo({ initial = '', ...props }: { initial?: string; label: string; 
   return <OtpField {...props} value={value} onChange={setValue} />;
 }
 
-/** Gallery: row 4, checkbox, radio and the code boxes. */
 export function Row4() {
   return (
     <>

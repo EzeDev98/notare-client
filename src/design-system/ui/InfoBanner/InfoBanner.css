@@ -1,3 +1,4 @@
+/* Styles for InfoBanner. */
 @layer components {
   .ui-banner {
     --banner-tone: var(--color-brand);

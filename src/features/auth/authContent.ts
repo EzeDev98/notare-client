@@ -1,7 +1,4 @@
-// All auth copy lives here, so changing a word never means touching a screen.
-// Same idea as Ahorra's *Content.js files: no component holds a literal sentence.
-
-/** Seconds before "Resend" works again (check email and reset code screens). */
+/** Words on the sign-in, registration and password screens. */
 export const RESEND_COOLDOWN_SECONDS = 60;
 
 export const WELCOME = {
@@ -57,7 +54,6 @@ export const CHECK_EMAIL = {
   title: 'Check your email',
   description: (email: string): string =>
     `We sent a verification link to ${email}. Open it, then sign in.`,
-  // "Lost" variant: the person arrives without having just registered.
   descriptionLost:
     'We sent a verification link to the email address on your account. Open it, then sign in.',
   identifierLabel: 'Email or Notarian ID',
@@ -98,9 +94,7 @@ export const RESET_NEW_PASSWORD = {
 
 export const ERRORS = {
   wrongCredentials: 'Incorrect username or password.',
-  // Server 423.
   accountUnavailable: 'This account is unavailable. Please contact support.',
-  // Server 403. Shown with a "Check email" button.
   notVerified: 'Your account is not verified yet. Open the link we emailed you, then sign in.',
   notVerifiedAction: 'Check email',
   offline: 'Cannot reach Notare. Check your connection and try again.',
@@ -110,8 +104,6 @@ export const ERRORS = {
   wrongCode: 'That code is not right.',
 } as const;
 
-// Banners shown on Sign in only. Wired to REFRESH_FAILED (expired) and
-// SESSION_REVOKED (revoked) in authMachine.ts.
 export const SESSION_BANNERS = {
   expired: {
     title: 'Your session expired',
@@ -132,7 +124,6 @@ export const LOGIN_FIELD_ERRORS = {
   passwordRequired: 'Enter your password.',
 } as const;
 
-// Shown on Sign in right after an account was verified from the emailed link.
 export const VERIFIED_BANNER = 'Your account is verified. Sign in to continue.';
 
 export const CHECK_EMAIL_MESSAGES = {
@@ -141,11 +132,9 @@ export const CHECK_EMAIL_MESSAGES = {
   resentToast: 'A new email is on its way.',
 } as const;
 
-// The server's 409 for a taken username or email carries no field detail.
 export const REGISTER_CONFLICT = 'That username or email is already registered.';
 
 export const RESET_MESSAGES = {
   resentToast: 'A new code is on its way.',
-  // Shown when the reset token has expired by the time the new password is sent.
   linkExpired: 'That reset link has expired. Start again.',
 } as const;

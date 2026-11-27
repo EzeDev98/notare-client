@@ -1,3 +1,4 @@
+/* Styles for TranscriptPanel. */
 @layer components {
   .n-transcript {
     display: flex;

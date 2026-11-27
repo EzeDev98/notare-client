@@ -1,3 +1,4 @@
+/** A single-line text field. */
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 
 import { Control } from '../Control/Control';
@@ -5,20 +6,15 @@ import { FormField } from '../FormField/FormField';
 
 export type TextFieldProps = Omit<ComponentPropsWithRef<'input'>, 'id' | 'children'> & {
   label: string;
-  /** Keeps the label for screen readers and draws no text. */
   hideLabel?: boolean;
   hint?: string;
   error?: string;
   optional?: boolean;
-  /** An Icon shown before the text. */
   leading?: ReactNode;
-  /** A control (such as an IconButton) shown after the text. */
   trailing?: ReactNode;
-  /** True while the form is being sent: the field becomes read-only, not disabled. */
   submitting?: boolean;
 };
 
-/** Label, 40px input with 16px text, and one reserved hint/error line. */
 export function TextField({
   label,
   hideLabel,

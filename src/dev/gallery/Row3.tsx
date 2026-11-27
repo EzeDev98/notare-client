@@ -1,10 +1,10 @@
+/** Gallery row: the text fields. */
 import { Mail } from 'lucide-react';
 
 import { Icon, PasswordField, SelectField, TextArea, TextField } from '@/design-system/ui';
 
 import { Both } from './Both';
 
-/** Gallery: row 3, the text-like fields. */
 export function Row3() {
   return (
     <>

@@ -1,3 +1,4 @@
+/** Animates rows that are removed or move between sections. */
 import { useCallback, useEffect, useMemo, useState, type RefObject } from 'react';
 import { flushSync } from 'react-dom';
 
@@ -5,23 +6,14 @@ import { flip } from '@/design-system/motion/motion';
 import { rowOut } from '@/design-system/motion/patterns';
 import type { ListItem } from '@/features/notes/list/listItem';
 
-/** A row that is gone, or a row that moved between Pinned and the rest. */
 export type RowChange = 'gone' | { pinned: boolean; at: number };
 
 export interface RowChanges {
-  /** The list with the changes applied. Same array as the input while there are none. */
   shown: ListItem[] | undefined;
-  /** The row fades, the rest glide into the gap, then the write runs. Delete, Archive, Leave. */
   remove: (id: string, order: readonly string[], write: () => Promise<void>) => Promise<void>;
-  /** The rows glide to their new places, then the write runs. Pin, Restore. */
   change: (id: string, next: RowChange, write: () => Promise<void>) => Promise<void>;
 }
 
-/**
- * The list is a live query, so a write reaches the screen a moment later and
- * flip() could not see the move. The change is applied here first, inside
- * flip(), and dropped as soon as the database says the same thing.
- */
 export function useRowChanges(
   host: RefObject<HTMLElement | null>,
   items: ListItem[] | undefined,

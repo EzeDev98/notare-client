@@ -1,3 +1,4 @@
+/** Builds the router from the route list. */
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router';
 
 import { PublicLayout } from '@/app/layouts/PublicLayout';
@@ -8,14 +9,6 @@ import { ROUTE_ENTRIES, ROUTE_REDIRECTS, type RouteEntry } from '@/app/routeConf
 import { ROUTES, ROUTE_PATTERNS } from '@/app/routes';
 import { Shell } from '@/app/shell/Shell';
 
-/*
- * The tree is built from routeConfig.tsx: a route sits under the signed-in
- * layout or the public one according to its requiresAuth flag, so a route
- * cannot be protected or public by accident of where it was typed.
- *
- * React Router ranks static segments ('/notes/new') over dynamic ones
- * ('/notes/:noteId') whatever the array order.
- */
 const toRoute = (entry: RouteEntry): RouteObject => ({
   path: entry.path,
   lazy: async () => ({ Component: await entry.load() }),
@@ -49,7 +42,6 @@ export const routes = [
     ],
   },
 
-  // Dev only. Dropped from the production build.
   ...(import.meta.env.DEV
     ? [
         {

@@ -1,3 +1,4 @@
+/** Space used on this device. */
 import { useEffect, useState } from 'react';
 
 import { clipRepository } from '@/features/notes/local/clipRepository';
@@ -9,10 +10,6 @@ export interface StorageUse {
   percent: number;
 }
 
-/**
- * Space on this device: the voice-clip bytes (live) and the browser's estimate of
- * what Notare uses of its quota. The estimate is null where the browser cannot give one.
- */
 export function useStorage(): { clipBytes: number; use: StorageUse | null } {
   const clipBytes = useStableLiveQuery(() => clipRepository.audioBytes(), [], 0);
   const [use, setUse] = useState<StorageUse | null>(null);

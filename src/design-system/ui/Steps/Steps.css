@@ -1,3 +1,4 @@
+/* Styles for Steps. */
 @layer components {
   .ui-steps {
     display: flex;

@@ -1,3 +1,4 @@
+/* Styles for Welcome. */
 @layer pages {
   .welcome__body {
     display: flex;

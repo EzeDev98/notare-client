@@ -1,6 +1,6 @@
+/** Gallery row: Toast. */
 import { Button, useToast } from '@/design-system/ui';
 
-/** Gallery: row 8, Toast. */
 export function Row8() {
   const toast = useToast();
   return (

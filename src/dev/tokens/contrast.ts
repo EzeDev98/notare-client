@@ -1,6 +1,6 @@
+/** Colour contrast calculations for the tokens page. */
 export type Rgb = readonly [number, number, number];
 
-/** Reads "rgb(1, 2, 3)", "rgb(1 2 3)" or "rgba(...)" as the browser reports a computed colour. */
 export function parseRgb(value: string): Rgb | null {
   const match = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)/.exec(value);
   if (!match) return null;
@@ -21,7 +21,6 @@ function luminance([r, g, b]: Rgb): number {
   return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
 }
 
-/** WCAG contrast ratio, 1 to 21. */
 export function contrast(a: Rgb, b: Rgb): number {
   const la = luminance(a);
   const lb = luminance(b);

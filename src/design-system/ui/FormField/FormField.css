@@ -1,3 +1,4 @@
+/* Styles for FormField. */
 @layer components {
   .ui-form-field {
     display: flex;

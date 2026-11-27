@@ -1,3 +1,4 @@
+/** An information or error banner. */
 import { CircleAlert, Info } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -6,15 +7,12 @@ import { Icon } from '../Icon/Icon';
 import './InfoBanner.css';
 
 interface InfoBannerProps {
-  /** brand for information, error for something that went wrong. */
   tone?: 'brand' | 'error' | undefined;
   title?: string | undefined;
-  /** Optional button, for example "Retry". */
   action?: ReactNode;
   children: ReactNode;
 }
 
-/** Message bar with an icon, an optional title and an optional action. Also replaces FormAlert. */
 export function InfoBanner({ tone = 'brand', title, action, children }: InfoBannerProps) {
   const error = tone === 'error';
   return (

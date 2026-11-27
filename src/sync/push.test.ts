@@ -1,3 +1,4 @@
+/** Tests for push. */
 import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -140,8 +141,8 @@ describe('pushOutbox — INVALID', () => {
     const updated = await noteRepository.getByLocalId('local-6');
     expect(updated?.syncState).toBe('invalid');
     expect(updated?.content).toBe('never discard this');
-    expect(updated?.dirty).toBe(1); // still shown as Unsaved, not silently clean
-    await expect(outboxRepository.count()).resolves.toBe(0); // not retried
+    expect(updated?.dirty).toBe(1);
+    await expect(outboxRepository.count()).resolves.toBe(0);
   });
 });
 

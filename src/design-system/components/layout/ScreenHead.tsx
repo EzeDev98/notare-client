@@ -1,9 +1,9 @@
+/** A screen's heading and its line under it. */
 import './ScreenHead.css';
 
 interface ScreenHeadProps {
   title: string;
   description?: string | undefined;
-  /** For a screen that needs the heading tighter or wider than the default. */
   className?: string | undefined;
 }
 

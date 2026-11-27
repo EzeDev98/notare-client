@@ -1,3 +1,4 @@
+/** The bar shown over selected text in a note. */
 import { Link2, List } from 'lucide-react';
 import type { KeyboardEvent, Ref } from 'react';
 
@@ -17,18 +18,13 @@ interface LinkField {
 interface SelectionBarProps {
   onLink?: (() => void) | undefined;
   onList?: (() => void) | undefined;
-  /** True when the selection is already a list item. */
   listActive?: boolean | undefined;
-  /** Floats at this spot inside a positioned parent, over the text, never pushing it. */
   position?: { top: number; left: number } | undefined;
-  /** Floats like `position`, but the caller sets top and left on the element itself (through `ref`). */
   floating?: boolean | undefined;
   ref?: Ref<HTMLDivElement> | undefined;
-  /** Replaces the buttons with "Paste a link" and Apply, in the same bar. */
   linkField?: LinkField | undefined;
 }
 
-/** The small bar over selected text: Link and List only. Pressing it keeps the selection. */
 export function SelectionBar({
   onLink,
   onList,
@@ -57,7 +53,6 @@ export function SelectionBar({
       role="toolbar"
       aria-label="Format"
       style={position}
-      // The buttons must not take focus from the text. The link field must be able to.
       onMouseDown={
         linkField
           ? undefined

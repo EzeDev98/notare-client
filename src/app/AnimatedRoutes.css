@@ -1,10 +1,9 @@
-/* The stage moves a whole screen as one piece. Clipped sideways so a slide never makes overflow. */
+/* Styles for the screen transitions. */
 @layer components {
   .route-stage {
     overflow-x: clip;
   }
 
-  /* In the app shell the stage is the scroll container. */
   .route-stage[data-fill='true'] {
     block-size: 100%;
     min-block-size: 0;

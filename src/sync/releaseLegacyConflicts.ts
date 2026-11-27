@@ -1,16 +1,9 @@
+/** One-time cleanup of notes left in the old conflict state. */
 import { db } from '@/features/notes/local/database';
 import { noteCommands } from '@/features/notes/local/noteCommands';
 import { outboxRepository } from '@/features/notes/local/outboxRepository';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 
-/**
- * One-time cleanup for notes that were parked in the old "conflict" state.
- *
- * Conflicts no longer exist: the latest edit always wins. A note left in that
- * state by an earlier version of the app would otherwise stay stuck, so it is
- * released here and its local text is queued to overwrite the server copy.
- * Safe to run on every start; it does nothing once no such rows remain.
- */
 export async function releaseLegacyConflicts(): Promise<void> {
   const stuck = await db.notes.where('syncState').equals('conflict').toArray();
 

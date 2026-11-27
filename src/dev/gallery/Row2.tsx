@@ -1,10 +1,10 @@
+/** Gallery row: Button, IconButton, Link. */
 import { Bell, Pin, Settings } from 'lucide-react';
 
 import { Button, IconButton, Link } from '@/design-system/ui';
 
 import { Both } from './Both';
 
-/** Gallery: row 2, Button, IconButton, Link. */
 export function Row2() {
   return (
     <>

@@ -1,3 +1,4 @@
+/** Gallery row: OtpField. */
 import { useState } from 'react';
 
 import { OtpField } from '@/design-system/ui';
@@ -13,7 +14,6 @@ interface PinProps {
   disabled?: boolean;
 }
 
-/** One controlled OtpField, so each demo box keeps its own value. */
 function Pin({ label, initial, length, masked, error, disabled }: PinProps) {
   const [value, setValue] = useState(initial);
   return (
@@ -29,7 +29,6 @@ function Pin({ label, initial, length, masked, error, disabled }: PinProps) {
   );
 }
 
-/** Row 13b: the code boxes. */
 export function Row13b() {
   return (
     <>

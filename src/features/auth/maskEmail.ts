@@ -1,4 +1,4 @@
-/** "ada.obi@example.com" -> "a******@example.com". Anything without an "@" is returned as it is. */
+/** Hides most of an email address. */
 export function maskEmail(email: string): string {
   const [user, domain] = email.split('@');
   if (!user || !domain) return email;

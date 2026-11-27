@@ -1,3 +1,4 @@
+/* Styles for FormScreen. */
 @layer components {
   .ui-form-screen__back {
     margin-inline-start: calc(var(--gap) / -2);

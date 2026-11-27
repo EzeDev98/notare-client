@@ -1,3 +1,4 @@
+/** A password field with a show/hide button. */
 import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 
@@ -6,7 +7,6 @@ import { TextField, type TextFieldProps } from '../TextField/TextField';
 
 type PasswordFieldProps = Omit<TextFieldProps, 'type' | 'trailing' | 'leading'>;
 
-/** A TextField with a show/hide button. */
 export function PasswordField(props: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
   return (

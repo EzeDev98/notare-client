@@ -1,5 +1,5 @@
+/* Styles for Onboarding. */
 @layer pages {
-  /* html and body never scroll, so the onboarding stage is its own full-height scroll area. */
   .ob-stage {
     block-size: 100dvh;
     overflow-y: auto;
@@ -37,7 +37,6 @@
     animation: ob-nudge 1.4s ease-in-out infinite;
   }
 
-  /* The typed demo */
   .ob-demo {
     display: flex;
     flex-direction: column;
@@ -100,7 +99,6 @@
     color: var(--color-text-muted);
   }
 
-  /* "Not synced" and "Synced" sit in the same spot and swap by opacity. */
   .ob-sync {
     display: grid;
     justify-items: end;
@@ -126,7 +124,6 @@
     opacity: 0;
   }
 
-  /* Cards: the four features and the manual steps */
   .ob-list {
     display: flex;
     flex-direction: column;
@@ -163,7 +160,6 @@
     line-height: var(--leading-sm);
   }
 
-  /* Heroes */
   .ob-hero {
     display: grid;
     place-items: center;
@@ -207,7 +203,6 @@
     animation: ob-feed 1.6s ease-in infinite;
   }
 
-  /* The three install checks */
   .ob-check {
     display: flex;
     align-items: center;
@@ -235,7 +230,6 @@
     color: var(--color-brand);
   }
 
-  /* A check that did not pass says so: alert icon in the error colour, never a tick. */
   .ob-check--failed {
     color: var(--color-text);
   }

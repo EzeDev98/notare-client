@@ -1,3 +1,4 @@
+/** Tests for tokenStore. */
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -22,8 +23,6 @@ describe('access token', () => {
   });
 
   it('reports expiring when there is no token at all', () => {
-    // The startup case: no token is indistinguishable from an expired one for
-    // the purpose of "should we refresh before sending this request".
     expect(isAccessTokenExpiring()).toBe(true);
   });
 
@@ -33,13 +32,6 @@ describe('access token', () => {
   });
 
   it('reports expiring inside the skew window', () => {
-    /*
-     * A token with 10s left is a 401 waiting to happen: the skew absorbs clock
-     * drift between browser and server plus the time a request spends in
-     * flight. 4D refreshes proactively rather than reacting to a 401, which on
-     * this server also means fewer chances for two requests to race into two
-     * refreshes.
-     */
     setAccessToken('access-abc', 10_000);
     expect(isAccessTokenExpiring(30_000)).toBe(true);
   });
@@ -56,9 +48,6 @@ describe('refresh token', () => {
   });
 
   it('overwrites rather than accumulating', async () => {
-    // Rotation replaces the value on every refresh. Two tokens coexisting
-    // would mean a later read could return the dead one — and presenting a
-    // dead token is what deletes the session server-side.
     await setStoredRefreshToken('first');
     await setStoredRefreshToken('second');
 
@@ -76,13 +65,8 @@ describe('refresh token', () => {
   });
 
   it('shares stored state across independent reads, as two tabs would', async () => {
-    /*
-     * The property 4D depends on: IndexedDB is per-origin, not per-tab, so a
-     * token written by one tab is visible to another. sessionStorage would
-     * have failed this and taken cross-tab coordination with it.
-     */
     await setStoredRefreshToken('shared');
-    resetTokenStoreForTests(); // simulates a second tab opening its own connection
+    resetTokenStoreForTests();
 
     await expect(getStoredRefreshToken()).resolves.toBe('shared');
   });

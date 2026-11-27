@@ -1,8 +1,8 @@
+/** Gallery row: Menu and the select list. */
 import { Copy, Ellipsis, Mic, Pin, Plus, Trash2 } from 'lucide-react';
 
 import { IconButton, Menu, SelectField, useToast } from '@/design-system/ui';
 
-/** Gallery: row 10, Menu and the styled Select popup. */
 export function Row10() {
   const toast = useToast();
   const chose = (name: string) => () => {

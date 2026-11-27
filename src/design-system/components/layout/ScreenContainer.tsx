@@ -1,21 +1,15 @@
+/** The container for a whole screen. */
 import type { ReactNode } from 'react';
 
 import './ScreenContainer.css';
 
 interface ScreenContainerProps {
-  /** Content for the top bar (a PageHeader, or a Back button). */
   bar?: ReactNode;
-  /** center: the content group sits in the vertical middle. top: it starts under the bar. */
   placement?: 'center' | 'top' | undefined;
-  /** Extra class on the root, for screen variants. */
   className?: string | undefined;
   children: ReactNode;
 }
 
-/**
- * The one 500px column. Content and actions are one group, centred vertically
- * by default. This and FormScreen are the only places that position a screen vertically.
- */
 export function ScreenContainer({ bar, placement = 'center', className, children }: ScreenContainerProps) {
   return (
     <div className={className ? `ui-screen ${className}` : 'ui-screen'}>

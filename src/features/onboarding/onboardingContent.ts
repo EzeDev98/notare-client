@@ -1,3 +1,4 @@
+/** Words on the onboarding screens. */
 import {
   CircleCheck,
   Download,
@@ -8,8 +9,6 @@ import {
   Share,
   WifiOff,
 } from 'lucide-react';
-
-/** Every word on the onboarding screens, in one place (master 6.2). */
 
 export const INTRO = {
   title: 'Write it. Say it. Keep it.',
@@ -58,7 +57,6 @@ export const INSTALLING = {
   title: 'Installing Notare…',
   description:
     'Notare is being added to your device. Find the Notare icon on your home screen, open the app from there, and sign in to continue.',
-  /** `failed` is what the line says if its check does not pass. */
   checks: [
     {
       key: 'precache',
@@ -76,7 +74,6 @@ export const INSTALLING = {
       failed: 'Checked: Notare does not open without a connection yet',
     },
   ],
-  /** Spoken only: a screen reader needs the state the icon shows. */
   states: { pending: 'In progress', passed: 'Done', failed: 'Did not pass' },
   storage:
     'This browser does not promise to keep stored notes. Open Notare from your home screen often so notes sync, and keep it installed.',

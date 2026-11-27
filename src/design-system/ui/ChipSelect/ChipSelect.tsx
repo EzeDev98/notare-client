@@ -1,3 +1,4 @@
+/** A row of chips to choose one option from. */
 import { useId } from 'react';
 
 import '../FormField/FormField.css';
@@ -5,7 +6,6 @@ import './ChipSelect.css';
 
 interface ChipSelectProps {
   label: string;
-  /** Radios in one group. Pass a name that is unique on the screen. */
   name: string;
   options: ReadonlyArray<{ value: string; label: string }>;
   value: string;
@@ -13,7 +13,6 @@ interface ChipSelectProps {
   disabled?: boolean | undefined;
 }
 
-/** Single choice shown as chips. The chosen one is filled. Arrow keys move between chips. */
 export function ChipSelect({ label, name, options, value, onChange, disabled = false }: ChipSelectProps) {
   const labelId = useId();
   return (

@@ -1,13 +1,10 @@
+/** The voice clip row, in every state from recording to transcript. */
 import { voiceView, type VoiceBlockProps } from './VoiceRow';
 
 import './VoiceBlock.css';
 
 export type { VoiceBlockProps, VoiceState } from './VoiceRow';
 
-/**
- * The voice clip row. One component for every state, from recording to
- * transcription to the microphone permission problems.
- */
 export function VoiceBlock(props: VoiceBlockProps) {
   const { row, recording, help } = voiceView(props);
   return (

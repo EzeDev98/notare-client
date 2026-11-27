@@ -1,10 +1,10 @@
+/** Gallery row: Icon, Spinner, VisuallyHidden, Logo. */
 import { Bell, Pin, Plus, Settings } from 'lucide-react';
 
 import { Icon, Logo, Spinner, VisuallyHidden } from '@/design-system/ui';
 
 import { Both } from './Both';
 
-/** Gallery: row 1, Icon, Spinner, VisuallyHidden, Logo. */
 export function Row1() {
   return (
     <>

@@ -1,3 +1,4 @@
+/* Styles for DrawerContent. */
 @layer components {
   .n-drawer__section {
     display: flex;

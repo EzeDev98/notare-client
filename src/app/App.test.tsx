@@ -1,3 +1,4 @@
+/** Tests for App. */
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -12,50 +13,6 @@ import { server } from '~/msw/server';
 
 const BASE = 'http://localhost:2001/api/v1';
 
-/**
- * Step 7a. Android Chrome, not installed → splash → mandatory install
- * page → login/notes.
- *
- * Nothing under App.tsx's own tree had a test before this — router.test.tsx
- * deliberately renders `routes` directly, bypassing AppBoot entirely (its
- * own file header explains why: it wants the route tree, not the boot
- * gate). This is the first test to go through the real composition root,
- * exactly as main.tsx does, so it also has to do main.tsx's other job:
- * call initInstallPrompt() itself, since App.tsx never does — without it
- * the global beforeinstallprompt/appinstalled listeners this test depends
- * on are simply not registered.
- *
- * 'Android Chrome' specifically (not just 'a non-standalone browser')
- * means stubbing `'onbeforeinstallprompt' in window` too, not only
- * display-mode. Without that, getInstallFlowSupport() reads jsdom's
- * default (no such property) and renders InstallPage's INSTRUCTIONAL
- * (iOS-style) branch instead of the native one — silently testing the
- * wrong platform's UI while asserting on the right platform's name.
- */
-
-/**
- * A `matchMedia('(display-mode: standalone)')` stand-in that can actually
- * change and fire — setup.ts's global stub is a static `matches: false`
- * with no-op listener methods, correct as a baseline default for every
- * other test file but useless here: this test's whole point is the
- * transition FROM false TO true.
- *
- * SCOPED BY QUERY STRING — this is the fix for a real bug this helper had
- * before: `window.matchMedia` is one global function serving EVERY caller
- * in the app, not just displayMode.ts. ThemeProvider also calls it, for
- * '(prefers-color-scheme: dark)' (see theme.ts's subscribeToSystemTheme).
- * The original version returned the SAME mock MediaQueryList object no
- * matter what query it was asked for, so ThemeProvider's dark-mode
- * listener and this helper's standalone listener ended up in the same
- * `listeners` Set — and `setStandalone()`'s `listener()` (no arguments)
- * would then also fire theme.ts's handler, which destructures
- * `event.matches` and crashes on `undefined`. Only the standalone query
- * gets the live, settable mock below; anything else (the dark-mode query
- * included) gets its own independent, static, always-`matches: false`
- * MediaQueryList — same shape as setup.ts's global default — so a caller
- * asking about a different media feature entirely neither observes nor
- * participates in this test's standalone transition.
- */
 function stubDisplayModeMatchMedia(initialStandalone: boolean) {
   const STANDALONE_QUERY = '(display-mode: standalone)';
   let matches = initialStandalone;
@@ -96,7 +53,6 @@ function stubDisplayModeMatchMedia(initialStandalone: boolean) {
   );
 
   return {
-    /** Flips display-mode live, the way a successful install does. */
     setStandalone(next: boolean) {
       matches = next;
       for (const listener of listeners) listener();
@@ -104,7 +60,6 @@ function stubDisplayModeMatchMedia(initialStandalone: boolean) {
   };
 }
 
-/** Minimal BeforeInstallPromptEvent stand-in — see installPrompt.ts. */
 function makeBeforeInstallPromptEvent(outcome: 'accepted' | 'dismissed') {
   const event = new Event('beforeinstallprompt', { cancelable: true }) as Event & {
     prompt: () => Promise<void>;
@@ -115,17 +70,6 @@ function makeBeforeInstallPromptEvent(outcome: 'accepted' | 'dismissed') {
   return event;
 }
 
-/*
- * Captured in beforeAll, NOT at module top-level. Module top-level code
- * runs at import time, before tests/setup.ts's own beforeAll has run —
- * so at that point window.matchMedia is still whatever raw jsdom
- * provides (nothing), and "restoring" to that later would leave EVERY
- * test after the first one in this file with a broken matchMedia, not
- * setup.ts's intended ambient default. beforeAll hooks from setupFiles
- * run before a test file's own beforeAll hooks, so by the time this one
- * fires, setup.ts's default stub is already in place — that is the
- * value worth restoring to.
- */
 let originalMatchMedia: typeof window.matchMedia;
 
 beforeAll(() => {
@@ -177,7 +121,6 @@ describe('7a — Android Chrome, not installed', () => {
     await user.click(screen.getByRole('button', { name: INSTALL.cta }));
     expect(bip.prompt).toHaveBeenCalledOnce();
 
-    // The gate leaves on its own the moment the app counts as installed.
     act(() => {
       displayMode.setStandalone(true);
     });
@@ -243,7 +186,6 @@ describe('7c — iOS Safari', () => {
     await user.click(await screen.findByRole('button', { name: INTRO.cta }));
     await user.click(await screen.findByRole('button', { name: INSTALL.cta }));
 
-    // iOS has no install prompt, so the install button leads to written steps instead.
     expect(await screen.findByText(MANUAL.ios[0].text)).toBeInTheDocument();
     expect(screen.getByText(MANUAL.ios[1].text)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: INSTALL.cta })).not.toBeInTheDocument();

@@ -1,3 +1,4 @@
+/** Exports every design-system component. */
 export { Badge } from './Badge/Badge';
 export { BannerSlot } from './BannerSlot/BannerSlot';
 export { Button } from './Button/Button';
@@ -12,6 +13,7 @@ export { Icon } from './Icon/Icon';
 export { IconButton } from './IconButton/IconButton';
 export { InfoBanner } from './InfoBanner/InfoBanner';
 export { Link } from './Link/Link';
+export { LinkRow } from './LinkRow/LinkRow';
 export { Logo } from './Logo/Logo';
 export { OtpField } from './OtpField/OtpField';
 export { PasswordField } from './PasswordField/PasswordField';

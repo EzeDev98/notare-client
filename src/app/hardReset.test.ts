@@ -1,3 +1,4 @@
+/** Tests for hardReset. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { db } from '@/features/notes/local/database';
@@ -8,9 +9,6 @@ vi.mock('@/sync/engine', () => ({
   requestSync: vi.fn().mockResolvedValue(undefined),
 }));
 
-// Imported AFTER the mock is declared, same convention every other
-// vi.mock-using test file in this repo follows — the mock factory above
-// must be hoisted before this import resolves the real module graph.
 import { requestSync } from '@/sync/engine';
 import { attemptFinalSync, wipeLocalState } from '@/app/hardReset';
 
@@ -62,16 +60,6 @@ describe('attemptFinalSync', () => {
 });
 
 describe('wipeLocalState', () => {
-  /*
-   * wipeLocalState() closes the shared `db` singleton on purpose (see its
-   * own doc comment on why — a delete request left blocked by this tab's
-   * own open connection would never actually complete). In production that
-   * is fine because a hard navigation follows immediately; here, this same
-   * `db` instance is reused by every OTHER test file's afterEach
-   * (tests/harness.tsx's resetDatabase()), so it has to come back for the
-   * rest of this suite to keep working rather than throwing
-   * DatabaseClosedError on the very next test.
-   */
   afterEach(async () => {
     await db.open().catch(() => undefined);
   });
@@ -92,7 +80,7 @@ describe('wipeLocalState', () => {
     try {
       await wipeLocalState();
     } finally {
-      // @ts-expect-error test-only cleanup of a property this test defined
+      // @ts-expect-error -- test-only cleanup
       delete navigator.serviceWorker;
     }
 
@@ -118,9 +106,6 @@ describe('wipeLocalState', () => {
   });
 
   it('deletes both the notes database and the auth database', async () => {
-    // The auth database is a separate module (tokenStore.ts) this test has
-    // no reason to import — opening it directly by name is enough to prove
-    // it existed before the wipe and is gone after.
     await new Promise<void>((resolve, reject) => {
       const request = indexedDB.open('notare-auth', 1);
       request.onupgradeneeded = () => {

@@ -1,3 +1,4 @@
+/** Onboarding: what Notare is. */
 import { ArrowRight } from 'lucide-react';
 
 import { useTheme } from '@/app/providers/theme-context';
@@ -8,7 +9,6 @@ import { IntroDemo } from './IntroDemo';
 import { OnboardingScreen } from './OnboardingScreen';
 import { RiseList } from './RiseList';
 
-/** Screen 1. What Notare is, in one typed example and four cards. */
 export function IntroScreen({ onStart }: { onStart: () => void }) {
   const { resolved } = useTheme();
 

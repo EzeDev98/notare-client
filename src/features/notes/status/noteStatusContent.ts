@@ -1,6 +1,6 @@
+/** The word for each note status. */
 import type { NoteStatus } from '@/features/notes/status/noteStatus';
 
-/** The words for each note status (step 8h). Shown by StatusSlot. */
 export const NOTE_STATUS_WORDS: Record<NoteStatus, string> = {
   'saving-local': 'Saving on this device',
   'saved-local': 'Saved on this device',

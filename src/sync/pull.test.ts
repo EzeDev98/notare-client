@@ -1,3 +1,4 @@
+/** Tests for pull. */
 import { http, HttpResponse } from 'msw';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -39,10 +40,6 @@ function pullOnce(page: {
 
 describe('pullChanges — merging changed notes', () => {
   it('inserts a note with no local row', async () => {
-    // The wrapper shape GET /sync actually sends — { note, clientId }, NOT
-    // note fields spread flat with clientId alongside them. Getting this
-    // fixture wrong is exactly what let the real bug (reconcile.ts reading
-    // `note.id` off the wrapper instead of `.note.id`) ship unnoticed.
     pullOnce({ changed: [{ note: makeNote({ id: 7, version: 0 }), clientId: null }] });
 
     await pullChanges(1);
@@ -210,8 +207,6 @@ describe('pullChanges — cursor discipline', () => {
     await pullChanges(1);
 
     expect(seenPages).toEqual(['0', '1']);
-    // Both requests carried the SAME since (undefined here, a first sync) —
-    // the loop must never advance the cursor mid-page.
     expect(seenSince).toEqual([null, null]);
     await expect(metaRepository.getSyncCursor()).resolves.toBe('CURSOR-B');
   });

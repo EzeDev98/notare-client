@@ -1,6 +1,6 @@
+/** A person's initials in their colour. */
 import './Avatar.css';
 
-/** Which person colour, 1 to 6 (--color-cursor-1 to 6). */
 export type Tint = 1 | 2 | 3 | 4 | 5 | 6;
 
 interface AvatarProps {
@@ -8,7 +8,6 @@ interface AvatarProps {
   tint: Tint;
 }
 
-/** 24px circle with the person's first letter, in their colour. */
 export function Avatar({ name, tint }: AvatarProps) {
   return (
     <span className={`n-avatar n-avatar--${String(tint)}`} role="img" aria-label={name}>

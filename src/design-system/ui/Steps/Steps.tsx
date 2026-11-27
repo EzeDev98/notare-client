@@ -1,6 +1,6 @@
+/** "Step 2 of 3" with one bar per step. */
 import './Steps.css';
 
-/** "Step 2 of 3" with one bar per step. `current` counts from 1. */
 export function Steps({ current, total }: { current: number; total: number }) {
   return (
     <div className="ui-steps">

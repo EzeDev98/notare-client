@@ -1,5 +1,5 @@
+/* Styles for the note editor: the date, AI title, body and voice clips. */
 @layer components {
-  /* The note reads like a clean document: no borders, no boxes, no field chrome. */
   .editor-surface {
     display: flex;
     flex: 1;
@@ -7,13 +7,11 @@
   }
 
   .editor-surface__body {
-    /* The selection bar floats inside this box. */
     position: relative;
     flex: 1;
     min-block-size: 60vh;
   }
 
-  /* "Start writing" shows while the whole note is empty. */
   .editor-surface__content p.is-editor-empty:first-child::before {
     float: inline-start;
     block-size: 0;
@@ -32,25 +30,20 @@
     font-size: var(--text-xs);
     line-height: 1.45;
 
-    /* The blinking caret is the writing indicator. */
     caret-color: var(--color-brand);
 
-    /* ProseMirror requires these; injectCSS is off, so they are set here. */
     white-space: pre-wrap;
     word-wrap: break-word;
   }
 
-  /* Space appears only between sibling blocks, never above the first or below the last. */
   .editor-surface__content > * + * {
     margin-block-start: var(--gutter);
   }
 
-  /* Consecutive lines sit tight, like Apple Notes: Enter starts the next line, not a new section. */
   .editor-surface__content > p + p {
     margin-block-start: 0;
   }
 
-  /* In-note headings follow the note's own voice, not the page-title style. */
   .editor-surface__content h1,
   .editor-surface__content h2,
   .editor-surface__content h3 {
@@ -70,7 +63,6 @@
     font-size: var(--text-md);
   }
 
-  /* Lists keep their native markers: a bullet list should look like one. */
   .editor-surface__content ul,
   .editor-surface__content ol {
     padding-inline-start: calc(var(--gap) * 3);
@@ -81,7 +73,6 @@
     margin-block-start: var(--gap);
   }
 
-  /* A quiet left rule, never a colour that reads as a status message. */
   .editor-surface__content blockquote {
     padding-inline-start: var(--gutter);
     border-inline-start: var(--border-width) solid var(--color-line);
@@ -111,7 +102,6 @@
     color: var(--color-brand);
   }
 
-  /* `---` on its own line becomes a flat rule, not the browser's inset groove. */
   .editor-surface__content hr {
     block-size: var(--border-width);
     margin-block: var(--gap);
@@ -123,10 +113,6 @@
     color: var(--color-text-muted);
   }
 
-  /*
-   * The focus ring is off here and only here. A ring around the whole writing
-   * area competes with the text; the blinking caret is the focus signal.
-   */
   .editor-surface__content:focus-visible {
     outline: none;
     border-color: transparent;
@@ -134,7 +120,6 @@
   }
 }
 
-/* The note's creation date, centred above the text and pinned while the note scrolls. */
 .note-date {
   position: sticky;
   inset-block-start: var(--bar-height);
@@ -148,7 +133,6 @@
   user-select: none;
 }
 
-/* The AI's title for the note, centred under the date. Not part of the note's text. */
 .note-title {
   margin: 0;
   padding-block: 0 var(--gutter);
@@ -159,7 +143,6 @@
   text-align: center;
 }
 
-/* Two panes: the note has no bar of its own, so the date pins to the very top. */
 @container (min-width: 800px) {
   .note-date {
     inset-block-start: 0;

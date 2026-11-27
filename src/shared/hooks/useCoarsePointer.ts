@@ -1,3 +1,4 @@
+/** True on a touch screen. */
 import { useSyncExternalStore } from 'react';
 
 const QUERY = '(pointer: coarse)';
@@ -10,7 +11,6 @@ function subscribe(onChange: () => void): () => void {
   };
 }
 
-/** True on a touch screen (phone, tablet). */
 export function useCoarsePointer(): boolean {
   return useSyncExternalStore(
     subscribe,

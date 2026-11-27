@@ -1,3 +1,4 @@
+/** Tests for noteLabel. */
 import { describe, expect, it } from 'vitest';
 
 import { deriveNoteLabel, EMPTY_NOTE_LABEL } from '@/features/notes/local/noteLabel';
@@ -30,10 +31,6 @@ describe('deriveNoteLabel', () => {
   });
 
   it('skips leading blank lines to find the label', () => {
-    // .trim() on the whole string already eats leading/trailing blank
-    // lines, so this and the "only line" case land on the same result —
-    // asserted separately because that collapsing is the load-bearing
-    // behaviour a naive `content.split('\n')[0]` would get wrong.
     expect(deriveNoteLabel('\n\n  Grocery list\nMilk')).toEqual({
       label: 'Grocery list',
       remainder: 'Milk',

@@ -1,3 +1,4 @@
+/** Onboarding: install Notare. */
 import { Button } from '@/design-system/ui';
 import { INSTALL } from '@/features/onboarding/onboardingContent';
 
@@ -8,11 +9,9 @@ import { useInstallAction } from './useInstallAction';
 interface InstallScreenProps {
   onInstalled: () => void;
   onManual: () => void;
-  /** "Continue in browser": on to the screen that explains what that means. */
   onBrowser: () => void;
 }
 
-/** Screen 2. Install, or carry on in the browser. */
 export function InstallScreen({ onInstalled, onManual, onBrowser }: InstallScreenProps) {
   const { busy, install } = useInstallAction({ onInstalled, onManual });
 

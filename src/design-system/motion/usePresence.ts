@@ -1,21 +1,13 @@
+/** Plays an enter animation when an element appears. */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 
 import { done } from './motion';
 
 type Motion = {
-  /** Plays when the element mounts or reopens, e.g. modalIn. */
   enter?: (el: HTMLElement) => Animation;
-  /** Plays when it closes; the element unmounts when it finishes, e.g. fadeOut. */
   exit?: (el: HTMLElement) => Animation;
 };
 
-/**
- * Keeps an element mounted until its exit animation has finished, then
- * unmounts it. Render the element only while `mounted` and put `ref` on it.
- * No timers: it waits for the animation itself.
- *
- *   const { mounted, ref } = usePresence<HTMLDivElement>(open, { enter: modalIn, exit: fadeOut });
- */
 export function usePresence<T extends HTMLElement>(
   open: boolean,
   motion: Motion = {},
@@ -35,7 +27,6 @@ export function usePresence<T extends HTMLElement>(
     return el && make ? make(el) : null;
   }, []);
 
-  // Open: the element is in the DOM but not painted yet, so enter from the first frame.
   useLayoutEffect(() => {
     if (!open || !mounted) return;
     ref.current?.getAnimations().forEach((a) => {
@@ -44,7 +35,6 @@ export function usePresence<T extends HTMLElement>(
     play('enter');
   }, [open, mounted, play]);
 
-  // Close: play the exit, then unmount. A reopen in between cancels the unmount.
   useEffect(() => {
     if (open || !mounted) return undefined;
     let cancelled = false;

@@ -1,3 +1,4 @@
+/** Gallery row: Avatar, IconTile, NotificationRow, DrawerContent. */
 import { Bell, Contrast, Info, LogOut, Mic, Pin, RefreshCw } from 'lucide-react';
 
 import {
@@ -15,7 +16,6 @@ const TINTS: readonly Tint[] = [1, 2, 3, 4, 5, 6];
 
 const NOOP = () => undefined;
 
-/** Row 13: Avatar, IconTile, NotificationRow, DrawerContent. */
 export function Row13() {
   return (
     <>

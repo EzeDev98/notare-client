@@ -1,3 +1,4 @@
+/** Dev-only gallery of every design-system component in every state. */
 import { useEffect, useState } from 'react';
 
 import { forceReduced } from '@/design-system/motion/motion';
@@ -23,10 +24,6 @@ import { Row13b } from './Row13b';
 
 import './GalleryPage.css';
 
-/**
- * Dev only. Every component in src/design-system/ui, in every state, on a
- * light and a dark surface. One file per group: add a RowN file and list it here.
- */
 function GalleryContent() {
   useDocumentTitle('Gallery');
   const [device, setDevice] = useState<Device>('desktop');

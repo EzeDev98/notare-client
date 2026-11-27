@@ -1,3 +1,4 @@
+/** Shows the install prompt and reports the outcome. */
 import { useEffect, useState } from 'react';
 
 import { onInstallAvailable, promptInstall } from '@/pwa/installPrompt';

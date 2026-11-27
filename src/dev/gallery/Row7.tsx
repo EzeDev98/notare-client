@@ -1,8 +1,8 @@
+/** Gallery row: Overlay as modal, sheet and drawer. */
 import { useState } from 'react';
 
 import { Button, DetailRow, Overlay, TextField } from '@/design-system/ui';
 
-/** Gallery: row 7, Overlay as modal, sheet and drawer. */
 export function Row7() {
   const [modal, setModal] = useState(false);
   const [forced, setForced] = useState(false);

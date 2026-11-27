@@ -1,6 +1,6 @@
+/** Server calls for the AI tidy setting. */
 import { httpClient } from '@/lib/http/client';
 
-/** `/user/me/ai-tidy`: the AI tidy opt-in. Online only; the server holds it. */
 const PATH = '/user/me/ai-tidy';
 
 export interface AiTidySetting {

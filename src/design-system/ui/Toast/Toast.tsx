@@ -1,3 +1,4 @@
+/** One toast message. */
 import { CircleAlert, CircleCheck, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -13,11 +14,9 @@ import type { ToastEntry } from './toast-context';
 interface ToastProps {
   entry: ToastEntry;
   onClose: (id: number) => void;
-  /** Called once the exit animation has finished. */
   onGone: (id: number) => void;
 }
 
-/** One toast. Enters 8px up, leaves with a fast fade. The timer pauses while it is hovered or focused. */
 export function Toast({ entry, onClose, onGone }: ToastProps) {
   const [paused, setPaused] = useState(false);
   const { mounted, ref } = usePresence<HTMLDivElement>(!entry.closing, {

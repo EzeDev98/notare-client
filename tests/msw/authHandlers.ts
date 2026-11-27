@@ -1,8 +1,8 @@
+/** Mock auth endpoints for tests. */
 import { http, HttpResponse } from 'msw';
 
 const BASE = 'http://localhost:2001/api/v1';
 
-/** The doubled segments are the real server paths — known bug 14.4. */
 export const authHandlers = [
   http.post(`${BASE}/login/login`, () =>
     HttpResponse.json({
@@ -17,7 +17,6 @@ export const authHandlers = [
 
   http.post(`${BASE}/auth/refresh`, () =>
     HttpResponse.json({
-      // BOTH rotate. The old refresh token is dead the instant this returns.
       accessToken: 'access-2',
       refreshToken: 'refresh-2',
       tokenType: 'Bearer',

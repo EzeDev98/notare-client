@@ -1,24 +1,4 @@
-/**
- * Lucide replacements for every PatternFly icon this app imports by name.
- *
- * Resolved in place of the bare `@patternfly/react-icons` specifier by the
- * exact-match alias in vite.config.ts, so every existing
- * `import { XIcon } from '@patternfly/react-icons'` across src/ picks this
- * file up automatically — nothing to change at any call site.
- *
- * PatternFly's OWN internal icon imports (used inside
- * @patternfly/react-core, e.g. Alert's status icons) are all DEEP imports
- * like '@patternfly/react-icons/dist/esm/icons/...', which the alias's
- * `^...$` regex does not match. Those keep resolving to the real
- * @patternfly/react-icons package untouched — PatternFly still draws every
- * component exactly as before; only the icons THIS APP asks for by name
- * are swapped for Lucide.
- *
- * One rule enforced here, in this one place, for every icon in the app:
- * stroke never exceeds 1.5. strokeWidth is deliberately not read from
- * props below — every icon is hard-capped, not just defaulted, so no call
- * site can accidentally request a heavier line.
- */
+/** Lucide icons standing in for the PatternFly icons the app uses. */
 import { forwardRef, type ComponentPropsWithoutRef } from 'react';
 import {
   Archive,
@@ -58,25 +38,13 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-/** MAXIMUM stroke weight any icon in this app may render at. */
 const MAX_STROKE_WIDTH = 1.5;
 
 interface PFCompatIconProps extends ComponentPropsWithoutRef<'svg'> {
-  /** Accepted for API compatibility with PatternFly's icons; rendered as
-   * an accessible name instead of PatternFly's inner <title> element. */
   title?: string;
-  /** Lucide-specific; not a native SVG attribute, so ComponentPropsWithoutRef<'svg'> doesn't include it. */
   size?: string | number;
 }
 
-/**
- * Wraps a Lucide icon so it matches how this app's own components already
- * use PatternFly's icons (className + aria-hidden, occasionally title),
- * while forcing PatternFly's 1em/vertical-align sizing (`pf-v6-svg`, the
- * same class PatternFly's own icons carry — see base.css) so icons keep
- * lining up with surrounding text exactly as before, and locking
- * strokeWidth to MAX_STROKE_WIDTH regardless of what a caller passes.
- */
 function createIcon(Lucide: LucideIcon, displayName: string) {
   const Icon = forwardRef<SVGSVGElement, PFCompatIconProps>(function Icon(
     { className, title, strokeWidth: _ignoredStrokeWidth, size, 'aria-hidden': ariaHidden, ...rest },

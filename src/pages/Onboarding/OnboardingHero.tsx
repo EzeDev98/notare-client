@@ -1,6 +1,6 @@
+/** Onboarding pictures. */
 import { CircleCheck, Smartphone } from 'lucide-react';
 
-/** A phone with an arrow feeding into it: Notare arriving on the device. */
 export function TransferHero() {
   return (
     <div className="ob-xfer" aria-hidden="true">
@@ -12,7 +12,6 @@ export function TransferHero() {
   );
 }
 
-/** The large tick on the last screen. It pulses gently. */
 export function SuccessHero() {
   return (
     <div className="ob-hero ob-hero--pulse" aria-hidden="true">

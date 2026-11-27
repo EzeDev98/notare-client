@@ -1,3 +1,4 @@
+/** Settings: AI tidy, Wi-Fi-only clip downloads and resetting this device. */
 import { useEffect, useState } from 'react';
 
 import { useSessionUser } from '@/app/shell/useSessionUser';
@@ -81,7 +82,6 @@ function GeneralSettings({ user }: { user: CurrentUser }) {
   );
 }
 
-/** Settings: AI tidy, Wi-Fi-only clip downloads, and resetting this device. */
 export function SettingsGeneralPage() {
   const user = useSessionUser();
   return user ? <GeneralSettings user={user} /> : null;

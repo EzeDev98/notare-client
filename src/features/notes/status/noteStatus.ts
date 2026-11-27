@@ -1,11 +1,7 @@
+/** Works out a note's status. */
 import { SAVING_LOCAL_MS, SYNCED_AFTER_MS } from '@/core/config/timings';
 import type { NoteRow } from '@/features/notes/local/noteRow';
 
-/**
- * The one answer to "is my note safe?" (step 8h, A-06).
- *
- * Exactly these six. The words for them are in noteStatusContent.ts.
- */
 export type NoteStatus =
   | 'saving-local'
   | 'saved-local'
@@ -16,25 +12,13 @@ export type NoteStatus =
 
 export interface NoteStatusInput {
   row: Pick<NoteRow, 'dirty' | 'syncState' | 'serverId' | 'localUpdatedAt'>;
-  /** Epoch ms. A parameter so the rule stays pure and testable. */
   now: number;
-  /** navigator.onLine. */
   online: boolean;
-  /** The sync engine is failing: a server error, or a failed run while the browser says online. */
   syncFailing: boolean;
-  /** A write to this device failed because storage is full. */
   storageFull: boolean;
-  /** The session expired: nothing can sync until the person signs in again (step 14a). */
   signedOut?: boolean | undefined;
 }
 
-/**
- * Derived from the row's dirty and syncState, whether the browser is online,
- * the sync engine's failure state, and the storage-full flag. Nothing else.
- *
- * "Synced" is claimed only for a note the server has (serverId) with nothing
- * waiting to be sent (D-05).
- */
 export function deriveNoteStatus({
   row,
   now,

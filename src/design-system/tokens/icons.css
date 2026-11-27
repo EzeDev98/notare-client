@@ -1,35 +1,5 @@
+/* Sizing and colour for every icon. */
 @layer base {
-  /*
-   * THE ICON RULE. One place, not per-component styling — every icon in the
-   * app is a PatternFly icon component, and every one of them carries the
-   * class `pf-v6-svg` whether or not the call site passes its own
-   * className (see @patternfly/react-icons' createIconBase). That means
-   * this single selector reaches every icon in the codebase without
-   * touching each call site, and any icon added in the future gets these
-   * defaults for free just by being a PatternFly import.
-   *
-   * 17px — sized down from the 20px internal-auth-client baseline (Header's
-   * avatarIcon) because 20px read too large in this app. PatternFly icons
-   * are solid fill (`fill: currentColor`), not stroked outlines, so there
-   * is no stroke-width to set here.
-   *
-   * Deliberately in `base`, not `components` — this is an element default
-   * (like typography.css's h1/h2/body rules), not a component's own
-   * styling. `@layer` precedence means a component's own stylesheet
-   * (`components` layer) or a page's (`pages` layer) can still override
-   * size or color for a specific instance regardless of selector
-   * specificity — see e.g. `.app-shell__nav-icon svg` (24px, a genuine
-   * exception) or any `color: inherit` added next to a hover/active/accent
-   * state below. Base only sets the DEFAULT every icon starts from.
-   *
-   * width/height (not stroke-width) is what actually needs overriding at
-   * this specificity: PatternFly's icon components set the `width`/
-   * `height` HTML attributes directly (`width="1em" height="1em"`), which
-   * are presentation attributes and lose to any CSS rule targeting the
-   * same property — including this one. The size lives in CSS instead,
-   * which is the point (one rule, not scattered props to keep in sync by
-   * hand).
-   */
   .pf-v6-svg {
     inline-size: 17px;
     block-size: 17px;

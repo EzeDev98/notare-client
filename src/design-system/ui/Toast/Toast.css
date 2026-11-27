@@ -1,3 +1,4 @@
+/* Styles for Toast. */
 @layer components {
   .ui-toasts {
     position: fixed;

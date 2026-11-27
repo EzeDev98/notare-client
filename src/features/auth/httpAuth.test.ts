@@ -1,3 +1,4 @@
+/** Tests for httpAuth. */
 import { http, HttpResponse } from 'msw';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -58,7 +59,6 @@ afterEach(() => {
   resetRefreshCoordinatorForTests();
 });
 
-/** Answers 401 for anything but the expected token. */
 function notesRequiring(expected: string): void {
   server.use(
     http.get(`${BASE}/notes`, ({ request }) => {
@@ -105,8 +105,6 @@ describe('attaching credentials', () => {
   });
 
   it('refreshes PROACTIVELY when the token is near expiry, avoiding the 401', async () => {
-    // 10s left, inside the 30s skew. Fewer failed requests — and on this
-    // server, fewer chances for two requests to race into two refreshes.
     setAccessToken('access-old', 10_000);
     await setStoredRefreshToken('refresh-current');
     notesRequiring('access-new');
@@ -120,8 +118,6 @@ describe('attaching credentials', () => {
 
 describe('recovering from a 401', () => {
   it('refreshes and retries exactly once', async () => {
-    // Token looks fresh but the server has revoked it — the freshness check
-    // cannot detect this, which is why the forced path exists.
     setAccessToken('access-revoked', 900_000);
     await setStoredRefreshToken('refresh-current');
     notesRequiring('access-new');
@@ -139,11 +135,6 @@ describe('recovering from a 401', () => {
 
     await expect(httpClient.get('/notes')).rejects.toThrow();
 
-    /*
-     * Two attempts, never three. A second 401 after a successful refresh means
-     * the token is not the problem — the endpoint genuinely refuses — and
-     * retrying again is a loop the server cannot defend against.
-     */
     expect(notesAuthHeaders).toHaveLength(2);
   });
 
@@ -158,16 +149,6 @@ describe('recovering from a 401', () => {
       httpClient.get('/notes'),
     ]);
 
-    /*
-     * §12's requirement, and there is no queue in the implementation. Every
-     * request awaits the same Web Lock, so the first refreshes and the rest
-     * re-read and proceed. The queue you would otherwise hand-roll is what the
-     * lock already is.
-     *
-     * Without this, three concurrent refreshes would present a rotated token
-     * twice — which this server treats as reuse and answers by deleting the
-     * session on every device.
-     */
     expect(refreshCalls).toBe(1);
   });
 
@@ -179,7 +160,6 @@ describe('recovering from a 401', () => {
     await expect(httpClient.get('/notes')).rejects.toThrow();
 
     expect(onSessionExpired).toHaveBeenCalled();
-    // No retry: the server deleted the session record, so nothing can help.
     expect(notesAuthHeaders).toHaveLength(1);
   });
 });

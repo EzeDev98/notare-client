@@ -1,19 +1,4 @@
-/**
- * Hands the current access token to the service worker, so `sw.js` can
- * attach it to `/voice-notes/*\/stream` requests — a service worker has no
- * access to this tab's in-memory JS state.
- *
- * Two channels, on purpose (D-16):
- *  - postMessage to the active controller: instant, keeps the worker's
- *    in-memory copy current.
- *  - IndexedDB (DB 'notare-sw', store 'auth', key 'token'): survives the
- *    browser terminating and respawning an idle worker, and works even when
- *    no worker controls the page yet. sw.js falls back to it whenever its
- *    in-memory copy is empty. Cleared on logout; removed by hardReset.
- *
- * Called from `tokenStore.ts`'s `setAccessToken`/`clearAccessToken` — the
- * one place every path that changes the token already goes through.
- */
+/** Gives the access token to the service worker. */
 const DB_NAME = 'notare-sw';
 const STORE = 'auth';
 const KEY = 'token';

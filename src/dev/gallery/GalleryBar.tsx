@@ -1,3 +1,4 @@
+/** The gallery's theme and device toggles. */
 import { Button } from '@/design-system/ui';
 import { useTheme } from '@/app/providers/theme-context';
 import type { ThemePreference } from '@/lib/theme/theme';
@@ -15,7 +16,6 @@ const DEVICES: ReadonlyArray<readonly [Device, string]> = [
   ['desktop', 'Desktop'],
 ];
 
-/** The thin, always-visible row: Theme toggle and Device toggle. */
 export function GalleryBar({ device, onDevice }: { device: Device; onDevice: (device: Device) => void }) {
   const { preference, setPreference } = useTheme();
   return (

@@ -1,3 +1,4 @@
+/** Gallery row: Card, DetailRow, Tag, Badge, ChipSelect, Steps, ProgressBar, Skeleton, EmptyState. */
 import { Inbox } from 'lucide-react';
 import { useState } from 'react';
 
@@ -36,7 +37,6 @@ function ChipDemo({ disabled = false }: { disabled?: boolean }) {
   );
 }
 
-/** Gallery: row 5, Card, DetailRow, Tag, Badge, ChipSelect, Steps, ProgressBar, Skeleton, EmptyState. */
 export function Row5() {
   return (
     <>

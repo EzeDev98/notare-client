@@ -1,15 +1,9 @@
+/** Requests and follows the transcription of one clip. */
 import { TRANSCRIPTION_POLL_MS } from '@/core/config/timings';
 import { transcriptRepository } from '@/features/notes/local/transcriptRepository';
 import type { TranscriptRow } from '@/features/notes/local/transcriptRow';
 import { transcriptionService } from '@/features/voice/api/transcriptionService';
 import { isOffline } from '@/lib/http/errors';
-
-/*
- * Transcription of one clip (step 12h). The status lives in the transcripts
- * table. A request is first kept on the device as 'queued'. It is sent once the
- * clip has a server id and the device is online. The server then works on its
- * own, so the status survives closing the app.
- */
 
 type TranscriptStatus = TranscriptRow['status'];
 
@@ -25,16 +19,10 @@ function wait(ms: number): Promise<void> {
   });
 }
 
-/** The person asked for a transcript (or pressed Retry). Sent when it can be. */
 export function requestTranscription(clipId: string): Promise<string> {
   return save(clipId, 'queued');
 }
 
-/**
- * Sends a queued request and follows it to the end. Safe to call again for a
- * clip that is already being followed. Returns the final status, or null when
- * nothing was done.
- */
 export async function driveTranscription(
   clipId: string,
   serverId: number,
@@ -44,7 +32,6 @@ export async function driveTranscription(
 
   let marked = false;
   try {
-    // Idempotent on the server: also right for a request made before a reload.
     let result = await transcriptionService.submitTranscription(serverId);
 
     for (;;) {
@@ -65,7 +52,6 @@ export async function driveTranscription(
     }
   } catch (error) {
     if (isOffline(error)) {
-      // Back to waiting. Nothing is written if it never got going.
       if (marked) await save(clipId, 'queued');
       return 'queued';
     }

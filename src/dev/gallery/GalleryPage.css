@@ -1,4 +1,4 @@
-/* Dev-only page. Uses tokens only. */
+/* Styles for GalleryPage. */
 .gallery-page {
   box-sizing: border-box;
   max-inline-size: calc(var(--content-width) * 2 + var(--gutter) * 3);
@@ -84,7 +84,6 @@
   gap: var(--gap);
 }
 
-/* Thin always-visible row (12/16). */
 .gallery-bar {
   position: sticky;
   top: 0;
@@ -110,7 +109,6 @@
   color: var(--color-text-muted);
 }
 
-/* Collapsed scenario box. */
 .gallery-controls {
   margin-block-end: var(--gap);
   border: var(--border-width) solid var(--color-line);
@@ -131,19 +129,16 @@
   padding: 0 var(--card-pad) var(--card-pad);
 }
 
-/* Panels shown. */
 .gallery-root[data-panels='light'] .gallery-panel[data-scheme='dark'],
 .gallery-root[data-panels='dark'] .gallery-panel[data-scheme='light'] {
   display: none;
 }
 
-/* Phone: one narrow column, 75% of the screen-width token. */
 .gallery-root[data-device='phone'] .gallery-pair {
   grid-template-columns: minmax(0, calc(var(--screen-width) * 0.75));
   justify-content: center;
 }
 
-/* The app reset makes the document itself unscrollable, so the gallery scrolls on its own. */
 .gallery-root {
   position: fixed;
   inset: 0;

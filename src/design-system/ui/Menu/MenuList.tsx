@@ -1,3 +1,4 @@
+/** The items of a menu. */
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useRef, type KeyboardEvent } from 'react';
 
@@ -10,7 +11,6 @@ export interface MenuItem {
   icon?: LucideIcon | undefined;
   onSelect: () => void;
   disabled?: boolean | undefined;
-  /** Draws the item in the error colour, for example Leave this note. */
   danger?: boolean | undefined;
 }
 
@@ -19,13 +19,11 @@ export type MenuEntry = MenuItem | 'separator';
 interface MenuListProps {
   label: string;
   items: readonly MenuEntry[];
-  /** restoreFocus is true when the user chose an item or pressed Escape. */
   onClose: (restoreFocus: boolean) => void;
 }
 
 const ENABLED = '[role="menuitem"]:not([aria-disabled="true"])';
 
-/** The open menu: 200px, 32px items, arrow keys, Escape, focus handled by the Menu. */
 export function MenuList({ label, items, onClose }: MenuListProps) {
   const listRef = useRef<HTMLDivElement>(null);
 

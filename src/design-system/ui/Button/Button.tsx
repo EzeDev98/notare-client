@@ -1,3 +1,4 @@
+/** A button. */
 import type { ComponentPropsWithoutRef, MouseEvent, ReactNode } from 'react';
 import { Link } from 'react-router';
 
@@ -9,19 +10,12 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 interface ButtonProps extends Omit<ComponentPropsWithoutRef<'button'>, 'children'> {
   variant?: Variant;
-  /** Full width, 42px tall. */
   block?: boolean;
-  /** Keeps the label (hidden, so the width never changes) and shows a spinner. */
   busy?: boolean;
-  /** Renders a router link that looks like this button. */
   to?: string;
   children: ReactNode;
 }
 
-/**
- * The one button. Four variants, 32px tall (42px when block).
- * Busy is not disabled: it keeps focus, ignores clicks and says so with aria-busy.
- */
 export function Button({
   variant = 'secondary',
   block = false,

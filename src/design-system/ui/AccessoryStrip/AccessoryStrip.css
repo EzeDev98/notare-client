@@ -1,3 +1,4 @@
+/* Styles for AccessoryStrip. */
 @layer components {
   .n-accessory {
     display: flex;
@@ -14,7 +15,6 @@
     flex: 1;
   }
 
-  /* Over the keyboard: it covers the text and never moves it. */
   .n-accessory--docked {
     position: fixed;
     z-index: var(--z-menu);

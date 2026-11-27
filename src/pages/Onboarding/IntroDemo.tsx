@@ -1,3 +1,4 @@
+/** Onboarding: the typed demo of a note being saved and synced. */
 import { Check, Pen, WifiOff } from 'lucide-react';
 import { useLayoutEffect, useRef } from 'react';
 
@@ -5,11 +6,6 @@ import { playTypedDemo } from '@/design-system/motion/patterns';
 import { Icon, IconTile } from '@/design-system/ui';
 import { INTRO } from '@/features/onboarding/onboardingContent';
 
-/**
- * The typed demo: a line is typed, a saved note row drops in under it with
- * "Not synced", and that becomes "Synced". Decorative, so hidden from screen
- * readers; the four cards below say the same in words.
- */
 export function IntroDemo() {
   const say = useRef<HTMLSpanElement>(null);
   const caret = useRef<HTMLSpanElement>(null);

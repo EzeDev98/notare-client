@@ -1,3 +1,4 @@
+/** A menu opened from a button. */
 import { useCallback, useRef, useState, type ReactNode } from 'react';
 
 import { Popover, type PopoverPoint } from '../Popover/Popover';
@@ -13,20 +14,13 @@ export interface MenuTriggerProps {
 }
 
 interface MenuProps {
-  /** Spoken name of the menu, for example "More". */
   label: string;
   items: readonly MenuEntry[];
-  /** Open at a screen point (right-click, long-press). The caller clears it in onPointClose. */
   point?: PopoverPoint | null | undefined;
   onPointClose?: (() => void) | undefined;
-  /** Draw the trigger (an IconButton or Button) and spread triggerProps onto it. */
   children: (state: { open: boolean; triggerProps: MenuTriggerProps }) => ReactNode;
 }
 
-/**
- * A dropdown menu. Opens under its trigger, arrow keys move, Enter chooses,
- * Escape closes and returns focus to the trigger, a click elsewhere closes.
- */
 export function Menu({ label, items, point, onPointClose, children }: MenuProps) {
   const anchorRef = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(false);

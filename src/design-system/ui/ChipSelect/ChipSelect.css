@@ -1,3 +1,4 @@
+/* Styles for ChipSelect. */
 @layer components {
   .ui-chips {
     display: flex;

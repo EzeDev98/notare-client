@@ -1,3 +1,4 @@
+/** Tests for displayMode. */
 import { renderHook } from '@testing-library/react';
 import { act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,16 +7,6 @@ import { useEverStandalone, useIsStandalone } from '@/pwa/displayMode';
 
 const STANDALONE_QUERY = '(display-mode: standalone)';
 
-/**
- * A `matchMedia` stand-in whose `.matches` getter can be scripted to
- * return a DIFFERENT value on each call — this is what lets a test
- * reproduce "the very first synchronous read landed on the wrong answer,
- * and every read after it is correct," which is exactly the platform
- * quirk useIsStandalone's own doc comment describes (a reload catching
- * display-mode still settling back to standalone). A plain boolean stub
- * cannot express that at all: it can only be uniformly right or uniformly
- * wrong for the whole test.
- */
 function stubMatchMediaWithSequence(values: boolean[]) {
   let index = 0;
   const listeners = new Set<() => void>();
@@ -47,7 +38,6 @@ function stubMatchMediaWithSequence(values: boolean[]) {
   });
 
   return {
-    /** Simulates the media query firing a genuine 'change' event. */
     fireChange: () => {
       listeners.forEach((listener) => {
         listener();
@@ -89,17 +79,6 @@ describe('useIsStandalone', () => {
     expect(result.current).toBe(false);
   });
 
-  /*
-   * THE REGRESSION TEST for the reload bug. The first read (the
-   * `useState` lazy initializer, evaluated synchronously at mount) sees
-   * `false` — the transient misreport the platform can produce on an
-   * in-place reload of an already-installed app — but the SAME query
-   * would already report `true` on any read after that. No 'change'
-   * event ever fires here, deliberately: from the platform's own point of
-   * view nothing changed, so this test proves the fix works WITHOUT
-   * relying on that event, which is exactly the scenario the old
-   * change-listener-only implementation could not recover from.
-   */
   it('corrects a stale false initial read shortly after mount, with no change event', () => {
     stubMatchMediaWithSequence([false, true, true, true]);
 
@@ -114,10 +93,6 @@ describe('useIsStandalone', () => {
   });
 
   it('still responds to a genuine change event on top of the re-check', () => {
-    // Consumed in order: the initial mount read, the 400ms re-check read,
-    // the 1500ms re-check read (all three false — nothing to correct yet),
-    // then the read inside handleChange once fireChange() actually fires
-    // below.
     const { fireChange } = stubMatchMediaWithSequence([false, false, false, true]);
 
     const { result } = renderHook(() => useIsStandalone());
@@ -126,8 +101,6 @@ describe('useIsStandalone', () => {
     act(() => {
       vi.runAllTimers();
     });
-    // Both re-checks' own reads also happened to see false here — nothing
-    // corrected yet, same as an ordinary non-standalone tab.
     expect(result.current).toBe(false);
 
     act(() => {

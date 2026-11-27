@@ -1,3 +1,4 @@
+/** A floating round action button. */
 import type { LucideIcon } from 'lucide-react';
 import type { ComponentPropsWithoutRef } from 'react';
 
@@ -8,14 +9,9 @@ import './FloatingAction.css';
 interface FloatingActionProps
   extends Omit<ComponentPropsWithoutRef<'button'>, 'children' | 'aria-label'> {
   icon: LucideIcon;
-  /** Required: an icon alone has no name for a screen reader. Also the hover tooltip. */
   label: string;
 }
 
-/**
- * A round icon-only button fixed to the bottom-right corner of the window. It
- * never scrolls with the page. Render it where the screen's one main action lives.
- */
 export function FloatingAction({
   icon,
   label,

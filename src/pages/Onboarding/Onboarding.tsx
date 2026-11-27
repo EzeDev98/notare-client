@@ -1,3 +1,4 @@
+/** The onboarding flow. */
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 import { done } from '@/design-system/motion/motion';
@@ -14,10 +15,8 @@ import { ManualScreen } from './ManualScreen';
 
 type Step = 'intro' | 'install' | 'installing' | 'done' | 'manual' | 'browser';
 
-/** Where Back goes. The intro and the last screen have no Back. */
 const BACK: Partial<Record<Step, Step>> = { installing: 'install', manual: 'install', browser: 'install' };
 
-/** Focus follows the screen, to its heading, so a screen reader announces where it landed. */
 function focusHeading(stage: HTMLElement): void {
   const heading = stage.querySelector<HTMLElement>('h1');
   if (!heading || stage.contains(document.activeElement)) return;
@@ -25,14 +24,6 @@ function focusHeading(stage: HTMLElement): void {
   heading.focus({ preventScroll: true });
 }
 
-/**
- * The five onboarding screens (master 6.2), shown while the app is not
- * installed. They are steps of one gate, not routes: start-up shows this in
- * place of the router and swaps it for the app the moment the app is installed.
- *
- * Screen changes use the same slide as the router (screenOut, then screenIn):
- * forward slides left, Back slides right.
- */
 export function OnboardingPage({ onContinueInBrowser }: { onContinueInBrowser: () => Promise<void> }) {
   const stage = useRef<HTMLElement>(null);
   const [step, setStep] = useState<Step>('intro');
@@ -48,7 +39,6 @@ export function OnboardingPage({ onContinueInBrowser }: { onContinueInBrowser: (
     setStep(next);
   }, []);
 
-  // The new screen is in the page but not yet painted: drop the exit, play the entrance.
   useLayoutEffect(() => {
     const el = stage.current;
     if (!el || shown.current === step) return;

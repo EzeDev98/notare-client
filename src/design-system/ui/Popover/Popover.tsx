@@ -1,3 +1,4 @@
+/** A small panel shown at a point on screen. */
 import { useEffect, useLayoutEffect, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -13,14 +14,10 @@ export interface PopoverPoint {
 
 interface PopoverProps {
   open: boolean;
-  /** Called when the user clicks elsewhere, scrolls the page or resizes the window. */
   onClose: () => void;
-  /** The element the list is drawn next to. */
   anchorRef: RefObject<HTMLElement | null>;
-  /** menu: the list sets its own width. anchor: as wide as the anchor. */
   match?: 'menu' | 'anchor' | undefined;
   align?: 'start' | 'end' | undefined;
-  /** Draw next to this screen point instead of the anchor (right-click, long-press). */
   point?: PopoverPoint | null | undefined;
   children: ReactNode;
 }
@@ -28,10 +25,6 @@ interface PopoverProps {
 const tokenPx = (name: string): number =>
   parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name)) || 0;
 
-/**
- * A floating list below its anchor (above, when there is no room). Fades in over
- * the fast token and out again. Drawn from tokens, never the browser's own list.
- */
 export function Popover({ open, onClose, anchorRef, match = 'menu', align = 'start', point, children }: PopoverProps) {
   const { mounted, ref } = usePresence<HTMLDivElement>(open, { enter: menuIn, exit: menuOut });
 

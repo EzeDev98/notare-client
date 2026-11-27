@@ -1,3 +1,4 @@
+/** Registration screen. */
 import { useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
 
@@ -42,12 +43,10 @@ export function RegisterPage() {
   const content = step === 1 ? REGISTER_PERSONAL : REGISTER_ACCOUNT;
   useDocumentTitle(content.title);
 
-  /** Local validation wins over the server's; both clear as the person edits (see update). */
   function errorFor(field: Field): string | undefined {
     return errors[field] ?? registration.fieldMessages[field];
   }
 
-  // exactOptionalPropertyTypes: the field wants no `error` key at all when there is none.
   function fieldError(field: Field): { error?: string } {
     const message = errorFor(field);
     return message ? { error: message } : {};
@@ -55,7 +54,6 @@ export function RegisterPage() {
 
   function update(field: Field, value: string): void {
     setForm((current) => ({ ...current, [field]: value }));
-    // Errors clear as a field is fixed, never appear while typing.
     setErrors((current) => ({ ...current, [field]: undefined }));
     registration.reset();
   }
@@ -66,11 +64,8 @@ export function RegisterPage() {
   }
 
   function handleBack(): void {
-    if (step === 2) {
-      setStep(1);
-      return;
-    }
-    void navigate(ROUTES.welcome());
+    if (step === 2) setStep(1);
+    else void navigate(ROUTES.welcome());
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -112,10 +107,8 @@ export function RegisterPage() {
       confirmPassword: form.confirmPassword,
     });
 
-    // null means it failed; the hook already holds the message to render.
     if (result === null) return;
 
-    // No auto sign-in: the account is unverified. justSent starts the resend cooldown over there.
     void navigate(ROUTES.verify(), {
       replace: true,
       state: { identifier: form.email.trim(), justSent: true },
@@ -207,7 +200,6 @@ export function RegisterPage() {
             }}
             label={REGISTER_ACCOUNT.labels.password}
             hint={REGISTER_ACCOUNT.hints.password}
-            // new-password makes a password manager offer to generate one.
             autoComplete="new-password"
             submitting={registration.submitting}
             value={form.password}

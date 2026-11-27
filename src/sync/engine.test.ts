@@ -1,20 +1,8 @@
+/** Tests for engine. */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/*
- * push.ts/pull.ts are MOCKED, not exercised for real. This file tests
- * SCHEDULING — when a run happens, how backoff behaves, what the lock does —
- * none of which needs a real Dexie transaction or a real HTTP round trip.
- * Running the genuine stack here would mean fake timers, fake-indexeddb, and
- * MSW all fighting for the same event loop, which is a real and separate
- * problem from anything this file is meant to verify. push.test.ts and
- * pull.test.ts already cover what those two functions do; this file only
- * needs to know THAT the engine calls them, in what order, and how it reacts
- * to what they report back.
- */
 vi.mock('@/sync/push', () => ({ pushOutbox: vi.fn(() => Promise.resolve()) }));
 vi.mock('@/sync/pull', () => ({ pullChanges: vi.fn(() => Promise.resolve()) }));
-// The engine also awaits these. They touch real IndexedDB, which fake timers starve,
-// and they are not what this file tests.
 vi.mock('@/sync/clipUpload', () => ({ uploadPendingClips: vi.fn(() => Promise.resolve()) }));
 vi.mock('@/sync/releaseLegacyConflicts', () => ({
   releaseLegacyConflicts: vi.fn(() => Promise.resolve()),
@@ -107,12 +95,12 @@ describe('start', () => {
     const { notifyLocalMutation } = await import('@/sync/mutationSignal');
     notifyLocalMutation();
     await vi.advanceTimersByTimeAsync(500);
-    notifyLocalMutation(); // a second edit inside the debounce window
+    notifyLocalMutation();
     await vi.advanceTimersByTimeAsync(1_999);
-    expect(mockPush).toHaveBeenCalledTimes(1); // still debouncing
+    expect(mockPush).toHaveBeenCalledTimes(1);
 
     await vi.advanceTimersByTimeAsync(1);
-    expect(mockPush).toHaveBeenCalledTimes(2); // exactly one run for both edits
+    expect(mockPush).toHaveBeenCalledTimes(2);
   });
 
   it('does not poll: with nothing happening, no run starts on a timer alone', async () => {
@@ -121,7 +109,6 @@ describe('start', () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(mockPush).toHaveBeenCalledTimes(1);
 
-    // Sync is event-driven (start, online, visible, local change). Minutes pass, nothing runs.
     await vi.advanceTimersByTimeAsync(5 * 60_000);
     expect(mockPush).toHaveBeenCalledTimes(1);
   });
@@ -147,7 +134,6 @@ describe('backoff', () => {
     expect(mockPull).toHaveBeenCalledTimes(1);
     expect(getSyncStatus().status).toBe('offline');
 
-    // First backoff step is 5s.
     await vi.advanceTimersByTimeAsync(4_999);
     expect(mockPull).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(1);
@@ -163,12 +149,12 @@ describe('backoff', () => {
     });
 
     stop = start(1);
-    await vi.advanceTimersByTimeAsync(0); // attempt 1, fails
-    await vi.advanceTimersByTimeAsync(5_000); // attempt 2, fails (5s step)
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(5_000);
     expect(mockPull).toHaveBeenCalledTimes(2);
 
     await vi.advanceTimersByTimeAsync(14_999);
-    expect(mockPull).toHaveBeenCalledTimes(2); // not yet — second step is 15s
+    expect(mockPull).toHaveBeenCalledTimes(2);
     await vi.advanceTimersByTimeAsync(1);
     expect(mockPull).toHaveBeenCalledTimes(3);
   });
@@ -203,7 +189,7 @@ describe('cross-tab lock', () => {
     expect(mockPull).not.toHaveBeenCalled();
     expect(getSyncStatus().lastSyncedAt).toBeNull();
 
-    // @ts-expect-error -- test-only cleanup of the fake installed above
+    // @ts-expect-error -- test-only cleanup
     delete navigator.locks;
   });
 });
@@ -222,7 +208,6 @@ describe('requestSync', () => {
     resolvePush();
     await second;
 
-    // Both callers got the SAME run — one push, not two.
     expect(mockPush).toHaveBeenCalledTimes(1);
   });
 });

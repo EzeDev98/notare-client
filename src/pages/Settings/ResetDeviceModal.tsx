@@ -1,3 +1,4 @@
+/** Asks before resetting this device. */
 import { useEffect, useState } from 'react';
 
 import { attemptFinalSync } from '@/app/hardReset';
@@ -16,10 +17,6 @@ interface ResetDeviceModalProps {
   onClose: () => void;
 }
 
-/**
- * "Reset this device?" (master 6.6.1). Opening it runs one sync; then it says either
- * that nothing is lost or how many changes would be. The erase itself is useDeviceReset.
- */
 export function ResetDeviceModal({ open, ownerId, onClose }: ResetDeviceModalProps) {
   const { busy, handleReset } = useDeviceReset();
   const [check, setCheck] = useState<Check>({ phase: 'checking' });

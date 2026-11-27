@@ -1,3 +1,4 @@
+/** Runs start-up and moves to the first screen. */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/app/providers/auth-context';
@@ -9,16 +10,8 @@ import { metaRepository } from '@/features/notes/local/metaRepository';
 import { META_KEYS } from '@/features/notes/local/metaRow';
 import { useEverStandalone } from '@/pwa/displayMode';
 
-/** Vitest sets MODE to 'test'. Waits collapse to zero there so tests need no fake timers. */
 const IS_TEST = import.meta.env.MODE === 'test';
 
-/**
- * Where start-up has got to.
- *   waiting  splash only.
- *   install  the install gate is showing.
- *   offline  the first-open-offline screen is showing.
- *   app      the router is showing. Final: nothing later may take it away.
- */
 export type StartupOutcome = 'waiting' | 'install' | 'offline' | 'app';
 
 const wait = (ms: number): Promise<void> =>
@@ -26,7 +19,6 @@ const wait = (ms: number): Promise<void> =>
     setTimeout(resolve, ms);
   });
 
-/** Resolves when the font is ready, or after FONT_WAIT_MAX_MS, whichever is first. */
 function fontReady(): Promise<void> {
   if (IS_TEST || typeof document === 'undefined' || !('fonts' in document))
     return Promise.resolve();
@@ -37,7 +29,6 @@ function fontReady(): Promise<void> {
   return Promise.race([loaded, wait(FONT_WAIT_MAX_MS)]);
 }
 
-/** The saved answer to "Continue in browser" (O-14). `chosenNow` covers a save that failed. */
 async function readInstallChoice(chosenNow: boolean): Promise<'browser' | null> {
   if (chosenNow) return 'browser';
   try {
@@ -51,23 +42,13 @@ async function hasLocalNotes(): Promise<boolean> {
   try {
     return (await db.notes.count()) > 0;
   } catch {
-    // If the local database cannot be read, do not claim the device is empty.
     return true;
   }
 }
 
-/**
- * The one start-up hand-off (master 5.5). Waits for the font (at most
- * FONT_WAIT_MAX_MS), a short minimum so the splash never flickers, and the
- * session check. Then it asks decideRoute once, moves the router to the answer
- * before anything shows, and reports where it landed. The caller fades the
- * splash out when the outcome stops being 'waiting'.
- */
 export function useStartup(): {
   outcome: StartupOutcome;
-  /** Decide again, for the offline screen. True when it got past offline. */
   retry: () => Promise<boolean>;
-  /** The person chose to carry on in the browser: remember it and move on (O-14). */
   continueInBrowser: () => Promise<void>;
 } {
   const { state } = useAuth();
@@ -120,7 +101,6 @@ export function useStartup(): {
     void decide();
   }, [timersDone, authReady, decide]);
 
-  // The install gate leaves on its own the moment the app is installed.
   useEffect(() => {
     if (outcome === 'install' && installed) void decide();
   }, [outcome, installed, decide]);
@@ -129,9 +109,7 @@ export function useStartup(): {
     browserChosen.current = true;
     try {
       await metaRepository.set(META_KEYS.installChoice, 'browser');
-    } catch {
-      // Not saved: this session still carries on, and the gate asks again next time.
-    }
+    } catch {}
     await decide();
   }, [decide]);
 

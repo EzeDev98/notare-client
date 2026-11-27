@@ -1,14 +1,14 @@
+/** When sync last finished a clean run. */
 import { useEffect, useState } from 'react';
 
 import { LAST_SYNCED_REFRESH_MS } from '@/core/config/timings';
-import { useSyncStatus } from '@/sync/useSyncStatus';
+import { useSyncState } from '@/features/notes/hooks/useSyncState';
 
 import { ago } from './ago';
 import { SETTINGS_COPY } from './settingsContent';
 
-/** "Just now", "12 min ago", "3 h ago": when the sync engine last finished a clean run. */
 export function useLastSynced(): string {
-  const { lastSyncedAt } = useSyncStatus();
+  const { lastSyncedAt } = useSyncState();
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {

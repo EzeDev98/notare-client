@@ -1,3 +1,4 @@
+/** The open list of a SelectField. */
 import { Check } from 'lucide-react';
 
 import { Icon } from '../Icon/Icon';
@@ -18,7 +19,6 @@ interface SelectListProps {
   onPick: (index: number) => void;
 }
 
-/** The open list of a SelectField, drawn from tokens. Focus stays on the real select. */
 export function SelectList({ id, options, active, onActive, onPick }: SelectListProps) {
   return (
     <div className="n-menu" role="listbox" id={id}>

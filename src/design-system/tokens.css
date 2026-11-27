@@ -1,16 +1,8 @@
-/*
- * THE one token file. Every colour, size and duration in Notare lives here;
- * no other file may hold one (master 4). Same three layers and names as
- * Ahorra's tokens.css; only the palette values are Notare's.
- *   1. Palette    raw values. Only layer 2 reads these.
- *   2. Semantic   meaning. Light and dark are chosen here with light-dark().
- *   3. Component  sizes and spacing of the building blocks.
- */
+/* Every colour, size and duration in the app. */
 @layer tokens {
   :root {
     color-scheme: light dark;
 
-    /* ---------- 1. Palette ---------- */
     --p-lavender-600: #6b5bb5;
     --p-lavender-300: #b8acf0;
     --p-white: #ffffff;
@@ -30,7 +22,6 @@
     --p-scrim-light: rgba(23, 21, 26, 0.32);
     --p-scrim-dark: rgba(0, 0, 0, 0.5);
 
-    /* Collaborator tints, assigned by a stable hash of the user id */
     --p-cursor-1-light: #3f7f86;  --p-cursor-1-dark: #7cc3ca;
     --p-cursor-2-light: #6c7125;  --p-cursor-2-dark: #c4c86e;
     --p-cursor-3-light: #a5622f;  --p-cursor-3-dark: #e5a272;
@@ -38,7 +29,6 @@
     --p-cursor-5-light: #456fa0;  --p-cursor-5-dark: #8db4e6;
     --p-cursor-6-light: #4e8060;  --p-cursor-6-dark: #8ccba0;
 
-    /* ---------- 2. Semantic ---------- */
     --color-brand: light-dark(var(--p-lavender-600), var(--p-lavender-300));
     --color-on-brand: light-dark(var(--p-white), var(--p-bg-dark));
     --color-bg: light-dark(var(--p-bg-light), var(--p-bg-dark));
@@ -52,7 +42,7 @@
     --color-hover: light-dark(var(--p-hover-light), var(--p-hover-dark));
     --color-scrim: light-dark(var(--p-scrim-light), var(--p-scrim-dark));
     --color-tile: color-mix(in srgb, var(--color-brand) 12%, transparent);
-    --color-success: var(--color-brand); /* there is no green */
+    --color-success: var(--color-brand);
 
     --color-cursor-1: light-dark(var(--p-cursor-1-light), var(--p-cursor-1-dark));
     --color-cursor-2: light-dark(var(--p-cursor-2-light), var(--p-cursor-2-dark));
@@ -68,7 +58,7 @@
     --text-sm: 14px;     --leading-sm: 20px;
     --text-md: 14px;     --leading-md: 24px;
     --text-lg: 16px;     --leading-lg: 24px;
-    --text-total: 24px;  --leading-total: 32px; /* unused in Notare */
+    --text-total: 24px;  --leading-total: 32px;
 
     --border-width: 0.5px;
     --radius: 2px;
@@ -78,7 +68,7 @@
     --focus-ring-color: var(--color-focus-tint);
     --focus-ring-size: 3px;
 
-    --motion-hover: 120ms; /* colour fade on hover, nothing moves */
+    --motion-hover: 120ms;
     --motion-fast: 160ms;
     --motion-base: 260ms;
     --motion-fly: 440ms;
@@ -88,9 +78,8 @@
     --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
     --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-    /* ---------- 3. Component ---------- */
     --button-height: 28px;
-    --button-height-block: 42px; /* full-width buttons */
+    --button-height-block: 42px;
     --button-pad-x: 12px;
     --input-height: 40px;
     --icon-button-size: 32px;
@@ -112,7 +101,6 @@
     --z-toast: 100;
     --z-splash: 120;
 
-    /* Notare only */
     --row-height: 64px;
     --glyph-size: 14px;
     --avatar-size: 24px;
@@ -132,7 +120,6 @@
     --fab-icon-size: 24px;
   }
 
-  /* Settings, Appearance: force a theme. No attribute means follow the system. */
   :root[data-theme='light'] {
     color-scheme: light;
   }
@@ -141,7 +128,6 @@
     color-scheme: dark;
   }
 
-  /* Reduced motion: hover changes colour at once. */
   @media (prefers-reduced-motion: reduce) {
     :root {
       --motion-hover: 0ms;

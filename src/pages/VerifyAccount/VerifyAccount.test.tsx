@@ -1,3 +1,4 @@
+/** Tests for VerifyAccount. */
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
@@ -32,7 +33,6 @@ describe('check your email', () => {
 
   it('tells the user which address the link was sent to', async () => {
     renderVerify({ identifier: 'new@example.com' });
-    // The screen masks the address: n**@example.com.
     expect(await screen.findByText(/n\*\*@example\.com/)).toBeInTheDocument();
   });
 
@@ -68,7 +68,6 @@ describe('check your email', () => {
 
     await user.click(await screen.findByRole('button', { name: /^resend email$/i }));
 
-    // The server always answers 200, so the client owns the visible cooldown.
     expect(await screen.findByRole('button', { name: /resend email in \d+s/i })).toBeDisabled();
   });
 });

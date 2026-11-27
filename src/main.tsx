@@ -1,6 +1,4 @@
-// FIRST import, on purpose: global.css declares the @layer order, and a
-// layer's position is fixed the first time the browser sees it. Any
-// component CSS injected before this would silently reorder the layers.
+/** Entry point: mounts the app. */
 import '@/design-system/global.css';
 
 import { StrictMode } from 'react';
@@ -13,28 +11,14 @@ import { registerServiceWorker } from '@/pwa/registerServiceWorker';
 
 const rootElement = document.getElementById('root');
 
-/*
- * noUncheckedIndexedAccess is not what makes this check necessary —
- * getElementById returns HTMLElement | null regardless. But the scaffold's
- * version used a non-null assertion (`!`) to silence it, which is an assertion
- * that index.html will always contain #root. It will, right up until someone
- * edits index.html. Throwing here costs one line and names the actual problem.
- */
 if (!rootElement) {
   throw new Error('Root element #root not found in index.html.');
 }
 
-// Step 11. Fire-and-forget at startup — see registerServiceWorker.ts's own
-// doc comment for what this does and does not block on.
 registerServiceWorker();
 
-// Captures beforeinstallprompt before React ever renders, so the event
-// can't fire and go unheard during initial mount. See installPrompt.ts.
 initInstallPrompt();
 
-// Keeps Render's free-tier instance from spinning down while this app is
-// open. See keepAlive.ts's own doc comment for what this does and doesn't
-// cover.
 startKeepAlive();
 
 createRoot(rootElement).render(

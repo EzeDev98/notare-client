@@ -1,3 +1,4 @@
+/** Dev-only page that plays every animation. */
 import { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 
@@ -26,7 +27,6 @@ import './MotionPage.css';
 const ROWS = ['Groceries', 'Meeting notes', 'Voice memo', 'Ideas', 'Reading list'];
 const STATUS = ['Saved', 'Saving', 'Offline'];
 
-/** Dev only. One button per helper in patterns.ts, plus a reduced-motion switch. */
 export function MotionPage() {
   useDocumentTitle('Motion');
   const box = useRef<HTMLDivElement>(null);

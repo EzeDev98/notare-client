@@ -1,5 +1,5 @@
+/* Styles for NotesListPane. */
 @layer pages {
-  /* The pane scrolls inside itself; nothing else on the list screen scrolls. */
   .home__scroll {
     flex: 1;
     min-height: 0;
@@ -33,7 +33,6 @@
     color: var(--color-text-muted);
   }
 
-  /* In the 320px list pane the content fills it. */
   @container (min-width: 800px) {
     .home__inner {
       width: 100%;

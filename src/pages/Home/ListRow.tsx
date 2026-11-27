@@ -1,3 +1,4 @@
+/** One list row with its menu. */
 import { MoreHorizontal } from 'lucide-react';
 import { useState } from 'react';
 
@@ -18,10 +19,6 @@ interface ListRowProps {
   onOpen: () => void;
 }
 
-/**
- * One row with its menu. The menu opens three ways: the visible more button,
- * right-click (a two-finger trackpad click too) and press-and-hold.
- */
 export function ListRow({ item, date, selected, notSynced, actions, onOpen }: ListRowProps) {
   const [point, setPoint] = useState<PopoverPoint | null>(null);
   const press = useLongPressContextMenu((x, y) => {

@@ -1,6 +1,6 @@
+/** Shows the same content on a light and a dark surface. */
 import type { ReactNode } from 'react';
 
-/** Shows the same content on a light surface and a dark one, side by side. */
 export function Both({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="gallery-section">

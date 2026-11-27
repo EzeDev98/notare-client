@@ -1,3 +1,4 @@
+/* Styles for Popover. */
 @layer components {
   .ui-popover {
     position: fixed;

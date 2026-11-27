@@ -1,12 +1,8 @@
+/** Saves a finished recording on the device. */
 import { getDraft, persistDraftIfContent } from '@/features/notes/createNote';
 import { clipRepository } from '@/features/notes/local/clipRepository';
 import { setStorageFull } from '@/features/notes/status/storageFull';
 
-/**
- * Puts a finished recording on this device and returns its clip id. The sync
- * engine uploads it later. A clip in a blank draft makes it a real note (8e).
- * Throws when the device is out of room; the caller decides what to show.
- */
 export async function saveClip(
   noteId: string,
   blob: Blob,

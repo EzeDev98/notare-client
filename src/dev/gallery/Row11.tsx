@@ -1,3 +1,4 @@
+/** Gallery row: NoteRow, ContextMenu, SelectionBar. */
 import { MoreHorizontal } from 'lucide-react';
 
 import { ContextMenu, IconButton, NoteRow, SelectionBar, useToast } from '@/design-system/ui';
@@ -11,7 +12,6 @@ const COMBOS: readonly { where: Where; label: string }[] = [
   { where: 'editor', label: 'Editor screen' },
 ];
 
-/** Row 11: NoteRow, ContextMenu, SelectionBar. */
 export function Row11() {
   const toast = useToast();
   const say = (text: string) => () => {

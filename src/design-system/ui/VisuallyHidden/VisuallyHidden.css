@@ -1,3 +1,4 @@
+/* Styles for VisuallyHidden. */
 @layer components {
   .ui-visually-hidden {
     position: absolute;

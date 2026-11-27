@@ -1,3 +1,4 @@
+/** A multi-line text field. */
 import type { ComponentPropsWithRef } from 'react';
 
 import { Control } from '../Control/Control';
@@ -11,7 +12,6 @@ type TextAreaProps = Omit<ComponentPropsWithRef<'textarea'>, 'id' | 'children'> 
   submitting?: boolean;
 };
 
-/** Multi-line field: same box, label and message line as TextField. */
 export function TextArea({
   label,
   hint,

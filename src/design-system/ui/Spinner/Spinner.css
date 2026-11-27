@@ -1,3 +1,4 @@
+/* Styles for Spinner. */
 @layer components {
   .ui-spinner__status {
     display: inline-flex;

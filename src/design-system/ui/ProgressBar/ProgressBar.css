@@ -1,3 +1,4 @@
+/* Styles for ProgressBar. */
 @layer components {
   .ui-bar {
     height: calc(var(--gap) / 2);

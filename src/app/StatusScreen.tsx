@@ -1,3 +1,4 @@
+/** A whole-screen message with a logo, title, one line and one button. */
 import { useTheme } from '@/app/providers/theme-context';
 import { Button, Logo } from '@/design-system/ui';
 
@@ -10,11 +11,6 @@ interface StatusScreenProps {
   onAction: () => void;
 }
 
-/**
- * A whole-screen message: logo, title, one line, one primary button. Used for
- * "Page not found" and "Something went wrong" (master 6.7.1). It is plain on
- * purpose: it must still render when the screen behind it has failed.
- */
 export function StatusScreen({ title, text, actionLabel, onAction }: StatusScreenProps) {
   const { resolved } = useTheme();
 

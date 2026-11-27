@@ -1,19 +1,6 @@
+/** Plans the database upgrade that gives every note one id. */
 import type { NoteRow } from './noteRow';
 
-/**
- * Works out which rows need their `localId` changed to equal their `clientId`
- * (the version 4 upgrade). Returns old localId -> new localId.
- *
- * A note's identity is its `clientId`. Rows made on this device already have
- * localId === clientId; rows that arrived from the server got two different
- * random ids. This finds those and nothing else.
- *
- * It is deliberately timid. A row is left alone when its clientId
- *   - is missing or empty,
- *   - is shared with another row (which row would own it?), or
- *   - is already the localId of a different row (the move would collide).
- * Leaving a row alone only means it keeps working as it does today.
- */
 export function planIdentityMerge(
   rows: Pick<NoteRow, 'localId' | 'clientId'>[],
 ): Map<string, string> {

@@ -1,3 +1,4 @@
+/** Tests for offlineEdit. */
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
@@ -41,12 +42,6 @@ function renderEditor(path = '/notes/1') {
   );
 }
 
-/**
- * A DEDICATED file for the offline-UPDATE half of 8B, kept separate from
- * editorRaces.test.tsx / conflict.test.tsx / keepBoth.test.tsx on purpose —
- * those three have pre-existing timing-sensitive failures unrelated to 8B,
- * and this test has no reason to share a file with that flakiness.
- */
 describe('editing an existing note with no connection (8B)', () => {
   it('queues an UPDATE carrying the note\u2019s current version', async () => {
     server.use(

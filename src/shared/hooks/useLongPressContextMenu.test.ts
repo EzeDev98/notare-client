@@ -1,15 +1,9 @@
+/** Tests for useLongPressContextMenu. */
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useLongPressContextMenu } from './useLongPressContextMenu';
 
-/**
- * These are plain function handlers under a `useRef`-only hook — no DOM
- * needed to exercise them, just objects shaped enough to satisfy what the
- * hook actually reads (`pointerType`, `clientX`/`clientY`,
- * `preventDefault`/`stopPropagation`). `as never` sidesteps building a full
- * PointerEvent/MouseEvent for fields nothing here touches.
- */
 function pointerEvent(overrides: {
   pointerType?: string;
   clientX?: number;
@@ -82,8 +76,6 @@ describe('useLongPressContextMenu', () => {
     const { onOpen, handlers } = renderLongPress();
 
     handlers.onPointerDown(pointerEvent({ pointerType: 'touch', clientX: 0, clientY: 0 }));
-    // Past MOVE_THRESHOLD_PX — a scroll starting under the same finger,
-    // not a stationary hold.
     handlers.onPointerMove(pointerEvent({ pointerType: 'touch', clientX: 50, clientY: 0 }));
     vi.advanceTimersByTime(500);
 
@@ -133,7 +125,6 @@ describe('useLongPressContextMenu', () => {
     expect(ghostClick.preventDefault).toHaveBeenCalledOnce();
     expect(ghostClick.stopPropagation).toHaveBeenCalledOnce();
 
-    // An ordinary tap afterward — nothing pending — must reach its target.
     const ordinaryClick = mouseEvent();
     handlers.onClickCapture(ordinaryClick as never);
     expect(ordinaryClick.preventDefault).not.toHaveBeenCalled();

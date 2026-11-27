@@ -1,3 +1,4 @@
+/** A select field. */
 import { ChevronDown } from 'lucide-react';
 import { useId, useRef, useState, type ComponentPropsWithRef, type KeyboardEvent, type MouseEvent } from 'react';
 
@@ -12,21 +13,14 @@ import './SelectField.css';
 
 type SelectFieldProps = Omit<ComponentPropsWithRef<'select'>, 'id'> & {
   label: string;
-  /** Keeps the label for screen readers and draws no text. */
   hideLabel?: boolean | undefined;
   hint?: string | undefined;
   error?: string | undefined;
   optional?: boolean | undefined;
-  /** Greyed first option, shown until the user chooses. */
   placeholder?: string | undefined;
   submitting?: boolean | undefined;
 };
 
-/**
- * The normal closed select. The open list is drawn from tokens (same text as every
- * other menu). The real <select> stays underneath, so values, forms and onChange work as usual.
- * Pass <option> elements as children.
- */
 export function SelectField({
   label,
   hideLabel,

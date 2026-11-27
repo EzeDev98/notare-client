@@ -1,3 +1,4 @@
+/** A saved voice clip inside a note. */
 import type { Editor } from '@tiptap/core';
 import { useId, useState } from 'react';
 
@@ -19,12 +20,10 @@ interface ClipSummary {
 interface ClipBlockProps {
   clipId: string;
   editor: Editor;
-  /** Where this block sits in the body, so Insert can go right after it. */
   getPos: () => number | undefined;
   nodeSize: number;
 }
 
-/** A saved clip: playing, sync state and transcription. */
 export function ClipBlock({ clipId, editor, getPos, nodeSize }: ClipBlockProps) {
   const playback = useClipPlayback(clipId);
   const transcript = useClipTranscript(clipId);
@@ -43,8 +42,6 @@ export function ClipBlock({ clipId, editor, getPos, nodeSize }: ClipBlockProps) 
     void requestTranscription(clipId);
   };
 
-  // Takes the block out of the body, then the clip off this device and the server.
-  // Kept out of Undo: the audio is gone, so Undo could only bring back a dead block.
   const remove = (): void => {
     const pos = getPos();
     if (pos === undefined) return;
@@ -112,7 +109,6 @@ export function ClipBlock({ clipId, editor, getPos, nodeSize }: ClipBlockProps) 
     );
   };
 
-  // One transaction, so one Undo removes it all. Goes right after this block.
   const insert = (): void => {
     const pos = getPos();
     if (pos === undefined) return;

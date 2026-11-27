@@ -1,7 +1,8 @@
+/** Settings: Sync and storage. */
 import { useEffect, useState } from 'react';
 
 import { useSessionUser } from '@/app/shell/useSessionUser';
-import { SYNC_NOW_MIN_BUSY_MS, STORAGE_NEAR_FULL_PERCENT } from '@/core/config/timings';
+import { STORAGE_NEAR_FULL_PERCENT } from '@/core/config/timings';
 import {
   Button,
   Card,
@@ -20,12 +21,11 @@ import { META_KEYS } from '@/features/notes/local/metaRow';
 import { metaRepository } from '@/features/notes/local/metaRepository';
 import { clipRepository } from '@/features/notes/local/clipRepository';
 import { useOffline } from '@/features/notes/hooks/useOffline';
+import { syncNow as runSync } from '@/features/notes/hooks/useSyncState';
 import { setStorageFull, useStorageFull } from '@/features/notes/status/storageFull';
 import { applyUpdate, checkForUpdates, onUpdateAvailable } from '@/pwa/registerServiceWorker';
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle';
 import { useNow } from '@/shared/hooks/useNow';
-import { requestSync } from '@/sync/engine';
-import { getSyncStatus } from '@/sync/syncStatus';
 
 import { ago } from './ago';
 import './Settings.css';
@@ -37,11 +37,6 @@ import { useStorage } from './useStorage';
 import { useSyncSummary } from './useSyncSummary';
 
 const COPY = SETTINGS_COPY.syncStorage;
-
-const wait = (ms: number): Promise<void> =>
-  new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
 
 function SyncAndStorage({ user }: { user: CurrentUser }) {
   useDocumentTitle(COPY.title);
@@ -73,10 +68,9 @@ function SyncAndStorage({ user }: { user: CurrentUser }) {
   const syncNow = async (): Promise<void> => {
     setSyncing(true);
     setSyncResult(null);
-    await Promise.all([requestSync('manual').catch(() => undefined), wait(SYNC_NOW_MIN_BUSY_MS)]);
+    const reached = await runSync();
     setSyncing(false);
-    const { status } = getSyncStatus();
-    setSyncResult(status === 'offline' || status === 'error' ? COPY.cannotReach : COPY.synced);
+    setSyncResult(reached ? COPY.synced : COPY.cannotReach);
   };
 
   const checkUpdates = async (): Promise<void> => {
@@ -221,7 +215,6 @@ function SyncAndStorage({ user }: { user: CurrentUser }) {
   );
 }
 
-/** Settings > Sync and storage (master 6.6, 6.6.1): sync status, storage and app version. */
 export function SettingsSyncPage() {
   const user = useSessionUser();
   return user ? <SyncAndStorage user={user} /> : null;

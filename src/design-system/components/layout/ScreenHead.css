@@ -1,3 +1,4 @@
+/* Styles for ScreenHead. */
 @layer components {
   .ui-screen-head {
     display: flex;

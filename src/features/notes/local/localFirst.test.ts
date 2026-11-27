@@ -1,3 +1,4 @@
+/** Tests for localFirst. */
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
@@ -12,11 +13,6 @@ import { db } from '@/features/notes/local/database';
 import { isEmptyNote } from '@/features/notes/local/isEmptyNote';
 import { noteCommands } from '@/features/notes/local/noteCommands';
 import { outboxRepository } from '@/features/notes/local/outboxRepository';
-
-/**
- * Step 8l: proof that the bugs the local-first layer was built to remove are
- * gone. Each test names the old bug it guards against.
- */
 
 async function counts() {
   return {
@@ -43,7 +39,6 @@ describe('a blank note', () => {
   });
 
   it('ten rapid New note taps leave one blank draft and no rows', async () => {
-    // The New note button reuses an open blank draft instead of starting another.
     for (let i = 0; i < 10; i += 1) {
       if (!findBlankDraft()) startDraft(1);
     }
@@ -95,7 +90,6 @@ describe('the first character', () => {
 
   it('keeps the text when the app is closed straight after typing', async () => {
     const row = await createNoteWithContent(1, 'do not lose me');
-    // Nothing else runs: no sync, no timer. A fresh read finds the text.
     expect((await db.notes.get(row?.localId ?? ''))?.content).toBe('do not lose me');
   });
 });

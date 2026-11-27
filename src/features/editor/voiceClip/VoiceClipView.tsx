@@ -1,3 +1,4 @@
+/** Renders a voice clip node. */
 import { NodeViewWrapper, type NodeViewProps } from '@tiptap/react';
 import { useContext, useEffect } from 'react';
 
@@ -6,12 +7,10 @@ import { RecordingBlock } from './RecordingBlock';
 import { isLiveRecording, isRecordingId } from './recordingIds';
 import { VoiceClipContext } from './VoiceClipContext';
 
-/** The ProseMirror node view for a voice clip. */
 export function VoiceClipView({ node, editor, getPos, deleteNode, updateAttributes }: NodeViewProps) {
   const context = useContext(VoiceClipContext);
   const clipId = typeof node.attrs['clipId'] === 'string' ? node.attrs['clipId'] : null;
 
-  // A recording block left in the body by a closed tab has nothing behind it.
   const orphan = clipId === null || (isRecordingId(clipId) && !isLiveRecording(clipId));
   useEffect(() => {
     if (orphan && context !== null) deleteNode();

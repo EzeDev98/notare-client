@@ -1,3 +1,4 @@
+/** Undo and Redo above the on-screen keyboard while editing. */
 import type { Editor } from '@tiptap/core';
 import { useEditorState } from '@tiptap/react';
 import { yUndoPluginKey } from '@tiptap/y-tiptap';
@@ -10,12 +11,10 @@ import { AccessoryStrip } from '@/design-system/ui';
 import { useInsertVoice } from '@/features/editor/voiceClip/useInsertVoice';
 import { useCoarsePointer } from '@/shared/hooks/useCoarsePointer';
 
-/**
- * Step 12f: on a touch screen, while the note is being edited, a strip with Undo
- * and Redo sits just above the keyboard. It is fixed and placed from
- * `window.visualViewport`, so it overlays the page and never moves the text.
- * On a desktop the same actions are Cmd/Ctrl+Z and Shift+Cmd/Ctrl+Z.
- */
+interface UndoState {
+  undoManager?: { undoStack: unknown[]; redoStack: unknown[] };
+}
+
 export function NoteAccessoryStrip({ editor }: { editor: Editor }) {
   const coarse = useCoarsePointer();
   const insertVoice = useInsertVoice();
@@ -23,7 +22,8 @@ export function NoteAccessoryStrip({ editor }: { editor: Editor }) {
   const state = useEditorState({
     editor,
     selector: ({ editor: current }) => {
-      const undoManager = yUndoPluginKey.getState(current.state)?.undoManager;
+      const undo = yUndoPluginKey.getState(current.state) as UndoState | undefined;
+      const undoManager = undo?.undoManager;
       return {
         focused: current.isFocused,
         editable: current.isEditable,

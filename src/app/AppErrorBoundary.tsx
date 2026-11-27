@@ -1,3 +1,4 @@
+/** Shows "Something went wrong" when rendering fails outside the router. */
 import { Component, type ReactNode } from 'react';
 
 import { CrashScreen } from '@/app/RouteError';
@@ -11,13 +12,6 @@ interface AppErrorBoundaryState {
   error: unknown;
 }
 
-/**
- * The last safety net (master 6.7.1). A render error anywhere outside the router's own
- * error screens (providers, start-up) ends here, with the same
- * "Something went wrong" screen the routes use. Never shows a stack trace.
- *
- * Sits inside ThemeProvider so the screen is themed.
- */
 export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundaryState> {
   constructor(props: AppErrorBoundaryProps) {
     super(props);

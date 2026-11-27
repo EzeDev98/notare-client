@@ -1,3 +1,4 @@
+/** The API error type and helpers for it. */
 export type ApiErrorDetail =
   | { kind: 'network' }
   | { kind: 'timeout' }
@@ -67,7 +68,6 @@ export function isNotFound(error: unknown): boolean {
   return statusOf(error) === 404;
 }
 
-/** 400: the server refused the request as invalid. */
 export function isBadRequest(error: unknown): boolean {
   return statusOf(error) === 400;
 }
@@ -102,7 +102,6 @@ export function isRetriable(error: unknown): boolean {
   return false;
 }
 
-/** The server answers 426 when this version of the app is too old to talk to it (contract set in step 17). */
 export const UPDATE_REQUIRED_STATUS = 426;
 
 export function isUpdateRequired(error: unknown): boolean {

@@ -1,3 +1,4 @@
+/* Styles for PageHeader. */
 @layer components {
   .ui-page-header {
     display: flex;

@@ -1,3 +1,4 @@
+/* Styles for OtpField. */
 @layer components {
   .ui-otp {
     display: flex;

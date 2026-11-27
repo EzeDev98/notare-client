@@ -1,3 +1,4 @@
+/** Onboarding: the checks while Notare installs. */
 import { Check, CircleAlert } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef } from 'react';
 
@@ -12,7 +13,6 @@ import { OnboardingScreen } from './OnboardingScreen';
 function CheckRow({ state, label, failed }: { state: CheckState; label: string; failed: string }) {
   const mark = useRef<HTMLSpanElement>(null);
 
-  // The tick or the alert pops in when the answer arrives. A row starts pending, so mounting never plays it.
   useEffect(() => {
     if (state !== 'pending' && mark.current) tickIn(mark.current);
   }, [state]);
@@ -48,11 +48,6 @@ function StorageNote() {
   );
 }
 
-/**
- * Screen 3. Three checks that ask the browser, so each line is true when it
- * ticks and says so plainly when it does not (10d). Continue opens once all
- * three have an answer.
- */
 export function InstallingScreen({ onBack, onContinue }: { onBack: () => void; onContinue: () => void }) {
   const { checks, settled, storageRefused } = useInstallChecks();
 

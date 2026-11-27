@@ -1,3 +1,4 @@
+/** Tests for motion. */
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from 'vitest';
 
 import { flip, forceReduced, ms, run, stagger } from './motion';
@@ -35,7 +36,7 @@ describe('motion', () => {
       easing: '--ease-out',
     });
     expect(options(0)).toMatchObject({ duration: 260, easing: 'cubic-bezier(.2,.8,.2,1)' });
-    expect(ms('--motion-fast')).toBe(160); // seconds are converted
+    expect(ms('--motion-fast')).toBe(160);
   });
 
   it('turns movement into a 120ms opacity fade under reduced motion', () => {

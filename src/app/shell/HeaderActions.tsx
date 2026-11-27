@@ -1,3 +1,4 @@
+/** The bell and new-note buttons in the header. */
 import { Bell, Pen } from 'lucide-react';
 import { useState } from 'react';
 
@@ -9,7 +10,6 @@ import { SHELL_COPY } from './shellContent';
 import { useSessionUser } from './useSessionUser';
 import { useStartNote } from './useStartNote';
 
-/** The bell (with the unread count) and the pen (new note), at the right of the header bar. */
 export function HeaderActions() {
   const user = useSessionUser();
   const unread = useUnreadCount();

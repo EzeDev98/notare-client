@@ -1,3 +1,4 @@
+/** Layout for a form screen. */
 import { ArrowLeft } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
 
@@ -11,21 +12,15 @@ import './FormScreen.css';
 interface FormScreenProps {
   title: string;
   description?: string | undefined;
-  /** A centred icon above the head (Check email). */
   hero?: ReactNode;
-  /** A Steps indicator, full column width, above the head. */
   step?: ReactNode;
-  /** code: the one-time-code screen; its form is centred and only as wide as the boxes. */
   variant?: 'code' | undefined;
   onBack?: (() => void) | undefined;
   onSubmit?: ((event: FormEvent<HTMLFormElement>) => void) | undefined;
-  /** The actions: usually one primary block button and a link. */
   footer?: ReactNode;
-  /** The fields. */
   children: ReactNode;
 }
 
-/** A centred form screen: head, fields and actions as one group in the 500px column. */
 export function FormScreen({
   title,
   description,

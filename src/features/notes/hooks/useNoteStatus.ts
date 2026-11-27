@@ -1,3 +1,4 @@
+/** Whether a note is saved and synced. */
 import { useEffect, useState } from 'react';
 
 import { useAuth } from '@/app/providers/auth-context';
@@ -10,13 +11,6 @@ import { useStableLiveQuery as useLiveQuery } from '@/shared/hooks/useStableLive
 import { isSyncPaused } from '@/sync/syncStatus';
 import { useSyncStatus } from '@/sync/useSyncStatus';
 
-/**
- * Is this note safe? One answer (step 8h, A-06). Replaces the editor's
- * save-state machine and the separate sync-status reads.
- *
- * Returns null while the note is not on disk (a blank draft) or still loading,
- * which shows nothing.
- */
 export function useNoteStatus(noteId: string | undefined): NoteStatus | null {
   const row = useLiveQuery(async () => {
     if (noteId === undefined || noteId === '') return null;
@@ -28,7 +22,6 @@ export function useNoteStatus(noteId: string | undefined): NoteStatus | null {
   const storageFull = useStorageFull();
   const { state: auth } = useAuth();
 
-  // The clock only moves at the two moments the answer can change on its own.
   const [now, setNow] = useState(() => Date.now());
   const stamp = row?.localUpdatedAt ?? null;
   useEffect(() => {

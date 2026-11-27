@@ -1,5 +1,5 @@
+/* Styles for NoteDetail. */
 @layer pages {
-  /* A flex column filling the pane: one scrolling region inside it. */
   .note-detail {
     position: relative;
     display: flex;
@@ -24,7 +24,6 @@
     }
   }
 
-  /* No reserved gap under the date: the note starts right below it unless a banner is showing. */
   .note-detail__scroll .n-banner-slot:empty {
     display: none;
   }

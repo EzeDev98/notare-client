@@ -1,3 +1,4 @@
+/** Tests for createNote. */
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
@@ -51,17 +52,10 @@ describe('creating a note', () => {
     await screen.findByLabelText('Note content');
     await new Promise((resolve) => setTimeout(resolve, 1_500));
 
-    // Clicking "New note" and changing your mind leaves no trace.
     expect(creates).toBe(0);
   });
 
   it('keeps everything typed in one queued CREATE rather than queuing a second note', async () => {
-    /*
-     * Creation is local-first: the note exists on this device at once and a single CREATE
-     * waits in the outbox. Later edits fold into that same row (the same coalescing the
-     * offline UPDATE test covers), so the sync engine sends ONE note, not two, each
-     * holding half of what the user wrote.
-     */
     const user = userEvent.setup();
     renderNew();
 

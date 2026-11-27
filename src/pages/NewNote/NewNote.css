@@ -1,5 +1,5 @@
+/* Styles for NewNote. */
 @layer pages {
-  /* A new note is a note: same full-pane column as the note page. */
   .new-note {
     position: relative;
     display: flex;

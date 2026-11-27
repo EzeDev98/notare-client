@@ -1,3 +1,4 @@
+/* Styles for Card. */
 @layer components {
   .ui-card {
     padding: var(--card-pad);

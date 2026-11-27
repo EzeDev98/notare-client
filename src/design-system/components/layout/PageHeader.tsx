@@ -1,3 +1,4 @@
+/** A screen's top bar with an optional Back button. */
 import { ArrowLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -7,13 +8,10 @@ import './PageHeader.css';
 
 interface PageHeaderProps {
   title: string;
-  /** Shows a Back button that calls this. */
   onBack?: (() => void) | undefined;
-  /** One control on the right, for example a button. */
   action?: ReactNode;
 }
 
-/** The 56px bar at the top of a screen: optional Back, the title (20px, one line), one action. */
 export function PageHeader({ title, onBack, action }: PageHeaderProps) {
   return (
     <header className="ui-page-header">

@@ -1,6 +1,4 @@
-/* Red Hat Text 400, self-hosted. Same rules as Ahorra's fonts.css.
-   The ranges match the latin and latin-ext subsets as shipped. */
-
+/* The self-hosted Red Hat Text font. */
 @font-face {
   font-family: 'Red Hat Text';
   font-style: normal;

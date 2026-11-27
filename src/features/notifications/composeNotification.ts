@@ -1,3 +1,4 @@
+/** The sentence, detail line and buttons for one notification. */
 import { NOTIFICATION_COPY as C } from '@/features/notifications/notificationContent';
 import type { NotificationResponse } from '@/features/notifications/types';
 import { formatServerDateTimeRelative } from '@/lib/time';
@@ -10,11 +11,6 @@ export interface ComposedNotification {
   action: NotificationAction;
 }
 
-/**
- * The sentence, the small line under it and the buttons for one notification.
- * It switches on the type as a plain string, so a type this client has never
- * heard of still gets a sentence.
- */
 export function composeNotification(n: NotificationResponse): ComposedNotification {
   const when = formatServerDateTimeRelative(n.createdAt);
   const meta = (label: string): string => `${label} · ${when}`;

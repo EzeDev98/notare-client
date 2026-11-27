@@ -1,3 +1,4 @@
+/* Styles for StatusSlot. */
 @layer components {
   .n-header__status {
     min-width: calc(var(--select-narrow) * 1.25);

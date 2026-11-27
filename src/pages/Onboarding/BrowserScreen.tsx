@@ -1,3 +1,4 @@
+/** Onboarding: what using Notare in the browser means. */
 import { useState } from 'react';
 
 import { Button } from '@/design-system/ui';
@@ -11,11 +12,9 @@ interface BrowserScreenProps {
   onBack: () => void;
   onInstalled: () => void;
   onManual: () => void;
-  /** Save the choice and leave onboarding. */
   onContinue: () => Promise<void>;
 }
 
-/** Screen 6. Says plainly what carrying on in the browser costs, and still offers to install. */
 export function BrowserScreen({ onBack, onInstalled, onManual, onContinue }: BrowserScreenProps) {
   const { busy, install } = useInstallAction({ onInstalled, onManual });
   const [leaving, setLeaving] = useState(false);

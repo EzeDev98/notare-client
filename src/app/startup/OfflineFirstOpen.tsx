@@ -1,3 +1,4 @@
+/** Shown on a first open with no session, no notes and no connection. */
 import { useState } from 'react';
 
 import { useTheme } from '@/app/providers/theme-context';
@@ -9,12 +10,6 @@ import { STARTUP_COPY } from './startupContent';
 
 import './OfflineFirstOpen.css';
 
-/**
- * First open on a device with no session, no cached notes and no connection
- * (master 6.7). Nothing else can work yet, so this is the whole screen.
- * "Try again" asks start-up to decide again; if the connection is still down
- * it says so and stays.
- */
 export function OfflineFirstOpen({ onRetry }: { onRetry: () => Promise<boolean> }) {
   const { resolved } = useTheme();
   const [busy, setBusy] = useState(false);

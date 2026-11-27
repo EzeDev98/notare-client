@@ -1,8 +1,8 @@
+/** Gallery row: InfoBanner and the banner slot. */
 import { BannerSlot, Button, InfoBanner } from '@/design-system/ui';
 
 import { Both } from './Both';
 
-/** Gallery: row 6, InfoBanner and the banner slot. */
 export function Row6() {
   return (
     <>

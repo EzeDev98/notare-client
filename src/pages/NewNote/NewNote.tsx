@@ -1,3 +1,4 @@
+/** Opens a new note. */
 import { sessionUserOf } from '@/features/auth/sessionUser';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router';

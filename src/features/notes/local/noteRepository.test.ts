@@ -1,3 +1,4 @@
+/** Tests for noteRepository. */
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { db } from '@/features/notes/local/database';
@@ -33,8 +34,6 @@ describe('listing', () => {
       { ...createLocalNote(1, { content: 'pinned' }), pinned: 1, localUpdatedAt: 2_000 },
     ]);
 
-    // Sorted in memory: a two-key sort with different directions cannot be one
-    // IndexedDB index without storing an inverted key.
     await expect(noteRepository.listActive(1).then(contents)).resolves.toEqual([
       'pinned',
       'recent',
@@ -45,11 +44,6 @@ describe('listing', () => {
 
 describe('searching', () => {
   it('matches content, case-insensitively', async () => {
-    // 1B/4F/5C: no title field — the note domain has none, so search has
-    // been content-only since 4F. This no longer needs two rows to prove
-    // "title OR content" is searched (there is only content); it proves the
-    // match works regardless of where in the content the term sits, and
-    // regardless of case.
     await db.notes.bulkPut([
       { ...createLocalNote(1, { content: 'Meeting notes: set the agenda' }) },
       { ...createLocalNote(1, { content: 'Groceries: discussed the MEETING room' }) },
@@ -122,8 +116,6 @@ describe('applying server state', () => {
 
     const row = await noteRepository.getByServerId(8);
     expect(row?.content).toBe('after');
-    // Same note, not a new one — the open editor and the outbox both reference
-    // this localId.
     expect(row?.localId).toBe(first.localId);
   });
 
@@ -135,22 +127,11 @@ describe('applying server state', () => {
       makeNote({ id: 8, content: 'their words', version: 9 }),
     );
 
-    /*
-     * The whole reason this returns a value. Overwriting would destroy unsent
-     * work; keeping local silently would hide a conflict. Which of those is
-     * right is a POLICY decision, and 7F owns it — burying it here would put
-     * the most consequential choice in the layer least able to explain it.
-     */
     expect(result).toBe('skipped');
     expect((await noteRepository.getByServerId(8))?.content).toBe('my unsent words');
   });
 
   it('leaves dirty rows alone when applying a list page', async () => {
-    // 5C: a summary carries only `contentPreview`, and fromNoteSummary does
-    // not fold that into `content` (a separate, pre-existing gap noted back
-    // in step 4 — out of scope here). This test's actual point survives
-    // regardless: a DIRTY row's content must not be touched by an incoming
-    // list page at all, whatever that page contains.
     const local = fromNoteResponse(makeNote({ id: 3, content: 'my rename' }));
     await db.notes.put({ ...local, dirty: 1 });
 
@@ -163,12 +144,6 @@ describe('applying server state', () => {
   });
 
   it('stamps the owner on rows a list page inserts', async () => {
-    /*
-     * 7E. A summary has no ownerId, and the mapper used to fall back to null
-     * when there was no existing row. Every read is scoped by owner through
-     * the [ownerId+deleted+archived] index, so a null-owned row is invisible —
-     * on a fresh device the fetch succeeded and the list stayed empty forever.
-     */
     await noteRepository.upsertSummaries([makeNoteSummary({ id: 30 })], 7);
 
     expect((await noteRepository.getByServerId(30))?.ownerId).toBe(7);
@@ -202,8 +177,6 @@ describe('meta', () => {
   it('round-trips the sync cursor without touching its format', async () => {
     await metaRepository.setSyncCursor('2026-08-08T10:15:30.123');
 
-    // Byte for byte. Parsing it into a Date and back would convert to UTC,
-    // shifting the cursor by the local offset and skipping changes forever.
     await expect(metaRepository.getSyncCursor()).resolves.toBe('2026-08-08T10:15:30.123');
   });
 });
@@ -353,8 +326,6 @@ describe('the outbox (8B)', () => {
   });
 });
 
-// 1B/5C: no title field — the note domain has none, so every list/search
-// assertion above reads content, which is the only label a note has left.
 function contents(rows: { content: string }[]): string[] {
   return rows.map((row) => row.content);
 }

@@ -1,27 +1,11 @@
+/* Removes browser default styles. */
 @layer reset {
-  /*
-   * A reset, not a normalize: this removes browser defaults we do not want
-   * rather than making browsers agree on defaults we did not choose.
-   *
-   * Everything here has a reason. A reset that removes things "because resets
-   * do" is how focus outlines and list semantics get lost.
-   */
-
   *,
   *::before,
   *::after {
-    /*
-     * Width means the width you see, padding and border included. The default
-     * (content-box) makes every sizing calculation an arithmetic exercise.
-     */
     box-sizing: border-box;
   }
 
-  /*
-   * Margins are a relationship between two elements, so they belong to the
-   * layout that arranges them — not to the element itself. Removing the
-   * defaults means spacing is always a decision.
-   */
   body,
   h1,
   h2,
@@ -38,66 +22,22 @@
   }
 
   html {
-    /*
-     * Mobile WebKit/Chrome's own default tap feedback — a grey/blue box
-     * over whatever was tapped — has no accessibility purpose the way the
-     * outline above does; colors.css's own :focus-visible ring already
-     * covers keyboard/screen-reader users. Off globally so it stops
-     * appearing as a stray box on every icon button.
-     */
     -webkit-tap-highlight-color: transparent;
 
-    /*
-     * NO font-size here, on purpose. A user who set their browser default to
-     * 20px did so deliberately; overriding it takes that away with no recourse.
-     * Everything is sized in rem so the whole interface scales with them.
-     */
-
-    /* Stops iOS Safari inflating text in landscape. */
     -webkit-text-size-adjust: 100%;
 
-    /*
-     * Belt-and-suspenders with .app-shell's own overflow: hidden
-     * (AppLayout.css's own comment on that rule) — .app-shell fills the
-     * viewport and manages its own internal scrolling, but html/body having
-     * no size or overflow rule of their own left the DOCUMENT itself
-     * draggable on mobile: a touch-scroll with nothing left to scroll (the
-     * empty "Start a note to begin" state, say) fell through to the
-     * browser's own elastic overscroll/rubber-band at the page level,
-     * visibly shifting the whole layout — toolbar and bottom bar included
-     * — even though nothing on screen was meant to move. height: 100% +
-     * overflow: hidden removes the document's own scroll entirely;
-     * overscroll-behavior: none stops any scroll gesture from ever
-     * chaining past a nested container's own edge to the document/browser
-     * chrome. Neither property touches scrolling INSIDE .app-shell__main,
-     * .app-shell__note-list, .app-shell__folders, or
-     * .note-detail__scroll — those keep their own overflow-y: auto and
-     * remain exactly as scrollable as before.
-     */
     height: 100%;
     overflow: hidden;
     overscroll-behavior: none;
   }
 
   body {
-    /*
-     * dvh, not vh. On mobile, vh is pinned to the LARGEST possible viewport,
-     * so full-height elements sit behind browser chrome and break outright
-     * when the keyboard opens. dvh tracks the visible area.
-     */
     min-height: 100dvh;
-    /* See html's own comment above — same fix, same reasoning, needed on
-       both ancestors since either one being scrollable is enough to let
-       the document bounce. */
     height: 100%;
     overflow: hidden;
     overscroll-behavior: none;
   }
 
-  /*
-   * Replaced elements are inline by default, which leaves a mysterious few
-   * pixels of descender space below every image.
-   */
   img,
   picture,
   video,
@@ -107,11 +47,6 @@
     max-width: 100%;
   }
 
-  /*
-   * Form controls do NOT inherit fonts. Without this they render in a
-   * browser-chosen font while everything around them uses ours — one of the
-   * few genuinely necessary lines in any reset.
-   */
   input,
   button,
   textarea,
@@ -120,7 +55,6 @@
     color: inherit;
   }
 
-  /* A long URL or an unbroken token should wrap, not stretch its container. */
   p,
   h1,
   h2,
@@ -132,37 +66,16 @@
     overflow-wrap: break-word;
   }
 
-  /*
-   * NOT removing list-style globally. Safari drops list semantics from a list
-   * with list-style: none, so a screen reader stops announcing "list, 5 items".
-   * Lists that are structural rather than visual opt out individually.
-   */
   :where([role='list']) {
     list-style: none;
     padding-left: 0;
   }
 
-  /*
-   * NOT removing focus outlines. Resets that do `outline: none` make the app
-   * unusable by keyboard, and the damage is invisible to anyone testing with a
-   * mouse. Browser defaults stay until 2B replaces them with a designed focus
-   * ring — a real one, not nothing.
-   */
-
-  /* A new stacking context, so a modal's z-index never has to outbid the app. */
   #root {
     isolation: isolate;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    /*
-     * §57. A user who set this at OS level may get motion sickness or migraines
-     * from animation. Honour it globally, then never think about it again —
-     * rather than remembering it at every transition.
-     *
-     * Near-zero rather than zero: some JS waits on transitionend, and a
-     * duration of exactly 0 can mean that event never fires.
-     */
     *,
     *::before,
     *::after {

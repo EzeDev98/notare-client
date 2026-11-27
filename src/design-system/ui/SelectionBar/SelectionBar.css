@@ -1,3 +1,4 @@
+/* Styles for SelectionBar. */
 @layer components {
   .n-selbar {
     display: inline-flex;
@@ -13,12 +14,10 @@
     z-index: var(--z-menu);
   }
 
-  /* The link field is wider than the two buttons. */
   .n-selbar .ui-control {
     width: calc(var(--menu-width) * 1.2);
   }
 
-  /* Apply sits beside the link field, so it takes the field's height. */
   .n-selbar .ui-control + .ui-button {
     height: var(--input-height);
   }

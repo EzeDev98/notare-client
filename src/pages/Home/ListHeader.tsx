@@ -1,12 +1,11 @@
+/** The list title and note count. */
 import { noteCount } from '@/design-system/lib/noteCount';
 
 interface ListHeaderProps {
   title: string;
-  /** Left out while the count is not known yet. */
   count: number | undefined;
 }
 
-/** The list title (lg) with a muted count (xs) beside it. */
 export function ListHeader({ title, count }: ListHeaderProps) {
   return (
     <div className="home__head">

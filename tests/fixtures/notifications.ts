@@ -1,3 +1,4 @@
+/** Builders for notifications used in tests. */
 import type { NotificationResponse } from '@/features/notifications/types';
 
 let nextNotificationId = 1;

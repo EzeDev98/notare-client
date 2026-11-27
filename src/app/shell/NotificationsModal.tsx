@@ -1,3 +1,4 @@
+/** The notifications modal opened from the bell. */
 import { Bell } from 'lucide-react';
 import { useMemo } from 'react';
 
@@ -20,7 +21,6 @@ interface NotificationsModalProps {
   onClose: () => void;
 }
 
-/** The bell's modal: transcript updates, with their buttons (master 6.9). */
 export function NotificationsModal({ open, onClose }: NotificationsModalProps) {
   const query = useNotifications(false, 0, open);
   const rows = useMemo(() => query.data?.content ?? [], [query.data]);

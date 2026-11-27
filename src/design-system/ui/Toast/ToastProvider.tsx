@@ -1,3 +1,4 @@
+/** Shows toast messages at the bottom of the screen. */
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -13,10 +14,6 @@ import {
 
 import './Toast.css';
 
-/**
- * Shows toasts in a portal at the bottom of the screen. At most 3 at a time:
- * a fourth pushes the oldest out. 4 seconds, or 6 for errors and toasts with an action.
- */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [entries, setEntries] = useState<ToastEntry[]>([]);
   const nextId = useRef(1);

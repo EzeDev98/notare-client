@@ -1,3 +1,4 @@
+/** Layout shared by the onboarding screens. */
 import { ArrowLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -8,20 +9,13 @@ import './Onboarding.css';
 interface OnboardingScreenProps {
   title: string;
   description: string;
-  /** Sits above the heading: the logo, the transfer picture, the tick. */
   hero?: ReactNode;
-  /** The intro's tighter heading, with no extra space around it. */
   tightHead?: boolean;
   onBack?: (() => void) | undefined;
-  /** The buttons, set a little apart from the content above. */
   footer?: ReactNode;
   children?: ReactNode;
 }
 
-/**
- * The frame every onboarding screen shares (master 6.2): back button on the
- * bar, a hero, the heading, the content and the footer, in the one column.
- */
 export function OnboardingScreen({
   title,
   description,

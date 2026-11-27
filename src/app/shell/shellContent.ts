@@ -1,4 +1,4 @@
-/** Words in the app shell: the header and the drawer (master 5.3). */
+/** Words in the header and the drawer. */
 export const SHELL_COPY = {
   openMenu: 'Open menu',
   drawerName: 'Menu',

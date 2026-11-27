@@ -1,3 +1,4 @@
+/** Tests for Login. */
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http } from 'msw';
@@ -21,7 +22,6 @@ function renderApp(initialPath = ROUTES.signIn()) {
   const router = createMemoryRouter(
     [
       { path: ROUTES.signIn(), element: <LoginPage /> },
-      // 4F: an unverified account is routed here rather than shown a message.
       { path: '/verify', element: <h1>Verify your account</h1> },
       {
         element: <RequireAuth />,
@@ -58,8 +58,6 @@ describe('the login form', () => {
     const field = await screen.findByLabelText(/username or email/i);
     await user.type(field, 'te');
 
-    // Nothing yet — telling someone their input is wrong at the second
-    // character is hostile.
     expect(screen.queryByText(LOGIN_FIELD_ERRORS.identifierRequired)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /sign in/i }));
@@ -92,17 +90,11 @@ describe('the login form', () => {
     await user.type(screen.getByLabelText('Password', { selector: 'input' }), 'wrong');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
-    /*
-     * "Incorrect username or password", not "no such user". The server does
-     * not distinguish them and should not — a form that says which was wrong
-     * is an account-enumeration oracle.
-     */
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(/incorrect username or password/i);
   });
 
   it('explains an unverified account and offers to check email', async () => {
-    // DisabledException: the account exists and the password was right.
     server.use(
       http.post(`${BASE}/login/login`, () =>
         problemDetail(403, { title: 'Forbidden', detail: 'Please verify your email address.' }),
@@ -116,7 +108,6 @@ describe('the login form', () => {
     await user.type(screen.getByLabelText('Password', { selector: 'input' }), 'Passw0rd');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
-    // Told what happened, with a button that does the next step.
     expect(await screen.findByText(ERRORS.notVerified)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: ERRORS.notVerifiedAction }));
     expect(
@@ -157,8 +148,6 @@ describe('the guard', () => {
     await user.type(screen.getByLabelText('Password', { selector: 'input' }), 'Passw0rd');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
-    // Not the default destination by luck — the guard stashed /notes in
-    // location.state and login read it back.
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: 'Notes' })).toBeInTheDocument();
     });

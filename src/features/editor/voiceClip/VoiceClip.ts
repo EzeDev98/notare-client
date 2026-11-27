@@ -1,12 +1,9 @@
+/** The voice clip node in the editor. */
 import { mergeAttributes, Node } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 
 import { VoiceClipView } from './VoiceClipView';
 
-/**
- * One voice clip, as a block in the note. Only the clip's id is stored in the
- * body; the audio lives in the clips table (step 12g).
- */
 export const VoiceClip = Node.create({
   name: 'voiceClip',
   group: 'block',

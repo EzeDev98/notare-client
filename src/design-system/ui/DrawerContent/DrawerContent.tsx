@@ -1,3 +1,4 @@
+/** The contents of the left drawer. */
 import { ChevronRight, type LucideIcon } from 'lucide-react';
 
 import { Avatar, type Tint } from '../Avatar/Avatar';
@@ -15,12 +16,10 @@ interface DrawerContentProps {
   name: string;
   email: string;
   tint: Tint;
-  /** Rows that open a screen: Appearance, Sync and storage, About and legal. */
   items: readonly DrawerItem[];
   signOut: DrawerItem;
 }
 
-/** What goes inside the 280px drawer: who you are, three rows, Sign out. */
 export function DrawerContent({ name, email, tint, items, signOut }: DrawerContentProps) {
   return (
     <>
